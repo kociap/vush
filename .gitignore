@@ -1,0 +1,7 @@
+run.sh
+build.bat
+CMakeSettings.json
+
+.vs
+.vscode
+build
