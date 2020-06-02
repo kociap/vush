@@ -26,8 +26,7 @@ namespace vush {
         Identifier(std::string&& string): _name(std::move(string)) {}
 
         virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Identifier:\n";
-            stream << Indent{indent.indent_count + 1} << "Name: " << _name << "\n";
+            stream << indent << "Identifier: '" << _name << "'\n";
         }
 
     private:
@@ -39,7 +38,7 @@ namespace vush {
         Type(std::string name): _name(std::move(name)) {}
 
         virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Type: " << _name << '\n';
+            stream << indent << "Type: '" << _name << "'\n";
         }
 
     private:
@@ -325,12 +324,12 @@ namespace vush {
         Arithmetic_Assignment_Type _type;
     };
 
-    class Boolean_Or_Expression: public Expression {
+    class Logic_Or_Expr: public Expression {
     public:
-        Boolean_Or_Expression(Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs) {}
+        Logic_Or_Expr(Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs) {}
 
         virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Boolean_Or_Expression:\n";
+            stream << indent << "Logic_Or_Expr:\n";
             _lhs->print(stream, Indent{indent.indent_count + 1});
             _rhs->print(stream, Indent{indent.indent_count + 1});
         }
@@ -340,12 +339,27 @@ namespace vush {
         Owning_Ptr<Expression> _rhs;
     };
 
-    class Boolean_And_Expression: public Expression {
+    class Logic_Xor_Expr: public Expression {
     public:
-        Boolean_And_Expression(Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs) {}
+        Logic_Xor_Expr(Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs) {}
 
         virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Boolean_And_Expression:\n";
+            stream << indent << "Logic_Xor_Expr:\n";
+            _lhs->print(stream, Indent{indent.indent_count + 1});
+            _rhs->print(stream, Indent{indent.indent_count + 1});
+        }
+
+    private:
+        Owning_Ptr<Expression> _lhs;
+        Owning_Ptr<Expression> _rhs;
+    };
+
+    class Logic_And_Expr: public Expression {
+    public:
+        Logic_And_Expr(Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs) {}
+
+        virtual void print(std::ostream& stream, Indent const indent) const override {
+            stream << indent << "Logic_And_Expr:\n";
             _lhs->print(stream, Indent{indent.indent_count + 1});
             _rhs->print(stream, Indent{indent.indent_count + 1});
         }
@@ -404,12 +418,12 @@ namespace vush {
         Relational_Type _type;
     };
 
-    class Add_Sub_Expression: public Expression {
+    class Add_Expr: public Expression {
     public:
-        Add_Sub_Expression(bool is_add, Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs), _is_add(is_add) {}
+        Add_Expr(Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs) {}
 
         virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Add_Sub_Expression (" << (_is_add ? "addition" : "subtraction") << "):\n";
+            stream << indent << "Add_Expr:\n";
             _lhs->print(stream, Indent{indent.indent_count + 1});
             _rhs->print(stream, Indent{indent.indent_count + 1});
         }
@@ -417,15 +431,14 @@ namespace vush {
     private:
         Owning_Ptr<Expression> _lhs;
         Owning_Ptr<Expression> _rhs;
-        bool _is_add;
     };
 
-    class Mul_Div_Expression: public Expression {
+    class Sub_Expr: public Expression {
     public:
-        Mul_Div_Expression(bool is_mul, Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs), _is_mul(is_mul) {}
+        Sub_Expr(Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs) {}
 
         virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Mul_Div_Expression (" << (_is_mul ? "multiplication" : "division") << "):\n";
+            stream << indent << "Sub_Expr:\n";
             _lhs->print(stream, Indent{indent.indent_count + 1});
             _rhs->print(stream, Indent{indent.indent_count + 1});
         }
@@ -433,7 +446,51 @@ namespace vush {
     private:
         Owning_Ptr<Expression> _lhs;
         Owning_Ptr<Expression> _rhs;
-        bool _is_mul;
+    };
+
+    class Mul_Expr: public Expression {
+    public:
+        Mul_Expr(Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs) {}
+
+        virtual void print(std::ostream& stream, Indent const indent) const override {
+            stream << indent << "Mul_Expr:\n";
+            _lhs->print(stream, Indent{indent.indent_count + 1});
+            _rhs->print(stream, Indent{indent.indent_count + 1});
+        }
+
+    private:
+        Owning_Ptr<Expression> _lhs;
+        Owning_Ptr<Expression> _rhs;
+    };
+
+    class Div_Expr: public Expression {
+    public:
+        Div_Expr(Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs) {}
+
+        virtual void print(std::ostream& stream, Indent const indent) const override {
+            stream << indent << "Div_Expr:\n";
+            _lhs->print(stream, Indent{indent.indent_count + 1});
+            _rhs->print(stream, Indent{indent.indent_count + 1});
+        }
+
+    private:
+        Owning_Ptr<Expression> _lhs;
+        Owning_Ptr<Expression> _rhs;
+    };
+
+    class Mod_Expr: public Expression {
+    public:
+        Mod_Expr(Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs) {}
+
+        virtual void print(std::ostream& stream, Indent const indent) const override {
+            stream << indent << "Mod_Expr:\n";
+            _lhs->print(stream, Indent{indent.indent_count + 1});
+            _rhs->print(stream, Indent{indent.indent_count + 1});
+        }
+
+    private:
+        Owning_Ptr<Expression> _lhs;
+        Owning_Ptr<Expression> _rhs;
     };
 
     enum class Unary_Type {

@@ -4,8 +4,7 @@
 
 // TODO: When matching keywords, ensure that the keyword is followed by non-identifier character.
 // TODO: Figure out a way to match operators that use overlapping symbols (+ and +=) in a clean way.
-// TODO: Add %= and %.
-// TODO: Change order of tree construction for left-to-right evaluated expressions (multiply, add, etc.)
+// TODO: compiletime 'if' in parameters.
 
 namespace vush {
     // keywords
@@ -41,10 +40,11 @@ namespace vush {
     static constexpr std::string_view token_minus = "-";
     static constexpr std::string_view token_multiply = "*";
     static constexpr std::string_view token_divide = "/";
-    static constexpr std::string_view token_modulo = "%";
+    static constexpr std::string_view token_remainder = "%";
     static constexpr std::string_view token_logic_and = "&&";
     static constexpr std::string_view token_bit_and = "&";
     static constexpr std::string_view token_logic_or = "||";
+    static constexpr std::string_view token_logic_xor = "^^";
     static constexpr std::string_view token_bit_or = "|";
     static constexpr std::string_view token_bit_xor = "^";
     static constexpr std::string_view token_logic_not = "!";
@@ -1067,7 +1067,7 @@ namespace vush {
 
         Expression* try_assignment_expression() {
             Lexer_State const state_backup = _lexer.get_current_state();
-            Owning_Ptr lhs = try_boolean_or_expression();
+            Owning_Ptr lhs = try_logic_or_expr();
             if(!lhs) {
                 _lexer.restore_state(state_backup);
                 return nullptr;
@@ -1114,28 +1114,47 @@ namespace vush {
             }
         }
 
-        Expression* try_boolean_or_expression() {
+        Expression* try_logic_or_expr() {
             Lexer_State const state_backup = _lexer.get_current_state();
-            Owning_Ptr lhs = try_boolean_and_expression();
+            Owning_Ptr lhs = try_logic_xor_expr();
             if(!lhs) {
                 _lexer.restore_state(state_backup);
                 return nullptr;
             }
 
-            if(!_lexer.match(token_logic_or)) {
-                return lhs.release();
+            while(_lexer.match(token_logic_or)) {
+                if(Expression* rhs = try_logic_xor_expr()) {
+                    lhs = new Logic_Or_Expr(lhs.release(), rhs);
+                } else {
+                    _lexer.restore_state(state_backup);
+                    return nullptr;
+                }
             }
 
-            Owning_Ptr rhs = try_boolean_or_expression();
-            if(!rhs) {
+            return lhs.release();
+        }
+
+        Expression* try_logic_xor_expr() {
+            Lexer_State const state_backup = _lexer.get_current_state();
+            Owning_Ptr lhs = try_logic_and_expr();
+            if(!lhs) {
                 _lexer.restore_state(state_backup);
                 return nullptr;
             }
 
-            return new Boolean_Or_Expression(lhs.release(), rhs.release());
+            while(_lexer.match(token_logic_xor)) {
+                if(Expression* rhs = try_logic_and_expr()) {
+                    lhs = new Logic_Xor_Expr(lhs.release(), rhs);
+                } else {
+                    _lexer.restore_state(state_backup);
+                    return nullptr;
+                }
+            }
+
+            return lhs.release();
         }
 
-        Expression* try_boolean_and_expression() {
+        Expression* try_logic_and_expr() {
             Lexer_State const state_backup = _lexer.get_current_state();
             Owning_Ptr lhs = try_relational_equality_expression();
             if(!lhs) {
@@ -1143,17 +1162,16 @@ namespace vush {
                 return nullptr;
             }
 
-            if(!_lexer.match(token_logic_and)) {
-                return lhs.release();
+            while(_lexer.match(token_logic_and)) {
+                if(Expression* rhs = try_relational_equality_expression()) {
+                    lhs = new Logic_And_Expr(lhs.release(), rhs);
+                } else {
+                    _lexer.restore_state(state_backup);
+                    return nullptr;
+                }
             }
 
-            Owning_Ptr rhs = try_boolean_and_expression();
-            if(!rhs) {
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            return new Boolean_And_Expression(lhs.release(), rhs.release());
+            return lhs.release();
         }
 
         Expression* try_relational_equality_expression() {
@@ -1164,53 +1182,61 @@ namespace vush {
                 return nullptr;
             }
 
-            bool const is_equal = _lexer.match(token_equal);
-            if(!is_equal && !_lexer.match(token_not_equal)) {
-                return lhs.release();
+            while(true) {
+                if(_lexer.match(token_equal)) {
+                    if(Expression* rhs = try_relational_expression()) {
+                        lhs = new Relational_Equality_Expression(true, lhs.release(), rhs);
+                    } else {
+                        _lexer.restore_state(state_backup);
+                        return nullptr;
+                    }
+                } else if(_lexer.match(token_not_equal)) {
+                    if(Expression* rhs = try_relational_expression()) {
+                        lhs = new Relational_Equality_Expression(false, lhs.release(), rhs);
+                    } else {
+                        _lexer.restore_state(state_backup);
+                        return nullptr;
+                    }
+                } else {
+                    return lhs.release();
+                }
             }
-
-            Owning_Ptr rhs = try_relational_equality_expression();
-            if(!rhs) {
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            return new Relational_Equality_Expression(is_equal, lhs.release(), rhs.release());
         }
 
         Expression* try_relational_expression() {
             Lexer_State const state_backup = _lexer.get_current_state();
-            Owning_Ptr lhs = try_add_sub_expression();
+            Owning_Ptr lhs = try_add_sub_expr();
             if(!lhs) {
                 _lexer.restore_state(state_backup);
                 return nullptr;
             }
 
-            Relational_Type type;
-            if(_lexer.match(token_less_equal)) {
-                type = Relational_Type::less_equal;
-            } else if(_lexer.match(token_greater_equal)) {
-                type = Relational_Type::greater_equal;
-            } else if(_lexer.match(token_less)) {
-                type = Relational_Type::less_than;
-            } else if(_lexer.match(token_greater)) {
-                type = Relational_Type::greater_than;
-            } else {
-                return lhs.release();
-            }
+            while(true) {
+                Relational_Type type;
+                if(_lexer.match(token_less_equal)) {
+                    type = Relational_Type::less_equal;
+                } else if(_lexer.match(token_greater_equal)) {
+                    type = Relational_Type::greater_equal;
+                } else if(_lexer.match(token_less)) {
+                    type = Relational_Type::less_than;
+                } else if(_lexer.match(token_greater)) {
+                    type = Relational_Type::greater_than;
+                } else {
+                    return lhs.release();
+                }
 
-            Owning_Ptr rhs = try_relational_expression();
-            if(!rhs) {
-                _lexer.restore_state(state_backup);
-                return nullptr;
+                if(Expression* rhs = try_add_sub_expr()) {
+                    lhs = new Relational_Expression(type, lhs.release(), rhs);
+                } else {
+                    _lexer.restore_state(state_backup);
+                    return nullptr;
+                }
             }
-
-            return new Relational_Expression(type, lhs.release(), rhs.release());
         }
 
-        Expression* try_add_sub_expression() {
+        Expression* try_add_sub_expr() {
             Lexer_State const state_backup = _lexer.get_current_state();
-            Owning_Ptr lhs = try_mul_div_expression();
+            Owning_Ptr lhs = try_mul_div_mod_expr();
             if(!lhs) {
                 _lexer.restore_state(state_backup);
                 return nullptr;
@@ -1221,21 +1247,28 @@ namespace vush {
                 return lhs.release();
             }
 
-            bool const is_add = _lexer.match(token_plus);
-            if(!is_add && !_lexer.match(token_minus)) {
-                return lhs.release();
+            while(true) {
+                if(_lexer.match(token_plus)) {
+                    if(Expression* rhs = try_mul_div_mod_expr()) {
+                        lhs = new Add_Expr(lhs.release(), rhs);
+                    } else {
+                        _lexer.restore_state(state_backup);
+                        return nullptr;
+                    }
+                } else if(_lexer.match(token_minus)) {
+                    if(Expression* rhs = try_mul_div_mod_expr()) {
+                        lhs = new Sub_Expr(lhs.release(), rhs);
+                    } else {
+                        _lexer.restore_state(state_backup);
+                        return nullptr;
+                    }
+                } else {
+                    return lhs.release();
+                }
             }
-
-            Owning_Ptr rhs = try_add_sub_expression();
-            if(!rhs) {
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            return new Add_Sub_Expression(is_add, lhs.release(), rhs.release());
         }
 
-        Expression* try_mul_div_expression() {
+        Expression* try_mul_div_mod_expr() {
             Lexer_State const state_backup = _lexer.get_current_state();
             Owning_Ptr lhs = try_unary_expression();
             if(!lhs) {
@@ -1243,23 +1276,38 @@ namespace vush {
                 return nullptr;
             }
 
-            if(Lexer_State const check_backup = _lexer.get_current_state(); _lexer.match(token_compound_multiply) || _lexer.match(token_compound_divide)) {
+            if(Lexer_State const check_backup = _lexer.get_current_state();
+               _lexer.match(token_compound_multiply) || _lexer.match(token_compound_divide) || _lexer.match(token_compound_remainder)) {
                 _lexer.restore_state(check_backup);
                 return lhs.release();
             }
 
-            bool const is_multiply = _lexer.match(token_multiply);
-            if(!is_multiply && !_lexer.match(token_divide)) {
-                return lhs.release();
+            while(true) {
+                if(_lexer.match(token_multiply)) {
+                    if(Expression* rhs = try_unary_expression()) {
+                        lhs = new Mul_Expr(lhs.release(), rhs);
+                    } else {
+                        _lexer.restore_state(state_backup);
+                        return nullptr;
+                    }
+                } else if(_lexer.match(token_divide)) {
+                    if(Expression* rhs = try_unary_expression()) {
+                        lhs = new Div_Expr(lhs.release(), rhs);
+                    } else {
+                        _lexer.restore_state(state_backup);
+                        return nullptr;
+                    }
+                } else if(_lexer.match(token_remainder)) {
+                    if(Expression* rhs = try_unary_expression()) {
+                        lhs = new Mod_Expr(lhs.release(), rhs);
+                    } else {
+                        _lexer.restore_state(state_backup);
+                        return nullptr;
+                    }
+                } else {
+                    return lhs.release();
+                }
             }
-
-            Owning_Ptr rhs = try_mul_div_expression();
-            if(!rhs) {
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            return new Mul_Div_Expression(is_multiply, lhs.release(), rhs.release());
         }
 
         Expression* try_unary_expression() {
@@ -1542,8 +1590,10 @@ namespace vush {
                 number += U'0';
             }
 
+            bool has_period = false;
             i64 post_point_digits = 0;
             if(_lexer.peek_next() == '.') {
+                has_period = true;
                 number += '.';
                 _lexer.get_next();
                 for(char32 next_char = _lexer.peek_next(); is_digit(next_char); ++post_point_digits) {
@@ -1558,12 +1608,14 @@ namespace vush {
             }
 
             if(pre_point_digits == 0 && post_point_digits == 0) {
-                set_error("not a floating constant");
+                set_error("not a floating point constant");
                 _lexer.restore_state(state_backup);
                 return nullptr;
             }
 
+            bool has_e = false;
             if(char32 const e = _lexer.peek_next(); e == U'e' || e == U'E') {
+                has_e = true;
                 number += 'E';
                 _lexer.get_next();
                 if(char32 const sign = _lexer.peek_next(); sign == '-' || sign == U'+') {
@@ -1585,6 +1637,12 @@ namespace vush {
                 }
             }
 
+            if(!has_e && !has_period) {
+                set_error(u8"not a floating point constant");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
             if(is_identifier_character(_lexer.peek_next())) {
                 std::string suffix;
                 while(is_identifier_character(_lexer.peek_next())) {
@@ -1594,7 +1652,7 @@ namespace vush {
                 if(suffix == "f" || suffix == "F" || suffix == "lf" || suffix == "LF") {
                     number += suffix;
                 } else {
-                    std::string error = "invalid suffix '" + suffix + "' on floating constant";
+                    std::string error = "invalid suffix '" + suffix + "' on floating point constant";
                     set_error(error);
                     _lexer.restore_state(state_backup);
                     return nullptr;
