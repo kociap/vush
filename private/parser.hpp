@@ -8,9 +8,9 @@
 namespace vush {
     struct Parse_Error {
         std::string message;
-        i64 line;
-        i64 column;
-        i64 file_offset;
+        i64 line = 0;
+        i64 column = 0;
+        i64 file_offset = 0;
     };
 
     Expected<Owning_Ptr<Syntax_Tree_Node>, Parse_Error> parse_file(std::string const& path);

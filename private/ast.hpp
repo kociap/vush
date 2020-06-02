@@ -418,6 +418,81 @@ namespace vush {
         Relational_Type _type;
     };
 
+    class Bit_Or_Expr: public Expression {
+    public:
+        Bit_Or_Expr(Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs) {}
+
+        virtual void print(std::ostream& stream, Indent const indent) const override {
+            stream << indent << "Bit_Or_Expr:\n";
+            _lhs->print(stream, Indent{indent.indent_count + 1});
+            _rhs->print(stream, Indent{indent.indent_count + 1});
+        }
+
+    private:
+        Owning_Ptr<Expression> _lhs;
+        Owning_Ptr<Expression> _rhs;
+    };
+
+    class Bit_Xor_Expr: public Expression {
+    public:
+        Bit_Xor_Expr(Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs) {}
+
+        virtual void print(std::ostream& stream, Indent const indent) const override {
+            stream << indent << "Bit_Xor_Expr:\n";
+            _lhs->print(stream, Indent{indent.indent_count + 1});
+            _rhs->print(stream, Indent{indent.indent_count + 1});
+        }
+
+    private:
+        Owning_Ptr<Expression> _lhs;
+        Owning_Ptr<Expression> _rhs;
+    };
+
+    class Bit_And_Expr: public Expression {
+    public:
+        Bit_And_Expr(Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs) {}
+
+        virtual void print(std::ostream& stream, Indent const indent) const override {
+            stream << indent << "Bit_And_Expr:\n";
+            _lhs->print(stream, Indent{indent.indent_count + 1});
+            _rhs->print(stream, Indent{indent.indent_count + 1});
+        }
+
+    private:
+        Owning_Ptr<Expression> _lhs;
+        Owning_Ptr<Expression> _rhs;
+    };
+
+    class LShift_Expr: public Expression {
+    public:
+        LShift_Expr(Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs) {}
+
+        virtual void print(std::ostream& stream, Indent const indent) const override {
+            stream << indent << "LShift_Expr:\n";
+            _lhs->print(stream, Indent{indent.indent_count + 1});
+            _rhs->print(stream, Indent{indent.indent_count + 1});
+        }
+
+    private:
+        Owning_Ptr<Expression> _lhs;
+        Owning_Ptr<Expression> _rhs;
+    };
+
+    class RShift_Expr: public Expression {
+    public:
+        RShift_Expr(Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs) {}
+
+        virtual void print(std::ostream& stream, Indent const indent) const override {
+            stream << indent << "RShift_Expr:\n";
+            _lhs->print(stream, Indent{indent.indent_count + 1});
+            _rhs->print(stream, Indent{indent.indent_count + 1});
+        }
+
+    private:
+        Owning_Ptr<Expression> _lhs;
+        Owning_Ptr<Expression> _rhs;
+    };
+
     class Add_Expr: public Expression {
     public:
         Add_Expr(Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs) {}
