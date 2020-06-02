@@ -2,9 +2,11 @@
 
 #include <fstream>
 
-// TODO: When matching keywords, ensure that the keyword is followed by non-identifier character.
+// TODO: When matching keywords, ensure that the keyword is followed by non-identifier character (Find a cleaner way).
 // TODO: Figure out a way to match operators that use overlapping symbols (+ and +=) in a clean way.
 // TODO: compiletime 'if' in parameters.
+// TODO: Add settings block.
+// TODO: Add imports.
 
 namespace vush {
     // keywords
@@ -22,6 +24,7 @@ namespace vush {
     static constexpr std::string_view kw_true = "true";
     static constexpr std::string_view kw_false = "false";
     static constexpr std::string_view kw_from = "from";
+    static constexpr std::string_view kw_struct = "struct";
 
     // separators and operators
     static constexpr std::string_view token_brace_open = "{";
@@ -103,7 +106,7 @@ namespace vush {
     public:
         Lexer(std::istream& file): _stream(file) {}
 
-        bool match(std::string_view const string) {
+        bool match(std::string_view const string, bool const must_not_be_followed_by_identifier_char = false) {
             ignore_whitespace_and_comments();
 
             Lexer_State const state_backup = get_current_state();
@@ -113,7 +116,11 @@ namespace vush {
                     return false;
                 }
             }
-            return true;
+            if(must_not_be_followed_by_identifier_char) {
+                return !is_identifier_character(peek_next());
+            } else {
+                return true;
+            }
         }
 
         // TODO: String interning if it becomes too slow/memory heavy.
@@ -257,6 +264,10 @@ namespace vush {
                 return declaration_if;
             }
 
+            if(Struct_Decl* struct_decl = try_struct_decl()) {
+                return struct_decl;
+            }
+
             if(Pass_Stage_Declaration* pass_stage = try_pass_stage_declaration()) {
                 return pass_stage;
             }
@@ -274,7 +285,7 @@ namespace vush {
 
         Declaration_If* try_declaration_if() {
             Lexer_State const state_backup = _lexer.get_current_state();
-            if(!_lexer.match(kw_if)) {
+            if(!_lexer.match(kw_if, true)) {
                 set_error(u8"expected 'if'");
                 _lexer.restore_state(state_backup);
                 return nullptr;
@@ -319,7 +330,7 @@ namespace vush {
                 return nullptr;
             }
 
-            if(!_lexer.match(kw_else)) {
+            if(!_lexer.match(kw_else, true)) {
                 set_error(u8"expected an 'else' branch");
                 _lexer.restore_state(state_backup);
                 return nullptr;
@@ -397,6 +408,58 @@ namespace vush {
             return new Variable_Declaration(var_type.release(), var_name.release(), initializer.release());
         }
 
+        Struct_Decl* try_struct_decl() {
+            Lexer_State const state_backup = _lexer.get_current_state();
+            if(!_lexer.match(kw_struct, true)) {
+                set_error(u8"expected 'struct'");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            Owning_Ptr<Identifier> struct_name;
+            if(std::string name; _lexer.match_identifier(name)) {
+                struct_name = new Identifier(std::move(name));
+            } else {
+                set_error("expected identifier");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            if(!_lexer.match(token_brace_open)) {
+                set_error(u8"expected '{'");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            if(_lexer.match(token_brace_close)) {
+                set_error(u8"empty structs are not allowed");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            Owning_Ptr struct_decl = new Struct_Decl(struct_name.release());
+            while(true) {
+                if(Variable_Declaration* decl = try_variable_declaration()) {
+                    struct_decl->append(decl);
+                } else {
+                    break;
+                }
+            }
+
+            if(struct_decl->size() == 0) {
+                set_error(u8"empty structs are not allowed");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            if(!_lexer.match(token_brace_close)) {
+                set_error(u8"expected '}'");
+                _lexer.restore_state(state_backup);
+            }
+
+            return struct_decl.release();
+        }
+
         Pass_Stage_Declaration* try_pass_stage_declaration() {
             Lexer_State const state_backup = _lexer.get_current_state();
             Owning_Ptr return_type = try_type();
@@ -470,7 +533,7 @@ namespace vush {
             }
 
             Owning_Ptr<Identifier> stage_param_source = nullptr;
-            if(_lexer.match(kw_from)) {
+            if(_lexer.match(kw_from, true)) {
                 if(std::string identifier_str; _lexer.match_identifier(identifier_str)) {
                     stage_param_source = new Identifier(std::move(identifier_str));
                 } else {
@@ -737,7 +800,7 @@ namespace vush {
 
         If_Statement* try_if_statement() {
             Lexer_State const state_backup = _lexer.get_current_state();
-            if(!_lexer.match(kw_if)) {
+            if(!_lexer.match(kw_if, true)) {
                 set_error(u8"expected 'if'");
                 _lexer.restore_state(state_backup);
                 return nullptr;
@@ -761,7 +824,7 @@ namespace vush {
                 return nullptr;
             }
 
-            if(_lexer.match(kw_else)) {
+            if(_lexer.match(kw_else, true)) {
                 if(If_Statement* if_statement = try_if_statement()) {
                     return new If_Statement(condition.release(), true_statement.release(), if_statement);
                 } else {
@@ -779,7 +842,7 @@ namespace vush {
 
         Switch_Statement* try_switch_statement() {
             Lexer_State const state_backup = _lexer.get_current_state();
-            if(!_lexer.match(kw_switch)) {
+            if(!_lexer.match(kw_switch, true)) {
                 set_error(u8"expected 'switch'");
                 _lexer.restore_state(state_backup);
                 return nullptr;
@@ -805,7 +868,7 @@ namespace vush {
 
             Owning_Ptr switch_statement = new Switch_Statement;
             while(true) {
-                if(_lexer.match(kw_case)) {
+                if(_lexer.match(kw_case, true)) {
                     Owning_Ptr condition = try_expression();
                     if(!condition) {
                         _lexer.restore_state(state_backup);
@@ -825,7 +888,7 @@ namespace vush {
                         _lexer.restore_state(state_backup);
                         return nullptr;
                     }
-                } else if(_lexer.match(kw_default)) {
+                } else if(_lexer.match(kw_default, true)) {
                     if(!_lexer.match(token_colon)) {
                         set_error(u8"expected ':' after case label");
                         _lexer.restore_state(state_backup);
@@ -855,7 +918,7 @@ namespace vush {
 
         For_Statement* try_for_statement() {
             Lexer_State const state_backup = _lexer.get_current_state();
-            if(!_lexer.match(kw_for)) {
+            if(!_lexer.match(kw_for, true)) {
                 set_error("expected 'for'");
                 _lexer.restore_state(state_backup);
                 return nullptr;
@@ -927,7 +990,7 @@ namespace vush {
 
         While_Statement* try_while_statement() {
             Lexer_State const state_backup = _lexer.get_current_state();
-            if(!_lexer.match(kw_while)) {
+            if(!_lexer.match(kw_while, true)) {
                 set_error("expected 'while'");
                 _lexer.restore_state(state_backup);
                 return nullptr;
@@ -950,7 +1013,7 @@ namespace vush {
 
         Do_While_Statement* try_do_while_statement() {
             Lexer_State const state_backup = _lexer.get_current_state();
-            if(!_lexer.match(kw_do)) {
+            if(!_lexer.match(kw_do, true)) {
                 set_error("expected 'do'");
                 _lexer.restore_state(state_backup);
                 return nullptr;
@@ -962,7 +1025,7 @@ namespace vush {
                 return nullptr;
             }
 
-            if(!_lexer.match(kw_while)) {
+            if(!_lexer.match(kw_while, true)) {
                 set_error("expected 'while'");
                 _lexer.restore_state(state_backup);
                 return nullptr;
@@ -985,7 +1048,7 @@ namespace vush {
 
         Return_Statement* try_return_statement() {
             Lexer_State const state_backup = _lexer.get_current_state();
-            if(!_lexer.match(kw_return)) {
+            if(!_lexer.match(kw_return, true)) {
                 set_error("expected 'return'");
                 _lexer.restore_state(state_backup);
                 return nullptr;
@@ -1008,7 +1071,7 @@ namespace vush {
 
         Break_Statement* try_break_statement() {
             Lexer_State const state_backup = _lexer.get_current_state();
-            if(!_lexer.match(kw_break)) {
+            if(!_lexer.match(kw_break, true)) {
                 set_error(u8"expected 'break'");
                 _lexer.restore_state(state_backup);
                 return nullptr;
@@ -1025,7 +1088,7 @@ namespace vush {
 
         Continue_Statement* try_continue_statement() {
             Lexer_State const state_backup = _lexer.get_current_state();
-            if(!_lexer.match(kw_continue)) {
+            if(!_lexer.match(kw_continue, true)) {
                 set_error(u8"expected 'continue'");
                 _lexer.restore_state(state_backup);
                 return nullptr;
@@ -1560,7 +1623,7 @@ namespace vush {
 
         Expression_If* try_expression_if() {
             Lexer_State const state_backup = _lexer.get_current_state();
-            if(!_lexer.match(kw_if)) {
+            if(!_lexer.match(kw_if, true)) {
                 set_error(u8"expected 'if'");
                 _lexer.restore_state(state_backup);
                 return nullptr;
@@ -1602,7 +1665,7 @@ namespace vush {
                 return nullptr;
             }
 
-            if(!_lexer.match(kw_else)) {
+            if(!_lexer.match(kw_else, true)) {
                 set_error(u8"expected an 'else' branch");
                 _lexer.restore_state(state_backup);
                 return nullptr;
@@ -1803,9 +1866,9 @@ namespace vush {
         }
 
         Bool_Literal* try_bool_literal() {
-            if(_lexer.match(kw_true)) {
+            if(_lexer.match(kw_true, true)) {
                 return new Bool_Literal(true);
-            } else if(_lexer.match(kw_false)) {
+            } else if(_lexer.match(kw_false, true)) {
                 return new Bool_Literal(false);
             } else {
                 set_error("expected bool literal");

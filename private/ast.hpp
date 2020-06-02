@@ -91,6 +91,32 @@ namespace vush {
         Owning_Ptr<Expression> _initializer = nullptr;
     };
 
+    class Struct_Decl: public Declaration {
+    public:
+        Struct_Decl(Identifier* name): _name(name) {}
+
+        void append(Variable_Declaration* decl) {
+            _members.emplace_back(decl);
+        }
+
+        i64 size() const {
+            return _members.size();
+        }
+
+        virtual void print(std::ostream& stream, Indent const indent) const override {
+            stream << indent << "Struct_Decl:\n";
+            _name->print(stream, {indent.indent_count + 1});
+            stream << Indent{indent.indent_count + 1} << "Member Variables:\n";
+            for(auto& member: _members) {
+                member->print(stream, {indent.indent_count + 2});
+            }
+        }
+
+    private:
+        Owning_Ptr<Identifier> _name;
+        std::vector<Owning_Ptr<Variable_Declaration>> _members;
+    };
+
     class Statement_List;
 
     class Function_Body: public Syntax_Tree_Node {
