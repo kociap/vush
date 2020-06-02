@@ -6,7 +6,6 @@
 // TODO: Figure out a way to match operators that use overlapping symbols (+ and +=) in a clean way.
 // TODO: Add %= and %.
 // TODO: Change order of tree construction for left-to-right evaluated expressions (multiply, add, etc.)
-// TODO: Add 'continue' and 'break' statements.
 // TODO: Add switch statement.
 
 namespace vush {
@@ -670,6 +669,16 @@ namespace vush {
                     continue;
                 }
 
+                if(Break_Statement* break_statement = try_break_statement()) {
+                    statements->append(break_statement);
+                    continue;
+                }
+
+                if(Continue_Statement* continue_statement = try_continue_statement()) {
+                    statements->append(continue_statement);
+                    continue;
+                }
+
                 if(Variable_Declaration* decl = try_variable_declaration()) {
                     Declaration_Statement* decl_stmt = new Declaration_Statement(decl);
                     statements->append(decl_stmt);
@@ -914,6 +923,40 @@ namespace vush {
             }
 
             return new Return_Statement(return_expr.release());
+        }
+
+        Break_Statement* try_break_statement() {
+            Lexer_State const state_backup = _lexer.get_current_state();
+            if(!_lexer.match(kw_break)) {
+                set_error(u8"expected 'break'");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            if(!_lexer.match(token_semicolon)) {
+                set_error(u8"expected ';' after break statement");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            return new Break_Statement();
+        }
+
+        Continue_Statement* try_continue_statement() {
+            Lexer_State const state_backup = _lexer.get_current_state();
+            if(!_lexer.match(kw_continue)) {
+                set_error(u8"expected 'continue'");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            if(!_lexer.match(token_semicolon)) {
+                set_error(u8"expected ';' after continue statement");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            return new Continue_Statement();
         }
 
         Expression_Statement* try_expression_statement() {

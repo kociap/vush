@@ -715,6 +715,24 @@ namespace vush {
         Owning_Ptr<Expression> _return_expr;
     };
 
+    class Break_Statement: public Statement {
+    public:
+        Break_Statement() {}
+
+        virtual void print(std::ostream& stream, Indent const indent) const override {
+            stream << indent << "Break_Statement\n";
+        }
+    };
+
+    class Continue_Statement: public Statement {
+    public:
+        Continue_Statement() {}
+
+        virtual void print(std::ostream& stream, Indent const indent) const override {
+            stream << indent << "Continue_Statement\n";
+        }
+    };
+
     class Declaration_Statement: public Statement {
     public:
         Declaration_Statement(Variable_Declaration* var_decl): _var_decl(var_decl) {}
