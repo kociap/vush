@@ -6,7 +6,6 @@
 // TODO: Figure out a way to match operators that use overlapping symbols (+ and +=) in a clean way.
 // TODO: Add %= and %.
 // TODO: Change order of tree construction for left-to-right evaluated expressions (multiply, add, etc.)
-// TODO: Add switch statement.
 
 namespace vush {
     // keywords
@@ -14,6 +13,7 @@ namespace vush {
     static constexpr std::string_view kw_else = "else";
     static constexpr std::string_view kw_switch = "switch";
     static constexpr std::string_view kw_case = "case";
+    static constexpr std::string_view kw_default = "default";
     static constexpr std::string_view kw_for = "for";
     static constexpr std::string_view kw_while = "while";
     static constexpr std::string_view kw_do = "do";
@@ -649,6 +649,11 @@ namespace vush {
                     continue;
                 }
 
+                if(Switch_Statement* switch_statement = try_switch_statement()) {
+                    statements->append(switch_statement);
+                    continue;
+                }
+
                 if(For_Statement* for_statement = try_for_statement()) {
                     statements->append(for_statement);
                     continue;
@@ -770,6 +775,82 @@ namespace vush {
             } else {
                 return new If_Statement(condition.release(), true_statement.release(), nullptr);
             }
+        }
+
+        Switch_Statement* try_switch_statement() {
+            Lexer_State const state_backup = _lexer.get_current_state();
+            if(!_lexer.match(kw_switch)) {
+                set_error(u8"expected 'switch'");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            if(_lexer.match(token_paren_open)) {
+                set_error(u8"unexpected '(' after switch");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            Owning_Ptr match_expression = try_expression();
+            if(!match_expression) {
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            if(!_lexer.match(token_brace_open)) {
+                set_error(u8"expected '{'");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            Owning_Ptr switch_statement = new Switch_Statement;
+            while(true) {
+                if(_lexer.match(kw_case)) {
+                    Owning_Ptr condition = try_expression();
+                    if(!condition) {
+                        _lexer.restore_state(state_backup);
+                        return nullptr;
+                    }
+
+                    if(!_lexer.match(token_colon)) {
+                        set_error(u8"expected ':' after case label");
+                        _lexer.restore_state(state_backup);
+                        return nullptr;
+                    }
+
+                    Owning_Ptr statement_list = try_statement_list();
+                    if(statement_list) {
+                        switch_statement->append(new Case_Statement(condition.release(), statement_list.release()));
+                    } else {
+                        _lexer.restore_state(state_backup);
+                        return nullptr;
+                    }
+                } else if(_lexer.match(kw_default)) {
+                    if(!_lexer.match(token_colon)) {
+                        set_error(u8"expected ':' after case label");
+                        _lexer.restore_state(state_backup);
+                        return nullptr;
+                    }
+
+                    Owning_Ptr statement_list = try_statement_list();
+                    if(statement_list) {
+                        switch_statement->append(new Default_Case_Statement(statement_list.release()));
+                    } else {
+                        _lexer.restore_state(state_backup);
+                        return nullptr;
+                    }
+                } else {
+                    break;
+                }
+            }
+
+            if(!_lexer.match(token_brace_close)) {
+                set_error(u8"expected '}'");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            return switch_statement.release();
         }
 
         For_Statement* try_for_statement() {

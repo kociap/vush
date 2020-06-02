@@ -652,6 +652,59 @@ namespace vush {
         Owning_Ptr<Statement> _false_statement;
     };
 
+    class Case_Statement: public Statement {
+    public:
+        Case_Statement(Expression* condition, Statement_List* statements): _condition(condition), _statements(statements) {}
+
+        virtual void print(std::ostream& stream, Indent const indent) const override {
+            stream << indent << "Case_Statement:\n";
+            _condition->print(stream, Indent{indent.indent_count + 1});
+            _statements->print(stream, Indent{indent.indent_count + 1});
+        }
+
+    private:
+        Owning_Ptr<Expression> _condition;
+        Owning_Ptr<Statement_List> _statements;
+    };
+
+    class Default_Case_Statement: public Statement {
+    public:
+        Default_Case_Statement(Statement_List* statements): _statements(statements) {}
+
+        virtual void print(std::ostream& stream, Indent const indent) const override {
+            stream << indent << "Default_Case_Statement:\n";
+            _statements->print(stream, Indent{indent.indent_count + 1});
+        }
+
+    private:
+        Owning_Ptr<Statement_List> _statements;
+    };
+
+    class Switch_Statement: public Statement {
+    public:
+        void append(Case_Statement* case_stmt) {
+            _cases.emplace_back(case_stmt);
+        }
+
+        void append(Default_Case_Statement* case_stmt) {
+            _cases.emplace_back(case_stmt);
+        }
+
+        i64 case_count() const {
+            return _cases.size();
+        }
+
+        virtual void print(std::ostream& stream, Indent const indent) const override {
+            stream << indent << "Switch_Statement:\n";
+            for(auto& statement: _cases) {
+                statement->print(stream, Indent{indent.indent_count + 1});
+            }
+        }
+
+    private:
+        std::vector<Owning_Ptr<Statement>> _cases;
+    };
+
     class For_Statement: public Statement {
     public:
         For_Statement(Variable_Declaration* declaration, Expression* condition, Expression* post_expression, Block_Statement* block)
