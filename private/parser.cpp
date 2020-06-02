@@ -1287,7 +1287,7 @@ namespace vush {
                 }
             } else if(_lexer.match(token_minus)) {
                 if(Expression* expr = try_unary_expression()) {
-                    return new Unary_Expression(Unary_Type::plus, expr);
+                    return new Unary_Expression(Unary_Type::minus, expr);
                 } else {
                     _lexer.restore_state(state_backup);
                     return nullptr;
