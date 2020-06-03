@@ -291,12 +291,6 @@ namespace vush {
                 return nullptr;
             }
 
-            if(_lexer.match(token_paren_open)) {
-                set_error(u8"unexpected '(' after 'if'");
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
             Owning_Ptr condition = try_expression();
             if(!condition) {
                 _lexer.restore_state(state_backup);
@@ -750,12 +744,6 @@ namespace vush {
                 return nullptr;
             }
 
-            if(_lexer.match(token_paren_open)) {
-                set_error(u8"unexpected '(' after 'if'");
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
             Owning_Ptr condition = try_expression();
             if(!condition) {
                 _lexer.restore_state(state_backup);
@@ -788,12 +776,6 @@ namespace vush {
             Lexer_State const state_backup = _lexer.get_current_state();
             if(!_lexer.match(kw_switch, true)) {
                 set_error(u8"expected 'switch'");
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            if(_lexer.match(token_paren_open)) {
-                set_error(u8"unexpected '(' after switch");
                 _lexer.restore_state(state_backup);
                 return nullptr;
             }
@@ -1569,12 +1551,6 @@ namespace vush {
             Lexer_State const state_backup = _lexer.get_current_state();
             if(!_lexer.match(kw_if, true)) {
                 set_error(u8"expected 'if'");
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            if(_lexer.match(token_paren_open)) {
-                set_error(u8"unexpected '(' after 'if'");
                 _lexer.restore_state(state_backup);
                 return nullptr;
             }
