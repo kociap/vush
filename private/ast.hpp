@@ -129,12 +129,35 @@ namespace vush {
         Owning_Ptr<Statement_List> _statements;
     };
 
-    class Function_Parameter: public Syntax_Tree_Node {
+    class Function_Param: public Syntax_Tree_Node {};
+
+    class Function_Param_List: public Syntax_Tree_Node {
     public:
-        Function_Parameter(Identifier* identifier, Type* type): _identifier(identifier), _type(type) {}
+        virtual void print(std::ostream& stream, Indent const indent) const override {
+            stream << indent << "Function Parameter List:\n";
+            for(Owning_Ptr<Function_Param> const& param: _params) {
+                param->print(stream, {indent.indent_count + 1});
+            }
+        }
+
+        void append_parameter(Function_Param* parameter) {
+            _params.push_back(parameter);
+        }
+
+        i64 get_parameter_count() const {
+            return _params.size();
+        }
+
+    private:
+        std::vector<Owning_Ptr<Function_Param>> _params;
+    };
+
+    class Ordinary_Function_Param: public Function_Param {
+    public:
+        Ordinary_Function_Param(Identifier* identifier, Type* type): _identifier(identifier), _type(type) {}
 
         virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Function Parameter:\n";
+            stream << indent << "Ordinary_Function_Param:\n";
             _identifier->print(stream, {indent.indent_count + 1});
             _type->print(stream, {indent.indent_count + 1});
         }
@@ -144,47 +167,26 @@ namespace vush {
         Owning_Ptr<Type> _type;
     };
 
-    class Function_Parameter_List: public Syntax_Tree_Node {
-    public:
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Function Parameter List:\n";
-            for(Owning_Ptr<Function_Parameter> const& param: _params) {
-                param->print(stream, {indent.indent_count + 1});
-            }
-        }
-
-        void append_parameter(Function_Parameter* parameter) {
-            _params.push_back(parameter);
-        }
-
-        i64 get_parameter_count() const {
-            return _params.size();
-        }
-
-    private:
-        std::vector<Owning_Ptr<Function_Parameter>> _params;
-    };
-
     class Function_Declaration: public Declaration {
     public:
-        Function_Declaration(Identifier* name, Function_Parameter_List* function_parameter_list, Type* return_type, Function_Body* body)
-            : _name(name), _parameter_list(function_parameter_list), _return_type(return_type), _body(body) {}
+        Function_Declaration(Identifier* name, Function_Param_List* function_param_list, Type* return_type, Function_Body* body)
+            : _name(name), _parameter_list(function_param_list), _return_type(return_type), _body(body) {}
 
         virtual void print(std::ostream& stream, Indent const indent) const override;
 
     private:
         Owning_Ptr<Identifier> _name;
-        Owning_Ptr<Function_Parameter_List> _parameter_list;
+        Owning_Ptr<Function_Param_List> _parameter_list;
         Owning_Ptr<Type> _return_type;
         Owning_Ptr<Function_Body> _body;
     };
 
-    class Pass_Stage_Parameter: public Syntax_Tree_Node {
+    class Sourced_Function_Param: public Function_Param {
     public:
-        Pass_Stage_Parameter(Identifier* identifier, Type* type, Identifier* source): _identifier(identifier), _type(type), _source(source) {}
+        Sourced_Function_Param(Identifier* identifier, Type* type, Identifier* source): _identifier(identifier), _type(type), _source(source) {}
 
         virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Pass_Stage_Parameter:\n";
+            stream << indent << "Sourced_Function_Param:\n";
             stream << Indent{indent.indent_count + 1} << "Name:\n";
             _identifier->print(stream, {indent.indent_count + 2});
             stream << Indent{indent.indent_count + 1} << "Type:\n";
@@ -201,30 +203,9 @@ namespace vush {
         Owning_Ptr<Identifier> _source;
     };
 
-    class Pass_Stage_Parameter_List: public Syntax_Tree_Node {
-    public:
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Pass_Stage_Parameter_List:\n";
-            for(Owning_Ptr<Pass_Stage_Parameter> const& param: _params) {
-                param->print(stream, {indent.indent_count + 1});
-            }
-        }
-
-        void append_parameter(Pass_Stage_Parameter* parameter) {
-            _params.push_back(parameter);
-        }
-
-        i64 get_parameter_count() const {
-            return _params.size();
-        }
-
-    private:
-        std::vector<Owning_Ptr<Pass_Stage_Parameter>> _params;
-    };
-
     class Pass_Stage_Declaration: public Declaration {
     public:
-        Pass_Stage_Declaration(Identifier* pass, Identifier* name, Pass_Stage_Parameter_List* parameter_list, Type* return_type, Function_Body* body)
+        Pass_Stage_Declaration(Identifier* pass, Identifier* name, Function_Param_List* parameter_list, Type* return_type, Function_Body* body)
             : _pass(pass), _name(name), _parameter_list(parameter_list), _return_type(return_type), _body(body) {}
 
         virtual void print(std::ostream& stream, Indent const indent) const override;
@@ -232,7 +213,7 @@ namespace vush {
     private:
         Owning_Ptr<Identifier> _pass;
         Owning_Ptr<Identifier> _name;
-        Owning_Ptr<Pass_Stage_Parameter_List> _parameter_list;
+        Owning_Ptr<Function_Param_List> _parameter_list;
         Owning_Ptr<Type> _return_type;
         Owning_Ptr<Function_Body> _body;
     };

@@ -493,7 +493,7 @@ namespace vush {
                 return nullptr;
             }
 
-            Owning_Ptr param_list = try_pass_stage_parameter_list();
+            Owning_Ptr param_list = try_function_param_list(true);
             if(!param_list) {
                 _lexer.restore_state(state_backup);
                 return nullptr;
@@ -506,79 +506,6 @@ namespace vush {
             }
 
             return new Pass_Stage_Declaration(pass.release(), name.release(), param_list.release(), return_type.release(), function_body.release());
-        }
-
-        Pass_Stage_Parameter* try_pass_stage_parameter() {
-            Lexer_State const state_backup = _lexer.get_current_state();
-
-            Owning_Ptr<Identifier> identifier = nullptr;
-            if(std::string identifier_str; _lexer.match_identifier(identifier_str)) {
-                identifier = new Identifier(std::move(identifier_str));
-            } else {
-                set_error("expected parameter name");
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            if(!_lexer.match(token_colon)) {
-                set_error("expected ':' after parameter name");
-                return nullptr;
-            }
-
-            Owning_Ptr parameter_type = try_type();
-            if(!parameter_type) {
-                set_error("expected parameter type");
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            Owning_Ptr<Identifier> stage_param_source = nullptr;
-            if(_lexer.match(kw_from, true)) {
-                if(std::string identifier_str; _lexer.match_identifier(identifier_str)) {
-                    stage_param_source = new Identifier(std::move(identifier_str));
-                } else {
-                    set_error("expected parameter source after 'from'");
-                    _lexer.restore_state(state_backup);
-                    return nullptr;
-                }
-            }
-
-            return new Pass_Stage_Parameter(identifier.release(), parameter_type.release(), stage_param_source.release());
-        }
-
-        Pass_Stage_Parameter_List* try_pass_stage_parameter_list() {
-            Lexer_State const state_backup = _lexer.get_current_state();
-            if(!_lexer.match(token_paren_open)) {
-                set_error("expected '('");
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            if(_lexer.match(token_paren_close)) {
-                return new Pass_Stage_Parameter_List;
-            }
-
-            // Match parameters.
-            Owning_Ptr param_list = new Pass_Stage_Parameter_List;
-            {
-                Lexer_State const param_list_backup = _lexer.get_current_state();
-                do {
-                    if(Pass_Stage_Parameter* parameter = try_pass_stage_parameter(); parameter) {
-                        param_list->append_parameter(parameter);
-                    } else {
-                        _lexer.restore_state(param_list_backup);
-                        return nullptr;
-                    }
-                } while(_lexer.match(token_comma));
-            }
-
-            if(!_lexer.match(token_paren_close)) {
-                set_error("expected ')' after function parameter list");
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            return param_list.release();
         }
 
         Function_Declaration* try_function_declaration() {
@@ -599,7 +526,7 @@ namespace vush {
                 return nullptr;
             }
 
-            Owning_Ptr param_list = try_function_parameter_list();
+            Owning_Ptr param_list = try_function_param_list(false);
             if(!param_list) {
                 _lexer.restore_state(state_backup);
                 return nullptr;
@@ -614,7 +541,42 @@ namespace vush {
             return new Function_Declaration(name.release(), param_list.release(), return_type.release(), function_body.release());
         }
 
-        Function_Parameter* try_function_parameter() {
+        Function_Param_List* try_function_param_list(bool const allow_sourced_params) {
+            Lexer_State const state_backup = _lexer.get_current_state();
+            if(!_lexer.match(token_paren_open)) {
+                set_error("expected '('");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            if(_lexer.match(token_paren_close)) {
+                return new Function_Param_List;
+            }
+
+            // Match parameters
+            Owning_Ptr param_list = new Function_Param_List;
+            {
+                Lexer_State const param_list_backup = _lexer.get_current_state();
+                do {
+                    if(Function_Param* param = try_function_param(allow_sourced_params)) {
+                        param_list->append_parameter(param);
+                    } else {
+                        _lexer.restore_state(state_backup);
+                        return nullptr;
+                    }
+                } while(_lexer.match(token_comma));
+            }
+
+            if(!_lexer.match(token_paren_close)) {
+                set_error("expected ')' after function parameter list");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            return param_list.release();
+        }
+
+        Function_Param* try_function_param(bool const allow_sourced_params) {
             Lexer_State const state_backup = _lexer.get_current_state();
 
             Owning_Ptr<Identifier> identifier = nullptr;
@@ -638,42 +600,24 @@ namespace vush {
                 return nullptr;
             }
 
-            return new Function_Parameter(identifier.release(), parameter_type.release());
-        }
+            if(_lexer.match(kw_from, true)) {
+                if(!allow_sourced_params) {
+                    set_error(u8"illegal sourced parameter declaration");
+                    _lexer.restore_state(state_backup);
+                    return nullptr;
+                }
 
-        Function_Parameter_List* try_function_parameter_list() {
-            Lexer_State const state_backup = _lexer.get_current_state();
-            if(!_lexer.match(token_paren_open)) {
-                set_error("expected '('");
-                _lexer.restore_state(state_backup);
-                return nullptr;
+                if(std::string identifier_str; _lexer.match_identifier(identifier_str)) {
+                    Identifier* source = new Identifier(std::move(identifier_str));
+                    return new Sourced_Function_Param(identifier.release(), parameter_type.release(), source);
+                } else {
+                    set_error("expected parameter source after 'from'");
+                    _lexer.restore_state(state_backup);
+                    return nullptr;
+                }
+            } else {
+                return new Ordinary_Function_Param(identifier.release(), parameter_type.release());
             }
-
-            if(_lexer.match(token_paren_close)) {
-                return new Function_Parameter_List;
-            }
-
-            // Match parameters.
-            Owning_Ptr param_list = new Function_Parameter_List;
-            {
-                Lexer_State const param_list_backup = _lexer.get_current_state();
-                do {
-                    if(Function_Parameter* parameter = try_function_parameter(); parameter) {
-                        param_list->append_parameter(parameter);
-                    } else {
-                        _lexer.restore_state(param_list_backup);
-                        return nullptr;
-                    }
-                } while(_lexer.match(token_comma));
-            }
-
-            if(!_lexer.match(token_paren_close)) {
-                set_error("expected ')' after function parameter list");
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            return param_list.release();
         }
 
         Function_Body* try_function_body() {
