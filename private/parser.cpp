@@ -4,8 +4,8 @@
 
 // TODO: When matching keywords, ensure that the keyword is followed by non-identifier character (Find a cleaner way).
 // TODO: Figure out a way to match operators that use overlapping symbols (+ and +=) in a clean way.
+// TODO: const types.
 // TODO: Add settings block.
-// TODO: Add imports.
 
 namespace vush {
     // keywords
@@ -24,6 +24,7 @@ namespace vush {
     static constexpr std::string_view kw_false = "false";
     static constexpr std::string_view kw_from = "from";
     static constexpr std::string_view kw_struct = "struct";
+    static constexpr std::string_view kw_import = "import";
 
     // separators and operators
     static constexpr std::string_view token_brace_open = "{";
@@ -38,6 +39,7 @@ namespace vush {
     static constexpr std::string_view token_comma = ",";
     static constexpr std::string_view token_question = "?";
     static constexpr std::string_view token_dot = ".";
+    static constexpr std::string_view token_double_quote = "\"";
     static constexpr std::string_view token_plus = "+";
     static constexpr std::string_view token_minus = "-";
     static constexpr std::string_view token_multiply = "*";
@@ -101,6 +103,8 @@ namespace vush {
         i64 column;
     };
 
+    constexpr char32 eof_char32 = (char32)std::char_traits<char>::eof();
+
     class Lexer {
     public:
         Lexer(std::istream& file): _stream(file) {}
@@ -145,7 +149,7 @@ namespace vush {
         bool match_eof() {
             ignore_whitespace_and_comments();
             char32 const next_char = peek_next();
-            return next_char == (char32)std::char_traits<char>::eof();
+            return next_char == eof_char32;
         }
 
         void ignore_whitespace_and_comments() {
@@ -263,6 +267,10 @@ namespace vush {
                 return declaration_if;
             }
 
+            if(Import_Decl* import_decl = try_import_decl()) {
+                return import_decl;
+            }
+
             if(Struct_Decl* struct_decl = try_struct_decl()) {
                 return struct_decl;
             }
@@ -360,6 +368,22 @@ namespace vush {
                 }
             } else {
                 return new Declaration_If(condition.release(), true_declarations.release(), nullptr);
+            }
+        }
+
+        Import_Decl* try_import_decl() {
+            Lexer_State const state_backup = _lexer.get_current_state();
+            if(!_lexer.match(kw_import, true)) {
+                set_error("expected 'import'");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            if(String_Literal* string = try_string_literal()) {
+                return new Import_Decl(string->get_value());
+            } else {
+                _lexer.restore_state(state_backup);
+                return nullptr;
             }
         }
 
@@ -1858,9 +1882,36 @@ namespace vush {
             }
         }
 
+        String_Literal* try_string_literal() {
+            Lexer_State const state_backup = _lexer.get_current_state();
+            if(!_lexer.match(token_double_quote)) {
+                set_error(u8"expected \"");
+                return nullptr;
+            }
+
+            std::string string;
+            while(true) {
+                char32 next_char = _lexer.peek_next();
+                if(next_char == U'\\') {
+                    string += (char)_lexer.get_next();
+                    string += (char)_lexer.get_next();
+                } else if(next_char == eof_char32) {
+                    set_error(u8"unexpected end of file");
+                    _lexer.restore_state(state_backup);
+                    return nullptr;
+                } else if(next_char == U'\"') {
+                    _lexer.get_next();
+                    return new String_Literal(std::move(string));
+                } else {
+                    string += (char)next_char;
+                    _lexer.get_next();
+                }
+            }
+        }
+
         Identifier_Expression* try_identifier_expression() {
             if(std::string name; _lexer.match_identifier(name)) {
-                Identifier* identifier = new Identifier(name);
+                Identifier* identifier = new Identifier(std::move(name));
                 return new Identifier_Expression(identifier);
             } else {
                 set_error("expected an identifer");

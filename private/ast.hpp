@@ -46,6 +46,7 @@ namespace vush {
     };
 
     class Expression;
+
     class Declaration: public Syntax_Tree_Node {};
 
     class Declaration_List: public Syntax_Tree_Node {
@@ -77,7 +78,17 @@ namespace vush {
         Owning_Ptr<Declaration_List> _false_declarations;
     };
 
-    class Expression;
+    class Import_Decl: public Declaration {
+    public:
+        Import_Decl(std::string path): _path(std::move(path)) {}
+
+        virtual void print(std::ostream& stream, Indent const indent) const override {
+            stream << indent << "Import_Decl: '" << _path << "'\n";
+        }
+
+    private:
+        std::string _path;
+    };
 
     class Variable_Declaration: public Declaration {
     public:
@@ -713,6 +724,22 @@ namespace vush {
     private:
         Owning_Ptr<Expression> _base;
         bool _is_inc;
+    };
+
+    class String_Literal: public Expression {
+    public:
+        String_Literal(std::string value): _value(std::move(value)) {}
+
+        virtual void print(std::ostream& stream, Indent const indent) const override {
+            stream << indent << "String_Literal: \"" << _value << "\"\n";
+        }
+
+        std::string const& get_value() const {
+            return _value;
+        }
+
+    private:
+        std::string _value;
     };
 
     class Bool_Literal: public Expression {
