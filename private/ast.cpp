@@ -32,6 +32,15 @@ namespace vush {
         }
     }
 
+    void Function_Param_If::print(std::ostream& stream, Indent const indent) const {
+        stream << indent << "Function_Param_If:\n";
+        _condition->print(stream, {indent.indent_count + 1});
+        _true_param->print(stream, {indent.indent_count + 1});
+        if(_false_param) {
+            _false_param->print(stream, {indent.indent_count + 1});
+        }
+    }
+
     void Function_Body::print(std::ostream& stream, Indent const indent) const {
         stream << indent << "Function Body:\n";
         if(_statements) {

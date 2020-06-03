@@ -152,6 +152,19 @@ namespace vush {
         std::vector<Owning_Ptr<Function_Param>> _params;
     };
 
+    class Function_Param_If: public Function_Param {
+    public:
+        Function_Param_If(Expression* condition, Function_Param* true_param, Function_Param* false_param)
+            : _condition(condition), _true_param(true_param), _false_param(false_param) {}
+
+        virtual void print(std::ostream& stream, Indent const indent) const override;
+
+    private:
+        Owning_Ptr<Expression> _condition;
+        Owning_Ptr<Function_Param> _true_param;
+        Owning_Ptr<Function_Param> _false_param;
+    };
+
     class Ordinary_Function_Param: public Function_Param {
     public:
         Ordinary_Function_Param(Identifier* identifier, Type* type): _identifier(identifier), _type(type) {}

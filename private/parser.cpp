@@ -4,7 +4,6 @@
 
 // TODO: When matching keywords, ensure that the keyword is followed by non-identifier character (Find a cleaner way).
 // TODO: Figure out a way to match operators that use overlapping symbols (+ and +=) in a clean way.
-// TODO: compiletime 'if' in parameters.
 // TODO: Add settings block.
 // TODO: Add imports.
 
@@ -572,6 +571,9 @@ namespace vush {
 
         Function_Param* try_function_param(bool const allow_sourced_params) {
             Lexer_State const state_backup = _lexer.get_current_state();
+            if(Function_Param_If* param_if = try_function_param_if(allow_sourced_params)) {
+                return param_if;
+            }
 
             Owning_Ptr<Identifier> identifier = nullptr;
             if(std::string identifier_str; _lexer.match_identifier(identifier_str)) {
@@ -584,6 +586,7 @@ namespace vush {
 
             if(!_lexer.match(token_colon)) {
                 set_error("expected ':' after parameter name");
+                _lexer.restore_state(state_backup);
                 return nullptr;
             }
 
@@ -611,6 +614,67 @@ namespace vush {
                 }
             } else {
                 return new Ordinary_Function_Param(identifier.release(), parameter_type.release());
+            }
+        }
+
+        Function_Param_If* try_function_param_if(bool const allow_sourced_params) {
+            Lexer_State const state_backup = _lexer.get_current_state();
+            if(!_lexer.match(kw_if, true)) {
+                set_error(u8"expected '{'");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            Owning_Ptr condition = try_expression();
+            if(!condition) {
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            if(!_lexer.match(token_brace_open)) {
+                set_error(u8"expected '{'");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            Owning_Ptr true_param = try_function_param(allow_sourced_params);
+            if(!true_param) {
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            if(!_lexer.match(token_brace_close)) {
+                set_error(u8"expected '}'");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            if(_lexer.match(kw_else, true)) {
+                if(Function_Param_If* param_if = try_function_param_if(allow_sourced_params)) {
+                    return new Function_Param_If(condition.release(), true_param.release(), param_if);
+                } else {
+                    if(!_lexer.match(token_brace_open)) {
+                        set_error(u8"expected '{'");
+                        _lexer.restore_state(state_backup);
+                        return nullptr;
+                    }
+
+                    Owning_Ptr false_param = try_function_param(allow_sourced_params);
+                    if(!false_param) {
+                        _lexer.restore_state(state_backup);
+                        return nullptr;
+                    }
+
+                    if(!_lexer.match(token_brace_close)) {
+                        set_error(u8"expected '}'");
+                        _lexer.restore_state(state_backup);
+                        return nullptr;
+                    }
+
+                    return new Function_Param_If(condition.release(), true_param.release(), false_param.release());
+                }
+            } else {
+                return new Function_Param_If(condition.release(), true_param.release(), nullptr);
             }
         }
 
@@ -1805,7 +1869,7 @@ namespace vush {
                 return nullptr;
             }
         }
-    }; // namespace vush
+    };
 
     Expected<Owning_Ptr<Syntax_Tree_Node>, Parse_Error> parse_file(std::string const& path) {
         std::string const path_str(path);
