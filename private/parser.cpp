@@ -323,45 +323,43 @@ namespace vush {
                 return nullptr;
             }
 
-            if(!_lexer.match(kw_else, true)) {
-                set_error(u8"expected an 'else' branch");
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            if(Declaration_If* if_declaration = try_declaration_if()) {
-                Owning_Ptr false_declarations = new Declaration_List;
-                false_declarations->append(if_declaration);
-                return new Declaration_If(condition.release(), true_declarations.release(), false_declarations.release());
-            } else {
-                if(!_lexer.match(token_brace_open)) {
-                    set_error(u8"expected '{'");
-                    _lexer.restore_state(state_backup);
-                    return nullptr;
-                }
-
-                Owning_Ptr false_declarations = new Declaration_List;
-                while(!_lexer.match(token_brace_close)) {
-                    if(_lexer.match_eof()) {
-                        set_error(u8"unexpected end of file");
+            if(_lexer.match(kw_else, true)) {
+                if(Declaration_If* if_declaration = try_declaration_if()) {
+                    Owning_Ptr false_declarations = new Declaration_List;
+                    false_declarations->append(if_declaration);
+                    return new Declaration_If(condition.release(), true_declarations.release(), false_declarations.release());
+                } else {
+                    if(!_lexer.match(token_brace_open)) {
+                        set_error(u8"expected '{'");
                         _lexer.restore_state(state_backup);
                         return nullptr;
                     }
 
-                    if(Declaration* declaration = try_declaration()) {
-                        false_declarations->append(declaration);
-                    } else {
+                    Owning_Ptr false_declarations = new Declaration_List;
+                    while(!_lexer.match(token_brace_close)) {
+                        if(_lexer.match_eof()) {
+                            set_error(u8"unexpected end of file");
+                            _lexer.restore_state(state_backup);
+                            return nullptr;
+                        }
+
+                        if(Declaration* declaration = try_declaration()) {
+                            false_declarations->append(declaration);
+                        } else {
+                            return nullptr;
+                        }
+                    }
+
+                    if(!_lexer.match(token_brace_close)) {
+                        set_error(u8"expected '}' after expression");
+                        _lexer.restore_state(state_backup);
                         return nullptr;
                     }
-                }
 
-                if(!_lexer.match(token_brace_close)) {
-                    set_error(u8"expected '}' after expression");
-                    _lexer.restore_state(state_backup);
-                    return nullptr;
+                    return new Declaration_If(condition.release(), true_declarations.release(), false_declarations.release());
                 }
-
-                return new Declaration_If(condition.release(), true_declarations.release(), false_declarations.release());
+            } else {
+                return new Declaration_If(condition.release(), true_declarations.release(), nullptr);
             }
         }
 
