@@ -34,7 +34,7 @@ namespace vush {
         return stream;
     }
 
-    struct Hierarchy_Printer final: AST_Visitor {
+    struct Hierarchy_Printer final: public AST_Visitor {
     public:
         Hierarchy_Printer(std::ostream& ostream): stream(ostream), indent{0} {}
 
@@ -535,11 +535,11 @@ namespace vush {
             indent -= 1;
         }
 
-        virtual void visit(Break_Statement& node) override {
+        virtual void visit(Break_Statement&) override {
             stream << indent << "Break_Statement\n";
         }
 
-        virtual void visit(Continue_Statement& node) override {
+        virtual void visit(Continue_Statement&) override {
             stream << indent << "Continue_Statement\n";
         }
 

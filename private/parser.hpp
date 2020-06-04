@@ -13,5 +13,5 @@ namespace vush {
         i64 file_offset = 0;
     };
 
-    Expected<Owning_Ptr<Syntax_Tree_Node>, Parse_Error> parse_file(std::string const& path);
+    Expected<Owning_Ptr<Declaration_List>, Parse_Error> parse_file(std::string const& path);
 } // namespace vush

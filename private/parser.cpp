@@ -224,7 +224,7 @@ namespace vush {
     public:
         Parser(std::istream& stream): _lexer(stream) {}
 
-        Owning_Ptr<Syntax_Tree_Node> build_ast() {
+        Owning_Ptr<Declaration_List> build_ast() {
             Owning_Ptr declarations = new Declaration_List;
             while(!_lexer.match_eof()) {
                 if(Declaration* declaration = try_declaration()) {
@@ -1921,7 +1921,7 @@ namespace vush {
         }
     };
 
-    Expected<Owning_Ptr<Syntax_Tree_Node>, Parse_Error> parse_file(std::string const& path) {
+    Expected<Owning_Ptr<Declaration_List>, Parse_Error> parse_file(std::string const& path) {
         std::string const path_str(path);
         std::ifstream file(path_str);
         if(!file) {
