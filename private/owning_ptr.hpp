@@ -36,6 +36,10 @@ namespace vush {
             return _pointer;
         }
 
+        [[nodiscard]] T* get() const {
+            return _pointer;
+        }
+
         [[nodiscard]] T* release() {
             T* pointer = _pointer;
             _pointer = nullptr;

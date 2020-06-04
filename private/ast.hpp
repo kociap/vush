@@ -131,7 +131,81 @@ namespace vush {
         virtual void visit(Expression_Statement& node) = 0;
     };
 
+    enum struct AST_Node_Type {
+        identifier,
+        type,
+        declaration_list,
+        declaration_if,
+        import_decl,
+        variable_declaration,
+        struct_decl,
+        function_body,
+        function_param_list,
+        function_param_if,
+        ordinary_function_param,
+        function_declaration,
+        sourced_function_param,
+        pass_stage_declaration,
+        expression,
+        expression_if,
+        identifier_expression,
+        assignment_expression,
+        arithmetic_assignment_expression,
+        logic_or_expr,
+        logic_xor_expr,
+        logic_and_expr,
+        relational_equality_expression,
+        relational_expression,
+        bit_or_expr,
+        bit_xor_expr,
+        bit_and_expr,
+        lshift_expr,
+        rshift_expr,
+        add_expr,
+        sub_expr,
+        mul_expr,
+        div_expr,
+        mod_expr,
+        unary_expression,
+        prefix_inc_dec_expression,
+        argument_list,
+        function_call_expression,
+        member_access_expression,
+        array_access_expression,
+        postfix_inc_dec_expression,
+        string_literal,
+        bool_literal,
+        integer_literal,
+        float_literal,
+        statement,
+        statement_list,
+        block_statement,
+        if_statement,
+        case_statement,
+        default_case_statement,
+        switch_statement,
+        for_statement,
+        while_statement,
+        do_while_statement,
+        return_statement,
+        break_statement,
+        continue_statement,
+        declaration_statement,
+        expression_statement,
+    };
+
+    struct Source_Information {
+        std::string* file_path;
+        i64 line;
+        i64 column;
+        i64 file_offset;
+    };
+
     struct Syntax_Tree_Node {
+        Source_Information source_info;
+        AST_Node_Type node_type;
+
+        Syntax_Tree_Node(Source_Information source_info, AST_Node_Type node_type): source_info(source_info), node_type(node_type) {}
         virtual ~Syntax_Tree_Node() = default;
         virtual void visit(AST_Visitor& visitor) = 0;
     };
@@ -139,8 +213,7 @@ namespace vush {
     struct Identifier: public Syntax_Tree_Node {
         std::string identifier;
 
-        Identifier(std::string const& string): identifier(string) {}
-        Identifier(std::string&& string): identifier(std::move(string)) {}
+        Identifier(std::string string): Syntax_Tree_Node({}, AST_Node_Type::identifier), identifier(std::move(string)) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -150,17 +223,21 @@ namespace vush {
     struct Type: public Syntax_Tree_Node {
         std::string type;
 
-        Type(std::string string): type(std::move(string)) {}
+        Type(std::string string): Syntax_Tree_Node({}, AST_Node_Type::type), type(std::move(string)) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
         }
     };
 
-    struct Declaration: public Syntax_Tree_Node {};
+    struct Declaration: public Syntax_Tree_Node {
+        using Syntax_Tree_Node::Syntax_Tree_Node;
+    };
 
     struct Declaration_List: public Syntax_Tree_Node {
         std::vector<Owning_Ptr<Declaration>> declarations;
+
+        Declaration_List(): Syntax_Tree_Node({}, AST_Node_Type::declaration_list) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -181,7 +258,8 @@ namespace vush {
         Owning_Ptr<Declaration_List> false_declarations;
 
         Declaration_If(Expression* condition, Declaration_List* true_declarations, Declaration_List* false_declarations)
-            : condition(condition), true_declarations(true_declarations), false_declarations(false_declarations) {}
+            : Declaration({}, AST_Node_Type::declaration_if), condition(condition), true_declarations(true_declarations),
+              false_declarations(false_declarations) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -191,7 +269,7 @@ namespace vush {
     struct Import_Decl: public Declaration {
         std::string path;
 
-        Import_Decl(std::string path): path(std::move(path)) {}
+        Import_Decl(std::string path): Declaration({}, AST_Node_Type::import_decl), path(std::move(path)) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -203,7 +281,8 @@ namespace vush {
         Owning_Ptr<Identifier> identifier;
         Owning_Ptr<Expression> initializer;
 
-        Variable_Declaration(Type* type, Identifier* identifier, Expression* initializer): type(type), identifier(identifier), initializer(initializer) {}
+        Variable_Declaration(Type* type, Identifier* identifier, Expression* initializer)
+            : Declaration({}, AST_Node_Type::variable_declaration), type(type), identifier(identifier), initializer(initializer) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -214,7 +293,7 @@ namespace vush {
         Owning_Ptr<Identifier> name;
         std::vector<Owning_Ptr<Variable_Declaration>> members;
 
-        Struct_Decl(Identifier* name): name(name) {}
+        Struct_Decl(Identifier* name): Declaration({}, AST_Node_Type::struct_decl), name(name) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -234,17 +313,21 @@ namespace vush {
     struct Function_Body: public Syntax_Tree_Node {
         Owning_Ptr<Statement_List> statement_list;
 
-        Function_Body(Statement_List* statement_list): statement_list(statement_list) {}
+        Function_Body(Statement_List* statement_list): Syntax_Tree_Node({}, AST_Node_Type::function_body), statement_list(statement_list) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
         }
     };
 
-    struct Function_Param: public Syntax_Tree_Node {};
+    struct Function_Param: public Syntax_Tree_Node {
+        using Syntax_Tree_Node::Syntax_Tree_Node;
+    };
 
     struct Function_Param_List: public Syntax_Tree_Node {
         std::vector<Owning_Ptr<Function_Param>> params;
+
+        Function_Param_List(): Syntax_Tree_Node({}, AST_Node_Type::function_param_list) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -265,7 +348,7 @@ namespace vush {
         Owning_Ptr<Function_Param> false_param;
 
         Function_Param_If(Expression* condition, Function_Param* true_param, Function_Param* false_param)
-            : condition(condition), true_param(true_param), false_param(false_param) {}
+            : Function_Param({}, AST_Node_Type::function_param_if), condition(condition), true_param(true_param), false_param(false_param) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -276,7 +359,8 @@ namespace vush {
         Owning_Ptr<Identifier> identifier;
         Owning_Ptr<Type> type;
 
-        Ordinary_Function_Param(Identifier* identifier, Type* type): identifier(identifier), type(type) {}
+        Ordinary_Function_Param(Identifier* identifier, Type* type)
+            : Function_Param({}, AST_Node_Type::ordinary_function_param), identifier(identifier), type(type) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -290,7 +374,7 @@ namespace vush {
         Owning_Ptr<Function_Body> body;
 
         Function_Declaration(Identifier* name, Function_Param_List* function_param_list, Type* return_type, Function_Body* body)
-            : name(name), param_list(function_param_list), return_type(return_type), body(body) {}
+            : Declaration({}, AST_Node_Type::function_declaration), name(name), param_list(function_param_list), return_type(return_type), body(body) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -302,7 +386,8 @@ namespace vush {
         Owning_Ptr<Type> type;
         Owning_Ptr<Identifier> source;
 
-        Sourced_Function_Param(Identifier* identifier, Type* type, Identifier* source): identifier(identifier), type(type), source(source) {}
+        Sourced_Function_Param(Identifier* identifier, Type* type, Identifier* source)
+            : Function_Param({}, AST_Node_Type::sourced_function_param), identifier(identifier), type(type), source(source) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -317,14 +402,17 @@ namespace vush {
         Owning_Ptr<Function_Body> body;
 
         Pass_Stage_Declaration(Identifier* pass, Identifier* name, Function_Param_List* parameter_list, Type* return_type, Function_Body* body)
-            : pass(pass), name(name), param_list(parameter_list), return_type(return_type), body(body) {}
+            : Declaration({}, AST_Node_Type::pass_stage_declaration), pass(pass), name(name), param_list(parameter_list), return_type(return_type), body(body) {
+        }
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
         }
     };
 
-    struct Expression: public Syntax_Tree_Node {};
+    struct Expression: public Syntax_Tree_Node {
+        using Syntax_Tree_Node::Syntax_Tree_Node;
+    };
 
     struct Expression_If: public Expression {
         Owning_Ptr<Expression> condition;
@@ -332,7 +420,7 @@ namespace vush {
         Owning_Ptr<Expression> false_expr;
 
         Expression_If(Expression* condition, Expression* true_expr, Expression* false_expr)
-            : condition(condition), true_expr(true_expr), false_expr(false_expr) {}
+            : Expression({}, AST_Node_Type::expression_if), condition(condition), true_expr(true_expr), false_expr(false_expr) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -342,7 +430,7 @@ namespace vush {
     struct Identifier_Expression: public Expression {
         Owning_Ptr<Identifier> identifier;
 
-        Identifier_Expression(Identifier* identifier): identifier(identifier) {}
+        Identifier_Expression(Identifier* identifier): Expression({}, AST_Node_Type::identifier_expression), identifier(identifier) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -353,7 +441,7 @@ namespace vush {
         Owning_Ptr<Expression> lhs;
         Owning_Ptr<Expression> rhs;
 
-        Assignment_Expression(Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs) {}
+        Assignment_Expression(Expression* lhs, Expression* rhs): Expression({}, AST_Node_Type::assignment_expression), lhs(lhs), rhs(rhs) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -378,7 +466,8 @@ namespace vush {
         Owning_Ptr<Expression> rhs;
         Arithmetic_Assignment_Type type;
 
-        Arithmetic_Assignment_Expression(Arithmetic_Assignment_Type type, Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs), type(type) {}
+        Arithmetic_Assignment_Expression(Arithmetic_Assignment_Type type, Expression* lhs, Expression* rhs)
+            : Expression({}, AST_Node_Type::arithmetic_assignment_expression), lhs(lhs), rhs(rhs), type(type) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -389,7 +478,7 @@ namespace vush {
         Owning_Ptr<Expression> lhs;
         Owning_Ptr<Expression> rhs;
 
-        Logic_Or_Expr(Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs) {}
+        Logic_Or_Expr(Expression* lhs, Expression* rhs): Expression({}, AST_Node_Type::logic_or_expr), lhs(lhs), rhs(rhs) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -400,7 +489,7 @@ namespace vush {
         Owning_Ptr<Expression> lhs;
         Owning_Ptr<Expression> rhs;
 
-        Logic_Xor_Expr(Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs) {}
+        Logic_Xor_Expr(Expression* lhs, Expression* rhs): Expression({}, AST_Node_Type::logic_xor_expr), lhs(lhs), rhs(rhs) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -411,7 +500,7 @@ namespace vush {
         Owning_Ptr<Expression> lhs;
         Owning_Ptr<Expression> rhs;
 
-        Logic_And_Expr(Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs) {}
+        Logic_And_Expr(Expression* lhs, Expression* rhs): Expression({}, AST_Node_Type::logic_and_expr), lhs(lhs), rhs(rhs) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -423,7 +512,8 @@ namespace vush {
         Owning_Ptr<Expression> rhs;
         bool is_equality;
 
-        Relational_Equality_Expression(bool is_equality, Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs), is_equality(is_equality) {}
+        Relational_Equality_Expression(bool is_equality, Expression* lhs, Expression* rhs)
+            : Expression({}, AST_Node_Type::relational_equality_expression), lhs(lhs), rhs(rhs), is_equality(is_equality) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -442,7 +532,8 @@ namespace vush {
         Owning_Ptr<Expression> rhs;
         Relational_Type type;
 
-        Relational_Expression(Relational_Type type, Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs), type(type) {}
+        Relational_Expression(Relational_Type type, Expression* lhs, Expression* rhs)
+            : Expression({}, AST_Node_Type::relational_expression), lhs(lhs), rhs(rhs), type(type) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -453,7 +544,7 @@ namespace vush {
         Owning_Ptr<Expression> lhs;
         Owning_Ptr<Expression> rhs;
 
-        Bit_Or_Expr(Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs) {}
+        Bit_Or_Expr(Expression* lhs, Expression* rhs): Expression({}, AST_Node_Type::bit_or_expr), lhs(lhs), rhs(rhs) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -464,7 +555,7 @@ namespace vush {
         Owning_Ptr<Expression> lhs;
         Owning_Ptr<Expression> rhs;
 
-        Bit_Xor_Expr(Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs) {}
+        Bit_Xor_Expr(Expression* lhs, Expression* rhs): Expression({}, AST_Node_Type::bit_xor_expr), lhs(lhs), rhs(rhs) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -475,7 +566,7 @@ namespace vush {
         Owning_Ptr<Expression> lhs;
         Owning_Ptr<Expression> rhs;
 
-        Bit_And_Expr(Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs) {}
+        Bit_And_Expr(Expression* lhs, Expression* rhs): Expression({}, AST_Node_Type::bit_and_expr), lhs(lhs), rhs(rhs) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -486,7 +577,7 @@ namespace vush {
         Owning_Ptr<Expression> lhs;
         Owning_Ptr<Expression> rhs;
 
-        LShift_Expr(Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs) {}
+        LShift_Expr(Expression* lhs, Expression* rhs): Expression({}, AST_Node_Type::lshift_expr), lhs(lhs), rhs(rhs) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -497,7 +588,7 @@ namespace vush {
         Owning_Ptr<Expression> lhs;
         Owning_Ptr<Expression> rhs;
 
-        RShift_Expr(Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs) {}
+        RShift_Expr(Expression* lhs, Expression* rhs): Expression({}, AST_Node_Type::rshift_expr), lhs(lhs), rhs(rhs) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -508,7 +599,7 @@ namespace vush {
         Owning_Ptr<Expression> lhs;
         Owning_Ptr<Expression> rhs;
 
-        Add_Expr(Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs) {}
+        Add_Expr(Expression* lhs, Expression* rhs): Expression({}, AST_Node_Type::add_expr), lhs(lhs), rhs(rhs) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -519,7 +610,7 @@ namespace vush {
         Owning_Ptr<Expression> lhs;
         Owning_Ptr<Expression> rhs;
 
-        Sub_Expr(Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs) {}
+        Sub_Expr(Expression* lhs, Expression* rhs): Expression({}, AST_Node_Type::sub_expr), lhs(lhs), rhs(rhs) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -530,7 +621,7 @@ namespace vush {
         Owning_Ptr<Expression> lhs;
         Owning_Ptr<Expression> rhs;
 
-        Mul_Expr(Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs) {}
+        Mul_Expr(Expression* lhs, Expression* rhs): Expression({}, AST_Node_Type::mul_expr), lhs(lhs), rhs(rhs) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -541,7 +632,7 @@ namespace vush {
         Owning_Ptr<Expression> lhs;
         Owning_Ptr<Expression> rhs;
 
-        Div_Expr(Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs) {}
+        Div_Expr(Expression* lhs, Expression* rhs): Expression({}, AST_Node_Type::div_expr), lhs(lhs), rhs(rhs) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -552,7 +643,7 @@ namespace vush {
         Owning_Ptr<Expression> lhs;
         Owning_Ptr<Expression> rhs;
 
-        Mod_Expr(Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs) {}
+        Mod_Expr(Expression* lhs, Expression* rhs): Expression({}, AST_Node_Type::mod_expr), lhs(lhs), rhs(rhs) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -570,7 +661,7 @@ namespace vush {
         Owning_Ptr<Expression> expression;
         Unary_Type type;
 
-        Unary_Expression(Unary_Type type, Expression* expression): expression(expression), type(type) {}
+        Unary_Expression(Unary_Type type, Expression* expression): Expression({}, AST_Node_Type::unary_expression), expression(expression), type(type) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -581,7 +672,8 @@ namespace vush {
         Owning_Ptr<Expression> expression;
         bool is_inc;
 
-        Prefix_Inc_Dec_Expression(bool is_inc, Expression* expression): expression(expression), is_inc(is_inc) {}
+        Prefix_Inc_Dec_Expression(bool is_inc, Expression* expression)
+            : Expression({}, AST_Node_Type::prefix_inc_dec_expression), expression(expression), is_inc(is_inc) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -590,6 +682,8 @@ namespace vush {
 
     struct Argument_List: public Syntax_Tree_Node {
         std::vector<Owning_Ptr<Expression>> arguments;
+
+        Argument_List(): Syntax_Tree_Node({}, AST_Node_Type::argument_list) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -608,7 +702,8 @@ namespace vush {
         Owning_Ptr<Identifier> identifier;
         Owning_Ptr<Argument_List> arg_list;
 
-        Function_Call_Expression(Identifier* identifier, Argument_List* arg_list): identifier(identifier), arg_list(arg_list) {}
+        Function_Call_Expression(Identifier* identifier, Argument_List* arg_list)
+            : Expression({}, AST_Node_Type::function_call_expression), identifier(identifier), arg_list(arg_list) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -619,7 +714,7 @@ namespace vush {
         Owning_Ptr<Expression> base;
         Owning_Ptr<Identifier> member;
 
-        Member_Access_Expression(Expression* base, Identifier* member): base(base), member(member) {}
+        Member_Access_Expression(Expression* base, Identifier* member): Expression({}, AST_Node_Type::member_access_expression), base(base), member(member) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -630,7 +725,7 @@ namespace vush {
         Owning_Ptr<Expression> base;
         Owning_Ptr<Expression> index;
 
-        Array_Access_Expression(Expression* base, Expression* index): base(base), index(index) {}
+        Array_Access_Expression(Expression* base, Expression* index): Expression({}, AST_Node_Type::array_access_expression), base(base), index(index) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -641,7 +736,7 @@ namespace vush {
         Owning_Ptr<Expression> base;
         bool is_inc;
 
-        Postfix_Inc_Dec_Expression(bool is_inc, Expression* base): base(base), is_inc(is_inc) {}
+        Postfix_Inc_Dec_Expression(bool is_inc, Expression* base): Expression({}, AST_Node_Type::postfix_inc_dec_expression), base(base), is_inc(is_inc) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -651,7 +746,7 @@ namespace vush {
     struct String_Literal: public Expression {
         std::string value;
 
-        String_Literal(std::string value): value(std::move(value)) {}
+        String_Literal(std::string value): Expression({}, AST_Node_Type::string_literal), value(std::move(value)) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -661,7 +756,7 @@ namespace vush {
     struct Bool_Literal: public Expression {
         bool value;
 
-        Bool_Literal(bool value): value(value) {}
+        Bool_Literal(bool value): Expression({}, AST_Node_Type::bool_literal), value(value) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -671,7 +766,7 @@ namespace vush {
     struct Integer_Literal: public Expression {
         std::string value;
 
-        Integer_Literal(std::string value): value(std::move(value)) {}
+        Integer_Literal(std::string value): Expression({}, AST_Node_Type::integer_literal), value(std::move(value)) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -681,17 +776,21 @@ namespace vush {
     struct Float_Literal: public Expression {
         std::string value;
 
-        Float_Literal(std::string value): value(std::move(value)) {}
+        Float_Literal(std::string value): Expression({}, AST_Node_Type::float_literal), value(std::move(value)) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
         }
     };
 
-    struct Statement: public Syntax_Tree_Node {};
+    struct Statement: public Syntax_Tree_Node {
+        using Syntax_Tree_Node::Syntax_Tree_Node;
+    };
 
     struct Statement_List: public Syntax_Tree_Node {
         std::vector<Owning_Ptr<Statement>> statements;
+
+        Statement_List(): Syntax_Tree_Node({}, AST_Node_Type::statement_list) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -709,7 +808,7 @@ namespace vush {
     struct Block_Statement: public Statement {
         Owning_Ptr<Statement_List> statements;
 
-        Block_Statement(Statement_List* statements): statements(statements) {}
+        Block_Statement(Statement_List* statements): Statement({}, AST_Node_Type::block_statement), statements(statements) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -722,7 +821,7 @@ namespace vush {
         Owning_Ptr<Statement> false_statement;
 
         If_Statement(Expression* condition, Statement* true_statement, Statement* false_statement)
-            : condition(condition), true_statement(true_statement), false_statement(false_statement) {}
+            : Statement({}, AST_Node_Type::if_statement), condition(condition), true_statement(true_statement), false_statement(false_statement) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -733,7 +832,8 @@ namespace vush {
         Owning_Ptr<Expression> condition;
         Owning_Ptr<Statement_List> statements;
 
-        Case_Statement(Expression* condition, Statement_List* statements): condition(condition), statements(statements) {}
+        Case_Statement(Expression* condition, Statement_List* statements)
+            : Statement({}, AST_Node_Type::case_statement), condition(condition), statements(statements) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -743,7 +843,7 @@ namespace vush {
     struct Default_Case_Statement: public Statement {
         Owning_Ptr<Statement_List> statements;
 
-        Default_Case_Statement(Statement_List* statements): statements(statements) {}
+        Default_Case_Statement(Statement_List* statements): Statement({}, AST_Node_Type::default_case_statement), statements(statements) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -752,6 +852,8 @@ namespace vush {
 
     struct Switch_Statement: public Statement {
         std::vector<Owning_Ptr<Statement>> cases;
+
+        Switch_Statement(): Statement({}, AST_Node_Type::switch_statement) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -777,7 +879,7 @@ namespace vush {
         Owning_Ptr<Block_Statement> block;
 
         For_Statement(Variable_Declaration* declaration, Expression* condition, Expression* post_expression, Block_Statement* block)
-            : declaration(declaration), condition(condition), block(block), post_expression(post_expression) {}
+            : Statement({}, AST_Node_Type::for_statement), declaration(declaration), condition(condition), post_expression(post_expression), block(block) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -788,7 +890,7 @@ namespace vush {
         Owning_Ptr<Expression> condition;
         Owning_Ptr<Block_Statement> block;
 
-        While_Statement(Expression* condition, Block_Statement* block): condition(condition), block(block) {}
+        While_Statement(Expression* condition, Block_Statement* block): Statement({}, AST_Node_Type::while_statement), condition(condition), block(block) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -799,7 +901,8 @@ namespace vush {
         Owning_Ptr<Expression> condition;
         Owning_Ptr<Block_Statement> block;
 
-        Do_While_Statement(Expression* condition, Block_Statement* block): condition(condition), block(block) {}
+        Do_While_Statement(Expression* condition, Block_Statement* block)
+            : Statement({}, AST_Node_Type::do_while_statement), condition(condition), block(block) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -809,7 +912,7 @@ namespace vush {
     struct Return_Statement: public Statement {
         Owning_Ptr<Expression> return_expr;
 
-        Return_Statement(Expression* return_expr): return_expr(return_expr) {}
+        Return_Statement(Expression* return_expr): Statement({}, AST_Node_Type::return_statement), return_expr(return_expr) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -817,12 +920,16 @@ namespace vush {
     };
 
     struct Break_Statement: public Statement {
+        Break_Statement(): Statement({}, AST_Node_Type::break_statement) {}
+
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
         }
     };
 
     struct Continue_Statement: public Statement {
+        Continue_Statement(): Statement({}, AST_Node_Type::continue_statement) {}
+
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
         }
@@ -831,7 +938,7 @@ namespace vush {
     struct Declaration_Statement: public Statement {
         Owning_Ptr<Variable_Declaration> var_decl;
 
-        Declaration_Statement(Variable_Declaration* var_decl): var_decl(var_decl) {}
+        Declaration_Statement(Variable_Declaration* var_decl): Statement({}, AST_Node_Type::declaration_statement), var_decl(var_decl) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -841,7 +948,7 @@ namespace vush {
     struct Expression_Statement: public Statement {
         Owning_Ptr<Expression> expr;
 
-        Expression_Statement(Expression* expression): expr(expression) {}
+        Expression_Statement(Expression* expression): Statement({}, AST_Node_Type::expression_statement), expr(expression) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
