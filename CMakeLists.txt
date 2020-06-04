@@ -27,7 +27,6 @@ target_compile_options(vush PRIVATE ${VUSH_COMPILE_FLAGS})
 target_include_directories(vush PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/public" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/private")
 target_sources(vush 
     PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/private/ast.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/ast.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/owning_ptr.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/parser.cpp"

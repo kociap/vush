@@ -4,8 +4,9 @@
 
 // TODO: When matching keywords, ensure that the keyword is followed by non-identifier character (Find a cleaner way).
 // TODO: Figure out a way to match operators that use overlapping symbols (+ and +=) in a clean way.
-// TODO: const types.
+// TODO: const and array types.
 // TODO: Add settings block.
+// TODO: Return sourced param only when the 'from' keyword appears
 
 namespace vush {
     // keywords
@@ -380,7 +381,7 @@ namespace vush {
             }
 
             if(String_Literal* string = try_string_literal()) {
-                return new Import_Decl(string->get_value());
+                return new Import_Decl(string->value);
             } else {
                 _lexer.restore_state(state_backup);
                 return nullptr;

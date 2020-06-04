@@ -1,5 +1,6 @@
 #include <vush/vush.hpp>
 
+#include <hierarchy_printer.hpp>
 #include <parser.hpp>
 
 #include <iostream>
@@ -22,7 +23,8 @@ namespace vush {
             return {expected_error, str_data, (i64)msg.size()};
         }
 
-        result.value()->print(std::cout, {0});
+        Hierarchy_Printer printer(std::cout);
+        result.value()->visit(printer);
 
         return {expected_value};
     }

@@ -3,296 +3,364 @@
 #include <owning_ptr.hpp>
 #include <vush/types.hpp>
 
-#include <ostream>
 #include <string>
 #include <vector>
 
 namespace vush {
-    struct Indent {
-        i64 indent_count = 0;
+    struct Identifier;
+    struct Type;
+    struct Declaration_List;
+    struct Declaration_If;
+    struct Import_Decl;
+    struct Variable_Declaration;
+    struct Struct_Decl;
+    struct Function_Body;
+    struct Function_Param_List;
+    struct Function_Param_If;
+    struct Ordinary_Function_Param;
+    struct Function_Declaration;
+    struct Sourced_Function_Param;
+    struct Pass_Stage_Declaration;
+    struct Expression;
+    struct Expression_If;
+    struct Identifier_Expression;
+    struct Assignment_Expression;
+    struct Arithmetic_Assignment_Expression;
+    struct Logic_Or_Expr;
+    struct Logic_Xor_Expr;
+    struct Logic_And_Expr;
+    struct Relational_Equality_Expression;
+    struct Relational_Expression;
+    struct Bit_Or_Expr;
+    struct Bit_Xor_Expr;
+    struct Bit_And_Expr;
+    struct LShift_Expr;
+    struct RShift_Expr;
+    struct Add_Expr;
+    struct Sub_Expr;
+    struct Mul_Expr;
+    struct Div_Expr;
+    struct Mod_Expr;
+    struct Unary_Expression;
+    struct Prefix_Inc_Dec_Expression;
+    struct Argument_List;
+    struct Function_Call_Expression;
+    struct Member_Access_Expression;
+    struct Array_Access_Expression;
+    struct Postfix_Inc_Dec_Expression;
+    struct String_Literal;
+    struct Bool_Literal;
+    struct Integer_Literal;
+    struct Float_Literal;
+    struct Statement;
+    struct Statement_List;
+    struct Block_Statement;
+    struct If_Statement;
+    struct Case_Statement;
+    struct Default_Case_Statement;
+    struct Switch_Statement;
+    struct For_Statement;
+    struct While_Statement;
+    struct Do_While_Statement;
+    struct Return_Statement;
+    struct Break_Statement;
+    struct Continue_Statement;
+    struct Declaration_Statement;
+    struct Expression_Statement;
+
+    struct AST_Visitor {
+        virtual ~AST_Visitor() = default;
+
+        virtual void visit(Identifier& node) = 0;
+        virtual void visit(Type& node) = 0;
+        virtual void visit(Declaration_List& node) = 0;
+        virtual void visit(Declaration_If& node) = 0;
+        virtual void visit(Import_Decl& node) = 0;
+        virtual void visit(Variable_Declaration& node) = 0;
+        virtual void visit(Struct_Decl& node) = 0;
+        virtual void visit(Function_Body& node) = 0;
+        virtual void visit(Function_Param_List& node) = 0;
+        virtual void visit(Function_Param_If& node) = 0;
+        virtual void visit(Ordinary_Function_Param& node) = 0;
+        virtual void visit(Function_Declaration& node) = 0;
+        virtual void visit(Sourced_Function_Param& node) = 0;
+        virtual void visit(Pass_Stage_Declaration& node) = 0;
+        virtual void visit(Expression_If& node) = 0;
+        virtual void visit(Identifier_Expression& node) = 0;
+        virtual void visit(Assignment_Expression& node) = 0;
+        virtual void visit(Arithmetic_Assignment_Expression& node) = 0;
+        virtual void visit(Logic_Or_Expr& node) = 0;
+        virtual void visit(Logic_Xor_Expr& node) = 0;
+        virtual void visit(Logic_And_Expr& node) = 0;
+        virtual void visit(Relational_Equality_Expression& node) = 0;
+        virtual void visit(Relational_Expression& node) = 0;
+        virtual void visit(Bit_Or_Expr& node) = 0;
+        virtual void visit(Bit_Xor_Expr& node) = 0;
+        virtual void visit(Bit_And_Expr& node) = 0;
+        virtual void visit(LShift_Expr& node) = 0;
+        virtual void visit(RShift_Expr& node) = 0;
+        virtual void visit(Add_Expr& node) = 0;
+        virtual void visit(Sub_Expr& node) = 0;
+        virtual void visit(Mul_Expr& node) = 0;
+        virtual void visit(Div_Expr& node) = 0;
+        virtual void visit(Mod_Expr& node) = 0;
+        virtual void visit(Unary_Expression& node) = 0;
+        virtual void visit(Prefix_Inc_Dec_Expression& node) = 0;
+        virtual void visit(Argument_List& node) = 0;
+        virtual void visit(Function_Call_Expression& node) = 0;
+        virtual void visit(Member_Access_Expression& node) = 0;
+        virtual void visit(Array_Access_Expression& node) = 0;
+        virtual void visit(Postfix_Inc_Dec_Expression& node) = 0;
+        virtual void visit(String_Literal& node) = 0;
+        virtual void visit(Bool_Literal& node) = 0;
+        virtual void visit(Integer_Literal& node) = 0;
+        virtual void visit(Float_Literal& node) = 0;
+        virtual void visit(Statement_List& node) = 0;
+        virtual void visit(Block_Statement& node) = 0;
+        virtual void visit(If_Statement& node) = 0;
+        virtual void visit(Case_Statement& node) = 0;
+        virtual void visit(Default_Case_Statement& node) = 0;
+        virtual void visit(Switch_Statement& node) = 0;
+        virtual void visit(For_Statement& node) = 0;
+        virtual void visit(While_Statement& node) = 0;
+        virtual void visit(Do_While_Statement& node) = 0;
+        virtual void visit(Return_Statement& node) = 0;
+        virtual void visit(Break_Statement& node) = 0;
+        virtual void visit(Continue_Statement& node) = 0;
+        virtual void visit(Declaration_Statement& node) = 0;
+        virtual void visit(Expression_Statement& node) = 0;
     };
 
-    std::ostream& operator<<(std::ostream& stream, Indent indent);
-
-    class Syntax_Tree_Node {
-    public:
+    struct Syntax_Tree_Node {
         virtual ~Syntax_Tree_Node() = default;
-        virtual void print(std::ostream& stream, Indent indent) const = 0;
+        virtual void visit(AST_Visitor& visitor) = 0;
     };
 
-    class Identifier: public Syntax_Tree_Node {
-    public:
-        Identifier(std::string const& string): _name(string) {}
-        Identifier(std::string&& string): _name(std::move(string)) {}
+    struct Identifier: public Syntax_Tree_Node {
+        std::string identifier;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Identifier: '" << _name << "'\n";
+        Identifier(std::string const& string): identifier(string) {}
+        Identifier(std::string&& string): identifier(std::move(string)) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
+        }
+    };
+
+    struct Type: public Syntax_Tree_Node {
+        std::string type;
+
+        Type(std::string string): type(std::move(string)) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
+        }
+    };
+
+    struct Declaration: public Syntax_Tree_Node {};
+
+    struct Declaration_List: public Syntax_Tree_Node {
+        std::vector<Owning_Ptr<Declaration>> declarations;
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
 
-    private:
-        std::string _name;
-    };
-
-    class Type: public Syntax_Tree_Node {
-    public:
-        Type(std::string name): _name(std::move(name)) {}
-
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Type: '" << _name << "'\n";
-        }
-
-    private:
-        std::string _name;
-    };
-
-    class Expression;
-
-    class Declaration: public Syntax_Tree_Node {};
-
-    class Declaration_List: public Syntax_Tree_Node {
-    public:
         void append(Declaration* const declaration) {
-            _declarations.emplace_back(declaration);
+            declarations.emplace_back(declaration);
         }
 
         [[nodiscard]] i64 size() const {
-            return _declarations.size();
+            return declarations.size();
         }
-
-        virtual void print(std::ostream& stream, Indent const indent) const override;
-
-    private:
-        std::vector<Owning_Ptr<Declaration>> _declarations;
     };
 
-    class Declaration_If: public Declaration {
-    public:
+    struct Declaration_If: public Declaration {
+        Owning_Ptr<Expression> condition;
+        Owning_Ptr<Declaration_List> true_declarations;
+        Owning_Ptr<Declaration_List> false_declarations;
+
         Declaration_If(Expression* condition, Declaration_List* true_declarations, Declaration_List* false_declarations)
-            : _condition(condition), _true_declarations(true_declarations), _false_declarations(false_declarations) {}
+            : condition(condition), true_declarations(true_declarations), false_declarations(false_declarations) {}
 
-        virtual void print(std::ostream& stream, Indent const indent) const override;
-
-    private:
-        Owning_Ptr<Expression> _condition;
-        Owning_Ptr<Declaration_List> _true_declarations;
-        Owning_Ptr<Declaration_List> _false_declarations;
-    };
-
-    class Import_Decl: public Declaration {
-    public:
-        Import_Decl(std::string path): _path(std::move(path)) {}
-
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Import_Decl: '" << _path << "'\n";
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        std::string _path;
     };
 
-    class Variable_Declaration: public Declaration {
-    public:
-        Variable_Declaration(Type* type, Identifier* identifier, Expression* initializer): _Type(type), _identifier(identifier), _initializer(initializer) {}
+    struct Import_Decl: public Declaration {
+        std::string path;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override;
+        Import_Decl(std::string path): path(std::move(path)) {}
 
-    private:
-        Owning_Ptr<Type> _Type = nullptr;
-        Owning_Ptr<Identifier> _identifier = nullptr;
-        Owning_Ptr<Expression> _initializer = nullptr;
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
+        }
     };
 
-    class Struct_Decl: public Declaration {
-    public:
-        Struct_Decl(Identifier* name): _name(name) {}
+    struct Variable_Declaration: public Declaration {
+        Owning_Ptr<Type> type;
+        Owning_Ptr<Identifier> identifier;
+        Owning_Ptr<Expression> initializer;
+
+        Variable_Declaration(Type* type, Identifier* identifier, Expression* initializer): type(type), identifier(identifier), initializer(initializer) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
+        }
+    };
+
+    struct Struct_Decl: public Declaration {
+        Owning_Ptr<Identifier> name;
+        std::vector<Owning_Ptr<Variable_Declaration>> members;
+
+        Struct_Decl(Identifier* name): name(name) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
+        }
 
         void append(Variable_Declaration* decl) {
-            _members.emplace_back(decl);
+            members.emplace_back(decl);
         }
 
         i64 size() const {
-            return _members.size();
+            return members.size();
         }
-
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Struct_Decl:\n";
-            _name->print(stream, {indent.indent_count + 1});
-            stream << Indent{indent.indent_count + 1} << "Member Variables:\n";
-            for(auto& member: _members) {
-                member->print(stream, {indent.indent_count + 2});
-            }
-        }
-
-    private:
-        Owning_Ptr<Identifier> _name;
-        std::vector<Owning_Ptr<Variable_Declaration>> _members;
     };
 
-    class Statement_List;
+    struct Statement_List;
 
-    class Function_Body: public Syntax_Tree_Node {
-    public:
-        Function_Body(Statement_List* statement_list): _statements(statement_list) {}
+    struct Function_Body: public Syntax_Tree_Node {
+        Owning_Ptr<Statement_List> statement_list;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override;
+        Function_Body(Statement_List* statement_list): statement_list(statement_list) {}
 
-    private:
-        Owning_Ptr<Statement_List> _statements;
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
+        }
     };
 
-    class Function_Param: public Syntax_Tree_Node {};
+    struct Function_Param: public Syntax_Tree_Node {};
 
-    class Function_Param_List: public Syntax_Tree_Node {
-    public:
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Function Parameter List:\n";
-            for(Owning_Ptr<Function_Param> const& param: _params) {
-                param->print(stream, {indent.indent_count + 1});
-            }
+    struct Function_Param_List: public Syntax_Tree_Node {
+        std::vector<Owning_Ptr<Function_Param>> params;
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
 
         void append_parameter(Function_Param* parameter) {
-            _params.push_back(parameter);
+            params.push_back(parameter);
         }
 
         i64 get_parameter_count() const {
-            return _params.size();
+            return params.size();
         }
-
-    private:
-        std::vector<Owning_Ptr<Function_Param>> _params;
     };
 
-    class Function_Param_If: public Function_Param {
-    public:
+    struct Function_Param_If: public Function_Param {
+        Owning_Ptr<Expression> condition;
+        Owning_Ptr<Function_Param> true_param;
+        Owning_Ptr<Function_Param> false_param;
+
         Function_Param_If(Expression* condition, Function_Param* true_param, Function_Param* false_param)
-            : _condition(condition), _true_param(true_param), _false_param(false_param) {}
+            : condition(condition), true_param(true_param), false_param(false_param) {}
 
-        virtual void print(std::ostream& stream, Indent const indent) const override;
-
-    private:
-        Owning_Ptr<Expression> _condition;
-        Owning_Ptr<Function_Param> _true_param;
-        Owning_Ptr<Function_Param> _false_param;
-    };
-
-    class Ordinary_Function_Param: public Function_Param {
-    public:
-        Ordinary_Function_Param(Identifier* identifier, Type* type): _identifier(identifier), _type(type) {}
-
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Ordinary_Function_Param:\n";
-            _identifier->print(stream, {indent.indent_count + 1});
-            _type->print(stream, {indent.indent_count + 1});
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        Owning_Ptr<Identifier> _identifier;
-        Owning_Ptr<Type> _type;
     };
 
-    class Function_Declaration: public Declaration {
-    public:
+    struct Ordinary_Function_Param: public Function_Param {
+        Owning_Ptr<Identifier> identifier;
+        Owning_Ptr<Type> type;
+
+        Ordinary_Function_Param(Identifier* identifier, Type* type): identifier(identifier), type(type) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
+        }
+    };
+
+    struct Function_Declaration: public Declaration {
+        Owning_Ptr<Identifier> name;
+        Owning_Ptr<Function_Param_List> param_list;
+        Owning_Ptr<Type> return_type;
+        Owning_Ptr<Function_Body> body;
+
         Function_Declaration(Identifier* name, Function_Param_List* function_param_list, Type* return_type, Function_Body* body)
-            : _name(name), _parameter_list(function_param_list), _return_type(return_type), _body(body) {}
+            : name(name), param_list(function_param_list), return_type(return_type), body(body) {}
 
-        virtual void print(std::ostream& stream, Indent const indent) const override;
-
-    private:
-        Owning_Ptr<Identifier> _name;
-        Owning_Ptr<Function_Param_List> _parameter_list;
-        Owning_Ptr<Type> _return_type;
-        Owning_Ptr<Function_Body> _body;
-    };
-
-    class Sourced_Function_Param: public Function_Param {
-    public:
-        Sourced_Function_Param(Identifier* identifier, Type* type, Identifier* source): _identifier(identifier), _type(type), _source(source) {}
-
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Sourced_Function_Param:\n";
-            stream << Indent{indent.indent_count + 1} << "Name:\n";
-            _identifier->print(stream, {indent.indent_count + 2});
-            stream << Indent{indent.indent_count + 1} << "Type:\n";
-            _type->print(stream, {indent.indent_count + 2});
-            if(_source) {
-                stream << Indent{indent.indent_count + 1} << "Source:\n";
-                _source->print(stream, {indent.indent_count + 2});
-            }
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        Owning_Ptr<Identifier> _identifier;
-        Owning_Ptr<Type> _type;
-        Owning_Ptr<Identifier> _source;
     };
 
-    class Pass_Stage_Declaration: public Declaration {
-    public:
+    struct Sourced_Function_Param: public Function_Param {
+        Owning_Ptr<Identifier> identifier;
+        Owning_Ptr<Type> type;
+        Owning_Ptr<Identifier> source;
+
+        Sourced_Function_Param(Identifier* identifier, Type* type, Identifier* source): identifier(identifier), type(type), source(source) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
+        }
+    };
+
+    struct Pass_Stage_Declaration: public Declaration {
+        Owning_Ptr<Identifier> pass;
+        Owning_Ptr<Identifier> name;
+        Owning_Ptr<Function_Param_List> param_list;
+        Owning_Ptr<Type> return_type;
+        Owning_Ptr<Function_Body> body;
+
         Pass_Stage_Declaration(Identifier* pass, Identifier* name, Function_Param_List* parameter_list, Type* return_type, Function_Body* body)
-            : _pass(pass), _name(name), _parameter_list(parameter_list), _return_type(return_type), _body(body) {}
+            : pass(pass), name(name), param_list(parameter_list), return_type(return_type), body(body) {}
 
-        virtual void print(std::ostream& stream, Indent const indent) const override;
-
-    private:
-        Owning_Ptr<Identifier> _pass;
-        Owning_Ptr<Identifier> _name;
-        Owning_Ptr<Function_Param_List> _parameter_list;
-        Owning_Ptr<Type> _return_type;
-        Owning_Ptr<Function_Body> _body;
-    };
-
-    class Expression: public Syntax_Tree_Node {};
-
-    class Expression_If: public Expression {
-    public:
-        Expression_If(Expression* condition, Expression* true_expression, Expression* false_expression)
-            : _condition(condition), _true_expression(true_expression), _false_expression(false_expression) {}
-
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Expression_If:\n";
-            _condition->print(stream, Indent{indent.indent_count + 1});
-            _true_expression->print(stream, Indent{indent.indent_count + 1});
-            if(_false_expression) {
-                _false_expression->print(stream, Indent{indent.indent_count + 1});
-            }
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        Owning_Ptr<Expression> _condition;
-        Owning_Ptr<Expression> _true_expression;
-        Owning_Ptr<Expression> _false_expression;
     };
 
-    class Identifier_Expression: public Expression {
-    public:
-        Identifier_Expression(Identifier* identifier): _identifier(identifier) {}
+    struct Expression: public Syntax_Tree_Node {};
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Identifier_Expression:\n";
-            _identifier->print(stream, Indent{indent.indent_count + 1});
+    struct Expression_If: public Expression {
+        Owning_Ptr<Expression> condition;
+        Owning_Ptr<Expression> true_expr;
+        Owning_Ptr<Expression> false_expr;
+
+        Expression_If(Expression* condition, Expression* true_expr, Expression* false_expr)
+            : condition(condition), true_expr(true_expr), false_expr(false_expr) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        Owning_Ptr<Identifier> _identifier;
     };
 
-    class Assignment_Expression: public Expression {
-    public:
-        Assignment_Expression(Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs) {}
+    struct Identifier_Expression: public Expression {
+        Owning_Ptr<Identifier> identifier;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Assignment_Expression:\n";
-            _lhs->print(stream, Indent{indent.indent_count + 1});
-            _rhs->print(stream, Indent{indent.indent_count + 1});
+        Identifier_Expression(Identifier* identifier): identifier(identifier) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        Owning_Ptr<Expression> _lhs;
-        Owning_Ptr<Expression> _rhs;
     };
 
-    enum class Arithmetic_Assignment_Type {
+    struct Assignment_Expression: public Expression {
+        Owning_Ptr<Expression> lhs;
+        Owning_Ptr<Expression> rhs;
+
+        Assignment_Expression(Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
+        }
+    };
+
+    enum struct Arithmetic_Assignment_Type {
         plus,
         minus,
         multiply,
@@ -305,689 +373,478 @@ namespace vush {
         bit_xor,
     };
 
-    class Arithmetic_Assignment_Expression: public Expression {
-    public:
-        Arithmetic_Assignment_Expression(Arithmetic_Assignment_Type type, Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs), _type(type) {}
+    struct Arithmetic_Assignment_Expression: public Expression {
+        Owning_Ptr<Expression> lhs;
+        Owning_Ptr<Expression> rhs;
+        Arithmetic_Assignment_Type type;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            char const* repr = nullptr;
-            switch(_type) {
-                case Arithmetic_Assignment_Type::plus:
-                    repr = u8"+=";
-                    break;
-                case Arithmetic_Assignment_Type::minus:
-                    repr = u8"-=";
-                    break;
-                case Arithmetic_Assignment_Type::multiply:
-                    repr = u8"*=";
-                    break;
-                case Arithmetic_Assignment_Type::divide:
-                    repr = u8"/=";
-                    break;
-                case Arithmetic_Assignment_Type::remainder:
-                    repr = u8"%=";
-                    break;
-                case Arithmetic_Assignment_Type::lshift:
-                    repr = u8"<<=";
-                    break;
-                case Arithmetic_Assignment_Type::rshift:
-                    repr = u8">>=";
-                    break;
-                case Arithmetic_Assignment_Type::bit_and:
-                    repr = u8"&=";
-                    break;
-                case Arithmetic_Assignment_Type::bit_or:
-                    repr = u8"|=";
-                    break;
-                case Arithmetic_Assignment_Type::bit_xor:
-                    repr = u8"^=";
-                    break;
-            }
+        Arithmetic_Assignment_Expression(Arithmetic_Assignment_Type type, Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs), type(type) {}
 
-            stream << indent << "Arithmetic_Assignment_Expression (" << repr << "):\n";
-            _lhs->print(stream, Indent{indent.indent_count + 1});
-            _rhs->print(stream, Indent{indent.indent_count + 1});
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        Owning_Ptr<Expression> _lhs;
-        Owning_Ptr<Expression> _rhs;
-        Arithmetic_Assignment_Type _type;
     };
 
-    class Logic_Or_Expr: public Expression {
-    public:
-        Logic_Or_Expr(Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs) {}
+    struct Logic_Or_Expr: public Expression {
+        Owning_Ptr<Expression> lhs;
+        Owning_Ptr<Expression> rhs;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Logic_Or_Expr:\n";
-            _lhs->print(stream, Indent{indent.indent_count + 1});
-            _rhs->print(stream, Indent{indent.indent_count + 1});
+        Logic_Or_Expr(Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        Owning_Ptr<Expression> _lhs;
-        Owning_Ptr<Expression> _rhs;
     };
 
-    class Logic_Xor_Expr: public Expression {
-    public:
-        Logic_Xor_Expr(Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs) {}
+    struct Logic_Xor_Expr: public Expression {
+        Owning_Ptr<Expression> lhs;
+        Owning_Ptr<Expression> rhs;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Logic_Xor_Expr:\n";
-            _lhs->print(stream, Indent{indent.indent_count + 1});
-            _rhs->print(stream, Indent{indent.indent_count + 1});
+        Logic_Xor_Expr(Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        Owning_Ptr<Expression> _lhs;
-        Owning_Ptr<Expression> _rhs;
     };
 
-    class Logic_And_Expr: public Expression {
-    public:
-        Logic_And_Expr(Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs) {}
+    struct Logic_And_Expr: public Expression {
+        Owning_Ptr<Expression> lhs;
+        Owning_Ptr<Expression> rhs;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Logic_And_Expr:\n";
-            _lhs->print(stream, Indent{indent.indent_count + 1});
-            _rhs->print(stream, Indent{indent.indent_count + 1});
+        Logic_And_Expr(Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        Owning_Ptr<Expression> _lhs;
-        Owning_Ptr<Expression> _rhs;
     };
 
-    class Relational_Equality_Expression: public Expression {
-    public:
-        Relational_Equality_Expression(bool is_equality, Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs), _is_equality(is_equality) {}
+    struct Relational_Equality_Expression: public Expression {
+        Owning_Ptr<Expression> lhs;
+        Owning_Ptr<Expression> rhs;
+        bool is_equality;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Relational_Expression (" << (_is_equality ? "==" : "!=") << "):\n";
-            _lhs->print(stream, Indent{indent.indent_count + 1});
-            _rhs->print(stream, Indent{indent.indent_count + 1});
+        Relational_Equality_Expression(bool is_equality, Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs), is_equality(is_equality) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        Owning_Ptr<Expression> _lhs;
-        Owning_Ptr<Expression> _rhs;
-        bool _is_equality;
     };
 
-    enum class Relational_Type {
+    enum struct Relational_Type {
         greater_than,
         less_than,
         greater_equal,
         less_equal,
     };
 
-    class Relational_Expression: public Expression {
-    public:
-        Relational_Expression(Relational_Type type, Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs), _type(type) {}
+    struct Relational_Expression: public Expression {
+        Owning_Ptr<Expression> lhs;
+        Owning_Ptr<Expression> rhs;
+        Relational_Type type;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            char const* repr = nullptr;
-            if(_type == Relational_Type::greater_than) {
-                repr = u8">";
-            } else if(_type == Relational_Type::greater_equal) {
-                repr = u8">=";
-            } else if(_type == Relational_Type::less_than) {
-                repr = u8"<";
-            } else {
-                repr = u8"<=";
-            }
-            stream << indent << "Relational_Expression (" << repr << "):\n";
-            _lhs->print(stream, Indent{indent.indent_count + 1});
-            _rhs->print(stream, Indent{indent.indent_count + 1});
+        Relational_Expression(Relational_Type type, Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs), type(type) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        Owning_Ptr<Expression> _lhs;
-        Owning_Ptr<Expression> _rhs;
-        Relational_Type _type;
     };
 
-    class Bit_Or_Expr: public Expression {
-    public:
-        Bit_Or_Expr(Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs) {}
+    struct Bit_Or_Expr: public Expression {
+        Owning_Ptr<Expression> lhs;
+        Owning_Ptr<Expression> rhs;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Bit_Or_Expr:\n";
-            _lhs->print(stream, Indent{indent.indent_count + 1});
-            _rhs->print(stream, Indent{indent.indent_count + 1});
+        Bit_Or_Expr(Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        Owning_Ptr<Expression> _lhs;
-        Owning_Ptr<Expression> _rhs;
     };
 
-    class Bit_Xor_Expr: public Expression {
-    public:
-        Bit_Xor_Expr(Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs) {}
+    struct Bit_Xor_Expr: public Expression {
+        Owning_Ptr<Expression> lhs;
+        Owning_Ptr<Expression> rhs;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Bit_Xor_Expr:\n";
-            _lhs->print(stream, Indent{indent.indent_count + 1});
-            _rhs->print(stream, Indent{indent.indent_count + 1});
+        Bit_Xor_Expr(Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        Owning_Ptr<Expression> _lhs;
-        Owning_Ptr<Expression> _rhs;
     };
 
-    class Bit_And_Expr: public Expression {
-    public:
-        Bit_And_Expr(Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs) {}
+    struct Bit_And_Expr: public Expression {
+        Owning_Ptr<Expression> lhs;
+        Owning_Ptr<Expression> rhs;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Bit_And_Expr:\n";
-            _lhs->print(stream, Indent{indent.indent_count + 1});
-            _rhs->print(stream, Indent{indent.indent_count + 1});
+        Bit_And_Expr(Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        Owning_Ptr<Expression> _lhs;
-        Owning_Ptr<Expression> _rhs;
     };
 
-    class LShift_Expr: public Expression {
-    public:
-        LShift_Expr(Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs) {}
+    struct LShift_Expr: public Expression {
+        Owning_Ptr<Expression> lhs;
+        Owning_Ptr<Expression> rhs;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "LShift_Expr:\n";
-            _lhs->print(stream, Indent{indent.indent_count + 1});
-            _rhs->print(stream, Indent{indent.indent_count + 1});
+        LShift_Expr(Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        Owning_Ptr<Expression> _lhs;
-        Owning_Ptr<Expression> _rhs;
     };
 
-    class RShift_Expr: public Expression {
-    public:
-        RShift_Expr(Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs) {}
+    struct RShift_Expr: public Expression {
+        Owning_Ptr<Expression> lhs;
+        Owning_Ptr<Expression> rhs;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "RShift_Expr:\n";
-            _lhs->print(stream, Indent{indent.indent_count + 1});
-            _rhs->print(stream, Indent{indent.indent_count + 1});
+        RShift_Expr(Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        Owning_Ptr<Expression> _lhs;
-        Owning_Ptr<Expression> _rhs;
     };
 
-    class Add_Expr: public Expression {
-    public:
-        Add_Expr(Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs) {}
+    struct Add_Expr: public Expression {
+        Owning_Ptr<Expression> lhs;
+        Owning_Ptr<Expression> rhs;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Add_Expr:\n";
-            _lhs->print(stream, Indent{indent.indent_count + 1});
-            _rhs->print(stream, Indent{indent.indent_count + 1});
+        Add_Expr(Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        Owning_Ptr<Expression> _lhs;
-        Owning_Ptr<Expression> _rhs;
     };
 
-    class Sub_Expr: public Expression {
-    public:
-        Sub_Expr(Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs) {}
+    struct Sub_Expr: public Expression {
+        Owning_Ptr<Expression> lhs;
+        Owning_Ptr<Expression> rhs;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Sub_Expr:\n";
-            _lhs->print(stream, Indent{indent.indent_count + 1});
-            _rhs->print(stream, Indent{indent.indent_count + 1});
+        Sub_Expr(Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        Owning_Ptr<Expression> _lhs;
-        Owning_Ptr<Expression> _rhs;
     };
 
-    class Mul_Expr: public Expression {
-    public:
-        Mul_Expr(Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs) {}
+    struct Mul_Expr: public Expression {
+        Owning_Ptr<Expression> lhs;
+        Owning_Ptr<Expression> rhs;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Mul_Expr:\n";
-            _lhs->print(stream, Indent{indent.indent_count + 1});
-            _rhs->print(stream, Indent{indent.indent_count + 1});
+        Mul_Expr(Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        Owning_Ptr<Expression> _lhs;
-        Owning_Ptr<Expression> _rhs;
     };
 
-    class Div_Expr: public Expression {
-    public:
-        Div_Expr(Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs) {}
+    struct Div_Expr: public Expression {
+        Owning_Ptr<Expression> lhs;
+        Owning_Ptr<Expression> rhs;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Div_Expr:\n";
-            _lhs->print(stream, Indent{indent.indent_count + 1});
-            _rhs->print(stream, Indent{indent.indent_count + 1});
+        Div_Expr(Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        Owning_Ptr<Expression> _lhs;
-        Owning_Ptr<Expression> _rhs;
     };
 
-    class Mod_Expr: public Expression {
-    public:
-        Mod_Expr(Expression* lhs, Expression* rhs): _lhs(lhs), _rhs(rhs) {}
+    struct Mod_Expr: public Expression {
+        Owning_Ptr<Expression> lhs;
+        Owning_Ptr<Expression> rhs;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Mod_Expr:\n";
-            _lhs->print(stream, Indent{indent.indent_count + 1});
-            _rhs->print(stream, Indent{indent.indent_count + 1});
+        Mod_Expr(Expression* lhs, Expression* rhs): lhs(lhs), rhs(rhs) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        Owning_Ptr<Expression> _lhs;
-        Owning_Ptr<Expression> _rhs;
     };
 
-    enum class Unary_Type {
+    enum struct Unary_Type {
         plus,
         minus,
         bit_not,
         logic_not,
     };
 
-    class Unary_Expression: public Expression {
-    public:
-        Unary_Expression(Unary_Type type, Expression* expression): _expression(expression), _type(type) {}
+    struct Unary_Expression: public Expression {
+        Owning_Ptr<Expression> expression;
+        Unary_Type type;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            char const* repr = nullptr;
-            switch(_type) {
-                case Unary_Type::plus:
-                    repr = u8"+";
-                    break;
-                case Unary_Type::minus:
-                    repr = u8"-";
-                    break;
-                case Unary_Type::bit_not:
-                    repr = u8"~";
-                    break;
-                case Unary_Type::logic_not:
-                    repr = u8"!";
-                    break;
-            }
+        Unary_Expression(Unary_Type type, Expression* expression): expression(expression), type(type) {}
 
-            stream << indent << "Unary_Expression (" << repr << "):\n";
-            _expression->print(stream, Indent{indent.indent_count + 1});
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        Owning_Ptr<Expression> _expression;
-        Unary_Type _type;
     };
 
-    class Prefix_Inc_Dec_Expression: public Expression {
-    public:
-        Prefix_Inc_Dec_Expression(bool is_inc, Expression* expression): _expression(expression), _is_inc(is_inc) {}
+    struct Prefix_Inc_Dec_Expression: public Expression {
+        Owning_Ptr<Expression> expression;
+        bool is_inc;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Prefix_Inc_Dec_Expression (" << (_is_inc ? "++" : "--") << "):\n";
-            _expression->print(stream, Indent{indent.indent_count + 1});
+        Prefix_Inc_Dec_Expression(bool is_inc, Expression* expression): expression(expression), is_inc(is_inc) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        Owning_Ptr<Expression> _expression;
-        bool _is_inc;
     };
 
-    class Argument_List: public Syntax_Tree_Node {
-    public:
+    struct Argument_List: public Syntax_Tree_Node {
+        std::vector<Owning_Ptr<Expression>> arguments;
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
+        }
+
         void append(Expression* argument) {
-            _arguments.emplace_back(argument);
+            arguments.emplace_back(argument);
         }
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Argument_List:\n";
-            for(auto& argument: _arguments) {
-                argument->print(stream, Indent{indent.indent_count + 1});
-            }
+        i64 size() const {
+            return arguments.size();
         }
-
-    private:
-        std::vector<Owning_Ptr<Expression>> _arguments;
     };
 
-    class Function_Call_Expression: public Expression {
-    public:
-        Function_Call_Expression(Identifier* identifier, Argument_List* arg_list): _identifier(identifier), _arg_list(arg_list) {}
+    struct Function_Call_Expression: public Expression {
+        Owning_Ptr<Identifier> identifier;
+        Owning_Ptr<Argument_List> arg_list;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Function_Call_Expression:\n";
-            _identifier->print(stream, Indent{indent.indent_count + 1});
-            _arg_list->print(stream, Indent{indent.indent_count + 1});
+        Function_Call_Expression(Identifier* identifier, Argument_List* arg_list): identifier(identifier), arg_list(arg_list) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        Owning_Ptr<Identifier> _identifier;
-        Owning_Ptr<Argument_List> _arg_list;
     };
 
-    class Member_Access_Expression: public Expression {
-    public:
-        Member_Access_Expression(Expression* base, Identifier* member): _base(base), _member(member) {}
+    struct Member_Access_Expression: public Expression {
+        Owning_Ptr<Expression> base;
+        Owning_Ptr<Identifier> member;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Member_Access_Expression:\n";
-            _base->print(stream, Indent{indent.indent_count + 1});
-            _member->print(stream, Indent{indent.indent_count + 1});
+        Member_Access_Expression(Expression* base, Identifier* member): base(base), member(member) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        Owning_Ptr<Expression> _base;
-        Owning_Ptr<Identifier> _member;
     };
 
-    class Array_Access_Expression: public Expression {
-    public:
-        Array_Access_Expression(Expression* base, Expression* index): _base(base), _index(index) {}
+    struct Array_Access_Expression: public Expression {
+        Owning_Ptr<Expression> base;
+        Owning_Ptr<Expression> index;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Array_Access_Expression:\n";
-            _base->print(stream, Indent{indent.indent_count + 1});
-            _index->print(stream, Indent{indent.indent_count + 1});
+        Array_Access_Expression(Expression* base, Expression* index): base(base), index(index) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        Owning_Ptr<Expression> _base;
-        Owning_Ptr<Expression> _index;
     };
 
-    class Postfix_Inc_Dec_Expression: public Expression {
-    public:
-        Postfix_Inc_Dec_Expression(bool is_inc, Expression* base): _base(base), _is_inc(is_inc) {}
+    struct Postfix_Inc_Dec_Expression: public Expression {
+        Owning_Ptr<Expression> base;
+        bool is_inc;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Postfix_Inc_Dec_Expression (" << (_is_inc ? u8"++" : u8"--") << "):\n";
-            _base->print(stream, Indent{indent.indent_count + 1});
+        Postfix_Inc_Dec_Expression(bool is_inc, Expression* base): base(base), is_inc(is_inc) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        Owning_Ptr<Expression> _base;
-        bool _is_inc;
     };
 
-    class String_Literal: public Expression {
-    public:
-        String_Literal(std::string value): _value(std::move(value)) {}
+    struct String_Literal: public Expression {
+        std::string value;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "String_Literal: \"" << _value << "\"\n";
+        String_Literal(std::string value): value(std::move(value)) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-        std::string const& get_value() const {
-            return _value;
-        }
-
-    private:
-        std::string _value;
     };
 
-    class Bool_Literal: public Expression {
-    public:
-        Bool_Literal(bool value): _value(value) {}
+    struct Bool_Literal: public Expression {
+        bool value;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Bool_Literal: " << (_value ? "true" : "false") << "\n";
+        Bool_Literal(bool value): value(value) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        bool _value;
     };
 
-    class Integer_Literal: public Expression {
-    public:
-        Integer_Literal(std::string value): _value(std::move(value)) {}
+    struct Integer_Literal: public Expression {
+        std::string value;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Integer_Literal: " << _value << "\n";
+        Integer_Literal(std::string value): value(std::move(value)) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        std::string _value;
     };
 
-    class Float_Literal: public Expression {
-    public:
-        Float_Literal(std::string value): _value(std::move(value)) {}
+    struct Float_Literal: public Expression {
+        std::string value;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Float_Literal: " << _value << "\n";
+        Float_Literal(std::string value): value(std::move(value)) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        std::string _value;
     };
 
-    class Statement: public Syntax_Tree_Node {};
+    struct Statement: public Syntax_Tree_Node {};
 
-    class Statement_List: public Syntax_Tree_Node {
-    public:
+    struct Statement_List: public Syntax_Tree_Node {
+        std::vector<Owning_Ptr<Statement>> statements;
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
+        }
+
         void append(Statement* const statement) {
-            _statements.emplace_back(statement);
+            statements.emplace_back(statement);
         }
 
         [[nodiscard]] i64 size() const {
-            return _statements.size();
+            return statements.size();
         }
-
-        virtual void print(std::ostream& stream, Indent const indent) const override;
-
-    private:
-        std::vector<Owning_Ptr<Statement>> _statements;
     };
 
-    class Block_Statement: public Statement {
-    public:
-        Block_Statement(Statement_List* statements): _statements(statements) {}
+    struct Block_Statement: public Statement {
+        Owning_Ptr<Statement_List> statements;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Block_Statement:\n";
-            if(_statements) {
-                _statements->print(stream, Indent{indent.indent_count + 1});
-            }
+        Block_Statement(Statement_List* statements): statements(statements) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        Owning_Ptr<Statement_List> _statements;
     };
 
-    class If_Statement: public Statement {
-    public:
+    struct If_Statement: public Statement {
+        Owning_Ptr<Expression> condition;
+        Owning_Ptr<Statement> true_statement;
+        Owning_Ptr<Statement> false_statement;
+
         If_Statement(Expression* condition, Statement* true_statement, Statement* false_statement)
-            : _condition(condition), _true_statement(true_statement), _false_statement(false_statement) {}
+            : condition(condition), true_statement(true_statement), false_statement(false_statement) {}
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "If_Statement:\n";
-            _condition->print(stream, Indent{indent.indent_count + 1});
-            _true_statement->print(stream, Indent{indent.indent_count + 1});
-            if(_false_statement) {
-                _false_statement->print(stream, Indent{indent.indent_count + 1});
-            }
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        Owning_Ptr<Expression> _condition;
-        Owning_Ptr<Statement> _true_statement;
-        Owning_Ptr<Statement> _false_statement;
     };
 
-    class Case_Statement: public Statement {
-    public:
-        Case_Statement(Expression* condition, Statement_List* statements): _condition(condition), _statements(statements) {}
+    struct Case_Statement: public Statement {
+        Owning_Ptr<Expression> condition;
+        Owning_Ptr<Statement_List> statements;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Case_Statement:\n";
-            _condition->print(stream, Indent{indent.indent_count + 1});
-            _statements->print(stream, Indent{indent.indent_count + 1});
+        Case_Statement(Expression* condition, Statement_List* statements): condition(condition), statements(statements) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        Owning_Ptr<Expression> _condition;
-        Owning_Ptr<Statement_List> _statements;
     };
 
-    class Default_Case_Statement: public Statement {
-    public:
-        Default_Case_Statement(Statement_List* statements): _statements(statements) {}
+    struct Default_Case_Statement: public Statement {
+        Owning_Ptr<Statement_List> statements;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Default_Case_Statement:\n";
-            _statements->print(stream, Indent{indent.indent_count + 1});
+        Default_Case_Statement(Statement_List* statements): statements(statements) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        Owning_Ptr<Statement_List> _statements;
     };
 
-    class Switch_Statement: public Statement {
-    public:
+    struct Switch_Statement: public Statement {
+        std::vector<Owning_Ptr<Statement>> cases;
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
+        }
+
         void append(Case_Statement* case_stmt) {
-            _cases.emplace_back(case_stmt);
+            cases.emplace_back(case_stmt);
         }
 
         void append(Default_Case_Statement* case_stmt) {
-            _cases.emplace_back(case_stmt);
+            cases.emplace_back(case_stmt);
         }
 
         i64 case_count() const {
-            return _cases.size();
+            return cases.size();
         }
-
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Switch_Statement:\n";
-            for(auto& statement: _cases) {
-                statement->print(stream, Indent{indent.indent_count + 1});
-            }
-        }
-
-    private:
-        std::vector<Owning_Ptr<Statement>> _cases;
     };
 
-    class For_Statement: public Statement {
-    public:
+    struct For_Statement: public Statement {
+        Owning_Ptr<Variable_Declaration> declaration;
+        Owning_Ptr<Expression> condition;
+        Owning_Ptr<Expression> post_expression;
+        Owning_Ptr<Block_Statement> block;
+
         For_Statement(Variable_Declaration* declaration, Expression* condition, Expression* post_expression, Block_Statement* block)
-            : _declaration(declaration), _condition(condition), _block(block), _post_expression(post_expression) {}
+            : declaration(declaration), condition(condition), block(block), post_expression(post_expression) {}
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "For_Statement:\n";
-            _declaration->print(stream, Indent{indent.indent_count + 1});
-            _condition->print(stream, Indent{indent.indent_count + 1});
-            _post_expression->print(stream, Indent{indent.indent_count + 1});
-            _block->print(stream, Indent{indent.indent_count + 1});
-        }
-
-    private:
-        Owning_Ptr<Variable_Declaration> _declaration;
-        Owning_Ptr<Expression> _condition;
-        Owning_Ptr<Expression> _post_expression;
-        Owning_Ptr<Block_Statement> _block;
-    };
-
-    class While_Statement: public Statement {
-    public:
-        While_Statement(Expression* condition, Block_Statement* block): _condition(condition), _block(block) {}
-
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "While_Statement:\n";
-            _condition->print(stream, Indent{indent.indent_count + 1});
-            _block->print(stream, Indent{indent.indent_count + 1});
-        }
-
-    private:
-        Owning_Ptr<Expression> _condition;
-        Owning_Ptr<Block_Statement> _block;
-    };
-
-    class Do_While_Statement: public Statement {
-    public:
-        Do_While_Statement(Expression* condition, Block_Statement* block): _condition(condition), _block(block) {}
-
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Do_While_Statement:\n";
-            _condition->print(stream, Indent{indent.indent_count + 1});
-            _block->print(stream, Indent{indent.indent_count + 1});
-        }
-
-    private:
-        Owning_Ptr<Expression> _condition;
-        Owning_Ptr<Block_Statement> _block;
-    };
-
-    class Return_Statement: public Statement {
-    public:
-        Return_Statement(Expression* return_expr): _return_expr(return_expr) {}
-
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Return_Statement:\n";
-            _return_expr->print(stream, Indent{indent.indent_count + 1});
-        }
-
-    private:
-        Owning_Ptr<Expression> _return_expr;
-    };
-
-    class Break_Statement: public Statement {
-    public:
-        Break_Statement() {}
-
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Break_Statement\n";
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
     };
 
-    class Continue_Statement: public Statement {
-    public:
-        Continue_Statement() {}
+    struct While_Statement: public Statement {
+        Owning_Ptr<Expression> condition;
+        Owning_Ptr<Block_Statement> block;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Continue_Statement\n";
+        While_Statement(Expression* condition, Block_Statement* block): condition(condition), block(block) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
     };
 
-    class Declaration_Statement: public Statement {
-    public:
-        Declaration_Statement(Variable_Declaration* var_decl): _var_decl(var_decl) {}
+    struct Do_While_Statement: public Statement {
+        Owning_Ptr<Expression> condition;
+        Owning_Ptr<Block_Statement> block;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Declaration_Statement (Variable Declaration):\n";
-            _var_decl->print(stream, Indent{indent.indent_count + 1});
+        Do_While_Statement(Expression* condition, Block_Statement* block): condition(condition), block(block) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
-
-    private:
-        Owning_Ptr<Variable_Declaration> _var_decl;
     };
 
-    class Expression_Statement: public Statement {
-    public:
-        Expression_Statement(Expression* expression): _expr(expression) {}
+    struct Return_Statement: public Statement {
+        Owning_Ptr<Expression> return_expr;
 
-        virtual void print(std::ostream& stream, Indent const indent) const override {
-            stream << indent << "Expression_Statement:\n";
-            _expr->print(stream, Indent{indent.indent_count + 1});
+        Return_Statement(Expression* return_expr): return_expr(return_expr) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
         }
+    };
 
-    private:
-        Owning_Ptr<Expression> _expr;
+    struct Break_Statement: public Statement {
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
+        }
+    };
+
+    struct Continue_Statement: public Statement {
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
+        }
+    };
+
+    struct Declaration_Statement: public Statement {
+        Owning_Ptr<Variable_Declaration> var_decl;
+
+        Declaration_Statement(Variable_Declaration* var_decl): var_decl(var_decl) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
+        }
+    };
+
+    struct Expression_Statement: public Statement {
+        Owning_Ptr<Expression> expr;
+
+        Expression_Statement(Expression* expression): expr(expression) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
+        }
     };
 } // namespace vush
