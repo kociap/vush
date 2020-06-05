@@ -12,6 +12,7 @@ namespace vush {
     struct Declaration_List;
     struct Declaration_If;
     struct Import_Decl;
+    struct Constant_Declaration;
     struct Variable_Declaration;
     struct Struct_Decl;
     struct Function_Body;
@@ -76,6 +77,7 @@ namespace vush {
         virtual void visit(Declaration_List& node) = 0;
         virtual void visit(Declaration_If& node) = 0;
         virtual void visit(Import_Decl& node) = 0;
+        virtual void visit(Constant_Declaration& node) = 0;
         virtual void visit(Variable_Declaration& node) = 0;
         virtual void visit(Struct_Decl& node) = 0;
         virtual void visit(Function_Body& node) = 0;
@@ -138,6 +140,7 @@ namespace vush {
         declaration_if,
         import_decl,
         variable_declaration,
+        constant_declaration,
         struct_decl,
         function_body,
         function_param_list,
@@ -283,6 +286,19 @@ namespace vush {
 
         Variable_Declaration(Type* type, Identifier* identifier, Expression* initializer)
             : Declaration({}, AST_Node_Type::variable_declaration), type(type), identifier(identifier), initializer(initializer) {}
+
+        virtual void visit(AST_Visitor& visitor) override {
+            visitor.visit(*this);
+        }
+    };
+
+    struct Constant_Declaration: public Declaration {
+        Owning_Ptr<Type> type;
+        Owning_Ptr<Identifier> identifier;
+        Owning_Ptr<Expression> initializer;
+
+        Constant_Declaration(Type* type, Identifier* identifier, Expression* initializer)
+            : Declaration({}, AST_Node_Type::constant_declaration), type(type), identifier(identifier), initializer(initializer) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);
@@ -936,9 +952,9 @@ namespace vush {
     };
 
     struct Declaration_Statement: public Statement {
-        Owning_Ptr<Variable_Declaration> var_decl;
+        Owning_Ptr<Declaration> declaration;
 
-        Declaration_Statement(Variable_Declaration* var_decl): Statement({}, AST_Node_Type::declaration_statement), var_decl(var_decl) {}
+        Declaration_Statement(Declaration* declaration): Statement({}, AST_Node_Type::declaration_statement), declaration(declaration) {}
 
         virtual void visit(AST_Visitor& visitor) override {
             visitor.visit(*this);

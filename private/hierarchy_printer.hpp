@@ -68,7 +68,18 @@ namespace vush {
         }
 
         virtual void visit(Variable_Declaration& node) override {
-            stream << indent << "Variable Declaration:\n";
+            stream << indent << "Variable_Declaration:\n";
+            indent += 1;
+            node.type->visit(*this);
+            node.identifier->visit(*this);
+            if(node.initializer) {
+                node.initializer->visit(*this);
+            }
+            indent -= 1;
+        }
+
+        virtual void visit(Constant_Declaration& node) override {
+            stream << indent << "Constant_Declaration:\n";
             indent += 1;
             node.type->visit(*this);
             node.identifier->visit(*this);
@@ -546,7 +557,7 @@ namespace vush {
         virtual void visit(Declaration_Statement& node) override {
             stream << indent << "Declaration_Statement (Variable Declaration):\n";
             indent += 1;
-            node.var_decl->visit(*this);
+            node.declaration->visit(*this);
             indent -= 1;
         }
 

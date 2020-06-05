@@ -27,6 +27,7 @@ namespace vush {
     static constexpr std::string_view kw_from = "from";
     static constexpr std::string_view kw_struct = "struct";
     static constexpr std::string_view kw_import = "import";
+    static constexpr std::string_view kw_const = "const";
 
     // separators and operators
     static constexpr std::string_view token_brace_open = "{";
@@ -289,6 +290,10 @@ namespace vush {
                 return variable_declaration;
             }
 
+            if(Constant_Declaration* constant = try_constant_declaration()) {
+                return constant;
+            }
+
             return nullptr;
         }
 
@@ -376,7 +381,7 @@ namespace vush {
         Import_Decl* try_import_decl() {
             Lexer_State const state_backup = _lexer.get_current_state();
             if(!_lexer.match(kw_import, true)) {
-                set_error("expected 'import'");
+                set_error(u8"expected 'import'");
                 _lexer.restore_state(state_backup);
                 return nullptr;
             }
@@ -393,7 +398,7 @@ namespace vush {
             Lexer_State const state_backup = _lexer.get_current_state();
             Owning_Ptr var_type = try_type();
             if(!var_type) {
-                set_error("expected type");
+                set_error(u8"expected type");
                 _lexer.restore_state(state_backup);
                 return nullptr;
             }
@@ -402,7 +407,7 @@ namespace vush {
             if(std::string identifier; _lexer.match_identifier(identifier)) {
                 var_name = new Identifier(std::move(identifier));
             } else {
-                set_error("expected variable name");
+                set_error(u8"expected variable name");
                 _lexer.restore_state(state_backup);
                 return nullptr;
             }
@@ -417,12 +422,54 @@ namespace vush {
             }
 
             if(!_lexer.match(token_semicolon)) {
-                set_error("expected ';' after variable declaration");
+                set_error(u8"expected ';' after variable declaration");
                 _lexer.restore_state(state_backup);
                 return nullptr;
             }
 
             return new Variable_Declaration(var_type.release(), var_name.release(), initializer.release());
+        }
+
+        Constant_Declaration* try_constant_declaration() {
+            Lexer_State const state_backup = _lexer.get_current_state();
+            if(!_lexer.match(kw_const)) {
+                set_error(u8"expected 'const'");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            Owning_Ptr var_type = try_type();
+            if(!var_type) {
+                set_error(u8"expected type");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            Owning_Ptr<Identifier> var_name = nullptr;
+            if(std::string identifier; _lexer.match_identifier(identifier)) {
+                var_name = new Identifier(std::move(identifier));
+            } else {
+                set_error(u8"expected variable name");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            Owning_Ptr<Expression> initializer = nullptr;
+            if(_lexer.match(token_assign)) {
+                initializer = try_expression();
+                if(!initializer) {
+                    _lexer.restore_state(state_backup);
+                    return nullptr;
+                }
+            }
+
+            if(!_lexer.match(token_semicolon)) {
+                set_error(u8"expected ';' after constant declaration");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            return new Constant_Declaration(var_type.release(), var_name.release(), initializer.release());
         }
 
         Struct_Decl* try_struct_decl() {
@@ -437,7 +484,7 @@ namespace vush {
             if(std::string name; _lexer.match_identifier(name)) {
                 struct_name = new Identifier(std::move(name));
             } else {
-                set_error("expected identifier");
+                set_error(u8"expected identifier");
                 _lexer.restore_state(state_backup);
                 return nullptr;
             }
@@ -481,7 +528,7 @@ namespace vush {
             Lexer_State const state_backup = _lexer.get_current_state();
             Owning_Ptr return_type = try_type();
             if(!return_type) {
-                set_error("expected type");
+                set_error(u8"expected type");
                 _lexer.restore_state(state_backup);
                 return nullptr;
             }
@@ -490,13 +537,13 @@ namespace vush {
             if(std::string pass_name_str; _lexer.match_identifier(pass_name_str)) {
                 pass = new Identifier(std::move(pass_name_str));
             } else {
-                set_error("expected pass name");
+                set_error(u8"expected pass name");
                 _lexer.restore_state(state_backup);
                 return nullptr;
             }
 
             if(!_lexer.match(token_scope_resolution)) {
-                set_error("expected '::' after pass name");
+                set_error(u8"expected '::' after pass name");
                 _lexer.restore_state(state_backup);
                 return nullptr;
             }
@@ -505,7 +552,7 @@ namespace vush {
             if(std::string fn_name; _lexer.match_identifier(fn_name)) {
                 name = new Identifier(std::move(fn_name));
             } else {
-                set_error("expected function name");
+                set_error(u8"expected function name");
                 _lexer.restore_state(state_backup);
                 return nullptr;
             }
@@ -529,7 +576,7 @@ namespace vush {
             Lexer_State const state_backup = _lexer.get_current_state();
             Owning_Ptr return_type = try_type();
             if(!return_type) {
-                set_error("expected type");
+                set_error(u8"expected type");
                 _lexer.restore_state(state_backup);
                 return nullptr;
             }
@@ -538,7 +585,7 @@ namespace vush {
             if(std::string fn_name; _lexer.match_identifier(fn_name)) {
                 name = new Identifier(std::move(fn_name));
             } else {
-                set_error("expected function name");
+                set_error(u8"expected function name");
                 _lexer.restore_state(state_backup);
                 return nullptr;
             }
@@ -561,7 +608,7 @@ namespace vush {
         Function_Param_List* try_function_param_list(bool const allow_sourced_params) {
             Lexer_State const state_backup = _lexer.get_current_state();
             if(!_lexer.match(token_paren_open)) {
-                set_error("expected '('");
+                set_error(u8"expected '('");
                 _lexer.restore_state(state_backup);
                 return nullptr;
             }
@@ -585,7 +632,7 @@ namespace vush {
             }
 
             if(!_lexer.match(token_paren_close)) {
-                set_error("expected ')' after function parameter list");
+                set_error(u8"expected ')' after function parameter list");
                 _lexer.restore_state(state_backup);
                 return nullptr;
             }
@@ -603,13 +650,13 @@ namespace vush {
             if(std::string identifier_str; _lexer.match_identifier(identifier_str)) {
                 identifier = new Identifier(std::move(identifier_str));
             } else {
-                set_error("expected parameter name");
+                set_error(u8"expected parameter name");
                 _lexer.restore_state(state_backup);
                 return nullptr;
             }
 
             if(!_lexer.match(token_colon)) {
-                set_error("expected ':' after parameter name");
+                set_error(u8"expected ':' after parameter name");
                 _lexer.restore_state(state_backup);
                 return nullptr;
             }
@@ -774,6 +821,12 @@ namespace vush {
                 }
 
                 if(Variable_Declaration* decl = try_variable_declaration()) {
+                    Declaration_Statement* decl_stmt = new Declaration_Statement(decl);
+                    statements->append(decl_stmt);
+                    continue;
+                }
+
+                if(Constant_Declaration* decl = try_constant_declaration()) {
                     Declaration_Statement* decl_stmt = new Declaration_Statement(decl);
                     statements->append(decl_stmt);
                     continue;
