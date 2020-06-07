@@ -332,12 +332,6 @@ namespace vush {
                 }
             }
 
-            if(!_lexer.match(token_brace_close)) {
-                set_error(u8"expected '}' after expression");
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
             if(_lexer.match(kw_else, true)) {
                 if(Declaration_If* if_declaration = try_declaration_if()) {
                     Owning_Ptr false_declarations = new Declaration_List;
@@ -1554,14 +1548,14 @@ namespace vush {
             Lexer_State const state_backup = _lexer.get_current_state();
             if(_lexer.match(token_increment)) {
                 if(Expression* expr = try_unary_expression()) {
-                    return new Prefix_Inc_Dec_Expression(true, expr);
+                    return new Prefix_Inc_Expr(expr);
                 } else {
                     _lexer.restore_state(state_backup);
                     return nullptr;
                 }
             } else if(_lexer.match(token_decrement)) {
                 if(Expression* expr = try_unary_expression()) {
-                    return new Prefix_Inc_Dec_Expression(false, expr);
+                    return new Prefix_Dec_Expr(expr);
                 } else {
                     _lexer.restore_state(state_backup);
                     return nullptr;
@@ -1632,9 +1626,9 @@ namespace vush {
 
                     expr = new Array_Access_Expression(expr.release(), index.release());
                 } else if(_lexer.match(token_increment)) {
-                    expr = new Postfix_Inc_Dec_Expression(true, expr.release());
+                    expr = new Postfix_Inc_Expr(expr.release());
                 } else if(_lexer.match(token_decrement)) {
-                    expr = new Postfix_Inc_Dec_Expression(false, expr.release());
+                    expr = new Postfix_Dec_Expr(expr.release());
                 } else {
                     break;
                 }

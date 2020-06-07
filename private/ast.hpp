@@ -23,7 +23,6 @@ namespace vush {
         function_declaration,
         sourced_function_param,
         pass_stage_declaration,
-        expression,
         expression_if,
         identifier_expression,
         assignment_expression,
@@ -44,12 +43,14 @@ namespace vush {
         div_expr,
         mod_expr,
         unary_expression,
-        prefix_inc_dec_expression,
+        prefix_inc_expr,
+        prefix_dec_expr,
         argument_list,
         function_call_expression,
         member_access_expression,
         array_access_expression,
-        postfix_inc_dec_expression,
+        postfix_inc_expr,
+        postfix_dec_expr,
         string_literal,
         bool_literal,
         integer_literal,
@@ -421,12 +422,16 @@ namespace vush {
         Unary_Expression(Unary_Type type, Expression* expression): Expression({}, AST_Node_Type::unary_expression), expression(expression), type(type) {}
     };
 
-    struct Prefix_Inc_Dec_Expression: public Expression {
+    struct Prefix_Inc_Expr: public Expression {
         Owning_Ptr<Expression> expression;
-        bool is_inc;
 
-        Prefix_Inc_Dec_Expression(bool is_inc, Expression* expression)
-            : Expression({}, AST_Node_Type::prefix_inc_dec_expression), expression(expression), is_inc(is_inc) {}
+        Prefix_Inc_Expr(Expression* expression): Expression({}, AST_Node_Type::prefix_inc_expr), expression(expression) {}
+    };
+
+    struct Prefix_Dec_Expr: public Expression {
+        Owning_Ptr<Expression> expression;
+
+        Prefix_Dec_Expr(Expression* expression): Expression({}, AST_Node_Type::prefix_dec_expr), expression(expression) {}
     };
 
     struct Argument_List: public Syntax_Tree_Node {
@@ -465,11 +470,16 @@ namespace vush {
         Array_Access_Expression(Expression* base, Expression* index): Expression({}, AST_Node_Type::array_access_expression), base(base), index(index) {}
     };
 
-    struct Postfix_Inc_Dec_Expression: public Expression {
+    struct Postfix_Inc_Expr: public Expression {
         Owning_Ptr<Expression> base;
-        bool is_inc;
 
-        Postfix_Inc_Dec_Expression(bool is_inc, Expression* base): Expression({}, AST_Node_Type::postfix_inc_dec_expression), base(base), is_inc(is_inc) {}
+        Postfix_Inc_Expr(Expression* base): Expression({}, AST_Node_Type::postfix_inc_expr), base(base) {}
+    };
+
+    struct Postfix_Dec_Expr: public Expression {
+        Owning_Ptr<Expression> base;
+
+        Postfix_Dec_Expr(Expression* base): Expression({}, AST_Node_Type::postfix_dec_expr), base(base) {}
     };
 
     struct String_Literal: public Expression {

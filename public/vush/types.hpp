@@ -4,8 +4,12 @@ namespace vush {
     using char8 = char;
     using char32 = char32_t;
 
-    using u8 = unsigned char;
+    using i32 = int;
     using i64 = long long;
+
+    using u8 = unsigned char;
+    using u32 = unsigned int;
+    using u64 = unsigned long long;
 
     // Immutable string
     class String {

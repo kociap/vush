@@ -28,6 +28,9 @@ target_include_directories(vush PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/public" PRIV
 target_sources(vush 
     PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/private/ast.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/private/const_expr_eval.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/private/const_expr_eval.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/private/context.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/filesystem.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/filesystem.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/owning_ptr.hpp"

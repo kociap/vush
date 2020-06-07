@@ -1,27 +1,16 @@
 #include <vush/vush.hpp>
 
+#include <context.hpp>
 #include <filesystem.hpp>
 // #include <hierarchy_printer.hpp>
+#include <const_expr_eval.hpp>
 #include <parser.hpp>
 #include <symbol.hpp>
+#include <utility.hpp>
 
 #include <iostream>
-#include <unordered_map>
 
 namespace vush {
-    struct Context {
-        char const* const* import_paths;
-        char const* const* import_paths_end;
-        std::unordered_map<std::string, Symbol> global_symbols;
-    };
-
-    static String build_error_message(std::string const& path, i64 const line, i64 const column, std::string const& message) {
-        std::string msg = std::move(path) + u8":" + std::to_string(line + 1) + u8":" + std::to_string(column + 1) + u8": error: " + message;
-        char* str_data = (char*)::operator new(msg.size() + 1);
-        memcpy(str_data, msg.data(), msg.size() + 1);
-        return {str_data, (i64)msg.size()};
-    }
-
     static Expected<std::string, String> resolve_import_path(Context& ctx, std::string const& current_path, std::string const& import_path) {
         bool found = false;
         std::string out_path;
@@ -47,10 +36,6 @@ namespace vush {
         }
     }
 
-    static Expected<bool, String> evaluate_constant_bool_expr(Context& ctx, Owning_Ptr<Expression> const& expr) {
-        return {expected_value, true};
-    }
-
     static Expected<Owning_Ptr<Declaration_List>, String> process_file_decl_ifs_and_resolve_imports(Context& ctx, std::string const& path) {
         Expected<Owning_Ptr<Declaration_List>, Parse_Error> parse_result = parse_file(path);
         if(!parse_result) {
@@ -58,6 +43,9 @@ namespace vush {
             String error_msg = build_error_message(path, error.line, error.column, error.message);
             return {expected_error, std::move(error_msg)};
         }
+
+        std::string const* prev_file = ctx.current_file;
+        ctx.current_file = &path;
 
         Owning_Ptr<Declaration_List>& ast = parse_result.value();
         for(i64 i = 0; i < (i64)ast->declarations.size();) {
@@ -83,13 +71,17 @@ namespace vush {
 
                 case AST_Node_Type::declaration_if: {
                     Owning_Ptr<Declaration_If> node = static_cast<Declaration_If*>(ast->declarations[i].release());
-                    Expected<bool, String> result = evaluate_constant_bool_expr(ctx, node->condition);
+                    Expected<Const_Expr_Value, String> result = evaluate_expr(ctx, *node->condition.get());
                     if(!result) {
                         return {expected_error, std::move(result.error())};
                     }
 
+                    if(!is_implicitly_convertible_to_boolean(result.value().type)) {
+                        return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"expression is not implicitly convertible to bool")};
+                    }
+
                     ast->declarations.erase(ast->declarations.begin() + i);
-                    Declaration_List* decls = (result.value() ? node->true_declarations.get() : node->false_declarations.get());
+                    Declaration_List* decls = (result.value().as_boolean() ? node->true_declarations.get() : node->false_declarations.get());
                     if(decls) {
                         auto begin = std::make_move_iterator(decls->declarations.begin());
                         auto end = std::make_move_iterator(decls->declarations.end());
@@ -120,13 +112,28 @@ namespace vush {
             }
         }
 
+        ctx.current_file = prev_file;
         return {expected_value, std::move(ast)};
     }
 
-    Expected<Compiled_File, String> compile_to_glsl(char const* source_path, char const* const* const import_paths, i64 const import_paths_count) {
-        Context ctx;
+    Expected<Compiled_File, String> compile_to_glsl(char const* source_path, char const* const* const import_paths, i64 const import_paths_count,
+                                                    Constant_Define const* const defines, i64 const defines_count) {
+        Context ctx = {};
         ctx.import_paths = import_paths;
         ctx.import_paths_end = import_paths + import_paths_count;
+        std::vector<Owning_Ptr<Declaration>> constant_decls;
+        {
+            Constant_Define const* const defines_end = defines + defines_count;
+            for(Constant_Define const* define = defines; define != defines_end; ++define) {
+                Symbol symbol;
+                symbol.type = Symbol_Type::constant;
+                Constant_Declaration* decl =
+                    new Constant_Declaration(new Type("i32"), new Identifier(define->name), new Integer_Literal(std::to_string(define->value)));
+                constant_decls.emplace_back(decl);
+                symbol.declaration = decl;
+                ctx.global_symbols.emplace(define->name, symbol);
+            }
+        }
         std::string path = source_path;
         Expected<Owning_Ptr<Declaration_List>, String> result = process_file_decl_ifs_and_resolve_imports(ctx, path);
         if(!result) {
