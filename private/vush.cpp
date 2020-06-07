@@ -1,7 +1,7 @@
 #include <vush/vush.hpp>
 
 #include <filesystem.hpp>
-#include <hierarchy_printer.hpp>
+// #include <hierarchy_printer.hpp>
 #include <parser.hpp>
 #include <symbol.hpp>
 
@@ -133,8 +133,8 @@ namespace vush {
             return {expected_error, std::move(result.error())};
         }
 
-        Hierarchy_Printer printer(std::cout);
-        result.value()->visit(printer);
+        // Hierarchy_Printer printer(std::cout);
+        // result.value()->visit(printer);
 
         for(auto& kv: ctx.global_symbols) {
             std::cout << kv.first << '\n';
