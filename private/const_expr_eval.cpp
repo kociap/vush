@@ -4,7 +4,7 @@
 
 namespace vush {
     bool is_implicitly_convertible_to_boolean(Expr_Value_Type) {
-        // Both i32 and boolean are convertible to bool.
+        // bool, i32, f32 and f64 are all convertible to bool.
         return true;
     }
 
@@ -27,10 +27,6 @@ namespace vush {
                 Constant_Declaration* decl = (Constant_Declaration*)symbol.declaration;
                 return evaluate_expr(ctx, *decl->initializer);
             }
-
-                // case AST_Node_Type::assignment_expression: {}
-
-                // case AST_Node_Type::arithmetic_assignment_expression: {}
 
             case AST_Node_Type::logic_or_expr: {
                 Logic_Or_Expr& expr = (Logic_Or_Expr&)expression;
@@ -116,9 +112,199 @@ namespace vush {
                 return {expected_value, e};
             }
 
-                // case AST_Node_Type::relational_equality_expression: {}
+            case AST_Node_Type::relational_equality_expression: {
+                Relational_Equality_Expression& expr = (Relational_Equality_Expression&)expression;
+                Expected<Const_Expr_Value, String> lhs_res = evaluate_expr(ctx, *expr.lhs);
+                if(!lhs_res) {
+                    return {expected_error, std::move(lhs_res.error())};
+                }
 
-                // case AST_Node_Type::relational_expression: {}
+                Expected<Const_Expr_Value, String> rhs_res = evaluate_expr(ctx, *expr.rhs);
+                if(!rhs_res) {
+                    return {expected_error, std::move(rhs_res.error())};
+                }
+
+                // TODO: Extend to actual glsl behaviour of == and != operators
+
+                Const_Expr_Value lhs = lhs_res.value();
+                Const_Expr_Value rhs = rhs_res.value();
+                if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
+                   lhs.type != Expr_Value_Type::int32) {
+                    std::string stringified_relational = expr.is_equality ? u8"==" : u8"!=";
+                    return {expected_error, build_error_message(*ctx.current_file, 0, 0,
+                                                                u8"left-hand side of '" + stringified_relational +
+                                                                    "' is not of a scalar integer or a scalar floating-point type.")};
+                }
+
+                if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
+                   rhs.type != Expr_Value_Type::int32) {
+                    std::string stringified_relational = expr.is_equality ? u8"==" : u8"!=";
+                    return {expected_error, build_error_message(*ctx.current_file, 0, 0,
+                                                                u8"right-hand side of '" + stringified_relational +
+                                                                    "' is not of a scalar integer or a scalar floating-point type.")};
+                }
+
+                Const_Expr_Value e;
+                e.type = Expr_Value_Type::boolean;
+                if(lhs.type == Expr_Value_Type::float64 || rhs.type == Expr_Value_Type::float64) {
+                    if(expr.is_equality) {
+                        e.boolean = lhs.as_float64() == rhs.as_float64();
+                        return {expected_value, e};
+                    } else {
+                        e.boolean = lhs.as_float64() != rhs.as_float64();
+                        return {expected_value, e};
+                    }
+                } else if(lhs.type == Expr_Value_Type::float32 || rhs.type == Expr_Value_Type::float32) {
+                    if(expr.is_equality) {
+                        e.boolean = lhs.as_float32() == rhs.as_float32();
+                        return {expected_value, e};
+                    } else {
+                        e.boolean = lhs.as_float32() != rhs.as_float32();
+                        return {expected_value, e};
+                    }
+                } else if(lhs.type == Expr_Value_Type::uint32 || rhs.type == Expr_Value_Type::uint32) {
+                    if(expr.is_equality) {
+                        e.boolean = lhs.as_uint32() == rhs.as_uint32();
+                        return {expected_value, e};
+                    } else {
+                        e.boolean = lhs.as_uint32() != rhs.as_uint32();
+                        return {expected_value, e};
+                    }
+                } else {
+                    if(expr.is_equality) {
+                        e.boolean = lhs.as_int32() == rhs.as_int32();
+                        return {expected_value, e};
+                    } else {
+                        e.boolean = lhs.as_int32() != rhs.as_int32();
+                        return {expected_value, e};
+                    }
+                }
+            }
+
+            case AST_Node_Type::relational_expression: {
+                Relational_Expression& expr = (Relational_Expression&)expression;
+                Expected<Const_Expr_Value, String> lhs_res = evaluate_expr(ctx, *expr.lhs);
+                if(!lhs_res) {
+                    return {expected_error, std::move(lhs_res.error())};
+                }
+
+                Expected<Const_Expr_Value, String> rhs_res = evaluate_expr(ctx, *expr.rhs);
+                if(!rhs_res) {
+                    return {expected_error, std::move(rhs_res.error())};
+                }
+
+                Const_Expr_Value lhs = lhs_res.value();
+                Const_Expr_Value rhs = rhs_res.value();
+                if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
+                   lhs.type != Expr_Value_Type::int32) {
+                    std::string stringified_relational;
+                    switch(expr.type) {
+                        case Relational_Type::greater_than:
+                            stringified_relational = u8">";
+                            break;
+                        case Relational_Type::less_than:
+                            stringified_relational = u8"<";
+                            break;
+                        case Relational_Type::greater_equal:
+                            stringified_relational = u8">=";
+                            break;
+                        case Relational_Type::less_equal:
+                            stringified_relational = u8"<=";
+                            break;
+                    }
+
+                    return {expected_error, build_error_message(*ctx.current_file, 0, 0,
+                                                                u8"left-hand side of '" + stringified_relational +
+                                                                    "' is not of a scalar integer or a scalar floating-point type.")};
+                }
+
+                if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
+                   rhs.type != Expr_Value_Type::int32) {
+                    std::string stringified_relational;
+                    switch(expr.type) {
+                        case Relational_Type::greater_than:
+                            stringified_relational = u8">";
+                            break;
+                        case Relational_Type::less_than:
+                            stringified_relational = u8"<";
+                            break;
+                        case Relational_Type::greater_equal:
+                            stringified_relational = u8">=";
+                            break;
+                        case Relational_Type::less_equal:
+                            stringified_relational = u8"<=";
+                            break;
+                    }
+
+                    return {expected_error, build_error_message(*ctx.current_file, 0, 0,
+                                                                u8"right-hand side of '" + stringified_relational +
+                                                                    "' is not of a scalar integer or a scalar floating-point type.")};
+                }
+
+                Const_Expr_Value e;
+                e.type = Expr_Value_Type::boolean;
+                if(lhs.type == Expr_Value_Type::float64 || rhs.type == Expr_Value_Type::float64) {
+                    switch(expr.type) {
+                        case Relational_Type::greater_than:
+                            e.boolean = lhs.as_float64() > rhs.as_float64();
+                            return {expected_value, e};
+                        case Relational_Type::less_than:
+                            e.boolean = lhs.as_float64() < rhs.as_float64();
+                            return {expected_value, e};
+                        case Relational_Type::greater_equal:
+                            e.boolean = lhs.as_float64() >= rhs.as_float64();
+                            return {expected_value, e};
+                        case Relational_Type::less_equal:
+                            e.boolean = lhs.as_float64() <= rhs.as_float64();
+                            return {expected_value, e};
+                    }
+                } else if(lhs.type == Expr_Value_Type::float32 || rhs.type == Expr_Value_Type::float32) {
+                    switch(expr.type) {
+                        case Relational_Type::greater_than:
+                            e.boolean = lhs.as_float32() > rhs.as_float32();
+                            return {expected_value, e};
+                        case Relational_Type::less_than:
+                            e.boolean = lhs.as_float32() < rhs.as_float32();
+                            return {expected_value, e};
+                        case Relational_Type::greater_equal:
+                            e.boolean = lhs.as_float32() >= rhs.as_float32();
+                            return {expected_value, e};
+                        case Relational_Type::less_equal:
+                            e.boolean = lhs.as_float32() <= rhs.as_float32();
+                            return {expected_value, e};
+                    }
+                } else if(lhs.type == Expr_Value_Type::uint32 || rhs.type == Expr_Value_Type::uint32) {
+                    switch(expr.type) {
+                        case Relational_Type::greater_than:
+                            e.boolean = lhs.as_uint32() > rhs.as_uint32();
+                            return {expected_value, e};
+                        case Relational_Type::less_than:
+                            e.boolean = lhs.as_uint32() < rhs.as_uint32();
+                            return {expected_value, e};
+                        case Relational_Type::greater_equal:
+                            e.boolean = lhs.as_uint32() >= rhs.as_uint32();
+                            return {expected_value, e};
+                        case Relational_Type::less_equal:
+                            e.boolean = lhs.as_uint32() <= rhs.as_uint32();
+                            return {expected_value, e};
+                    }
+                } else {
+                    switch(expr.type) {
+                        case Relational_Type::greater_than:
+                            e.boolean = lhs.as_int32() > rhs.as_int32();
+                            return {expected_value, e};
+                        case Relational_Type::less_than:
+                            e.boolean = lhs.as_int32() < rhs.as_int32();
+                            return {expected_value, e};
+                        case Relational_Type::greater_equal:
+                            e.boolean = lhs.as_int32() >= rhs.as_int32();
+                            return {expected_value, e};
+                        case Relational_Type::less_equal:
+                            e.boolean = lhs.as_int32() <= rhs.as_int32();
+                            return {expected_value, e};
+                    }
+                }
+            }
 
                 // case AST_Node_Type::bit_or_expr: {}
 
@@ -142,19 +328,9 @@ namespace vush {
 
                 // case AST_Node_Type::unary_expression: {}
 
-                // case AST_Node_Type::prefix_inc_expr: {}
-
-                // case AST_Node_Type::prefix_dec_expr: {}
-
-                // case AST_Node_Type::function_call_expression: {}
-
                 // case AST_Node_Type::member_access_expression: {}
 
                 // case AST_Node_Type::array_access_expression: {}
-
-                // case AST_Node_Type::postfix_inc_expr: {}
-
-                // case AST_Node_Type::postfix_dec_expr: {}
 
             case AST_Node_Type::bool_literal: {
                 Bool_Literal& expr = (Bool_Literal&)expression;
