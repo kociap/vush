@@ -25,7 +25,7 @@ namespace vush {
                 }
 
                 Constant_Declaration* decl = (Constant_Declaration*)symbol.declaration;
-                return evaluate_expr(ctx, *decl->initializer.get());
+                return evaluate_expr(ctx, *decl->initializer);
             }
 
                 // case AST_Node_Type::assignment_expression: {}
@@ -34,7 +34,7 @@ namespace vush {
 
             case AST_Node_Type::logic_or_expr: {
                 Logic_Or_Expr& expr = (Logic_Or_Expr&)expression;
-                Expected<Const_Expr_Value, String> lhs_res = evaluate_expr(ctx, *expr.lhs.get());
+                Expected<Const_Expr_Value, String> lhs_res = evaluate_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
                     return {expected_error, std::move(lhs_res.error())};
                 }
@@ -43,7 +43,7 @@ namespace vush {
                     return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"expression is not implicitly convertible to bool")};
                 }
 
-                Expected<Const_Expr_Value, String> rhs_res = evaluate_expr(ctx, *expr.rhs.get());
+                Expected<Const_Expr_Value, String> rhs_res = evaluate_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
                     return {expected_error, std::move(rhs_res.error())};
                 }
@@ -62,7 +62,7 @@ namespace vush {
 
             case AST_Node_Type::logic_xor_expr: {
                 Logic_Or_Expr& expr = (Logic_Or_Expr&)expression;
-                Expected<Const_Expr_Value, String> lhs_res = evaluate_expr(ctx, *expr.lhs.get());
+                Expected<Const_Expr_Value, String> lhs_res = evaluate_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
                     return {expected_error, std::move(lhs_res.error())};
                 }
@@ -71,7 +71,7 @@ namespace vush {
                     return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"expression is not implicitly convertible to bool")};
                 }
 
-                Expected<Const_Expr_Value, String> rhs_res = evaluate_expr(ctx, *expr.rhs.get());
+                Expected<Const_Expr_Value, String> rhs_res = evaluate_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
                     return {expected_error, std::move(rhs_res.error())};
                 }
@@ -90,7 +90,7 @@ namespace vush {
 
             case AST_Node_Type::logic_and_expr: {
                 Logic_Or_Expr& expr = (Logic_Or_Expr&)expression;
-                Expected<Const_Expr_Value, String> lhs_res = evaluate_expr(ctx, *expr.lhs.get());
+                Expected<Const_Expr_Value, String> lhs_res = evaluate_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
                     return {expected_error, std::move(lhs_res.error())};
                 }
@@ -99,7 +99,7 @@ namespace vush {
                     return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"expression is not implicitly convertible to bool")};
                 }
 
-                Expected<Const_Expr_Value, String> rhs_res = evaluate_expr(ctx, *expr.rhs.get());
+                Expected<Const_Expr_Value, String> rhs_res = evaluate_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
                     return {expected_error, std::move(rhs_res.error())};
                 }

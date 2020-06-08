@@ -9,7 +9,8 @@
 namespace vush {
     enum struct AST_Node_Type {
         identifier,
-        type,
+        builtin_type,
+        user_defined_type,
         declaration_list,
         declaration_if,
         import_decl,
@@ -55,7 +56,6 @@ namespace vush {
         bool_literal,
         integer_literal,
         float_literal,
-        statement,
         statement_list,
         block_statement,
         if_statement,
@@ -98,9 +98,144 @@ namespace vush {
     };
 
     struct Type: public Syntax_Tree_Node {
-        std::string type;
+        using Syntax_Tree_Node::Syntax_Tree_Node;
+    };
 
-        Type(std::string string): Syntax_Tree_Node({}, AST_Node_Type::type), type(std::move(string)) {}
+    enum struct Builtin_GLSL_Type {
+        glsl_void,
+        glsl_bool,
+        glsl_int,
+        glsl_uint,
+        glsl_float,
+        glsl_double,
+        glsl_vec2,
+        glsl_vec3,
+        glsl_vec4,
+        glsl_dvec2,
+        glsl_dvec3,
+        glsl_dvec4,
+        glsl_bvec2,
+        glsl_bvec3,
+        glsl_bvec4,
+        glsl_ivec2,
+        glsl_ivec3,
+        glsl_ivec4,
+        glsl_uvec2,
+        glsl_uvec3,
+        glsl_uvec4,
+        glsl_mat2,
+        glsl_mat3,
+        glsl_mat4,
+        glsl_mat2x3,
+        glsl_mat2x4,
+        glsl_mat3x2,
+        glsl_mat3x4,
+        glsl_mat4x2,
+        glsl_mat4x3,
+        glsl_dmat2,
+        glsl_dmat3,
+        glsl_dmat4,
+        glsl_dmat2x3,
+        glsl_dmat2x4,
+        glsl_dmat3x2,
+        glsl_dmat3x4,
+        glsl_dmat4x2,
+        glsl_dmat4x3,
+    };
+
+    constexpr std::string_view stringify(Builtin_GLSL_Type type) {
+        switch(type) {
+            case Builtin_GLSL_Type::glsl_void:
+                return u8"void";
+            case Builtin_GLSL_Type::glsl_bool:
+                return u8"bool";
+            case Builtin_GLSL_Type::glsl_int:
+                return u8"int";
+            case Builtin_GLSL_Type::glsl_uint:
+                return u8"uint";
+            case Builtin_GLSL_Type::glsl_float:
+                return u8"float";
+            case Builtin_GLSL_Type::glsl_double:
+                return u8"double";
+            case Builtin_GLSL_Type::glsl_vec2:
+                return u8"vec2";
+            case Builtin_GLSL_Type::glsl_vec3:
+                return u8"vec3";
+            case Builtin_GLSL_Type::glsl_vec4:
+                return u8"vec4";
+            case Builtin_GLSL_Type::glsl_dvec2:
+                return u8"dvec2";
+            case Builtin_GLSL_Type::glsl_dvec3:
+                return u8"dvec3";
+            case Builtin_GLSL_Type::glsl_dvec4:
+                return u8"dvec4";
+            case Builtin_GLSL_Type::glsl_bvec2:
+                return u8"bvec2";
+            case Builtin_GLSL_Type::glsl_bvec3:
+                return u8"bvec3";
+            case Builtin_GLSL_Type::glsl_bvec4:
+                return u8"bvec4";
+            case Builtin_GLSL_Type::glsl_ivec2:
+                return u8"ivec2";
+            case Builtin_GLSL_Type::glsl_ivec3:
+                return u8"ivec3";
+            case Builtin_GLSL_Type::glsl_ivec4:
+                return u8"ivec4";
+            case Builtin_GLSL_Type::glsl_uvec2:
+                return u8"uvec2";
+            case Builtin_GLSL_Type::glsl_uvec3:
+                return u8"uvec3";
+            case Builtin_GLSL_Type::glsl_uvec4:
+                return u8"uvec4";
+            case Builtin_GLSL_Type::glsl_mat2:
+                return u8"mat2";
+            case Builtin_GLSL_Type::glsl_mat3:
+                return u8"mat3";
+            case Builtin_GLSL_Type::glsl_mat4:
+                return u8"mat4";
+            case Builtin_GLSL_Type::glsl_mat2x3:
+                return u8"mat2x3";
+            case Builtin_GLSL_Type::glsl_mat2x4:
+                return u8"mat2x4";
+            case Builtin_GLSL_Type::glsl_mat3x2:
+                return u8"mat3x2";
+            case Builtin_GLSL_Type::glsl_mat3x4:
+                return u8"mat3x4";
+            case Builtin_GLSL_Type::glsl_mat4x2:
+                return u8"mat4x2";
+            case Builtin_GLSL_Type::glsl_mat4x3:
+                return u8"mat4x3";
+            case Builtin_GLSL_Type::glsl_dmat2:
+                return u8"dmat2";
+            case Builtin_GLSL_Type::glsl_dmat3:
+                return u8"dmat3";
+            case Builtin_GLSL_Type::glsl_dmat4:
+                return u8"dmat4";
+            case Builtin_GLSL_Type::glsl_dmat2x3:
+                return u8"dmat2x3";
+            case Builtin_GLSL_Type::glsl_dmat2x4:
+                return u8"dmat2x4";
+            case Builtin_GLSL_Type::glsl_dmat3x2:
+                return u8"dmat3x2";
+            case Builtin_GLSL_Type::glsl_dmat3x4:
+                return u8"dmat3x4";
+            case Builtin_GLSL_Type::glsl_dmat4x2:
+                return u8"dmat4x2";
+            case Builtin_GLSL_Type::glsl_dmat4x3:
+                return u8"dmat4x3";
+        }
+    }
+
+    struct Builtin_Type: public Type {
+        Builtin_GLSL_Type type;
+
+        Builtin_Type(Builtin_GLSL_Type type): Type({}, AST_Node_Type::builtin_type), type(type) {}
+    };
+
+    struct User_Defined_Type: public Type {
+        std::string name;
+
+        User_Defined_Type(std::string name): Type({}, AST_Node_Type::user_defined_type), name(name) {}
     };
 
     struct Declaration: public Syntax_Tree_Node {

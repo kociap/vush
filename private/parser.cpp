@@ -11,73 +11,120 @@
 
 namespace vush {
     // keywords
-    static constexpr std::string_view kw_if = "if";
-    static constexpr std::string_view kw_else = "else";
-    static constexpr std::string_view kw_switch = "switch";
-    static constexpr std::string_view kw_case = "case";
-    static constexpr std::string_view kw_default = "default";
-    static constexpr std::string_view kw_for = "for";
-    static constexpr std::string_view kw_while = "while";
-    static constexpr std::string_view kw_do = "do";
-    static constexpr std::string_view kw_return = "return";
-    static constexpr std::string_view kw_break = "break";
-    static constexpr std::string_view kw_continue = "continue";
-    static constexpr std::string_view kw_true = "true";
-    static constexpr std::string_view kw_false = "false";
-    static constexpr std::string_view kw_from = "from";
-    static constexpr std::string_view kw_struct = "struct";
-    static constexpr std::string_view kw_import = "import";
-    static constexpr std::string_view kw_const = "const";
+    static constexpr std::string_view kw_if = u8"if";
+    static constexpr std::string_view kw_else = u8"else";
+    static constexpr std::string_view kw_switch = u8"switch";
+    static constexpr std::string_view kw_case = u8"case";
+    static constexpr std::string_view kw_default = u8"default";
+    static constexpr std::string_view kw_for = u8"for";
+    static constexpr std::string_view kw_while = u8"while";
+    static constexpr std::string_view kw_do = u8"do";
+    static constexpr std::string_view kw_return = u8"return";
+    static constexpr std::string_view kw_break = u8"break";
+    static constexpr std::string_view kw_continue = u8"continue";
+    static constexpr std::string_view kw_true = u8"true";
+    static constexpr std::string_view kw_false = u8"false";
+    static constexpr std::string_view kw_from = u8"from";
+    static constexpr std::string_view kw_struct = u8"struct";
+    static constexpr std::string_view kw_import = u8"import";
+    static constexpr std::string_view kw_const = u8"const";
+
+    // types
+    static constexpr std::string_view type_void = u8"void";
+    static constexpr std::string_view type_bool = u8"bool";
+    static constexpr std::string_view type_int = u8"int";
+    static constexpr std::string_view type_uint = u8"uint";
+    static constexpr std::string_view type_float = u8"float";
+    static constexpr std::string_view type_double = u8"double";
+    static constexpr std::string_view type_vec2 = u8"vec2";
+    static constexpr std::string_view type_vec3 = u8"vec3";
+    static constexpr std::string_view type_vec4 = u8"vec4";
+    static constexpr std::string_view type_dvec2 = u8"dvec2";
+    static constexpr std::string_view type_dvec3 = u8"dvec3";
+    static constexpr std::string_view type_dvec4 = u8"dvec4";
+    static constexpr std::string_view type_bvec2 = u8"bvec2";
+    static constexpr std::string_view type_bvec3 = u8"bvec3";
+    static constexpr std::string_view type_bvec4 = u8"bvec4";
+    static constexpr std::string_view type_ivec2 = u8"ivec2";
+    static constexpr std::string_view type_ivec3 = u8"ivec3";
+    static constexpr std::string_view type_ivec4 = u8"ivec4";
+    static constexpr std::string_view type_uvec2 = u8"uvec2";
+    static constexpr std::string_view type_uvec3 = u8"uvec3";
+    static constexpr std::string_view type_uvec4 = u8"uvec4";
+    static constexpr std::string_view type_mat2 = u8"mat2";
+    static constexpr std::string_view type_mat2x2 = u8"mat2x2";
+    static constexpr std::string_view type_mat3 = u8"mat3";
+    static constexpr std::string_view type_mat3x3 = u8"mat3x3";
+    static constexpr std::string_view type_mat4 = u8"mat4";
+    static constexpr std::string_view type_mat4x4 = u8"mat4x4";
+    static constexpr std::string_view type_mat2x3 = u8"mat2x3";
+    static constexpr std::string_view type_mat2x4 = u8"mat2x4";
+    static constexpr std::string_view type_mat3x2 = u8"mat3x2";
+    static constexpr std::string_view type_mat3x4 = u8"mat3x4";
+    static constexpr std::string_view type_mat4x2 = u8"mat4x2";
+    static constexpr std::string_view type_mat4x3 = u8"mat4x3";
+    static constexpr std::string_view type_dmat2 = u8"dmat2";
+    static constexpr std::string_view type_dmat2x2 = u8"dmat2x2";
+    static constexpr std::string_view type_dmat3 = u8"dmat3";
+    static constexpr std::string_view type_dmat3x3 = u8"dmat3x3";
+    static constexpr std::string_view type_dmat4 = u8"dmat4";
+    static constexpr std::string_view type_dmat4x4 = u8"dmat4x4";
+    static constexpr std::string_view type_dmat2x3 = u8"dmat2x3";
+    static constexpr std::string_view type_dmat2x4 = u8"dmat2x4";
+    static constexpr std::string_view type_dmat3x2 = u8"dmat3x2";
+    static constexpr std::string_view type_dmat3x4 = u8"dmat3x4";
+    static constexpr std::string_view type_dmat4x2 = u8"dmat4x2";
+    static constexpr std::string_view type_dmat4x3 = u8"dmat4x3";
 
     // separators and operators
-    static constexpr std::string_view token_brace_open = "{";
-    static constexpr std::string_view token_brace_close = "}";
-    static constexpr std::string_view token_bracket_open = "[";
-    static constexpr std::string_view token_bracket_close = "]";
-    static constexpr std::string_view token_paren_open = "(";
-    static constexpr std::string_view token_paren_close = ")";
-    static constexpr std::string_view token_semicolon = ";";
-    static constexpr std::string_view token_colon = ":";
-    static constexpr std::string_view token_scope_resolution = "::";
-    static constexpr std::string_view token_comma = ",";
-    static constexpr std::string_view token_question = "?";
-    static constexpr std::string_view token_dot = ".";
-    static constexpr std::string_view token_double_quote = "\"";
-    static constexpr std::string_view token_plus = "+";
-    static constexpr std::string_view token_minus = "-";
-    static constexpr std::string_view token_multiply = "*";
-    static constexpr std::string_view token_divide = "/";
-    static constexpr std::string_view token_remainder = "%";
-    static constexpr std::string_view token_logic_and = "&&";
-    static constexpr std::string_view token_bit_and = "&";
-    static constexpr std::string_view token_logic_or = "||";
-    static constexpr std::string_view token_logic_xor = "^^";
-    static constexpr std::string_view token_bit_or = "|";
-    static constexpr std::string_view token_bit_xor = "^";
-    static constexpr std::string_view token_logic_not = "!";
-    static constexpr std::string_view token_bit_not = "~";
-    static constexpr std::string_view token_bit_lshift = "<<";
-    static constexpr std::string_view token_bit_rshift = ">>";
-    static constexpr std::string_view token_equal = "==";
-    static constexpr std::string_view token_not_equal = "!=";
-    static constexpr std::string_view token_less = "<";
-    static constexpr std::string_view token_greater = ">";
-    static constexpr std::string_view token_less_equal = "<=";
-    static constexpr std::string_view token_greater_equal = ">=";
-    static constexpr std::string_view token_assign = "=";
-    static constexpr std::string_view token_drill = "->";
-    static constexpr std::string_view token_increment = "++";
-    static constexpr std::string_view token_decrement = "--";
-    static constexpr std::string_view token_compound_plus = "+=";
-    static constexpr std::string_view token_compound_minus = "-=";
-    static constexpr std::string_view token_compound_multiply = "*=";
-    static constexpr std::string_view token_compound_divide = "/=";
-    static constexpr std::string_view token_compound_remainder = "%=";
-    static constexpr std::string_view token_compound_bit_and = "&=";
-    static constexpr std::string_view token_compound_bit_or = "|=";
-    static constexpr std::string_view token_compound_bit_xor = "^=";
-    static constexpr std::string_view token_compound_bit_lshift = "<<=";
-    static constexpr std::string_view token_compound_bit_rshift = ">>=";
+    static constexpr std::string_view token_brace_open = u8"{";
+    static constexpr std::string_view token_brace_close = u8"}";
+    static constexpr std::string_view token_bracket_open = u8"[";
+    static constexpr std::string_view token_bracket_close = u8"]";
+    static constexpr std::string_view token_paren_open = u8"(";
+    static constexpr std::string_view token_paren_close = u8")";
+    static constexpr std::string_view token_semicolon = u8";";
+    static constexpr std::string_view token_colon = u8":";
+    static constexpr std::string_view token_scope_resolution = u8"::";
+    static constexpr std::string_view token_comma = u8",";
+    static constexpr std::string_view token_question = u8"?";
+    static constexpr std::string_view token_dot = u8".";
+    static constexpr std::string_view token_double_quote = u8"\"";
+    static constexpr std::string_view token_plus = u8"+";
+    static constexpr std::string_view token_minus = u8"-";
+    static constexpr std::string_view token_multiply = u8"*";
+    static constexpr std::string_view token_divide = u8"/";
+    static constexpr std::string_view token_remainder = u8"%";
+    static constexpr std::string_view token_logic_and = u8"&&";
+    static constexpr std::string_view token_bit_and = u8"&";
+    static constexpr std::string_view token_logic_or = u8"||";
+    static constexpr std::string_view token_logic_xor = u8"^^";
+    static constexpr std::string_view token_bit_or = u8"|";
+    static constexpr std::string_view token_bit_xor = u8"^";
+    static constexpr std::string_view token_logic_not = u8"!";
+    static constexpr std::string_view token_bit_not = u8"~";
+    static constexpr std::string_view token_bit_lshift = u8"<<";
+    static constexpr std::string_view token_bit_rshift = u8">>";
+    static constexpr std::string_view token_equal = u8"==";
+    static constexpr std::string_view token_not_equal = u8"!=";
+    static constexpr std::string_view token_less = u8"<";
+    static constexpr std::string_view token_greater = u8">";
+    static constexpr std::string_view token_less_equal = u8"<=";
+    static constexpr std::string_view token_greater_equal = u8">=";
+    static constexpr std::string_view token_assign = u8"=";
+    static constexpr std::string_view token_drill = u8"->";
+    static constexpr std::string_view token_increment = u8"++";
+    static constexpr std::string_view token_decrement = u8"--";
+    static constexpr std::string_view token_compound_plus = u8"+=";
+    static constexpr std::string_view token_compound_minus = u8"-=";
+    static constexpr std::string_view token_compound_multiply = u8"*=";
+    static constexpr std::string_view token_compound_divide = u8"/=";
+    static constexpr std::string_view token_compound_remainder = u8"%=";
+    static constexpr std::string_view token_compound_bit_and = u8"&=";
+    static constexpr std::string_view token_compound_bit_or = u8"|=";
+    static constexpr std::string_view token_compound_bit_xor = u8"^=";
+    static constexpr std::string_view token_compound_bit_lshift = u8"<<=";
+    static constexpr std::string_view token_compound_bit_rshift = u8">>=";
 
     static bool is_whitespace(char32 c) {
         return (c <= 32) | (c == 127);
@@ -836,8 +883,35 @@ namespace vush {
         }
 
         Type* try_type() {
+            static constexpr std::string_view builtin_types_strings[] = {
+                type_void,    type_bool,   type_int,     type_uint,    type_float,   type_double,  type_vec2,    type_vec3,    type_vec4,
+                type_dvec2,   type_dvec3,  type_dvec4,   type_bvec2,   type_bvec3,   type_bvec4,   type_ivec2,   type_ivec3,   type_ivec4,
+                type_uvec2,   type_uvec3,  type_uvec4,   type_mat2,    type_mat2x2,  type_mat3,    type_mat3x3,  type_mat4,    type_mat4x4,
+                type_mat2x3,  type_mat2x4, type_mat3x2,  type_mat3x4,  type_mat4x2,  type_mat4x3,  type_dmat2,   type_dmat2x2, type_dmat3,
+                type_dmat3x3, type_dmat4,  type_dmat4x4, type_dmat2x3, type_dmat2x4, type_dmat3x2, type_dmat3x4, type_dmat4x2, type_dmat4x3};
+
+            static constexpr Builtin_GLSL_Type builtin_types[] = {
+                Builtin_GLSL_Type::glsl_void,    Builtin_GLSL_Type::glsl_bool,    Builtin_GLSL_Type::glsl_int,     Builtin_GLSL_Type::glsl_uint,
+                Builtin_GLSL_Type::glsl_float,   Builtin_GLSL_Type::glsl_double,  Builtin_GLSL_Type::glsl_vec2,    Builtin_GLSL_Type::glsl_vec3,
+                Builtin_GLSL_Type::glsl_vec4,    Builtin_GLSL_Type::glsl_dvec2,   Builtin_GLSL_Type::glsl_dvec3,   Builtin_GLSL_Type::glsl_dvec4,
+                Builtin_GLSL_Type::glsl_bvec2,   Builtin_GLSL_Type::glsl_bvec3,   Builtin_GLSL_Type::glsl_bvec4,   Builtin_GLSL_Type::glsl_ivec2,
+                Builtin_GLSL_Type::glsl_ivec3,   Builtin_GLSL_Type::glsl_ivec4,   Builtin_GLSL_Type::glsl_uvec2,   Builtin_GLSL_Type::glsl_uvec3,
+                Builtin_GLSL_Type::glsl_uvec4,   Builtin_GLSL_Type::glsl_mat2,    Builtin_GLSL_Type::glsl_mat2,    Builtin_GLSL_Type::glsl_mat3,
+                Builtin_GLSL_Type::glsl_mat3,    Builtin_GLSL_Type::glsl_mat4,    Builtin_GLSL_Type::glsl_mat4,    Builtin_GLSL_Type::glsl_mat2x3,
+                Builtin_GLSL_Type::glsl_mat2x4,  Builtin_GLSL_Type::glsl_mat3x2,  Builtin_GLSL_Type::glsl_mat3x4,  Builtin_GLSL_Type::glsl_mat4x2,
+                Builtin_GLSL_Type::glsl_mat4x3,  Builtin_GLSL_Type::glsl_dmat2,   Builtin_GLSL_Type::glsl_dmat2,   Builtin_GLSL_Type::glsl_dmat3,
+                Builtin_GLSL_Type::glsl_dmat3,   Builtin_GLSL_Type::glsl_dmat4,   Builtin_GLSL_Type::glsl_dmat4,   Builtin_GLSL_Type::glsl_dmat2x3,
+                Builtin_GLSL_Type::glsl_dmat2x4, Builtin_GLSL_Type::glsl_dmat3x2, Builtin_GLSL_Type::glsl_dmat3x4, Builtin_GLSL_Type::glsl_dmat4x2,
+                Builtin_GLSL_Type::glsl_dmat4x3};
+
+            for(i64 i = 0; i < 45; ++i) {
+                if(_lexer.match(builtin_types_strings[i], true)) {
+                    return new Builtin_Type(builtin_types[i]);
+                }
+            }
+
             if(std::string name; _lexer.match_identifier(name)) {
-                return new Type(std::move(name));
+                return new User_Defined_Type(std::move(name));
             } else {
                 set_error("expected identifier");
                 return nullptr;

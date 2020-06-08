@@ -1,9 +1,9 @@
 #include <vush/vush.hpp>
 
+#include <const_expr_eval.hpp>
 #include <context.hpp>
 #include <filesystem.hpp>
-// #include <hierarchy_printer.hpp>
-#include <const_expr_eval.hpp>
+#include <hierarchy_printer.hpp>
 #include <parser.hpp>
 #include <symbol.hpp>
 #include <utility.hpp>
@@ -71,7 +71,7 @@ namespace vush {
 
                 case AST_Node_Type::declaration_if: {
                     Owning_Ptr<Declaration_If> node = static_cast<Declaration_If*>(ast->declarations[i].release());
-                    Expected<Const_Expr_Value, String> result = evaluate_expr(ctx, *node->condition.get());
+                    Expected<Const_Expr_Value, String> result = evaluate_expr(ctx, *node->condition);
                     if(!result) {
                         return {expected_error, std::move(result.error())};
                     }
@@ -127,8 +127,8 @@ namespace vush {
             for(Constant_Define const* define = defines; define != defines_end; ++define) {
                 Symbol symbol;
                 symbol.type = Symbol_Type::constant;
-                Constant_Declaration* decl =
-                    new Constant_Declaration(new Type("i32"), new Identifier(define->name), new Integer_Literal(std::to_string(define->value)));
+                Constant_Declaration* decl = new Constant_Declaration(new Builtin_Type(Builtin_GLSL_Type::glsl_int), new Identifier(define->name),
+                                                                      new Integer_Literal(std::to_string(define->value)));
                 constant_decls.emplace_back(decl);
                 symbol.declaration = decl;
                 ctx.global_symbols.emplace(define->name, symbol);
@@ -140,8 +140,8 @@ namespace vush {
             return {expected_error, std::move(result.error())};
         }
 
-        // Hierarchy_Printer printer(std::cout);
-        // result.value()->visit(printer);
+        Hierarchy_Printer printer(std::cout);
+        printer.print_hierarchy(*result.value());
 
         for(auto& kv: ctx.global_symbols) {
             std::cout << kv.first << '\n';
