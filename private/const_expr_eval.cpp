@@ -133,7 +133,7 @@ namespace vush {
                     std::string stringified_relational = expr.is_equality ? u8"==" : u8"!=";
                     return {expected_error, build_error_message(*ctx.current_file, 0, 0,
                                                                 u8"left-hand side of '" + stringified_relational +
-                                                                    "' is not of a scalar integer or a scalar floating-point type.")};
+                                                                    "' is not of a scalar integer or a scalar floating-point type")};
                 }
 
                 if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
@@ -141,7 +141,7 @@ namespace vush {
                     std::string stringified_relational = expr.is_equality ? u8"==" : u8"!=";
                     return {expected_error, build_error_message(*ctx.current_file, 0, 0,
                                                                 u8"right-hand side of '" + stringified_relational +
-                                                                    "' is not of a scalar integer or a scalar floating-point type.")};
+                                                                    "' is not of a scalar integer or a scalar floating-point type")};
                 }
 
                 Const_Expr_Value e;
@@ -215,7 +215,7 @@ namespace vush {
 
                     return {expected_error, build_error_message(*ctx.current_file, 0, 0,
                                                                 u8"left-hand side of '" + stringified_relational +
-                                                                    "' is not of a scalar integer or a scalar floating-point type.")};
+                                                                    "' is not of a scalar integer or a scalar floating-point type")};
                 }
 
                 if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
@@ -238,7 +238,7 @@ namespace vush {
 
                     return {expected_error, build_error_message(*ctx.current_file, 0, 0,
                                                                 u8"right-hand side of '" + stringified_relational +
-                                                                    "' is not of a scalar integer or a scalar floating-point type.")};
+                                                                    "' is not of a scalar integer or a scalar floating-point type")};
                 }
 
                 Const_Expr_Value e;
@@ -312,9 +312,97 @@ namespace vush {
 
                 // case AST_Node_Type::bit_and_expr: {}
 
-                // case AST_Node_Type::lshift_expr: {}
+            case AST_Node_Type::lshift_expr: {
+                LShift_Expr& expr = (LShift_Expr&)expression;
+                Expected<Const_Expr_Value, String> lhs_res = evaluate_expr(ctx, *expr.lhs);
+                if(!lhs_res) {
+                    return {expected_error, std::move(lhs_res.error())};
+                }
 
-                // case AST_Node_Type::rshift_expr: {}
+                Expected<Const_Expr_Value, String> rhs_res = evaluate_expr(ctx, *expr.rhs);
+                if(!rhs_res) {
+                    return {expected_error, std::move(rhs_res.error())};
+                }
+
+                Const_Expr_Value lhs = lhs_res.value();
+                Const_Expr_Value rhs = rhs_res.value();
+                if(lhs.type != Expr_Value_Type::uint32 && lhs.type != Expr_Value_Type::int32) {
+                    return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"left-hand side of '<<' is not of a scalar integer type")};
+                }
+
+                if(rhs.type != Expr_Value_Type::uint32 && rhs.type != Expr_Value_Type::int32) {
+                    return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"right-hand side of '<<' is not of a scalar integer type")};
+                }
+
+                Const_Expr_Value e;
+                e.type = lhs.type;
+                e.uint32 = lhs.uint32;
+                if(rhs.type == Expr_Value_Type::int32) {
+                    i32 shift = rhs.int32;
+                    if(shift < 0) {
+                        return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"right-hand side of '<<' is negative")};
+                    }
+
+                    e.uint32 <<= shift;
+                } else {
+                    e.uint32 <<= rhs.uint32;
+                }
+
+                return {expected_value, e};
+            }
+
+            case AST_Node_Type::rshift_expr: {
+                RShift_Expr& expr = (RShift_Expr&)expression;
+                Expected<Const_Expr_Value, String> lhs_res = evaluate_expr(ctx, *expr.lhs);
+                if(!lhs_res) {
+                    return {expected_error, std::move(lhs_res.error())};
+                }
+
+                Expected<Const_Expr_Value, String> rhs_res = evaluate_expr(ctx, *expr.rhs);
+                if(!rhs_res) {
+                    return {expected_error, std::move(rhs_res.error())};
+                }
+
+                Const_Expr_Value lhs = lhs_res.value();
+                Const_Expr_Value rhs = rhs_res.value();
+                if(lhs.type != Expr_Value_Type::uint32 && lhs.type != Expr_Value_Type::int32) {
+                    return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"left-hand side of '>>' is not of a scalar integer type")};
+                }
+
+                if(rhs.type != Expr_Value_Type::uint32 && rhs.type != Expr_Value_Type::int32) {
+                    return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"right-hand side of '>>' is not of a scalar integer type")};
+                }
+
+                Const_Expr_Value e;
+                e.type = lhs.type;
+                if(lhs.type == Expr_Value_Type::int32) {
+                    e.int32 = lhs.int32;
+                    if(rhs.type == Expr_Value_Type::int32) {
+                        i32 shift = rhs.int32;
+                        if(shift < 0) {
+                            return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"right-hand side of '>>' is negative")};
+                        }
+
+                        e.int32 >>= shift;
+                    } else {
+                        e.int32 >>= rhs.uint32;
+                    }
+                } else {
+                    e.uint32 = lhs.uint32;
+                    if(rhs.type == Expr_Value_Type::int32) {
+                        i32 shift = rhs.int32;
+                        if(shift < 0) {
+                            return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"right-hand side of '>>' is negative")};
+                        }
+
+                        e.int32 >>= shift;
+                    } else {
+                        e.int32 >>= rhs.uint32;
+                    }
+                }
+
+                return {expected_value, e};
+            }
 
                 // case AST_Node_Type::add_expr: {}
 
