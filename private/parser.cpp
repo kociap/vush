@@ -6,8 +6,7 @@
 // TODO: Figure out a way to match operators that use overlapping symbols (+ and +=) in a clean way.
 // TODO: const and array types.
 // TODO: Add settings block.
-// TODO: Return sourced param only when the 'from' keyword appears
-// TODO: Add ?: . Should we include comma?
+// TODO: Should we include comma?
 
 namespace vush {
     // keywords
@@ -661,7 +660,6 @@ namespace vush {
             // Match parameters
             Owning_Ptr param_list = new Function_Param_List;
             {
-                Lexer_State const param_list_backup = _lexer.get_current_state();
                 do {
                     if(Function_Param* param = try_function_param(allow_sourced_params)) {
                         param_list->append_parameter(param);
@@ -1310,6 +1308,41 @@ namespace vush {
             } else {
                 return new Arithmetic_Assignment_Expression(type, lhs.release(), rhs.release());
             }
+        }
+
+        Expression* try_elvis_expr() {
+            Lexer_State const state_backup = _lexer.get_current_state();
+            Owning_Ptr cond = try_logic_or_expr();
+            if(!cond) {
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            if(!_lexer.match(token_question)) {
+                return cond.release();
+            }
+
+            // TODO: is using try_expression here correct?
+
+            Owning_Ptr true_expr = try_expression();
+            if(!true_expr) {
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            if(!_lexer.match(token_colon)) {
+                set_error(u8"expected ':'");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            Owning_Ptr false_expr = try_expression();
+            if(!false_expr) {
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            return new Elvis_Expr(cond.release(), true_expr.release(), false_expr.release());
         }
 
         Expression* try_logic_or_expr() {

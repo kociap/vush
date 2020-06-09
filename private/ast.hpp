@@ -28,6 +28,7 @@ namespace vush {
         identifier_expression,
         assignment_expression,
         arithmetic_assignment_expression,
+        elvis_expr,
         logic_or_expr,
         logic_xor_expr,
         logic_and_expr,
@@ -425,6 +426,15 @@ namespace vush {
 
         Arithmetic_Assignment_Expression(Arithmetic_Assignment_Type type, Expression* lhs, Expression* rhs)
             : Expression({}, AST_Node_Type::arithmetic_assignment_expression), lhs(lhs), rhs(rhs), type(type) {}
+    };
+
+    struct Elvis_Expr: public Expression {
+        Owning_Ptr<Expression> condition;
+        Owning_Ptr<Expression> true_expr;
+        Owning_Ptr<Expression> false_expr;
+
+        Elvis_Expr(Expression* condition, Expression* true_expr, Expression* false_expr)
+            : Expression({}, AST_Node_Type::elvis_expr), condition(condition), true_expr(true_expr), false_expr(false_expr) {}
     };
 
     struct Logic_Or_Expr: public Expression {

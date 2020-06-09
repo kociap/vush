@@ -292,6 +292,17 @@ namespace vush {
                     return;
                 }
 
+                case AST_Node_Type::elvis_expr: {
+                    Elvis_Expr& node = (Elvis_Expr&)ast_node;
+                    stream << indent << u8"Elvis_Expr:\n";
+                    indent += 1;
+                    print_hierarchy(*node.condition);
+                    print_hierarchy(*node.true_expr);
+                    print_hierarchy(*node.false_expr);
+                    indent -= 1;
+                    return;
+                }
+
                 case AST_Node_Type::logic_or_expr: {
                     Logic_Or_Expr& node = (Logic_Or_Expr&)ast_node;
                     stream << indent << "Logic_Or_Expr:\n";
