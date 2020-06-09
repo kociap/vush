@@ -140,8 +140,8 @@ namespace vush {
             return {expected_error, std::move(result.error())};
         }
 
-        Hierarchy_Printer printer(std::cout);
-        printer.print_hierarchy(*result.value());
+        // Hierarchy_Printer printer(std::cout);
+        // printer.print_hierarchy(*result.value());
 
         for(auto& kv: ctx.global_symbols) {
             std::cout << kv.first << '\n';

@@ -404,17 +404,246 @@ namespace vush {
                 return {expected_value, e};
             }
 
-                // case AST_Node_Type::add_expr: {}
+            case AST_Node_Type::add_expr: {
+                Add_Expr& expr = (Add_Expr&)expression;
+                Expected<Const_Expr_Value, String> lhs_res = evaluate_expr(ctx, *expr.lhs);
+                if(!lhs_res) {
+                    return {expected_error, std::move(lhs_res.error())};
+                }
 
-                // case AST_Node_Type::sub_expr: {}
+                Expected<Const_Expr_Value, String> rhs_res = evaluate_expr(ctx, *expr.rhs);
+                if(!rhs_res) {
+                    return {expected_error, std::move(rhs_res.error())};
+                }
 
-                // case AST_Node_Type::mul_expr: {}
+                // TODO: Expand to include vectors and matrices.
 
-                // case AST_Node_Type::div_expr: {}
+                Const_Expr_Value lhs = lhs_res.value();
+                Const_Expr_Value rhs = rhs_res.value();
+                if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
+                   lhs.type != Expr_Value_Type::int32) {
+                    return {expected_error,
+                            build_error_message(*ctx.current_file, 0, 0, u8"left-hand side of '+' is not of a scalar integer or a scalar floating-point type")};
+                }
 
-                // case AST_Node_Type::mod_expr: {}
+                if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
+                   rhs.type != Expr_Value_Type::int32) {
+                    return {expected_error, build_error_message(*ctx.current_file, 0, 0,
+                                                                u8"right-hand side of '+' is not of a scalar integer or a scalar floating-point type")};
+                }
 
-                // case AST_Node_Type::unary_expression: {}
+                Const_Expr_Value e;
+                e.type = Expr_Value_Type::boolean;
+                if(lhs.type == Expr_Value_Type::float64 || rhs.type == Expr_Value_Type::float64) {
+                    e.type = Expr_Value_Type::float64;
+                    e.float64 = lhs.as_float64() + rhs.as_float64();
+                    return {expected_value, e};
+                } else if(lhs.type == Expr_Value_Type::float32 || rhs.type == Expr_Value_Type::float32) {
+                    e.type = Expr_Value_Type::float32;
+                    e.float32 = lhs.as_float32() + rhs.as_float32();
+                    return {expected_value, e};
+                } else if(lhs.type == Expr_Value_Type::uint32 || rhs.type == Expr_Value_Type::uint32) {
+                    e.type = Expr_Value_Type::uint32;
+                    e.uint32 = lhs.as_uint32() + rhs.as_uint32();
+                    return {expected_value, e};
+                } else {
+                    e.type = Expr_Value_Type::int32;
+                    e.int32 = lhs.as_int32() + rhs.as_int32();
+                    return {expected_value, e};
+                }
+            }
+
+            case AST_Node_Type::sub_expr: {
+                Sub_Expr& expr = (Sub_Expr&)expression;
+                Expected<Const_Expr_Value, String> lhs_res = evaluate_expr(ctx, *expr.lhs);
+                if(!lhs_res) {
+                    return {expected_error, std::move(lhs_res.error())};
+                }
+
+                Expected<Const_Expr_Value, String> rhs_res = evaluate_expr(ctx, *expr.rhs);
+                if(!rhs_res) {
+                    return {expected_error, std::move(rhs_res.error())};
+                }
+
+                // TODO: Expand to include vectors and matrices.
+
+                Const_Expr_Value lhs = lhs_res.value();
+                Const_Expr_Value rhs = rhs_res.value();
+                if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
+                   lhs.type != Expr_Value_Type::int32) {
+                    return {expected_error,
+                            build_error_message(*ctx.current_file, 0, 0, u8"left-hand side of '+' is not of a scalar integer or a scalar floating-point type")};
+                }
+
+                if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
+                   rhs.type != Expr_Value_Type::int32) {
+                    return {expected_error, build_error_message(*ctx.current_file, 0, 0,
+                                                                u8"right-hand side of '+' is not of a scalar integer or a scalar floating-point type")};
+                }
+
+                Const_Expr_Value e;
+                e.type = Expr_Value_Type::boolean;
+                if(lhs.type == Expr_Value_Type::float64 || rhs.type == Expr_Value_Type::float64) {
+                    e.type = Expr_Value_Type::float64;
+                    e.float64 = lhs.as_float64() - rhs.as_float64();
+                    return {expected_value, e};
+                } else if(lhs.type == Expr_Value_Type::float32 || rhs.type == Expr_Value_Type::float32) {
+                    e.type = Expr_Value_Type::float32;
+                    e.float32 = lhs.as_float32() - rhs.as_float32();
+                    return {expected_value, e};
+                } else if(lhs.type == Expr_Value_Type::uint32 || rhs.type == Expr_Value_Type::uint32) {
+                    e.type = Expr_Value_Type::uint32;
+                    e.uint32 = lhs.as_uint32() - rhs.as_uint32();
+                    return {expected_value, e};
+                } else {
+                    e.type = Expr_Value_Type::int32;
+                    e.int32 = lhs.as_int32() - rhs.as_int32();
+                    return {expected_value, e};
+                }
+            }
+
+            case AST_Node_Type::mul_expr: {
+                Mul_Expr& expr = (Mul_Expr&)expression;
+                Expected<Const_Expr_Value, String> lhs_res = evaluate_expr(ctx, *expr.lhs);
+                if(!lhs_res) {
+                    return {expected_error, std::move(lhs_res.error())};
+                }
+
+                Expected<Const_Expr_Value, String> rhs_res = evaluate_expr(ctx, *expr.rhs);
+                if(!rhs_res) {
+                    return {expected_error, std::move(rhs_res.error())};
+                }
+
+                // TODO: Expand to include vectors and matrices.
+
+                Const_Expr_Value lhs = lhs_res.value();
+                Const_Expr_Value rhs = rhs_res.value();
+                if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
+                   lhs.type != Expr_Value_Type::int32) {
+                    return {expected_error,
+                            build_error_message(*ctx.current_file, 0, 0, u8"left-hand side of '+' is not of a scalar integer or a scalar floating-point type")};
+                }
+
+                if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
+                   rhs.type != Expr_Value_Type::int32) {
+                    return {expected_error, build_error_message(*ctx.current_file, 0, 0,
+                                                                u8"right-hand side of '+' is not of a scalar integer or a scalar floating-point type")};
+                }
+
+                Const_Expr_Value e;
+                e.type = Expr_Value_Type::boolean;
+                if(lhs.type == Expr_Value_Type::float64 || rhs.type == Expr_Value_Type::float64) {
+                    e.type = Expr_Value_Type::float64;
+                    e.float64 = lhs.as_float64() * rhs.as_float64();
+                    return {expected_value, e};
+                } else if(lhs.type == Expr_Value_Type::float32 || rhs.type == Expr_Value_Type::float32) {
+                    e.type = Expr_Value_Type::float32;
+                    e.float32 = lhs.as_float32() * rhs.as_float32();
+                    return {expected_value, e};
+                } else if(lhs.type == Expr_Value_Type::uint32 || rhs.type == Expr_Value_Type::uint32) {
+                    e.type = Expr_Value_Type::uint32;
+                    e.uint32 = lhs.as_uint32() * rhs.as_uint32();
+                    return {expected_value, e};
+                } else {
+                    e.type = Expr_Value_Type::int32;
+                    e.int32 = lhs.as_int32() * rhs.as_int32();
+                    return {expected_value, e};
+                }
+            }
+
+            case AST_Node_Type::div_expr: {
+                Div_Expr& expr = (Div_Expr&)expression;
+                Expected<Const_Expr_Value, String> lhs_res = evaluate_expr(ctx, *expr.lhs);
+                if(!lhs_res) {
+                    return {expected_error, std::move(lhs_res.error())};
+                }
+
+                Expected<Const_Expr_Value, String> rhs_res = evaluate_expr(ctx, *expr.rhs);
+                if(!rhs_res) {
+                    return {expected_error, std::move(rhs_res.error())};
+                }
+
+                // TODO: Expand to include vectors and matrices.
+
+                Const_Expr_Value lhs = lhs_res.value();
+                Const_Expr_Value rhs = rhs_res.value();
+                if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
+                   lhs.type != Expr_Value_Type::int32) {
+                    return {expected_error,
+                            build_error_message(*ctx.current_file, 0, 0, u8"left-hand side of '+' is not of a scalar integer or a scalar floating-point type")};
+                }
+
+                if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
+                   rhs.type != Expr_Value_Type::int32) {
+                    return {expected_error, build_error_message(*ctx.current_file, 0, 0,
+                                                                u8"right-hand side of '+' is not of a scalar integer or a scalar floating-point type")};
+                }
+
+                Const_Expr_Value e;
+                e.type = Expr_Value_Type::boolean;
+                if(lhs.type == Expr_Value_Type::float64 || rhs.type == Expr_Value_Type::float64) {
+                    e.type = Expr_Value_Type::float64;
+                    e.float64 = lhs.as_float64() / rhs.as_float64();
+                    return {expected_value, e};
+                } else if(lhs.type == Expr_Value_Type::float32 || rhs.type == Expr_Value_Type::float32) {
+                    e.type = Expr_Value_Type::float32;
+                    e.float32 = lhs.as_float32() / rhs.as_float32();
+                    return {expected_value, e};
+                } else if(lhs.type == Expr_Value_Type::uint32 || rhs.type == Expr_Value_Type::uint32) {
+                    e.type = Expr_Value_Type::uint32;
+                    e.uint32 = lhs.as_uint32() / rhs.as_uint32();
+                    return {expected_value, e};
+                } else {
+                    e.type = Expr_Value_Type::int32;
+                    e.int32 = lhs.as_int32() / rhs.as_int32();
+                    return {expected_value, e};
+                }
+            }
+
+            case AST_Node_Type::mod_expr: {
+                Add_Expr& expr = (Add_Expr&)expression;
+                Expected<Const_Expr_Value, String> lhs_res = evaluate_expr(ctx, *expr.lhs);
+                if(!lhs_res) {
+                    return {expected_error, std::move(lhs_res.error())};
+                }
+
+                Expected<Const_Expr_Value, String> rhs_res = evaluate_expr(ctx, *expr.rhs);
+                if(!rhs_res) {
+                    return {expected_error, std::move(rhs_res.error())};
+                }
+
+                // TODO: Expand to include integer vectors.
+
+                Const_Expr_Value lhs = lhs_res.value();
+                Const_Expr_Value rhs = rhs_res.value();
+                if(lhs.type != Expr_Value_Type::uint32 && lhs.type != Expr_Value_Type::int32) {
+                    return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"left-hand side of '+' is not of a scalar integer type")};
+                }
+
+                if(rhs.type != Expr_Value_Type::uint32 && rhs.type != Expr_Value_Type::int32) {
+                    return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"right-hand side of '+' is not of a scalar integer type")};
+                }
+
+                Const_Expr_Value e;
+                e.type = Expr_Value_Type::boolean;
+                if(lhs.type == Expr_Value_Type::float64 || rhs.type == Expr_Value_Type::float64) {
+                    e.type = Expr_Value_Type::float64;
+                    e.float64 = lhs.as_float64() / rhs.as_float64();
+                    return {expected_value, e};
+                } else if(lhs.type == Expr_Value_Type::float32 || rhs.type == Expr_Value_Type::float32) {
+                    e.type = Expr_Value_Type::float32;
+                    e.float32 = lhs.as_float32() / rhs.as_float32();
+                    return {expected_value, e};
+                } else if(lhs.type == Expr_Value_Type::uint32 || rhs.type == Expr_Value_Type::uint32) {
+                    e.type = Expr_Value_Type::uint32;
+                    e.uint32 = lhs.as_uint32() / rhs.as_uint32();
+                    return {expected_value, e};
+                } else {
+                    e.type = Expr_Value_Type::int32;
+                    e.int32 = lhs.as_int32() / rhs.as_int32();
+                    return {expected_value, e};
+                }
+            }
 
                 // case AST_Node_Type::member_access_expression: {}
 
