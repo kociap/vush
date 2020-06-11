@@ -34,6 +34,16 @@ namespace vush {
         return stream;
     }
 
+    std::ostream& operator<<(std::ostream& stream, anton::String const& str) {
+        stream << str.data();
+        return stream;
+    }
+
+    std::ostream& operator<<(std::ostream& stream, anton::String_View const& str) {
+        stream << str.data();
+        return stream;
+    }
+
     struct Hierarchy_Printer {
     public:
         Hierarchy_Printer(std::ostream& ostream): stream(ostream), indent{0} {}
@@ -200,12 +210,10 @@ namespace vush {
 
                 case AST_Node_Type::pass_stage_declaration: {
                     Pass_Stage_Declaration& node = (Pass_Stage_Declaration&)ast_node;
-                    stream << indent << "Pass_Stage_Declaration:\n";
+                    stream << indent << "Pass_Stage_Declaration " + stringify(node.stage) + ":\n";
                     indent += 2;
                     stream << (indent - 1) << "Pass:\n";
                     print_hierarchy(*node.pass);
-                    stream << (indent - 1) << "Name:\n";
-                    print_hierarchy(*node.name);
                     stream << (indent - 1) << "Parameter List:\n";
                     print_hierarchy(*node.param_list);
                     stream << (indent - 1) << "Return_Type:\n";

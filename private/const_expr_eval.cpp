@@ -8,19 +8,19 @@ namespace vush {
         return true;
     }
 
-    Expected<Const_Expr_Value, String> evaluate_expr(Context& ctx, Expression& expression) {
+    Expected<Const_Expr_Value, anton::String> evaluate_expr(Context& ctx, Expression& expression) {
         switch(expression.node_type) {
             case AST_Node_Type::identifier_expression: {
                 Identifier_Expression& expr = (Identifier_Expression&)expression;
                 auto iter = ctx.global_symbols.find(expr.identifier->identifier);
                 if(iter == ctx.global_symbols.end()) {
-                    std::string msg = u8"unknown identifier '" + expr.identifier->identifier + u8"'";
+                    anton::String msg = u8"unknown identifier '" + expr.identifier->identifier + u8"'";
                     return {expected_error, build_error_message(*ctx.current_file, 0, 0, msg)};
                 }
 
-                Symbol const& symbol = iter->second;
+                Symbol const& symbol = iter->value;
                 if(symbol.type != Symbol_Type::constant) {
-                    std::string msg = u8"identifier '" + expr.identifier->identifier + u8"' does not name a constant";
+                    anton::String msg = u8"identifier '" + expr.identifier->identifier + u8"' does not name a constant";
                     return {expected_error, build_error_message(*ctx.current_file, 0, 0, msg)};
                 }
 
@@ -30,18 +30,18 @@ namespace vush {
 
             case AST_Node_Type::logic_or_expr: {
                 Logic_Or_Expr& expr = (Logic_Or_Expr&)expression;
-                Expected<Const_Expr_Value, String> lhs_res = evaluate_expr(ctx, *expr.lhs);
+                Expected<Const_Expr_Value, anton::String> lhs_res = evaluate_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
-                    return {expected_error, std::move(lhs_res.error())};
+                    return {expected_error, anton::move(lhs_res.error())};
                 }
 
                 if(!is_implicitly_convertible_to_boolean(lhs_res.value().type)) {
                     return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"expression is not implicitly convertible to bool")};
                 }
 
-                Expected<Const_Expr_Value, String> rhs_res = evaluate_expr(ctx, *expr.rhs);
+                Expected<Const_Expr_Value, anton::String> rhs_res = evaluate_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
-                    return {expected_error, std::move(rhs_res.error())};
+                    return {expected_error, anton::move(rhs_res.error())};
                 }
 
                 if(!is_implicitly_convertible_to_boolean(rhs_res.value().type)) {
@@ -58,18 +58,18 @@ namespace vush {
 
             case AST_Node_Type::logic_xor_expr: {
                 Logic_Or_Expr& expr = (Logic_Or_Expr&)expression;
-                Expected<Const_Expr_Value, String> lhs_res = evaluate_expr(ctx, *expr.lhs);
+                Expected<Const_Expr_Value, anton::String> lhs_res = evaluate_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
-                    return {expected_error, std::move(lhs_res.error())};
+                    return {expected_error, anton::move(lhs_res.error())};
                 }
 
                 if(!is_implicitly_convertible_to_boolean(lhs_res.value().type)) {
                     return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"expression is not implicitly convertible to bool")};
                 }
 
-                Expected<Const_Expr_Value, String> rhs_res = evaluate_expr(ctx, *expr.rhs);
+                Expected<Const_Expr_Value, anton::String> rhs_res = evaluate_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
-                    return {expected_error, std::move(rhs_res.error())};
+                    return {expected_error, anton::move(rhs_res.error())};
                 }
 
                 if(!is_implicitly_convertible_to_boolean(rhs_res.value().type)) {
@@ -86,18 +86,18 @@ namespace vush {
 
             case AST_Node_Type::logic_and_expr: {
                 Logic_Or_Expr& expr = (Logic_Or_Expr&)expression;
-                Expected<Const_Expr_Value, String> lhs_res = evaluate_expr(ctx, *expr.lhs);
+                Expected<Const_Expr_Value, anton::String> lhs_res = evaluate_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
-                    return {expected_error, std::move(lhs_res.error())};
+                    return {expected_error, anton::move(lhs_res.error())};
                 }
 
                 if(!is_implicitly_convertible_to_boolean(lhs_res.value().type)) {
                     return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"expression is not implicitly convertible to bool")};
                 }
 
-                Expected<Const_Expr_Value, String> rhs_res = evaluate_expr(ctx, *expr.rhs);
+                Expected<Const_Expr_Value, anton::String> rhs_res = evaluate_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
-                    return {expected_error, std::move(rhs_res.error())};
+                    return {expected_error, anton::move(rhs_res.error())};
                 }
 
                 if(!is_implicitly_convertible_to_boolean(rhs_res.value().type)) {
@@ -114,14 +114,14 @@ namespace vush {
 
             case AST_Node_Type::relational_equality_expression: {
                 Relational_Equality_Expression& expr = (Relational_Equality_Expression&)expression;
-                Expected<Const_Expr_Value, String> lhs_res = evaluate_expr(ctx, *expr.lhs);
+                Expected<Const_Expr_Value, anton::String> lhs_res = evaluate_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
-                    return {expected_error, std::move(lhs_res.error())};
+                    return {expected_error, anton::move(lhs_res.error())};
                 }
 
-                Expected<Const_Expr_Value, String> rhs_res = evaluate_expr(ctx, *expr.rhs);
+                Expected<Const_Expr_Value, anton::String> rhs_res = evaluate_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
-                    return {expected_error, std::move(rhs_res.error())};
+                    return {expected_error, anton::move(rhs_res.error())};
                 }
 
                 // TODO: Extend to actual glsl behaviour of == and != operators
@@ -130,7 +130,7 @@ namespace vush {
                 Const_Expr_Value rhs = rhs_res.value();
                 if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
                    lhs.type != Expr_Value_Type::int32) {
-                    std::string stringified_relational = expr.is_equality ? u8"==" : u8"!=";
+                    anton::String stringified_relational = expr.is_equality ? u8"==" : u8"!=";
                     return {expected_error, build_error_message(*ctx.current_file, 0, 0,
                                                                 u8"left-hand side of '" + stringified_relational +
                                                                     "' is not of a scalar integer or a scalar floating-point type")};
@@ -138,7 +138,7 @@ namespace vush {
 
                 if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
                    rhs.type != Expr_Value_Type::int32) {
-                    std::string stringified_relational = expr.is_equality ? u8"==" : u8"!=";
+                    anton::String stringified_relational = expr.is_equality ? u8"==" : u8"!=";
                     return {expected_error, build_error_message(*ctx.current_file, 0, 0,
                                                                 u8"right-hand side of '" + stringified_relational +
                                                                     "' is not of a scalar integer or a scalar floating-point type")};
@@ -183,21 +183,21 @@ namespace vush {
 
             case AST_Node_Type::relational_expression: {
                 Relational_Expression& expr = (Relational_Expression&)expression;
-                Expected<Const_Expr_Value, String> lhs_res = evaluate_expr(ctx, *expr.lhs);
+                Expected<Const_Expr_Value, anton::String> lhs_res = evaluate_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
-                    return {expected_error, std::move(lhs_res.error())};
+                    return {expected_error, anton::move(lhs_res.error())};
                 }
 
-                Expected<Const_Expr_Value, String> rhs_res = evaluate_expr(ctx, *expr.rhs);
+                Expected<Const_Expr_Value, anton::String> rhs_res = evaluate_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
-                    return {expected_error, std::move(rhs_res.error())};
+                    return {expected_error, anton::move(rhs_res.error())};
                 }
 
                 Const_Expr_Value lhs = lhs_res.value();
                 Const_Expr_Value rhs = rhs_res.value();
                 if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
                    lhs.type != Expr_Value_Type::int32) {
-                    std::string stringified_relational;
+                    anton::String stringified_relational;
                     switch(expr.type) {
                         case Relational_Type::greater_than:
                             stringified_relational = u8">";
@@ -220,7 +220,7 @@ namespace vush {
 
                 if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
                    rhs.type != Expr_Value_Type::int32) {
-                    std::string stringified_relational;
+                    anton::String stringified_relational;
                     switch(expr.type) {
                         case Relational_Type::greater_than:
                             stringified_relational = u8">";
@@ -314,14 +314,14 @@ namespace vush {
 
             case AST_Node_Type::lshift_expr: {
                 LShift_Expr& expr = (LShift_Expr&)expression;
-                Expected<Const_Expr_Value, String> lhs_res = evaluate_expr(ctx, *expr.lhs);
+                Expected<Const_Expr_Value, anton::String> lhs_res = evaluate_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
-                    return {expected_error, std::move(lhs_res.error())};
+                    return {expected_error, anton::move(lhs_res.error())};
                 }
 
-                Expected<Const_Expr_Value, String> rhs_res = evaluate_expr(ctx, *expr.rhs);
+                Expected<Const_Expr_Value, anton::String> rhs_res = evaluate_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
-                    return {expected_error, std::move(rhs_res.error())};
+                    return {expected_error, anton::move(rhs_res.error())};
                 }
 
                 Const_Expr_Value lhs = lhs_res.value();
@@ -353,14 +353,14 @@ namespace vush {
 
             case AST_Node_Type::rshift_expr: {
                 RShift_Expr& expr = (RShift_Expr&)expression;
-                Expected<Const_Expr_Value, String> lhs_res = evaluate_expr(ctx, *expr.lhs);
+                Expected<Const_Expr_Value, anton::String> lhs_res = evaluate_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
-                    return {expected_error, std::move(lhs_res.error())};
+                    return {expected_error, anton::move(lhs_res.error())};
                 }
 
-                Expected<Const_Expr_Value, String> rhs_res = evaluate_expr(ctx, *expr.rhs);
+                Expected<Const_Expr_Value, anton::String> rhs_res = evaluate_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
-                    return {expected_error, std::move(rhs_res.error())};
+                    return {expected_error, anton::move(rhs_res.error())};
                 }
 
                 Const_Expr_Value lhs = lhs_res.value();
@@ -406,14 +406,14 @@ namespace vush {
 
             case AST_Node_Type::add_expr: {
                 Add_Expr& expr = (Add_Expr&)expression;
-                Expected<Const_Expr_Value, String> lhs_res = evaluate_expr(ctx, *expr.lhs);
+                Expected<Const_Expr_Value, anton::String> lhs_res = evaluate_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
-                    return {expected_error, std::move(lhs_res.error())};
+                    return {expected_error, anton::move(lhs_res.error())};
                 }
 
-                Expected<Const_Expr_Value, String> rhs_res = evaluate_expr(ctx, *expr.rhs);
+                Expected<Const_Expr_Value, anton::String> rhs_res = evaluate_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
-                    return {expected_error, std::move(rhs_res.error())};
+                    return {expected_error, anton::move(rhs_res.error())};
                 }
 
                 // TODO: Expand to include vectors and matrices.
@@ -454,14 +454,14 @@ namespace vush {
 
             case AST_Node_Type::sub_expr: {
                 Sub_Expr& expr = (Sub_Expr&)expression;
-                Expected<Const_Expr_Value, String> lhs_res = evaluate_expr(ctx, *expr.lhs);
+                Expected<Const_Expr_Value, anton::String> lhs_res = evaluate_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
-                    return {expected_error, std::move(lhs_res.error())};
+                    return {expected_error, anton::move(lhs_res.error())};
                 }
 
-                Expected<Const_Expr_Value, String> rhs_res = evaluate_expr(ctx, *expr.rhs);
+                Expected<Const_Expr_Value, anton::String> rhs_res = evaluate_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
-                    return {expected_error, std::move(rhs_res.error())};
+                    return {expected_error, anton::move(rhs_res.error())};
                 }
 
                 // TODO: Expand to include vectors and matrices.
@@ -502,14 +502,14 @@ namespace vush {
 
             case AST_Node_Type::mul_expr: {
                 Mul_Expr& expr = (Mul_Expr&)expression;
-                Expected<Const_Expr_Value, String> lhs_res = evaluate_expr(ctx, *expr.lhs);
+                Expected<Const_Expr_Value, anton::String> lhs_res = evaluate_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
-                    return {expected_error, std::move(lhs_res.error())};
+                    return {expected_error, anton::move(lhs_res.error())};
                 }
 
-                Expected<Const_Expr_Value, String> rhs_res = evaluate_expr(ctx, *expr.rhs);
+                Expected<Const_Expr_Value, anton::String> rhs_res = evaluate_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
-                    return {expected_error, std::move(rhs_res.error())};
+                    return {expected_error, anton::move(rhs_res.error())};
                 }
 
                 // TODO: Expand to include vectors and matrices.
@@ -550,14 +550,14 @@ namespace vush {
 
             case AST_Node_Type::div_expr: {
                 Div_Expr& expr = (Div_Expr&)expression;
-                Expected<Const_Expr_Value, String> lhs_res = evaluate_expr(ctx, *expr.lhs);
+                Expected<Const_Expr_Value, anton::String> lhs_res = evaluate_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
-                    return {expected_error, std::move(lhs_res.error())};
+                    return {expected_error, anton::move(lhs_res.error())};
                 }
 
-                Expected<Const_Expr_Value, String> rhs_res = evaluate_expr(ctx, *expr.rhs);
+                Expected<Const_Expr_Value, anton::String> rhs_res = evaluate_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
-                    return {expected_error, std::move(rhs_res.error())};
+                    return {expected_error, anton::move(rhs_res.error())};
                 }
 
                 // TODO: Expand to include vectors and matrices.
@@ -598,14 +598,14 @@ namespace vush {
 
             case AST_Node_Type::mod_expr: {
                 Add_Expr& expr = (Add_Expr&)expression;
-                Expected<Const_Expr_Value, String> lhs_res = evaluate_expr(ctx, *expr.lhs);
+                Expected<Const_Expr_Value, anton::String> lhs_res = evaluate_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
-                    return {expected_error, std::move(lhs_res.error())};
+                    return {expected_error, anton::move(lhs_res.error())};
                 }
 
-                Expected<Const_Expr_Value, String> rhs_res = evaluate_expr(ctx, *expr.rhs);
+                Expected<Const_Expr_Value, anton::String> rhs_res = evaluate_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
-                    return {expected_error, std::move(rhs_res.error())};
+                    return {expected_error, anton::move(rhs_res.error())};
                 }
 
                 // TODO: Expand to include integer vectors.
@@ -644,18 +644,18 @@ namespace vush {
                 Unary_Expression& expr = (Unary_Expression&)expression;
                 switch(expr.type) {
                     case Unary_Type::plus: {
-                        Expected<Const_Expr_Value, String> base = evaluate_expr(ctx, *expr.expression);
+                        Expected<Const_Expr_Value, anton::String> base = evaluate_expr(ctx, *expr.expression);
                         if(base) {
-                            return {expected_value, std::move(base.value())};
+                            return {expected_value, anton::move(base.value())};
                         } else {
-                            return {expected_error, std::move(base.error())};
+                            return {expected_error, anton::move(base.error())};
                         }
                     }
 
                     case Unary_Type::minus: {
-                        Expected<Const_Expr_Value, String> base_res = evaluate_expr(ctx, *expr.expression);
+                        Expected<Const_Expr_Value, anton::String> base_res = evaluate_expr(ctx, *expr.expression);
                         if(!base_res) {
-                            return {expected_error, std::move(base_res.error())};
+                            return {expected_error, anton::move(base_res.error())};
                         }
 
                         // TODO: Extend to vectors and matrices.
@@ -688,9 +688,9 @@ namespace vush {
                     }
 
                     case Unary_Type::logic_not: {
-                        Expected<Const_Expr_Value, String> base_res = evaluate_expr(ctx, *expr.expression);
+                        Expected<Const_Expr_Value, anton::String> base_res = evaluate_expr(ctx, *expr.expression);
                         if(!base_res) {
-                            return {expected_error, std::move(base_res.error())};
+                            return {expected_error, anton::move(base_res.error())};
                         }
 
                         Const_Expr_Value base = base_res.value();
@@ -705,9 +705,9 @@ namespace vush {
                     }
 
                     case Unary_Type::bit_not: {
-                        Expected<Const_Expr_Value, String> base_res = evaluate_expr(ctx, *expr.expression);
+                        Expected<Const_Expr_Value, anton::String> base_res = evaluate_expr(ctx, *expr.expression);
                         if(!base_res) {
-                            return {expected_error, std::move(base_res.error())};
+                            return {expected_error, anton::move(base_res.error())};
                         }
 
                         // TODO: Extend to work on integer vectors.

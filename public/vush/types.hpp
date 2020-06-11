@@ -1,44 +1,25 @@
 #pragma once
 
+#include <anton/types.hpp>
+
 namespace vush {
-    using char8 = char;
-    using char32 = char32_t;
+    using i8 = anton::i8;
+    using i16 = anton::i16;
+    using i32 = anton::i32;
+    using i64 = anton::i64;
 
-    using i8 = signed char;
-    using i16 = signed short;
-    using i32 = signed int;
-    using i64 = signed long long;
+    using u8 = anton::u8;
+    using u16 = anton::u16;
+    using u32 = anton::u32;
+    using u64 = anton::u64;
 
-    using u8 = unsigned char;
-    using u16 = unsigned short;
-    using u32 = unsigned int;
-    using u64 = unsigned long long;
+    using f32 = anton::f32;
+    using f64 = anton::f64;
 
-    using f32 = float;
-    using f64 = double;
+    using isize = anton::isize;
+    using usize = anton::usize;
 
-    // Immutable string
-    class String {
-    public:
-        String() = default;
-        String(char8 const* string, i64 size): _data(string), _size(size) {}
-        String(String&& str): _data(str._data), _size(str._size) {
-            str._data = nullptr;
-            str._size = 0;
-        }
-
-        ~String();
-
-        char8 const* data() const {
-            return _data;
-        }
-
-        i64 size() const {
-            return _size;
-        }
-
-    private:
-        char8 const* _data = nullptr;
-        i64 _size = 0;
-    };
+    using char8 = anton::char8;
+    using char16 = anton::char16;
+    using char32 = anton::char32;
 } // namespace vush

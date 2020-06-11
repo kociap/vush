@@ -21,13 +21,18 @@ if(VUSH_COMPILER_CLANGPP)
     )
 endif()
 
+add_subdirectory(ext/anton_core)
+
 add_library(vush)
 set_target_properties(vush PROPERTIES CXX_STANDARD 17 CXX_EXTENSIONS OFF)
 target_compile_options(vush PRIVATE ${VUSH_COMPILE_FLAGS})
+target_link_libraries(vush PUBLIC anton_core)
 target_include_directories(vush PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/public" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/private")
 target_sources(vush 
     PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/private/ast.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/private/codegen.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/private/codegen.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/const_expr_eval.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/const_expr_eval.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/context.hpp"
@@ -36,10 +41,8 @@ target_sources(vush
     "${CMAKE_CURRENT_SOURCE_DIR}/private/owning_ptr.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/parser.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/parser.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/private/types.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/vush.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/public/vush/expected.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/public/vush/types.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/public/vush/vush.hpp"
 )
 

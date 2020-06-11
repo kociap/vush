@@ -1,5 +1,7 @@
 #include <parser.hpp>
 
+#include <anton/string_view.hpp>
+
 #include <fstream>
 
 // TODO: When matching keywords, ensure that the keyword is followed by non-identifier character (Find a cleaner way).
@@ -10,120 +12,129 @@
 
 namespace vush {
     // keywords
-    static constexpr std::string_view kw_if = u8"if";
-    static constexpr std::string_view kw_else = u8"else";
-    static constexpr std::string_view kw_switch = u8"switch";
-    static constexpr std::string_view kw_case = u8"case";
-    static constexpr std::string_view kw_default = u8"default";
-    static constexpr std::string_view kw_for = u8"for";
-    static constexpr std::string_view kw_while = u8"while";
-    static constexpr std::string_view kw_do = u8"do";
-    static constexpr std::string_view kw_return = u8"return";
-    static constexpr std::string_view kw_break = u8"break";
-    static constexpr std::string_view kw_continue = u8"continue";
-    static constexpr std::string_view kw_true = u8"true";
-    static constexpr std::string_view kw_false = u8"false";
-    static constexpr std::string_view kw_from = u8"from";
-    static constexpr std::string_view kw_struct = u8"struct";
-    static constexpr std::string_view kw_import = u8"import";
-    static constexpr std::string_view kw_const = u8"const";
+
+    static constexpr anton::String_View kw_if = u8"if";
+    static constexpr anton::String_View kw_else = u8"else";
+    static constexpr anton::String_View kw_switch = u8"switch";
+    static constexpr anton::String_View kw_case = u8"case";
+    static constexpr anton::String_View kw_default = u8"default";
+    static constexpr anton::String_View kw_for = u8"for";
+    static constexpr anton::String_View kw_while = u8"while";
+    static constexpr anton::String_View kw_do = u8"do";
+    static constexpr anton::String_View kw_return = u8"return";
+    static constexpr anton::String_View kw_break = u8"break";
+    static constexpr anton::String_View kw_continue = u8"continue";
+    static constexpr anton::String_View kw_true = u8"true";
+    static constexpr anton::String_View kw_false = u8"false";
+    static constexpr anton::String_View kw_from = u8"from";
+    static constexpr anton::String_View kw_struct = u8"struct";
+    static constexpr anton::String_View kw_import = u8"import";
+    static constexpr anton::String_View kw_const = u8"const";
+
+    // stages
+
+    static constexpr anton::String_View stage_vertex = u8"vertex";
+    static constexpr anton::String_View stage_fragment = u8"fragment";
+    static constexpr anton::String_View stage_compute = u8"compute";
 
     // types
-    static constexpr std::string_view type_void = u8"void";
-    static constexpr std::string_view type_bool = u8"bool";
-    static constexpr std::string_view type_int = u8"int";
-    static constexpr std::string_view type_uint = u8"uint";
-    static constexpr std::string_view type_float = u8"float";
-    static constexpr std::string_view type_double = u8"double";
-    static constexpr std::string_view type_vec2 = u8"vec2";
-    static constexpr std::string_view type_vec3 = u8"vec3";
-    static constexpr std::string_view type_vec4 = u8"vec4";
-    static constexpr std::string_view type_dvec2 = u8"dvec2";
-    static constexpr std::string_view type_dvec3 = u8"dvec3";
-    static constexpr std::string_view type_dvec4 = u8"dvec4";
-    static constexpr std::string_view type_bvec2 = u8"bvec2";
-    static constexpr std::string_view type_bvec3 = u8"bvec3";
-    static constexpr std::string_view type_bvec4 = u8"bvec4";
-    static constexpr std::string_view type_ivec2 = u8"ivec2";
-    static constexpr std::string_view type_ivec3 = u8"ivec3";
-    static constexpr std::string_view type_ivec4 = u8"ivec4";
-    static constexpr std::string_view type_uvec2 = u8"uvec2";
-    static constexpr std::string_view type_uvec3 = u8"uvec3";
-    static constexpr std::string_view type_uvec4 = u8"uvec4";
-    static constexpr std::string_view type_mat2 = u8"mat2";
-    static constexpr std::string_view type_mat2x2 = u8"mat2x2";
-    static constexpr std::string_view type_mat3 = u8"mat3";
-    static constexpr std::string_view type_mat3x3 = u8"mat3x3";
-    static constexpr std::string_view type_mat4 = u8"mat4";
-    static constexpr std::string_view type_mat4x4 = u8"mat4x4";
-    static constexpr std::string_view type_mat2x3 = u8"mat2x3";
-    static constexpr std::string_view type_mat2x4 = u8"mat2x4";
-    static constexpr std::string_view type_mat3x2 = u8"mat3x2";
-    static constexpr std::string_view type_mat3x4 = u8"mat3x4";
-    static constexpr std::string_view type_mat4x2 = u8"mat4x2";
-    static constexpr std::string_view type_mat4x3 = u8"mat4x3";
-    static constexpr std::string_view type_dmat2 = u8"dmat2";
-    static constexpr std::string_view type_dmat2x2 = u8"dmat2x2";
-    static constexpr std::string_view type_dmat3 = u8"dmat3";
-    static constexpr std::string_view type_dmat3x3 = u8"dmat3x3";
-    static constexpr std::string_view type_dmat4 = u8"dmat4";
-    static constexpr std::string_view type_dmat4x4 = u8"dmat4x4";
-    static constexpr std::string_view type_dmat2x3 = u8"dmat2x3";
-    static constexpr std::string_view type_dmat2x4 = u8"dmat2x4";
-    static constexpr std::string_view type_dmat3x2 = u8"dmat3x2";
-    static constexpr std::string_view type_dmat3x4 = u8"dmat3x4";
-    static constexpr std::string_view type_dmat4x2 = u8"dmat4x2";
-    static constexpr std::string_view type_dmat4x3 = u8"dmat4x3";
+
+    static constexpr anton::String_View type_void = u8"void";
+    static constexpr anton::String_View type_bool = u8"bool";
+    static constexpr anton::String_View type_int = u8"int";
+    static constexpr anton::String_View type_uint = u8"uint";
+    static constexpr anton::String_View type_float = u8"float";
+    static constexpr anton::String_View type_double = u8"double";
+    static constexpr anton::String_View type_vec2 = u8"vec2";
+    static constexpr anton::String_View type_vec3 = u8"vec3";
+    static constexpr anton::String_View type_vec4 = u8"vec4";
+    static constexpr anton::String_View type_dvec2 = u8"dvec2";
+    static constexpr anton::String_View type_dvec3 = u8"dvec3";
+    static constexpr anton::String_View type_dvec4 = u8"dvec4";
+    static constexpr anton::String_View type_bvec2 = u8"bvec2";
+    static constexpr anton::String_View type_bvec3 = u8"bvec3";
+    static constexpr anton::String_View type_bvec4 = u8"bvec4";
+    static constexpr anton::String_View type_ivec2 = u8"ivec2";
+    static constexpr anton::String_View type_ivec3 = u8"ivec3";
+    static constexpr anton::String_View type_ivec4 = u8"ivec4";
+    static constexpr anton::String_View type_uvec2 = u8"uvec2";
+    static constexpr anton::String_View type_uvec3 = u8"uvec3";
+    static constexpr anton::String_View type_uvec4 = u8"uvec4";
+    static constexpr anton::String_View type_mat2 = u8"mat2";
+    static constexpr anton::String_View type_mat2x2 = u8"mat2x2";
+    static constexpr anton::String_View type_mat3 = u8"mat3";
+    static constexpr anton::String_View type_mat3x3 = u8"mat3x3";
+    static constexpr anton::String_View type_mat4 = u8"mat4";
+    static constexpr anton::String_View type_mat4x4 = u8"mat4x4";
+    static constexpr anton::String_View type_mat2x3 = u8"mat2x3";
+    static constexpr anton::String_View type_mat2x4 = u8"mat2x4";
+    static constexpr anton::String_View type_mat3x2 = u8"mat3x2";
+    static constexpr anton::String_View type_mat3x4 = u8"mat3x4";
+    static constexpr anton::String_View type_mat4x2 = u8"mat4x2";
+    static constexpr anton::String_View type_mat4x3 = u8"mat4x3";
+    static constexpr anton::String_View type_dmat2 = u8"dmat2";
+    static constexpr anton::String_View type_dmat2x2 = u8"dmat2x2";
+    static constexpr anton::String_View type_dmat3 = u8"dmat3";
+    static constexpr anton::String_View type_dmat3x3 = u8"dmat3x3";
+    static constexpr anton::String_View type_dmat4 = u8"dmat4";
+    static constexpr anton::String_View type_dmat4x4 = u8"dmat4x4";
+    static constexpr anton::String_View type_dmat2x3 = u8"dmat2x3";
+    static constexpr anton::String_View type_dmat2x4 = u8"dmat2x4";
+    static constexpr anton::String_View type_dmat3x2 = u8"dmat3x2";
+    static constexpr anton::String_View type_dmat3x4 = u8"dmat3x4";
+    static constexpr anton::String_View type_dmat4x2 = u8"dmat4x2";
+    static constexpr anton::String_View type_dmat4x3 = u8"dmat4x3";
 
     // separators and operators
-    static constexpr std::string_view token_brace_open = u8"{";
-    static constexpr std::string_view token_brace_close = u8"}";
-    static constexpr std::string_view token_bracket_open = u8"[";
-    static constexpr std::string_view token_bracket_close = u8"]";
-    static constexpr std::string_view token_paren_open = u8"(";
-    static constexpr std::string_view token_paren_close = u8")";
-    static constexpr std::string_view token_semicolon = u8";";
-    static constexpr std::string_view token_colon = u8":";
-    static constexpr std::string_view token_scope_resolution = u8"::";
-    static constexpr std::string_view token_comma = u8",";
-    static constexpr std::string_view token_question = u8"?";
-    static constexpr std::string_view token_dot = u8".";
-    static constexpr std::string_view token_double_quote = u8"\"";
-    static constexpr std::string_view token_plus = u8"+";
-    static constexpr std::string_view token_minus = u8"-";
-    static constexpr std::string_view token_multiply = u8"*";
-    static constexpr std::string_view token_divide = u8"/";
-    static constexpr std::string_view token_remainder = u8"%";
-    static constexpr std::string_view token_logic_and = u8"&&";
-    static constexpr std::string_view token_bit_and = u8"&";
-    static constexpr std::string_view token_logic_or = u8"||";
-    static constexpr std::string_view token_logic_xor = u8"^^";
-    static constexpr std::string_view token_bit_or = u8"|";
-    static constexpr std::string_view token_bit_xor = u8"^";
-    static constexpr std::string_view token_logic_not = u8"!";
-    static constexpr std::string_view token_bit_not = u8"~";
-    static constexpr std::string_view token_bit_lshift = u8"<<";
-    static constexpr std::string_view token_bit_rshift = u8">>";
-    static constexpr std::string_view token_equal = u8"==";
-    static constexpr std::string_view token_not_equal = u8"!=";
-    static constexpr std::string_view token_less = u8"<";
-    static constexpr std::string_view token_greater = u8">";
-    static constexpr std::string_view token_less_equal = u8"<=";
-    static constexpr std::string_view token_greater_equal = u8">=";
-    static constexpr std::string_view token_assign = u8"=";
-    static constexpr std::string_view token_drill = u8"->";
-    static constexpr std::string_view token_increment = u8"++";
-    static constexpr std::string_view token_decrement = u8"--";
-    static constexpr std::string_view token_compound_plus = u8"+=";
-    static constexpr std::string_view token_compound_minus = u8"-=";
-    static constexpr std::string_view token_compound_multiply = u8"*=";
-    static constexpr std::string_view token_compound_divide = u8"/=";
-    static constexpr std::string_view token_compound_remainder = u8"%=";
-    static constexpr std::string_view token_compound_bit_and = u8"&=";
-    static constexpr std::string_view token_compound_bit_or = u8"|=";
-    static constexpr std::string_view token_compound_bit_xor = u8"^=";
-    static constexpr std::string_view token_compound_bit_lshift = u8"<<=";
-    static constexpr std::string_view token_compound_bit_rshift = u8">>=";
+
+    static constexpr anton::String_View token_brace_open = u8"{";
+    static constexpr anton::String_View token_brace_close = u8"}";
+    static constexpr anton::String_View token_bracket_open = u8"[";
+    static constexpr anton::String_View token_bracket_close = u8"]";
+    static constexpr anton::String_View token_paren_open = u8"(";
+    static constexpr anton::String_View token_paren_close = u8")";
+    static constexpr anton::String_View token_semicolon = u8";";
+    static constexpr anton::String_View token_colon = u8":";
+    static constexpr anton::String_View token_scope_resolution = u8"::";
+    static constexpr anton::String_View token_comma = u8",";
+    static constexpr anton::String_View token_question = u8"?";
+    static constexpr anton::String_View token_dot = u8".";
+    static constexpr anton::String_View token_double_quote = u8"\"";
+    static constexpr anton::String_View token_plus = u8"+";
+    static constexpr anton::String_View token_minus = u8"-";
+    static constexpr anton::String_View token_multiply = u8"*";
+    static constexpr anton::String_View token_divide = u8"/";
+    static constexpr anton::String_View token_remainder = u8"%";
+    static constexpr anton::String_View token_logic_and = u8"&&";
+    static constexpr anton::String_View token_bit_and = u8"&";
+    static constexpr anton::String_View token_logic_or = u8"||";
+    static constexpr anton::String_View token_logic_xor = u8"^^";
+    static constexpr anton::String_View token_bit_or = u8"|";
+    static constexpr anton::String_View token_bit_xor = u8"^";
+    static constexpr anton::String_View token_logic_not = u8"!";
+    static constexpr anton::String_View token_bit_not = u8"~";
+    static constexpr anton::String_View token_bit_lshift = u8"<<";
+    static constexpr anton::String_View token_bit_rshift = u8">>";
+    static constexpr anton::String_View token_equal = u8"==";
+    static constexpr anton::String_View token_not_equal = u8"!=";
+    static constexpr anton::String_View token_less = u8"<";
+    static constexpr anton::String_View token_greater = u8">";
+    static constexpr anton::String_View token_less_equal = u8"<=";
+    static constexpr anton::String_View token_greater_equal = u8">=";
+    static constexpr anton::String_View token_assign = u8"=";
+    static constexpr anton::String_View token_drill = u8"->";
+    static constexpr anton::String_View token_increment = u8"++";
+    static constexpr anton::String_View token_decrement = u8"--";
+    static constexpr anton::String_View token_compound_plus = u8"+=";
+    static constexpr anton::String_View token_compound_minus = u8"-=";
+    static constexpr anton::String_View token_compound_multiply = u8"*=";
+    static constexpr anton::String_View token_compound_divide = u8"/=";
+    static constexpr anton::String_View token_compound_remainder = u8"%=";
+    static constexpr anton::String_View token_compound_bit_and = u8"&=";
+    static constexpr anton::String_View token_compound_bit_or = u8"|=";
+    static constexpr anton::String_View token_compound_bit_xor = u8"^=";
+    static constexpr anton::String_View token_compound_bit_lshift = u8"<<=";
+    static constexpr anton::String_View token_compound_bit_rshift = u8">>=";
 
     static bool is_whitespace(char32 c) {
         return (c <= 32) | (c == 127);
@@ -152,18 +163,18 @@ namespace vush {
         i64 column;
     };
 
-    constexpr char32 eof_char32 = (char32)std::char_traits<char>::eof();
+    constexpr char32 eof_char32 = (char32)EOF;
 
     class Lexer {
     public:
         Lexer(std::istream& file): _stream(file) {}
 
-        bool match(std::string_view const string, bool const must_not_be_followed_by_identifier_char = false) {
+        bool match(anton::String_View const string, bool const must_not_be_followed_by_identifier_char = false) {
             ignore_whitespace_and_comments();
 
             Lexer_State const state_backup = get_current_state();
-            for(char c: string) {
-                if(get_next() != (char32)c) {
+            for(char32 c: string.chars()) {
+                if(get_next() != c) {
                     restore_state(state_backup);
                     return false;
                 }
@@ -176,7 +187,7 @@ namespace vush {
         }
 
         // TODO: String interning if it becomes too slow/memory heavy.
-        bool match_identifier(std::string& out) {
+        bool match_identifier(anton::String& out) {
             ignore_whitespace_and_comments();
 
             // No need to backup the lexer state since we can predict whether the next
@@ -292,7 +303,7 @@ namespace vush {
         Lexer _lexer;
         Parse_Error _last_error;
 
-        void set_error(std::string_view const message, Lexer_State const state) {
+        void set_error(anton::String_View const message, Lexer_State const state) {
             if(state.stream_offset > _last_error.file_offset) {
                 _last_error.message = message;
                 _last_error.line = state.line;
@@ -301,7 +312,7 @@ namespace vush {
             }
         }
 
-        void set_error(std::string_view const message) {
+        void set_error(anton::String_View const message) {
             Lexer_State const state = _lexer.get_current_state();
             if(state.stream_offset > _last_error.file_offset) {
                 _last_error.message = message;
@@ -444,8 +455,8 @@ namespace vush {
             }
 
             Owning_Ptr<Identifier> var_name = nullptr;
-            if(std::string identifier; _lexer.match_identifier(identifier)) {
-                var_name = new Identifier(std::move(identifier));
+            if(anton::String identifier; _lexer.match_identifier(identifier)) {
+                var_name = new Identifier(anton::move(identifier));
             } else {
                 set_error(u8"expected variable name");
                 _lexer.restore_state(state_backup);
@@ -486,8 +497,8 @@ namespace vush {
             }
 
             Owning_Ptr<Identifier> var_name = nullptr;
-            if(std::string identifier; _lexer.match_identifier(identifier)) {
-                var_name = new Identifier(std::move(identifier));
+            if(anton::String identifier; _lexer.match_identifier(identifier)) {
+                var_name = new Identifier(anton::move(identifier));
             } else {
                 set_error(u8"expected variable name");
                 _lexer.restore_state(state_backup);
@@ -521,8 +532,8 @@ namespace vush {
             }
 
             Owning_Ptr<Identifier> struct_name;
-            if(std::string name; _lexer.match_identifier(name)) {
-                struct_name = new Identifier(std::move(name));
+            if(anton::String name; _lexer.match_identifier(name)) {
+                struct_name = new Identifier(anton::move(name));
             } else {
                 set_error(u8"expected identifier");
                 _lexer.restore_state(state_backup);
@@ -574,8 +585,8 @@ namespace vush {
             }
 
             Owning_Ptr<Identifier> pass = nullptr;
-            if(std::string pass_name_str; _lexer.match_identifier(pass_name_str)) {
-                pass = new Identifier(std::move(pass_name_str));
+            if(anton::String pass_name_str; _lexer.match_identifier(pass_name_str)) {
+                pass = new Identifier(anton::move(pass_name_str));
             } else {
                 set_error(u8"expected pass name");
                 _lexer.restore_state(state_backup);
@@ -588,9 +599,29 @@ namespace vush {
                 return nullptr;
             }
 
+            static constexpr anton::String_View stage_types_strings[] = {stage_vertex, stage_fragment, stage_compute};
+            static constexpr Pass_Stage_Type stage_types[] = {Pass_Stage_Type::vertex, Pass_Stage_Type::fragment, Pass_Stage_Type::compute};
+
+            Pass_Stage_Type stage_type;
+            {
+                bool found = false;
+                for(i64 i = 0; i < 3; ++i) {
+                    if(_lexer.match(stage_types_strings[i], true)) {
+                        stage_type = stage_types[i];
+                        found = true;
+                    }
+                }
+
+                if(!found) {
+                    set_error(u8"expected stage type");
+                    _lexer.restore_state(state_backup);
+                    return nullptr;
+                }
+            }
+
             Owning_Ptr<Identifier> name = nullptr;
-            if(std::string fn_name; _lexer.match_identifier(fn_name)) {
-                name = new Identifier(std::move(fn_name));
+            if(anton::String fn_name; _lexer.match_identifier(fn_name)) {
+                name = new Identifier(anton::move(fn_name));
             } else {
                 set_error(u8"expected function name");
                 _lexer.restore_state(state_backup);
@@ -609,7 +640,7 @@ namespace vush {
                 return nullptr;
             }
 
-            return new Pass_Stage_Declaration(pass.release(), name.release(), param_list.release(), return_type.release(), function_body.release());
+            return new Pass_Stage_Declaration(pass.release(), stage_type, param_list.release(), return_type.release(), function_body.release());
         }
 
         Function_Declaration* try_function_declaration() {
@@ -622,8 +653,8 @@ namespace vush {
             }
 
             Owning_Ptr<Identifier> name = nullptr;
-            if(std::string fn_name; _lexer.match_identifier(fn_name)) {
-                name = new Identifier(std::move(fn_name));
+            if(anton::String fn_name; _lexer.match_identifier(fn_name)) {
+                name = new Identifier(anton::move(fn_name));
             } else {
                 set_error(u8"expected function name");
                 _lexer.restore_state(state_backup);
@@ -686,8 +717,8 @@ namespace vush {
             }
 
             Owning_Ptr<Identifier> identifier = nullptr;
-            if(std::string identifier_str; _lexer.match_identifier(identifier_str)) {
-                identifier = new Identifier(std::move(identifier_str));
+            if(anton::String identifier_str; _lexer.match_identifier(identifier_str)) {
+                identifier = new Identifier(anton::move(identifier_str));
             } else {
                 set_error(u8"expected parameter name");
                 _lexer.restore_state(state_backup);
@@ -714,8 +745,8 @@ namespace vush {
                     return nullptr;
                 }
 
-                if(std::string identifier_str; _lexer.match_identifier(identifier_str)) {
-                    Identifier* source = new Identifier(std::move(identifier_str));
+                if(anton::String identifier_str; _lexer.match_identifier(identifier_str)) {
+                    Identifier* source = new Identifier(anton::move(identifier_str));
                     return new Sourced_Function_Param(identifier.release(), parameter_type.release(), source);
                 } else {
                     set_error("expected parameter source after 'from'");
@@ -881,7 +912,7 @@ namespace vush {
         }
 
         Type* try_type() {
-            static constexpr std::string_view builtin_types_strings[] = {
+            static constexpr anton::String_View builtin_types_strings[] = {
                 type_void,    type_bool,   type_int,     type_uint,    type_float,   type_double,  type_vec2,    type_vec3,    type_vec4,
                 type_dvec2,   type_dvec3,  type_dvec4,   type_bvec2,   type_bvec3,   type_bvec4,   type_ivec2,   type_ivec3,   type_ivec4,
                 type_uvec2,   type_uvec3,  type_uvec4,   type_mat2,    type_mat2x2,  type_mat3,    type_mat3x3,  type_mat4,    type_mat4x4,
@@ -908,8 +939,8 @@ namespace vush {
                 }
             }
 
-            if(std::string name; _lexer.match_identifier(name)) {
-                return new User_Defined_Type(std::move(name));
+            if(anton::String name; _lexer.match_identifier(name)) {
+                return new User_Defined_Type(anton::move(name));
             } else {
                 set_error("expected identifier");
                 return nullptr;
@@ -1069,8 +1100,8 @@ namespace vush {
                 }
 
                 Owning_Ptr<Identifier> var_name = nullptr;
-                if(std::string identifier; _lexer.match_identifier(identifier)) {
-                    var_name = new Identifier(std::move(identifier));
+                if(anton::String identifier; _lexer.match_identifier(identifier)) {
+                    var_name = new Identifier(anton::move(identifier));
                 } else {
                     set_error("expected variable name");
                     _lexer.restore_state(state_backup);
@@ -1711,8 +1742,8 @@ namespace vush {
             Owning_Ptr<Expression> expr = primary_expr.release();
             while(true) {
                 if(_lexer.match(token_dot)) {
-                    if(std::string name; _lexer.match_identifier(name)) {
-                        expr = new Member_Access_Expression(expr.release(), new Identifier(std::move(name)));
+                    if(anton::String name; _lexer.match_identifier(name)) {
+                        expr = new Member_Access_Expression(expr.release(), new Identifier(anton::move(name)));
                     } else {
                         set_error("expected function name");
                         _lexer.restore_state(state_backup);
@@ -1867,8 +1898,8 @@ namespace vush {
         Function_Call_Expression* try_function_call_expression() {
             Lexer_State const state_backup = _lexer.get_current_state();
             Owning_Ptr<Identifier> identifier = nullptr;
-            if(std::string name; _lexer.match_identifier(name)) {
-                identifier = new Identifier(std::move(name));
+            if(anton::String name; _lexer.match_identifier(name)) {
+                identifier = new Identifier(anton::move(name));
             } else {
                 set_error("expected function name");
                 _lexer.restore_state(state_backup);
@@ -1908,7 +1939,7 @@ namespace vush {
             _lexer.ignore_whitespace_and_comments();
             Lexer_State const state_backup = _lexer.get_current_state();
 
-            std::string number;
+            anton::String number;
             if(char32 const next_char = _lexer.peek_next(); next_char == '-' || next_char == U'+') {
                 number += next_char;
                 _lexer.get_next();
@@ -1979,7 +2010,7 @@ namespace vush {
             }
 
             if(is_identifier_character(_lexer.peek_next())) {
-                std::string suffix;
+                anton::String suffix;
                 while(is_identifier_character(_lexer.peek_next())) {
                     suffix += _lexer.get_next();
                 }
@@ -1987,14 +2018,14 @@ namespace vush {
                 if(suffix == "f" || suffix == "F" || suffix == "lf" || suffix == "LF") {
                     number += suffix;
                 } else {
-                    std::string error = "invalid suffix '" + suffix + "' on floating point constant";
+                    anton::String error = "invalid suffix '" + suffix + "' on floating point constant";
                     set_error(error);
                     _lexer.restore_state(state_backup);
                     return nullptr;
                 }
             }
 
-            return new Float_Literal(std::move(number));
+            return new Float_Literal(anton::move(number));
         }
 
         Integer_Literal* try_integer_literal() {
@@ -2002,7 +2033,7 @@ namespace vush {
 
             Lexer_State const state_backup = _lexer.get_current_state();
 
-            std::string out;
+            anton::String out;
             char32 next = _lexer.peek_next();
             if(next == '-' || next == '+') {
                 out += next;
@@ -2019,7 +2050,7 @@ namespace vush {
             }
 
             if(length != 0) {
-                return new Integer_Literal(std::move(out));
+                return new Integer_Literal(anton::move(out));
             } else {
                 set_error("expected more than 0 digits");
                 _lexer.restore_state(state_backup);
@@ -2045,7 +2076,7 @@ namespace vush {
                 return nullptr;
             }
 
-            std::string string;
+            anton::String string;
             while(true) {
                 char32 next_char = _lexer.peek_next();
                 if(next_char == U'\\') {
@@ -2057,7 +2088,7 @@ namespace vush {
                     return nullptr;
                 } else if(next_char == U'\"') {
                     _lexer.get_next();
-                    return new String_Literal(std::move(string));
+                    return new String_Literal(anton::move(string));
                 } else {
                     string += (char)next_char;
                     _lexer.get_next();
@@ -2066,8 +2097,8 @@ namespace vush {
         }
 
         Identifier_Expression* try_identifier_expression() {
-            if(std::string name; _lexer.match_identifier(name)) {
-                Identifier* identifier = new Identifier(std::move(name));
+            if(anton::String name; _lexer.match_identifier(name)) {
+                Identifier* identifier = new Identifier(anton::move(name));
                 return new Identifier_Expression(identifier);
             } else {
                 set_error("expected an identifer");
@@ -2076,21 +2107,20 @@ namespace vush {
         }
     };
 
-    Expected<Owning_Ptr<Declaration_List>, Parse_Error> parse_file(std::string const& path) {
-        std::string const path_str(path);
-        std::ifstream file(path_str);
+    Expected<Owning_Ptr<Declaration_List>, Parse_Error> parse_file(anton::String const& path) {
+        std::ifstream file(path.data());
         if(!file) {
-            std::string msg = "could not open file " + path + " for reading.";
-            return {expected_error, std::move(msg), 0, 0, 0};
+            anton::String msg = "could not open file " + path + " for reading.";
+            return {expected_error, anton::move(msg), 0, 0, 0};
         }
 
         Parser parser(file);
         Owning_Ptr ast = parser.build_ast();
         if(ast) {
-            return {expected_value, std::move(ast)};
+            return {expected_value, anton::move(ast)};
         } else {
             Parse_Error error = parser.get_last_error();
-            return {expected_error, std::move(error)};
+            return {expected_error, anton::move(error)};
         }
     }
 } // namespace vush

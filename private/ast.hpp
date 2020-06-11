@@ -1,10 +1,7 @@
 #pragma once
 
 #include <owning_ptr.hpp>
-#include <vush/types.hpp>
-
-#include <string>
-#include <vector>
+#include <vush/vush.hpp>
 
 namespace vush {
     enum struct AST_Node_Type {
@@ -74,7 +71,7 @@ namespace vush {
     };
 
     struct Source_Information {
-        std::string* file_path;
+        anton::String* file_path;
         i64 line;
         i64 column;
         i64 file_offset;
@@ -93,9 +90,9 @@ namespace vush {
     struct Statement;
 
     struct Identifier: public Syntax_Tree_Node {
-        std::string identifier;
+        anton::String identifier;
 
-        Identifier(std::string string): Syntax_Tree_Node({}, AST_Node_Type::identifier), identifier(std::move(string)) {}
+        Identifier(anton::String string): Syntax_Tree_Node({}, AST_Node_Type::identifier), identifier(anton::move(string)) {}
     };
 
     struct Type: public Syntax_Tree_Node {
@@ -144,7 +141,7 @@ namespace vush {
         glsl_dmat4x3,
     };
 
-    constexpr std::string_view stringify(Builtin_GLSL_Type type) {
+    constexpr anton::String_View stringify(Builtin_GLSL_Type type) {
         switch(type) {
             case Builtin_GLSL_Type::glsl_void:
                 return u8"void";
@@ -234,9 +231,9 @@ namespace vush {
     };
 
     struct User_Defined_Type: public Type {
-        std::string name;
+        anton::String name;
 
-        User_Defined_Type(std::string name): Type({}, AST_Node_Type::user_defined_type), name(name) {}
+        User_Defined_Type(anton::String name): Type({}, AST_Node_Type::user_defined_type), name(name) {}
     };
 
     struct Declaration: public Syntax_Tree_Node {
@@ -244,7 +241,7 @@ namespace vush {
     };
 
     struct Declaration_List: public Syntax_Tree_Node {
-        std::vector<Owning_Ptr<Declaration>> declarations;
+        anton::Array<Owning_Ptr<Declaration>> declarations;
 
         Declaration_List(): Syntax_Tree_Node({}, AST_Node_Type::declaration_list) {}
 
@@ -268,9 +265,9 @@ namespace vush {
     };
 
     struct Import_Decl: public Declaration {
-        std::string path;
+        anton::String path;
 
-        Import_Decl(std::string path): Declaration({}, AST_Node_Type::import_decl), path(std::move(path)) {}
+        Import_Decl(anton::String path): Declaration({}, AST_Node_Type::import_decl), path(anton::move(path)) {}
     };
 
     struct Variable_Declaration: public Declaration {
@@ -293,7 +290,7 @@ namespace vush {
 
     struct Struct_Decl: public Declaration {
         Owning_Ptr<Identifier> name;
-        std::vector<Owning_Ptr<Variable_Declaration>> members;
+        anton::Array<Owning_Ptr<Variable_Declaration>> members;
 
         Struct_Decl(Identifier* name): Declaration({}, AST_Node_Type::struct_decl), name(name) {}
 
@@ -319,7 +316,7 @@ namespace vush {
     };
 
     struct Function_Param_List: public Syntax_Tree_Node {
-        std::vector<Owning_Ptr<Function_Param>> params;
+        anton::Array<Owning_Ptr<Function_Param>> params;
 
         Function_Param_List(): Syntax_Tree_Node({}, AST_Node_Type::function_param_list) {}
 
@@ -368,16 +365,33 @@ namespace vush {
             : Function_Param({}, AST_Node_Type::sourced_function_param), identifier(identifier), type(type), source(source) {}
     };
 
+    enum struct Pass_Stage_Type {
+        vertex,
+        fragment,
+        compute,
+    };
+
+    constexpr anton::String_View stringify(Pass_Stage_Type type) {
+        switch(type) {
+            case Pass_Stage_Type::vertex:
+                return u8"vertex";
+            case Pass_Stage_Type::fragment:
+                return u8"fragment";
+            case Pass_Stage_Type::compute:
+                return u8"compute";
+        }
+    }
+
     struct Pass_Stage_Declaration: public Declaration {
         Owning_Ptr<Identifier> pass;
-        Owning_Ptr<Identifier> name;
+        Pass_Stage_Type stage;
         Owning_Ptr<Function_Param_List> param_list;
         Owning_Ptr<Type> return_type;
         Owning_Ptr<Function_Body> body;
 
-        Pass_Stage_Declaration(Identifier* pass, Identifier* name, Function_Param_List* parameter_list, Type* return_type, Function_Body* body)
-            : Declaration({}, AST_Node_Type::pass_stage_declaration), pass(pass), name(name), param_list(parameter_list), return_type(return_type), body(body) {
-        }
+        Pass_Stage_Declaration(Identifier* pass, Pass_Stage_Type stage, Function_Param_List* parameter_list, Type* return_type, Function_Body* body)
+            : Declaration({}, AST_Node_Type::pass_stage_declaration), pass(pass), stage(stage), param_list(parameter_list), return_type(return_type),
+              body(body) {}
     };
 
     struct Expression: public Syntax_Tree_Node {
@@ -580,7 +594,7 @@ namespace vush {
     };
 
     struct Argument_List: public Syntax_Tree_Node {
-        std::vector<Owning_Ptr<Expression>> arguments;
+        anton::Array<Owning_Ptr<Expression>> arguments;
 
         Argument_List(): Syntax_Tree_Node({}, AST_Node_Type::argument_list) {}
 
@@ -628,9 +642,9 @@ namespace vush {
     };
 
     struct String_Literal: public Expression {
-        std::string value;
+        anton::String value;
 
-        String_Literal(std::string value): Expression({}, AST_Node_Type::string_literal), value(std::move(value)) {}
+        String_Literal(anton::String value): Expression({}, AST_Node_Type::string_literal), value(anton::move(value)) {}
     };
 
     struct Bool_Literal: public Expression {
@@ -640,15 +654,15 @@ namespace vush {
     };
 
     struct Integer_Literal: public Expression {
-        std::string value;
+        anton::String value;
 
-        Integer_Literal(std::string value): Expression({}, AST_Node_Type::integer_literal), value(std::move(value)) {}
+        Integer_Literal(anton::String value): Expression({}, AST_Node_Type::integer_literal), value(anton::move(value)) {}
     };
 
     struct Float_Literal: public Expression {
-        std::string value;
+        anton::String value;
 
-        Float_Literal(std::string value): Expression({}, AST_Node_Type::float_literal), value(std::move(value)) {}
+        Float_Literal(anton::String value): Expression({}, AST_Node_Type::float_literal), value(anton::move(value)) {}
     };
 
     struct Statement: public Syntax_Tree_Node {
@@ -656,7 +670,7 @@ namespace vush {
     };
 
     struct Statement_List: public Syntax_Tree_Node {
-        std::vector<Owning_Ptr<Statement>> statements;
+        anton::Array<Owning_Ptr<Statement>> statements;
 
         Statement_List(): Syntax_Tree_Node({}, AST_Node_Type::statement_list) {}
 
@@ -699,7 +713,7 @@ namespace vush {
     };
 
     struct Switch_Statement: public Statement {
-        std::vector<Owning_Ptr<Statement>> cases;
+        anton::Array<Owning_Ptr<Statement>> cases;
 
         Switch_Statement(): Statement({}, AST_Node_Type::switch_statement) {}
 

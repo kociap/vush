@@ -1,5 +1,7 @@
 #pragma once
 
+#include <anton/array.hpp>
+#include <anton/string.hpp>
 #include <vush/expected.hpp>
 #include <vush/types.hpp>
 
@@ -9,7 +11,17 @@ namespace vush {
         i64 value;
     };
 
-    struct Compiled_File {};
+    struct Configuration {
+        char const* source_path;
+        char const* const* import_directories;
+        i64 import_directories_count;
+        Constant_Define const* defines;
+        i64 defines_count;
+    };
+
+    struct GLSL_File {
+        anton::String data;
+    };
 
     // compile_to_glsl
     // Compiles given vush shader to glsl shader.
@@ -17,6 +29,5 @@ namespace vush {
     //
     // Returns compiled glsl file or error message.
     //
-    Expected<Compiled_File, String> compile_to_glsl(char const* source_path, char const* const* import_paths, i64 import_paths_count,
-                                                    Constant_Define const* defines, i64 defines_count);
+    Expected<anton::Array<GLSL_File>, anton::String> compile_to_glsl(Configuration const& config);
 } // namespace vush

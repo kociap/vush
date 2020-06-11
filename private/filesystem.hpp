@@ -1,13 +1,13 @@
 #pragma once
 
-#include <string>
-#include <string_view>
+#include <anton/string.hpp>
+#include <anton/string_view.hpp>
 
 namespace vush::fs {
     // concat_paths
     // Concatenate paths with separator.
     //
-    std::string concat_paths(std::string_view path1, std::string_view path2);
+    anton::String concat_paths(anton::String_View path1, anton::String_View path2);
 
-    bool exists(std::string_view path);
+    bool exists(anton::String_View path);
 } // namespace vush::fs
