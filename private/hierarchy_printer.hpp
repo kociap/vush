@@ -129,7 +129,7 @@ namespace vush {
                     for(auto& member: node.members) {
                         print_hierarchy(*member);
                     }
-                    indent -= 1;
+                    indent -= 2;
                     return;
                 }
 

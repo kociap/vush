@@ -11,12 +11,15 @@ namespace vush {
         i64 value;
     };
 
+    struct Format_Options {};
+
     struct Configuration {
         char const* source_path;
         char const* const* import_directories;
         i64 import_directories_count;
         Constant_Define const* defines;
         i64 defines_count;
+        Format_Options format;
     };
 
     struct GLSL_File {

@@ -1,13 +1,45 @@
 #include <codegen.hpp>
 
 #include <ast.hpp>
-#include <filesystem.hpp>
 #include <utility.hpp>
 
-#include <fstream>
-#include <string>
-
 namespace vush {
+    void stringify(anton::String& out, Syntax_Tree_Node& ast_node) {
+        switch(ast_node.node_type) {
+            case AST_Node_Type::identifier: {
+                Identifier& node = (Identifier&)ast_node;
+                out += node.identifier;
+                return;
+            }
+
+            case AST_Node_Type::builtin_type: {
+                Builtin_Type& node = (Builtin_Type&)ast_node;
+                out += stringify(node.type);
+                return;
+            }
+
+            case AST_Node_Type::user_defined_type: {
+                User_Defined_Type& node = (User_Defined_Type&)ast_node;
+                out += node.name;
+                return;
+            }
+
+            case AST_Node_Type::constant_declaration: {
+                Constant_Declaration& node = (Constant_Declaration&)ast_node;
+                out += u8"const ";
+                stringify(out, *node.type);
+                out += u8" ";
+                stringify(out, *node.identifier);
+                out += u8" = ";
+                stringify(out, *node.initializer);
+                out += u8";\n";
+                return;
+            }
+        }
+    }
+
+    void stringify_function_forward_decl(anton::String& out, Function_Declaration& node) {}
+
     Expected<anton::Array<GLSL_File>, anton::String> generate_glsl(Declaration_List& node) {
         anton::Array<Declaration*> structs_and_consts;
         anton::Array<Declaration*> functions;
@@ -29,12 +61,21 @@ namespace vush {
             }
         }
 
-        std::string common;
+        anton::String common;
         common += "#version 450 core\n";
+
+        for(Declaration* decl: structs_and_consts) {
+            stringify(common, *decl);
+        }
+
+        for(Declaration* decl: functions) {
+            stringify_function_forward_decl(common, (Function_Declaration&)*decl);
+        }
 
         anton::Array<GLSL_File> files(anton::reserve, pass_stages.size());
         for(Declaration* decl: pass_stages) {
-            Pass_Stage_Declaration& stage = (Pass_Stage_Declaration&)*decl;
+            // Pass_Stage_Declaration& stage = (Pass_Stage_Declaration&)*decl;
+            files.emplace_back(common);
         }
 
         return {expected_value, anton::move(files)};

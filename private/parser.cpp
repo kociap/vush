@@ -609,6 +609,7 @@ namespace vush {
                     if(_lexer.match(stage_types_strings[i], true)) {
                         stage_type = stage_types[i];
                         found = true;
+                        break;
                     }
                 }
 
@@ -617,15 +618,6 @@ namespace vush {
                     _lexer.restore_state(state_backup);
                     return nullptr;
                 }
-            }
-
-            Owning_Ptr<Identifier> name = nullptr;
-            if(anton::String fn_name; _lexer.match_identifier(fn_name)) {
-                name = new Identifier(anton::move(fn_name));
-            } else {
-                set_error(u8"expected function name");
-                _lexer.restore_state(state_backup);
-                return nullptr;
             }
 
             Owning_Ptr param_list = try_function_param_list(true);

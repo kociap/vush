@@ -1,9 +1,9 @@
 #include <vush/vush.hpp>
 
+#include <anton/filesystem.hpp>
 #include <codegen.hpp>
 #include <const_expr_eval.hpp>
 #include <context.hpp>
-#include <filesystem.hpp>
 #include <hierarchy_printer.hpp>
 #include <parser.hpp>
 #include <symbol.hpp>
@@ -16,8 +16,8 @@ namespace vush {
         bool found = false;
         anton::String out_path;
         for(char const* const* path = ctx.import_paths; path != ctx.import_paths_end; ++path) {
-            anton::String resolved_path = fs::concat_paths(*path, import_path);
-            bool exists = fs::exists(resolved_path);
+            anton::String resolved_path = anton::fs::concat_paths(*path, import_path);
+            bool exists = anton::fs::exists(resolved_path);
             if(exists) {
                 if(!found) {
                     found = true;
@@ -143,9 +143,9 @@ namespace vush {
         // Hierarchy_Printer printer(std::cout);
         // printer.print_hierarchy(*result.value());
 
-        for(auto& kv: ctx.global_symbols) {
-            std::cout << kv.key.data() << '\n';
-        }
+        // for(auto& kv: ctx.global_symbols) {
+        //     std::cout << kv.key.data() << '\n';
+        // }
 
         Expected<anton::Array<GLSL_File>, anton::String> codegen_res = generate_glsl(*result.value());
         if(codegen_res) {
