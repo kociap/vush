@@ -35,6 +35,36 @@ namespace vush {
                 out += u8";\n";
                 return;
             }
+
+            case AST_Node_Type::struct_decl: {
+                Struct_Decl& node = (Struct_Decl&)ast_node;
+                out += u8"struct ";
+                stringify(out, *node.name);
+                out += u8" {\n";
+                for(auto& member: node.members) {
+                    out += u8"    ";
+                    // member->
+                }
+                return;
+            }
+
+            case AST_Node_Type::bool_literal: {
+                Bool_Literal& node = (Bool_Literal&)ast_node;
+                out += node.value ? u8"true" : u8"false";
+                return;
+            }
+
+            case AST_Node_Type::integer_literal: {
+                Integer_Literal& node = (Integer_Literal&)ast_node;
+                out += node.value;
+                return;
+            }
+
+            case AST_Node_Type::float_literal: {
+                Float_Literal& node = (Float_Literal&)ast_node;
+                out += node.value;
+                return;
+            }
         }
     }
 
