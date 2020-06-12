@@ -574,6 +574,15 @@ namespace vush {
                     return;
                 }
 
+                case AST_Node_Type::paren_expr: {
+                    Paren_Expr& node = (Paren_Expr&)ast_node;
+                    stream << indent << "Paren_Expr:\n";
+                    indent += 1;
+                    print_hierarchy(*node.expr);
+                    indent -= 1;
+                    return;
+                }
+
                 case AST_Node_Type::string_literal: {
                     String_Literal& node = (String_Literal&)ast_node;
                     stream << indent << "String_Literal: \"" << node.value << "\"\n";

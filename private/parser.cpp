@@ -1768,21 +1768,8 @@ namespace vush {
         }
 
         Expression* try_primary_expression() {
-            Lexer_State const state_backup = _lexer.get_current_state();
-            if(_lexer.match(token_paren_open)) {
-                Owning_Ptr paren_expression = try_expression();
-                if(!paren_expression) {
-                    _lexer.restore_state(state_backup);
-                    return nullptr;
-                }
-
-                if(_lexer.match(token_paren_close)) {
-                    return paren_expression.release();
-                } else {
-                    set_error("expected ')'");
-                    _lexer.restore_state(state_backup);
-                    return nullptr;
-                }
+            if(Paren_Expr* paren_expr = try_paren_expr()) {
+                return paren_expr;
             }
 
             if(Expression_If* expression_if = try_expression_if()) {
@@ -1810,6 +1797,29 @@ namespace vush {
             }
 
             return nullptr;
+        }
+
+        Paren_Expr* try_paren_expr() {
+            Lexer_State const state_backup = _lexer.get_current_state();
+            if(!_lexer.match(token_paren_open)) {
+                set_error(u8"expected '('");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            Owning_Ptr paren_expression = try_expression();
+            if(!paren_expression) {
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            if(!_lexer.match(token_paren_close)) {
+                set_error("expected ')'");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            } else {
+                return new Paren_Expr(paren_expression.release());
+            }
         }
 
         Expression_If* try_expression_if() {

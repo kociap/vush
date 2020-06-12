@@ -147,7 +147,7 @@ namespace vush {
         //     std::cout << kv.key.data() << '\n';
         // }
 
-        Expected<anton::Array<GLSL_File>, anton::String> codegen_res = generate_glsl(*result.value());
+        Expected<anton::Array<GLSL_File>, anton::String> codegen_res = generate_glsl(*result.value(), config.format);
         if(codegen_res) {
             return {expected_value, anton::move(codegen_res.value())};
         } else {

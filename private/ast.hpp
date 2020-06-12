@@ -50,6 +50,7 @@ namespace vush {
         array_access_expression,
         postfix_inc_expr,
         postfix_dec_expr,
+        paren_expr,
         string_literal,
         bool_literal,
         integer_literal,
@@ -639,6 +640,12 @@ namespace vush {
         Owning_Ptr<Expression> base;
 
         Postfix_Dec_Expr(Expression* base): Expression({}, AST_Node_Type::postfix_dec_expr), base(base) {}
+    };
+
+    struct Paren_Expr: public Expression {
+        Owning_Ptr<Expression> expr;
+
+        Paren_Expr(Expression* expr): Expression({}, AST_Node_Type::paren_expr), expr(expr) {}
     };
 
     struct String_Literal: public Expression {
