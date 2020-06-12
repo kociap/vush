@@ -31,7 +31,7 @@ target_include_directories(vush PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/public" PRIV
 target_sources(vush 
     PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/private/ast.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/private/codegen.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/private/codegen_glsl.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/codegen.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/const_expr_eval.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/const_expr_eval.hpp"
