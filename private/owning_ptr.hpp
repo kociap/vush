@@ -1,5 +1,7 @@
 #pragma once
 
+#include <anton/assert.hpp>
+
 namespace vush {
     template<typename T>
     struct Owning_Ptr {
@@ -29,10 +31,12 @@ namespace vush {
         }
 
         [[nodiscard]] T& operator*() const {
+            ANTON_ASSERT(_pointer, u8"dereferencing nullptr");
             return *_pointer;
         }
 
         [[nodiscard]] T* operator->() const {
+            ANTON_ASSERT(_pointer, u8"dereferencing nullptr");
             return _pointer;
         }
 
