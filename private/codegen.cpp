@@ -4,7 +4,13 @@
 #include <utility.hpp>
 
 namespace vush {
-    void stringify(anton::String& out, Syntax_Tree_Node& ast_node) {
+    static void write_indent(anton::String& out, i64 indent) {
+        for(i64 i = 0; i < indent; ++i) {
+            out += u8"    ";
+        }
+    }
+
+    static void stringify(anton::String& out, Syntax_Tree_Node& ast_node) {
         switch(ast_node.node_type) {
             case AST_Node_Type::identifier: {
                 Identifier& node = (Identifier&)ast_node;
@@ -43,7 +49,63 @@ namespace vush {
                 out += u8" {\n";
                 for(auto& member: node.members) {
                     out += u8"    ";
-                    // member->
+                    stringify(out, *member->type);
+                    out += u8" ";
+                    stringify(out, *member->identifier);
+                    out += u8";\n";
+                }
+                out += u8"};\n";
+                return;
+            }
+
+            case AST_Node_Type::function_declaration: {
+                Function_Declaration& node = (Function_Declaration&)ast_node;
+                stringify(out, *node.return_type);
+                out += u8" ";
+                stringify(out, *node.name);
+                stringify(out, *node.param_list);
+                out += u8" ";
+                stringify(out, *node.body);
+                out += u8"\n";
+                return;
+            }
+
+            case AST_Node_Type::function_param_list: {
+                Function_Param_List& node = (Function_Param_List&)ast_node;
+                out += u8"(";
+                if(node.params.size() > 0) {
+                    stringify(out, *node.params[0]);
+                }
+
+                for(auto& param: node.params) {
+                    out += u8", ";
+                    stringify(out, *param);
+                }
+
+                out += u8")";
+                return;
+            }
+
+            case AST_Node_Type::ordinary_function_param: {
+                Ordinary_Function_Param& node = (Ordinary_Function_Param&)ast_node;
+                stringify(out, *node.type);
+                out += u8" ";
+                stringify(out, *node.identifier);
+                return;
+            }
+
+            case AST_Node_Type::function_body: {
+                Function_Body& node = (Function_Body&)ast_node;
+                out += u8"{\n";
+                stringify(out, *node.statement_list);
+                out += u8"}";
+                return;
+            }
+
+            case AST_Node_Type::statement_list: {
+                Statement_List& node = (Statement_List&)ast_node;
+                for(auto& statement: node.statements) {
+                    stringify(out, *statement);
                 }
                 return;
             }
@@ -68,7 +130,13 @@ namespace vush {
         }
     }
 
-    void stringify_function_forward_decl(anton::String& out, Function_Declaration& node) {}
+    void stringify_function_forward_decl(anton::String& out, Function_Declaration& node) {
+        stringify(out, *node.return_type);
+        out += u8" ";
+        stringify(out, *node.name);
+        stringify(out, *node.param_list);
+        out += u8";\n";
+    }
 
     Expected<anton::Array<GLSL_File>, anton::String> generate_glsl(Declaration_List& node) {
         anton::Array<Declaration*> structs_and_consts;
@@ -100,6 +168,10 @@ namespace vush {
 
         for(Declaration* decl: functions) {
             stringify_function_forward_decl(common, (Function_Declaration&)*decl);
+        }
+
+        for(Declaration* decl: functions) {
+            stringify(common, (Function_Declaration&)*decl);
         }
 
         anton::Array<GLSL_File> files(anton::reserve, pass_stages.size());

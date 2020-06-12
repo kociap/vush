@@ -23,7 +23,7 @@ namespace vush {
                     found = true;
                     out_path = anton::move(resolved_path);
                 } else {
-                    anton::String error_msg = build_error_message(current_path, 0, 0, u8": error: ambiguous import path");
+                    anton::String error_msg = build_error_message(current_path, 0, 0, u8"ambiguous import path");
                     return {expected_error, anton::move(error_msg)};
                 }
             }
@@ -32,7 +32,7 @@ namespace vush {
         if(found) {
             return {expected_value, anton::move(out_path)};
         } else {
-            anton::String error_msg = build_error_message(current_path, 0, 0, u8": error: could not resolve import path");
+            anton::String error_msg = build_error_message(current_path, 0, 0, u8"could not resolve import path");
             return {expected_error, anton::move(error_msg)};
         }
     }
