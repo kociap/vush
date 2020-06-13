@@ -1022,7 +1022,7 @@ namespace vush {
                 return nullptr;
             }
 
-            Owning_Ptr switch_statement = new Switch_Statement;
+            Owning_Ptr switch_statement = new Switch_Statement(match_expression.release());
             while(true) {
                 if(_lexer.match(kw_case, true)) {
                     Owning_Ptr condition = try_expression();

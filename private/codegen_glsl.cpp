@@ -124,10 +124,15 @@ namespace vush {
                 return;
             }
 
-            case AST_Node_Type::declaration_statement: {
-                Declaration_Statement& node = (Declaration_Statement&)ast_node;
+            case AST_Node_Type::block_statement: {
+                Block_Statement& node = (Block_Statement&)ast_node;
                 write_indent(out, ctx.indent);
-                stringify(out, *node.declaration, format, ctx);
+                out += u8"{\n";
+                ctx.indent += 1;
+                stringify(out, *node.statements, format, ctx);
+                ctx.indent -= 1;
+                write_indent(out, ctx.indent);
+                out += u8"}\n";
                 return;
             }
 
@@ -168,13 +173,31 @@ namespace vush {
                 return;
             }
 
-            case AST_Node_Type::block_statement: {
-                Block_Statement& node = (Block_Statement&)ast_node;
+            case AST_Node_Type::switch_statement: {
+                Switch_Statement& node = (Switch_Statement&)ast_node;
                 write_indent(out, ctx.indent);
-                out += u8"{\n";
-                ctx.indent += 1;
-                stringify(out, *node.statements, format, ctx);
-                ctx.indent -= 1;
+                out += u8"switch(";
+                stringify(out, *node.match_expr, format, ctx);
+                out += u8") {\n";
+                for(auto& switch_node: node.cases) {
+                    write_indent(out, ctx.indent + 1);
+                    if(switch_node->node_type == AST_Node_Type::case_statement) {
+                        Case_Statement& switch_case = (Case_Statement&)*switch_node;
+                        out += u8"case ";
+                        stringify(out, *switch_case.condition, format, ctx);
+                        out += ":\n";
+                        ctx.indent += 2;
+                        stringify(out, *switch_case.statements, format, ctx);
+                        ctx.indent -= 2;
+                    } else {
+                        Default_Case_Statement& switch_case = (Default_Case_Statement&)*switch_node;
+                        out += u8"default:\n";
+                        ctx.indent += 2;
+                        stringify(out, *switch_case.statements, format, ctx);
+                        ctx.indent -= 2;
+                    }
+                }
+                write_indent(out, ctx.indent);
                 out += u8"}\n";
                 return;
             }
@@ -197,6 +220,13 @@ namespace vush {
             case AST_Node_Type::continue_statement: {
                 write_indent(out, ctx.indent);
                 out += u8"continue;\n";
+                return;
+            }
+
+            case AST_Node_Type::declaration_statement: {
+                Declaration_Statement& node = (Declaration_Statement&)ast_node;
+                write_indent(out, ctx.indent);
+                stringify(out, *node.declaration, format, ctx);
                 return;
             }
 
@@ -475,6 +505,20 @@ namespace vush {
                 return;
             }
 
+            case AST_Node_Type::postfix_inc_expr: {
+                Postfix_Inc_Expr& node = (Postfix_Inc_Expr&)ast_node;
+                stringify(out, *node.base, format, ctx);
+                out += u8"++";
+                return;
+            }
+
+            case AST_Node_Type::postfix_dec_expr: {
+                Postfix_Dec_Expr& node = (Postfix_Dec_Expr&)ast_node;
+                stringify(out, *node.base, format, ctx);
+                out += u8"--";
+                return;
+            }
+
             case AST_Node_Type::identifier_expression: {
                 Identifier_Expression& node = (Identifier_Expression&)ast_node;
                 stringify(out, *node.identifier, format, ctx);
@@ -506,6 +550,18 @@ namespace vush {
                 out += node.value;
                 return;
             }
+
+            case AST_Node_Type::declaration_list:
+            case AST_Node_Type::declaration_if:
+            case AST_Node_Type::import_decl:
+            case AST_Node_Type::function_body:
+            case AST_Node_Type::function_param_if:
+            case AST_Node_Type::sourced_function_param:
+            case AST_Node_Type::pass_stage_declaration:
+            case AST_Node_Type::expression_if:
+            case AST_Node_Type::elvis_expr:
+            case AST_Node_Type::string_literal:
+                break;
         }
     }
 

@@ -721,8 +721,9 @@ namespace vush {
 
     struct Switch_Statement: public Statement {
         anton::Array<Owning_Ptr<Statement>> cases;
+        Owning_Ptr<Expression> match_expr;
 
-        Switch_Statement(): Statement({}, AST_Node_Type::switch_statement) {}
+        Switch_Statement(Expression* match_expr): Statement({}, AST_Node_Type::switch_statement), match_expr(match_expr) {}
 
         void append(Case_Statement* case_stmt) {
             cases.emplace_back(case_stmt);

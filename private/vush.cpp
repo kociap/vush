@@ -4,7 +4,6 @@
 #include <codegen.hpp>
 #include <const_expr_eval.hpp>
 #include <context.hpp>
-#include <hierarchy_printer.hpp>
 #include <parser.hpp>
 #include <symbol.hpp>
 #include <utility.hpp>
@@ -139,13 +138,6 @@ namespace vush {
         if(!result) {
             return {expected_error, anton::move(result.error())};
         }
-
-        // Hierarchy_Printer printer(std::cout);
-        // printer.print_hierarchy(*result.value());
-
-        // for(auto& kv: ctx.global_symbols) {
-        //     std::cout << kv.key.data() << '\n';
-        // }
 
         Expected<anton::Array<GLSL_File>, anton::String> codegen_res = generate_glsl(*result.value(), config.format);
         if(codegen_res) {
