@@ -604,18 +604,34 @@ namespace vush {
             stringify(common, *decl, format, ctx);
         }
 
+        common += u8"\n";
+
         for(Declaration* decl: functions) {
             stringify_function_forward_decl(common, (Function_Declaration&)*decl, format, ctx);
         }
+
+        common += u8"\n";
 
         for(Declaration* decl: functions) {
             stringify(common, (Function_Declaration&)*decl, format, ctx);
         }
 
+        common += u8"\n";
+
         anton::Array<GLSL_File> files(anton::reserve, pass_stages.size());
         for(Declaration* decl: pass_stages) {
-            // Pass_Stage_Declaration& stage = (Pass_Stage_Declaration&)*decl;
-            files.emplace_back(common);
+            Pass_Stage_Declaration& stage = (Pass_Stage_Declaration&)*decl;
+            anton::String pass_function_name = u8"_pass_" + stage.pass->identifier + u8"_stage_" + stringify(stage.stage);
+            anton::String out = common;
+            stringify(out, *stage.return_type, format, ctx);
+            out += u8" ";
+            out += pass_function_name;
+            out += u8"() {\n";
+            ctx.indent += 1;
+            stringify(out, *stage.body->statement_list, format, ctx);
+            ctx.indent -= 1;
+            out += u8"}\n";
+            files.emplace_back(anton::move(out));
         }
 
         return {expected_value, anton::move(files)};
