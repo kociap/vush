@@ -35,6 +35,7 @@ target_sources(vush
     "${CMAKE_CURRENT_SOURCE_DIR}/private/codegen.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/const_expr_eval.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/const_expr_eval.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/private/context.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/context.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/owning_ptr.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/parser.cpp"

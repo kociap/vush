@@ -1,14 +1,13 @@
 #include <vush/vush.hpp>
 
 #include <anton/filesystem.hpp>
+#include <anton/iterators.hpp>
 #include <codegen.hpp>
 #include <const_expr_eval.hpp>
 #include <context.hpp>
 #include <parser.hpp>
 #include <symbol.hpp>
 #include <utility.hpp>
-
-#include <iostream>
 
 namespace vush {
     static Expected<anton::String, anton::String> resolve_import_path(Context& ctx, anton::String const& current_path, anton::String const& import_path) {
@@ -64,14 +63,14 @@ namespace vush {
 
                     ast->declarations.erase(ast->declarations.begin() + i, ast->declarations.begin() + i + 1);
                     Declaration_List* decls = result.value().get();
-                    auto begin = std::make_move_iterator(decls->declarations.begin());
-                    auto end = std::make_move_iterator(decls->declarations.end());
+                    anton::Move_Iterator begin(decls->declarations.begin());
+                    anton::Move_Iterator end(decls->declarations.end());
                     ast->declarations.insert(i, begin, end);
                 } break;
 
                 case AST_Node_Type::declaration_if: {
                     Owning_Ptr<Declaration_If> node = static_cast<Declaration_If*>(ast->declarations[i].release());
-                    Expected<Const_Expr_Value, anton::String> result = evaluate_expr(ctx, *node->condition);
+                    Expected<Const_Expr_Value, anton::String> result = evaluate_const_expr(ctx, *node->condition);
                     if(!result) {
                         return {expected_error, anton::move(result.error())};
                     }
@@ -83,15 +82,15 @@ namespace vush {
                     ast->declarations.erase(ast->declarations.begin() + i, ast->declarations.begin() + i + 1);
                     Declaration_List* decls = (result.value().as_boolean() ? node->true_declarations.get() : node->false_declarations.get());
                     if(decls) {
-                        auto begin = std::make_move_iterator(decls->declarations.begin());
-                        auto end = std::make_move_iterator(decls->declarations.end());
+                        anton::Move_Iterator begin(decls->declarations.begin());
+                        anton::Move_Iterator end(decls->declarations.end());
                         ast->declarations.insert(i, begin, end);
                     }
                 } break;
 
                 case AST_Node_Type::function_declaration: {
                     Function_Declaration* node = static_cast<Function_Declaration*>(ast->declarations[i].get());
-                    ctx.global_symbols.emplace(node->name->identifier, Symbol{Symbol_Type::function, node});
+                    ctx.symbols[0].emplace(node->name->identifier, Symbol{Symbol_Type::function, node});
                     i += 1;
                 } break;
 
@@ -102,7 +101,7 @@ namespace vush {
 
                 case AST_Node_Type::constant_declaration: {
                     Constant_Declaration* node = static_cast<Constant_Declaration*>(ast->declarations[i].get());
-                    ctx.global_symbols.emplace(node->identifier->identifier, Symbol{Symbol_Type::constant, node});
+                    ctx.symbols[0].emplace(node->identifier->identifier, Symbol{Symbol_Type::constant, node});
                     i += 1;
                 } break;
 
@@ -120,6 +119,8 @@ namespace vush {
         Context ctx = {};
         ctx.import_paths = config.import_directories;
         ctx.import_paths_end = config.import_directories + config.import_directories_count;
+        // Add global scope.
+        ctx.symbols.emplace_back();
         anton::Array<Owning_Ptr<Declaration>> constant_decls;
         {
             Constant_Define const* const defines_end = config.defines + config.defines_count;
@@ -130,7 +131,7 @@ namespace vush {
                                                                       new Integer_Literal(anton::to_string(define->value)));
                 constant_decls.emplace_back(decl);
                 symbol.declaration = decl;
-                ctx.global_symbols.emplace(define->name, symbol);
+                ctx.symbols[0].emplace(define->name, symbol);
             }
         }
         anton::String path = config.source_path;
