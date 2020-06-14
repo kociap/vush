@@ -355,6 +355,16 @@ namespace vush {
                 return;
             }
 
+            case AST_Node_Type::elvis_expr: {
+                Elvis_Expr& node = (Elvis_Expr&)ast_node;
+                stringify(out, *node.condition, format, ctx);
+                out += u8" ? ";
+                stringify(out, *node.true_expr, format, ctx);
+                out += u8" : ";
+                stringify(out, *node.false_expr, format, ctx);
+                return;
+            }
+
             case AST_Node_Type::logic_or_expr: {
                 Logic_Or_Expr& node = (Logic_Or_Expr&)ast_node;
                 stringify(out, *node.lhs, format, ctx);
@@ -620,7 +630,6 @@ namespace vush {
             case AST_Node_Type::sourced_function_param:
             case AST_Node_Type::pass_stage_declaration:
             case AST_Node_Type::expression_if:
-            case AST_Node_Type::elvis_expr:
             case AST_Node_Type::string_literal:
             case AST_Node_Type::case_statement:
             case AST_Node_Type::default_case_statement:
