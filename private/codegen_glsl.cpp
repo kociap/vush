@@ -202,6 +202,67 @@ namespace vush {
                 return;
             }
 
+            case AST_Node_Type::for_statement: {
+                For_Statement& node = (For_Statement&)ast_node;
+                write_indent(out, ctx.indent);
+                out += u8"for(";
+                // We stringify the variable_decl manually because we need inline declaration;
+                Variable_Declaration& decl = *node.declaration;
+                stringify(out, *decl.type, format, ctx);
+                out += u8" ";
+                stringify(out, *decl.identifier, format, ctx);
+                out += u8" = ";
+                stringify(out, *decl.initializer, format, ctx);
+                out += u8"; ";
+                stringify(out, *node.condition, format, ctx);
+                out += u8"; ";
+                stringify(out, *node.post_expression, format, ctx);
+                // We need no-braces block. We add them inline ourselves.
+                out += u8") {\n";
+                ctx.indent += 1;
+                for(auto& statement: node.block->statements->statements) {
+                    stringify(out, *statement, format, ctx);
+                }
+                ctx.indent -= 1;
+                write_indent(out, ctx.indent);
+                out += u8"}\n";
+                return;
+            }
+
+            case AST_Node_Type::while_statement: {
+                While_Statement& node = (While_Statement&)ast_node;
+                write_indent(out, ctx.indent);
+                out += u8"while(";
+                stringify(out, *node.condition, format, ctx);
+                // We need no-braces block. We add them inline ourselves.
+                out += u8") {\n";
+                ctx.indent += 1;
+                for(auto& statement: node.block->statements->statements) {
+                    stringify(out, *statement, format, ctx);
+                }
+                ctx.indent -= 1;
+                write_indent(out, ctx.indent);
+                out += u8"}\n";
+                return;
+            }
+
+            case AST_Node_Type::do_while_statement: {
+                Do_While_Statement& node = (Do_While_Statement&)ast_node;
+                write_indent(out, ctx.indent);
+                // We need no-braces block. We add them inline ourselves.
+                out += u8"do {\n";
+                ctx.indent += 1;
+                for(auto& statement: node.block->statements->statements) {
+                    stringify(out, *statement, format, ctx);
+                }
+                ctx.indent -= 1;
+                write_indent(out, ctx.indent);
+                out += u8"} while(";
+                stringify(out, *node.condition, format, ctx);
+                out += u8");\n";
+                return;
+            }
+
             case AST_Node_Type::return_statement: {
                 Return_Statement& node = (Return_Statement&)ast_node;
                 write_indent(out, ctx.indent);
@@ -561,6 +622,8 @@ namespace vush {
             case AST_Node_Type::expression_if:
             case AST_Node_Type::elvis_expr:
             case AST_Node_Type::string_literal:
+            case AST_Node_Type::case_statement:
+            case AST_Node_Type::default_case_statement:
                 break;
         }
     }
