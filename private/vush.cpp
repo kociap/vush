@@ -70,7 +70,7 @@ namespace vush {
 
                 case AST_Node_Type::declaration_if: {
                     Owning_Ptr<Declaration_If> node = static_cast<Declaration_If*>(ast->declarations[i].release());
-                    Expected<Const_Expr_Value, anton::String> result = evaluate_const_expr(ctx, *node->condition);
+                    Expected<Expr_Value, anton::String> result = evaluate_const_expr(ctx, *node->condition);
                     if(!result) {
                         return {expected_error, anton::move(result.error())};
                     }
@@ -120,7 +120,7 @@ namespace vush {
         for(i64 i = 0; i < params.size();) {
             if(params[i]->node_type == AST_Node_Type::function_param_if) {
                 Function_Param_If& node = (Function_Param_If&)*params[i];
-                Expected<Const_Expr_Value, anton::String> result = evaluate_const_expr(ctx, *node.condition);
+                Expected<Expr_Value, anton::String> result = evaluate_const_expr(ctx, *node.condition);
                 if(!result) {
                     return {expected_error, anton::move(result.error())};
                 }
@@ -150,12 +150,12 @@ namespace vush {
         return {expected_value, true};
     }
 
-    static Expected<bool, anton::String> process_ast(Context& ctx, Owning_Ptr<Syntax_Tree_Node>& ast_node) {
+    static Expected<bool, anton::String> process_ast(Context& ctx, Owning_Ptr<AST_Node>& ast_node) {
         switch(ast_node->node_type) {
             case AST_Node_Type::variable_declaration: {
                 Owning_Ptr<Variable_Declaration>& node = (Owning_Ptr<Variable_Declaration>&)ast_node;
                 if(node->initializer) {
-                    process_ast(ctx, (Owning_Ptr<Syntax_Tree_Node>&)node->initializer);
+                    process_ast(ctx, (Owning_Ptr<AST_Node>&)node->initializer);
                 }
                 break;
             }
@@ -163,7 +163,7 @@ namespace vush {
             case AST_Node_Type::constant_declaration: {
                 Owning_Ptr<Constant_Declaration>& node = (Owning_Ptr<Constant_Declaration>&)ast_node;
                 if(node->initializer) {
-                    process_ast(ctx, (Owning_Ptr<Syntax_Tree_Node>&)node->initializer);
+                    process_ast(ctx, (Owning_Ptr<AST_Node>&)node->initializer);
                 }
                 break;
             }
@@ -171,37 +171,37 @@ namespace vush {
             case AST_Node_Type::statement_list: {
                 Owning_Ptr<Statement_List>& node = (Owning_Ptr<Statement_List>&)ast_node;
                 for(auto& statement: node->statements) {
-                    process_ast(ctx, (Owning_Ptr<Syntax_Tree_Node>&)statement);
+                    process_ast(ctx, (Owning_Ptr<AST_Node>&)statement);
                 }
                 break;
             }
 
             case AST_Node_Type::block_statement: {
                 Owning_Ptr<Block_Statement>& node = (Owning_Ptr<Block_Statement>&)ast_node;
-                process_ast(ctx, (Owning_Ptr<Syntax_Tree_Node>&)node->statements);
+                process_ast(ctx, (Owning_Ptr<AST_Node>&)node->statements);
                 break;
             }
 
             case AST_Node_Type::if_statement: {
                 // TODO: constant evaluation when possible.
                 Owning_Ptr<If_Statement>& node = (Owning_Ptr<If_Statement>&)ast_node;
-                process_ast(ctx, (Owning_Ptr<Syntax_Tree_Node>&)node->condition);
-                process_ast(ctx, (Owning_Ptr<Syntax_Tree_Node>&)node->true_statement);
+                process_ast(ctx, (Owning_Ptr<AST_Node>&)node->condition);
+                process_ast(ctx, (Owning_Ptr<AST_Node>&)node->true_statement);
                 if(node->false_statement) {
-                    process_ast(ctx, (Owning_Ptr<Syntax_Tree_Node>&)node->false_statement);
+                    process_ast(ctx, (Owning_Ptr<AST_Node>&)node->false_statement);
                 }
                 break;
             }
 
             case AST_Node_Type::declaration_statement: {
                 Owning_Ptr<Declaration_Statement>& node = (Owning_Ptr<Declaration_Statement>&)ast_node;
-                process_ast(ctx, (Owning_Ptr<Syntax_Tree_Node>&)node->declaration);
+                process_ast(ctx, (Owning_Ptr<AST_Node>&)node->declaration);
                 break;
             }
 
             case AST_Node_Type::expression_if: {
                 Owning_Ptr<Expression_If>& node = (Owning_Ptr<Expression_If>&)ast_node;
-                Expected<Const_Expr_Value, anton::String> result = evaluate_const_expr(ctx, *node->condition);
+                Expected<Expr_Value, anton::String> result = evaluate_const_expr(ctx, *node->condition);
                 if(!result) {
                     return {expected_error, anton::move(result.error())};
                 }
@@ -211,13 +211,13 @@ namespace vush {
                 }
 
                 if(result.value().as_boolean()) {
-                    ast_node = anton::move((Owning_Ptr<Syntax_Tree_Node>&)node->true_expr);
+                    ast_node = anton::move((Owning_Ptr<AST_Node>&)node->true_expr);
                 } else {
                     if(node->false_expr->node_type == AST_Node_Type::expression_if) {
-                        process_ast(ctx, (Owning_Ptr<Syntax_Tree_Node>&)node->false_expr);
+                        process_ast(ctx, (Owning_Ptr<AST_Node>&)node->false_expr);
                     }
 
-                    ast_node = anton::move((Owning_Ptr<Syntax_Tree_Node>&)node->false_expr);
+                    ast_node = anton::move((Owning_Ptr<AST_Node>&)node->false_expr);
                 }
                 break;
             }
@@ -232,14 +232,14 @@ namespace vush {
                 case AST_Node_Type::function_declaration: {
                     Function_Declaration& fn = (Function_Declaration&)*node;
                     process_fn_param_list(ctx, *fn.param_list);
-                    process_ast(ctx, (Owning_Ptr<Syntax_Tree_Node>&)fn.body->statement_list);
+                    process_ast(ctx, (Owning_Ptr<AST_Node>&)fn.body->statement_list);
                     break;
                 }
 
                 case AST_Node_Type::pass_stage_declaration: {
                     Pass_Stage_Declaration& fn = (Pass_Stage_Declaration&)*node;
                     process_fn_param_list(ctx, *fn.param_list);
-                    process_ast(ctx, (Owning_Ptr<Syntax_Tree_Node>&)fn.body->statement_list);
+                    process_ast(ctx, (Owning_Ptr<AST_Node>&)fn.body->statement_list);
                     break;
                 }
 

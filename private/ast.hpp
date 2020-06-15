@@ -71,33 +71,33 @@ namespace vush {
         expression_statement,
     };
 
-    struct Source_Information {
+    struct Source_Info {
         anton::String* file_path;
         i64 line;
         i64 column;
         i64 file_offset;
     };
 
-    struct Syntax_Tree_Node {
-        Source_Information source_info;
+    struct AST_Node {
+        Source_Info source_info;
         AST_Node_Type node_type;
 
-        Syntax_Tree_Node(Source_Information source_info, AST_Node_Type node_type): source_info(source_info), node_type(node_type) {}
-        virtual ~Syntax_Tree_Node() = default;
+        AST_Node(Source_Info source_info, AST_Node_Type node_type): source_info(source_info), node_type(node_type) {}
+        virtual ~AST_Node() = default;
     };
 
     struct Declaration;
     struct Expression;
     struct Statement;
 
-    struct Identifier: public Syntax_Tree_Node {
+    struct Identifier: public AST_Node {
         anton::String identifier;
 
-        Identifier(anton::String string): Syntax_Tree_Node({}, AST_Node_Type::identifier), identifier(anton::move(string)) {}
+        Identifier(anton::String string): AST_Node({}, AST_Node_Type::identifier), identifier(anton::move(string)) {}
     };
 
-    struct Type: public Syntax_Tree_Node {
-        using Syntax_Tree_Node::Syntax_Tree_Node;
+    struct Type: public AST_Node {
+        using AST_Node::AST_Node;
     };
 
     enum struct Builtin_GLSL_Type {
@@ -237,14 +237,14 @@ namespace vush {
         User_Defined_Type(anton::String name): Type({}, AST_Node_Type::user_defined_type), name(name) {}
     };
 
-    struct Declaration: public Syntax_Tree_Node {
-        using Syntax_Tree_Node::Syntax_Tree_Node;
+    struct Declaration: public AST_Node {
+        using AST_Node::AST_Node;
     };
 
-    struct Declaration_List: public Syntax_Tree_Node {
+    struct Declaration_List: public AST_Node {
         anton::Array<Owning_Ptr<Declaration>> declarations;
 
-        Declaration_List(): Syntax_Tree_Node({}, AST_Node_Type::declaration_list) {}
+        Declaration_List(): AST_Node({}, AST_Node_Type::declaration_list) {}
 
         void append(Declaration* const declaration) {
             declarations.emplace_back(declaration);
@@ -306,20 +306,20 @@ namespace vush {
 
     struct Statement_List;
 
-    struct Function_Body: public Syntax_Tree_Node {
+    struct Function_Body: public AST_Node {
         Owning_Ptr<Statement_List> statement_list;
 
-        Function_Body(Statement_List* statement_list): Syntax_Tree_Node({}, AST_Node_Type::function_body), statement_list(statement_list) {}
+        Function_Body(Statement_List* statement_list): AST_Node({}, AST_Node_Type::function_body), statement_list(statement_list) {}
     };
 
-    struct Function_Param: public Syntax_Tree_Node {
-        using Syntax_Tree_Node::Syntax_Tree_Node;
+    struct Function_Param: public AST_Node {
+        using AST_Node::AST_Node;
     };
 
-    struct Function_Param_List: public Syntax_Tree_Node {
+    struct Function_Param_List: public AST_Node {
         anton::Array<Owning_Ptr<Function_Param>> params;
 
-        Function_Param_List(): Syntax_Tree_Node({}, AST_Node_Type::function_param_list) {}
+        Function_Param_List(): AST_Node({}, AST_Node_Type::function_param_list) {}
 
         void append_parameter(Function_Param* parameter) {
             params.push_back(parameter);
@@ -395,8 +395,8 @@ namespace vush {
               body(body) {}
     };
 
-    struct Expression: public Syntax_Tree_Node {
-        using Syntax_Tree_Node::Syntax_Tree_Node;
+    struct Expression: public AST_Node {
+        using AST_Node::AST_Node;
     };
 
     struct Expression_If: public Expression {
@@ -594,10 +594,10 @@ namespace vush {
         Prefix_Dec_Expr(Expression* expression): Expression({}, AST_Node_Type::prefix_dec_expr), expression(expression) {}
     };
 
-    struct Argument_List: public Syntax_Tree_Node {
+    struct Argument_List: public AST_Node {
         anton::Array<Owning_Ptr<Expression>> arguments;
 
-        Argument_List(): Syntax_Tree_Node({}, AST_Node_Type::argument_list) {}
+        Argument_List(): AST_Node({}, AST_Node_Type::argument_list) {}
 
         void append(Expression* argument) {
             arguments.emplace_back(argument);
@@ -672,14 +672,14 @@ namespace vush {
         Float_Literal(anton::String value): Expression({}, AST_Node_Type::float_literal), value(anton::move(value)) {}
     };
 
-    struct Statement: public Syntax_Tree_Node {
-        using Syntax_Tree_Node::Syntax_Tree_Node;
+    struct Statement: public AST_Node {
+        using AST_Node::AST_Node;
     };
 
-    struct Statement_List: public Syntax_Tree_Node {
+    struct Statement_List: public AST_Node {
         anton::Array<Owning_Ptr<Statement>> statements;
 
-        Statement_List(): Syntax_Tree_Node({}, AST_Node_Type::statement_list) {}
+        Statement_List(): AST_Node({}, AST_Node_Type::statement_list) {}
 
         void append(Statement* const statement) {
             statements.emplace_back(statement);

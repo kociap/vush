@@ -14,7 +14,7 @@ namespace vush {
         float64,
     };
 
-    struct Const_Expr_Value {
+    struct Expr_Value {
         Expr_Value_Type type;
         union {
             bool boolean;
@@ -66,5 +66,5 @@ namespace vush {
     };
 
     bool is_implicitly_convertible_to_boolean(Expr_Value_Type type);
-    Expected<Const_Expr_Value, anton::String> evaluate_const_expr(Context& ctx, Expression& expression);
+    Expected<Expr_Value, anton::String> evaluate_const_expr(Context& ctx, Expression& expression);
 } // namespace vush

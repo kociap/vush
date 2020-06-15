@@ -48,7 +48,7 @@ namespace vush {
     public:
         Hierarchy_Printer(std::ostream& ostream): stream(ostream), indent{0} {}
 
-        void print_hierarchy(Syntax_Tree_Node& ast_node) {
+        void print_hierarchy(AST_Node& ast_node) {
             switch(ast_node.node_type) {
                 case AST_Node_Type::identifier: {
                     Identifier& node = (Identifier&)ast_node;

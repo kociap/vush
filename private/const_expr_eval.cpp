@@ -8,7 +8,7 @@ namespace vush {
         return true;
     }
 
-    Expected<Const_Expr_Value, anton::String> evaluate_const_expr(Context& ctx, Expression& expression) {
+    Expected<Expr_Value, anton::String> evaluate_const_expr(Context& ctx, Expression& expression) {
         switch(expression.node_type) {
             case AST_Node_Type::identifier_expression: {
                 Identifier_Expression& expr = (Identifier_Expression&)expression;
@@ -29,7 +29,7 @@ namespace vush {
 
             case AST_Node_Type::logic_or_expr: {
                 Logic_Or_Expr& expr = (Logic_Or_Expr&)expression;
-                Expected<Const_Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
+                Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
                     return {expected_error, anton::move(lhs_res.error())};
                 }
@@ -38,7 +38,7 @@ namespace vush {
                     return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"expression is not implicitly convertible to bool")};
                 }
 
-                Expected<Const_Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
+                Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
                     return {expected_error, anton::move(rhs_res.error())};
                 }
@@ -49,7 +49,7 @@ namespace vush {
 
                 bool lhs_val = lhs_res.value().as_boolean();
                 bool rhs_val = rhs_res.value().as_boolean();
-                Const_Expr_Value e;
+                Expr_Value e;
                 e.type = Expr_Value_Type::boolean;
                 e.boolean = lhs_val || rhs_val;
                 return {expected_value, e};
@@ -57,7 +57,7 @@ namespace vush {
 
             case AST_Node_Type::logic_xor_expr: {
                 Logic_Or_Expr& expr = (Logic_Or_Expr&)expression;
-                Expected<Const_Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
+                Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
                     return {expected_error, anton::move(lhs_res.error())};
                 }
@@ -66,7 +66,7 @@ namespace vush {
                     return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"expression is not implicitly convertible to bool")};
                 }
 
-                Expected<Const_Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
+                Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
                     return {expected_error, anton::move(rhs_res.error())};
                 }
@@ -77,7 +77,7 @@ namespace vush {
 
                 bool lhs_val = lhs_res.value().as_boolean();
                 bool rhs_val = rhs_res.value().as_boolean();
-                Const_Expr_Value e;
+                Expr_Value e;
                 e.type = Expr_Value_Type::boolean;
                 e.boolean = (lhs_val && !rhs_val) || (!lhs_val && rhs_val);
                 return {expected_value, e};
@@ -85,7 +85,7 @@ namespace vush {
 
             case AST_Node_Type::logic_and_expr: {
                 Logic_Or_Expr& expr = (Logic_Or_Expr&)expression;
-                Expected<Const_Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
+                Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
                     return {expected_error, anton::move(lhs_res.error())};
                 }
@@ -94,7 +94,7 @@ namespace vush {
                     return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"expression is not implicitly convertible to bool")};
                 }
 
-                Expected<Const_Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
+                Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
                     return {expected_error, anton::move(rhs_res.error())};
                 }
@@ -105,7 +105,7 @@ namespace vush {
 
                 bool lhs_val = lhs_res.value().as_boolean();
                 bool rhs_val = rhs_res.value().as_boolean();
-                Const_Expr_Value e;
+                Expr_Value e;
                 e.type = Expr_Value_Type::boolean;
                 e.boolean = lhs_val && rhs_val;
                 return {expected_value, e};
@@ -113,20 +113,20 @@ namespace vush {
 
             case AST_Node_Type::relational_equality_expression: {
                 Relational_Equality_Expression& expr = (Relational_Equality_Expression&)expression;
-                Expected<Const_Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
+                Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
                     return {expected_error, anton::move(lhs_res.error())};
                 }
 
-                Expected<Const_Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
+                Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
                     return {expected_error, anton::move(rhs_res.error())};
                 }
 
                 // TODO: Extend to actual glsl behaviour of == and != operators
 
-                Const_Expr_Value lhs = lhs_res.value();
-                Const_Expr_Value rhs = rhs_res.value();
+                Expr_Value lhs = lhs_res.value();
+                Expr_Value rhs = rhs_res.value();
                 if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
                    lhs.type != Expr_Value_Type::int32) {
                     anton::String stringified_relational = expr.is_equality ? u8"==" : u8"!=";
@@ -143,7 +143,7 @@ namespace vush {
                                                                     "' is not of a scalar integer or a scalar floating-point type")};
                 }
 
-                Const_Expr_Value e;
+                Expr_Value e;
                 e.type = Expr_Value_Type::boolean;
                 if(lhs.type == Expr_Value_Type::float64 || rhs.type == Expr_Value_Type::float64) {
                     if(expr.is_equality) {
@@ -182,18 +182,18 @@ namespace vush {
 
             case AST_Node_Type::relational_expression: {
                 Relational_Expression& expr = (Relational_Expression&)expression;
-                Expected<Const_Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
+                Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
                     return {expected_error, anton::move(lhs_res.error())};
                 }
 
-                Expected<Const_Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
+                Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
                     return {expected_error, anton::move(rhs_res.error())};
                 }
 
-                Const_Expr_Value lhs = lhs_res.value();
-                Const_Expr_Value rhs = rhs_res.value();
+                Expr_Value lhs = lhs_res.value();
+                Expr_Value rhs = rhs_res.value();
                 if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
                    lhs.type != Expr_Value_Type::int32) {
                     anton::String stringified_relational;
@@ -240,7 +240,7 @@ namespace vush {
                                                                     "' is not of a scalar integer or a scalar floating-point type")};
                 }
 
-                Const_Expr_Value e;
+                Expr_Value e;
                 e.type = Expr_Value_Type::boolean;
                 if(lhs.type == Expr_Value_Type::float64 || rhs.type == Expr_Value_Type::float64) {
                     switch(expr.type) {
@@ -313,18 +313,18 @@ namespace vush {
 
             case AST_Node_Type::lshift_expr: {
                 LShift_Expr& expr = (LShift_Expr&)expression;
-                Expected<Const_Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
+                Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
                     return {expected_error, anton::move(lhs_res.error())};
                 }
 
-                Expected<Const_Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
+                Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
                     return {expected_error, anton::move(rhs_res.error())};
                 }
 
-                Const_Expr_Value lhs = lhs_res.value();
-                Const_Expr_Value rhs = rhs_res.value();
+                Expr_Value lhs = lhs_res.value();
+                Expr_Value rhs = rhs_res.value();
                 if(lhs.type != Expr_Value_Type::uint32 && lhs.type != Expr_Value_Type::int32) {
                     return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"left-hand side of '<<' is not of a scalar integer type")};
                 }
@@ -333,7 +333,7 @@ namespace vush {
                     return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"right-hand side of '<<' is not of a scalar integer type")};
                 }
 
-                Const_Expr_Value e;
+                Expr_Value e;
                 e.type = lhs.type;
                 e.uint32 = lhs.uint32;
                 if(rhs.type == Expr_Value_Type::int32) {
@@ -352,18 +352,18 @@ namespace vush {
 
             case AST_Node_Type::rshift_expr: {
                 RShift_Expr& expr = (RShift_Expr&)expression;
-                Expected<Const_Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
+                Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
                     return {expected_error, anton::move(lhs_res.error())};
                 }
 
-                Expected<Const_Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
+                Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
                     return {expected_error, anton::move(rhs_res.error())};
                 }
 
-                Const_Expr_Value lhs = lhs_res.value();
-                Const_Expr_Value rhs = rhs_res.value();
+                Expr_Value lhs = lhs_res.value();
+                Expr_Value rhs = rhs_res.value();
                 if(lhs.type != Expr_Value_Type::uint32 && lhs.type != Expr_Value_Type::int32) {
                     return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"left-hand side of '>>' is not of a scalar integer type")};
                 }
@@ -372,7 +372,7 @@ namespace vush {
                     return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"right-hand side of '>>' is not of a scalar integer type")};
                 }
 
-                Const_Expr_Value e;
+                Expr_Value e;
                 e.type = lhs.type;
                 if(lhs.type == Expr_Value_Type::int32) {
                     e.int32 = lhs.int32;
@@ -405,20 +405,20 @@ namespace vush {
 
             case AST_Node_Type::add_expr: {
                 Add_Expr& expr = (Add_Expr&)expression;
-                Expected<Const_Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
+                Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
                     return {expected_error, anton::move(lhs_res.error())};
                 }
 
-                Expected<Const_Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
+                Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
                     return {expected_error, anton::move(rhs_res.error())};
                 }
 
                 // TODO: Expand to include vectors and matrices.
 
-                Const_Expr_Value lhs = lhs_res.value();
-                Const_Expr_Value rhs = rhs_res.value();
+                Expr_Value lhs = lhs_res.value();
+                Expr_Value rhs = rhs_res.value();
                 if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
                    lhs.type != Expr_Value_Type::int32) {
                     return {expected_error,
@@ -431,7 +431,7 @@ namespace vush {
                                                                 u8"right-hand side of '+' is not of a scalar integer or a scalar floating-point type")};
                 }
 
-                Const_Expr_Value e;
+                Expr_Value e;
                 if(lhs.type == Expr_Value_Type::float64 || rhs.type == Expr_Value_Type::float64) {
                     e.type = Expr_Value_Type::float64;
                     e.float64 = lhs.as_float64() + rhs.as_float64();
@@ -453,20 +453,20 @@ namespace vush {
 
             case AST_Node_Type::sub_expr: {
                 Sub_Expr& expr = (Sub_Expr&)expression;
-                Expected<Const_Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
+                Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
                     return {expected_error, anton::move(lhs_res.error())};
                 }
 
-                Expected<Const_Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
+                Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
                     return {expected_error, anton::move(rhs_res.error())};
                 }
 
                 // TODO: Expand to include vectors and matrices.
 
-                Const_Expr_Value lhs = lhs_res.value();
-                Const_Expr_Value rhs = rhs_res.value();
+                Expr_Value lhs = lhs_res.value();
+                Expr_Value rhs = rhs_res.value();
                 if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
                    lhs.type != Expr_Value_Type::int32) {
                     return {expected_error,
@@ -479,7 +479,7 @@ namespace vush {
                                                                 u8"right-hand side of '-' is not of a scalar integer or a scalar floating-point type")};
                 }
 
-                Const_Expr_Value e;
+                Expr_Value e;
                 if(lhs.type == Expr_Value_Type::float64 || rhs.type == Expr_Value_Type::float64) {
                     e.type = Expr_Value_Type::float64;
                     e.float64 = lhs.as_float64() - rhs.as_float64();
@@ -501,20 +501,20 @@ namespace vush {
 
             case AST_Node_Type::mul_expr: {
                 Mul_Expr& expr = (Mul_Expr&)expression;
-                Expected<Const_Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
+                Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
                     return {expected_error, anton::move(lhs_res.error())};
                 }
 
-                Expected<Const_Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
+                Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
                     return {expected_error, anton::move(rhs_res.error())};
                 }
 
                 // TODO: Expand to include vectors and matrices.
 
-                Const_Expr_Value lhs = lhs_res.value();
-                Const_Expr_Value rhs = rhs_res.value();
+                Expr_Value lhs = lhs_res.value();
+                Expr_Value rhs = rhs_res.value();
                 if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
                    lhs.type != Expr_Value_Type::int32) {
                     return {expected_error,
@@ -527,7 +527,7 @@ namespace vush {
                                                                 u8"right-hand side of '*' is not of a scalar integer or a scalar floating-point type")};
                 }
 
-                Const_Expr_Value e;
+                Expr_Value e;
                 if(lhs.type == Expr_Value_Type::float64 || rhs.type == Expr_Value_Type::float64) {
                     e.type = Expr_Value_Type::float64;
                     e.float64 = lhs.as_float64() * rhs.as_float64();
@@ -549,20 +549,20 @@ namespace vush {
 
             case AST_Node_Type::div_expr: {
                 Div_Expr& expr = (Div_Expr&)expression;
-                Expected<Const_Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
+                Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
                     return {expected_error, anton::move(lhs_res.error())};
                 }
 
-                Expected<Const_Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
+                Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
                     return {expected_error, anton::move(rhs_res.error())};
                 }
 
                 // TODO: Expand to include vectors and matrices.
 
-                Const_Expr_Value lhs = lhs_res.value();
-                Const_Expr_Value rhs = rhs_res.value();
+                Expr_Value lhs = lhs_res.value();
+                Expr_Value rhs = rhs_res.value();
                 if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
                    lhs.type != Expr_Value_Type::int32) {
                     return {expected_error,
@@ -575,7 +575,7 @@ namespace vush {
                                                                 u8"right-hand side of '/' is not of a scalar integer or a scalar floating-point type")};
                 }
 
-                Const_Expr_Value e;
+                Expr_Value e;
                 if(lhs.type == Expr_Value_Type::float64 || rhs.type == Expr_Value_Type::float64) {
                     e.type = Expr_Value_Type::float64;
                     e.float64 = lhs.as_float64() / rhs.as_float64();
@@ -597,20 +597,20 @@ namespace vush {
 
             case AST_Node_Type::mod_expr: {
                 Add_Expr& expr = (Add_Expr&)expression;
-                Expected<Const_Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
+                Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
                     return {expected_error, anton::move(lhs_res.error())};
                 }
 
-                Expected<Const_Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
+                Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
                     return {expected_error, anton::move(rhs_res.error())};
                 }
 
                 // TODO: Expand to include integer vectors.
 
-                Const_Expr_Value lhs = lhs_res.value();
-                Const_Expr_Value rhs = rhs_res.value();
+                Expr_Value lhs = lhs_res.value();
+                Expr_Value rhs = rhs_res.value();
                 if(lhs.type != Expr_Value_Type::uint32 && lhs.type != Expr_Value_Type::int32) {
                     return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"left-hand side of '%' is not of a scalar integer type")};
                 }
@@ -619,7 +619,7 @@ namespace vush {
                     return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"right-hand side of '%' is not of a scalar integer type")};
                 }
 
-                Const_Expr_Value e;
+                Expr_Value e;
                 if(lhs.type == Expr_Value_Type::float64 || rhs.type == Expr_Value_Type::float64) {
                     e.type = Expr_Value_Type::float64;
                     e.float64 = lhs.as_float64() / rhs.as_float64();
@@ -643,7 +643,7 @@ namespace vush {
                 Unary_Expression& expr = (Unary_Expression&)expression;
                 switch(expr.type) {
                     case Unary_Type::plus: {
-                        Expected<Const_Expr_Value, anton::String> base = evaluate_const_expr(ctx, *expr.expression);
+                        Expected<Expr_Value, anton::String> base = evaluate_const_expr(ctx, *expr.expression);
                         if(base) {
                             return {expected_value, anton::move(base.value())};
                         } else {
@@ -652,21 +652,21 @@ namespace vush {
                     }
 
                     case Unary_Type::minus: {
-                        Expected<Const_Expr_Value, anton::String> base_res = evaluate_const_expr(ctx, *expr.expression);
+                        Expected<Expr_Value, anton::String> base_res = evaluate_const_expr(ctx, *expr.expression);
                         if(!base_res) {
                             return {expected_error, anton::move(base_res.error())};
                         }
 
                         // TODO: Extend to vectors and matrices.
 
-                        Const_Expr_Value base = base_res.value();
+                        Expr_Value base = base_res.value();
                         if(base.type != Expr_Value_Type::float64 && base.type != Expr_Value_Type::float32 && base.type != Expr_Value_Type::uint32 &&
                            base.type != Expr_Value_Type::int32) {
                             return {expected_error, build_error_message(*ctx.current_file, 0, 0,
                                                                         u8"right-hand side of '-' is not of a scalar integer or a scalar floating-point type")};
                         }
 
-                        Const_Expr_Value e;
+                        Expr_Value e;
                         if(base.type == Expr_Value_Type::float64) {
                             e.type = Expr_Value_Type::float64;
                             e.float64 = -base.as_float64();
@@ -687,36 +687,36 @@ namespace vush {
                     }
 
                     case Unary_Type::logic_not: {
-                        Expected<Const_Expr_Value, anton::String> base_res = evaluate_const_expr(ctx, *expr.expression);
+                        Expected<Expr_Value, anton::String> base_res = evaluate_const_expr(ctx, *expr.expression);
                         if(!base_res) {
                             return {expected_error, anton::move(base_res.error())};
                         }
 
-                        Const_Expr_Value base = base_res.value();
+                        Expr_Value base = base_res.value();
                         if(base.type != Expr_Value_Type::boolean && !is_implicitly_convertible_to_boolean(base.type)) {
                             return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"right-hand side of '!' is not a boolean")};
                         }
 
-                        Const_Expr_Value e;
+                        Expr_Value e;
                         e.type = Expr_Value_Type::boolean;
                         e.boolean = !base.as_boolean();
                         return {expected_value, e};
                     }
 
                     case Unary_Type::bit_not: {
-                        Expected<Const_Expr_Value, anton::String> base_res = evaluate_const_expr(ctx, *expr.expression);
+                        Expected<Expr_Value, anton::String> base_res = evaluate_const_expr(ctx, *expr.expression);
                         if(!base_res) {
                             return {expected_error, anton::move(base_res.error())};
                         }
 
                         // TODO: Extend to work on integer vectors.
 
-                        Const_Expr_Value base = base_res.value();
+                        Expr_Value base = base_res.value();
                         if(base.type != Expr_Value_Type::uint32 && base.type != Expr_Value_Type::int32) {
                             return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"right-hand side of '~' is not a scalar integer")};
                         }
 
-                        Const_Expr_Value e;
+                        Expr_Value e;
                         if(base.type == Expr_Value_Type::uint32) {
                             e.type = Expr_Value_Type::uint32;
                             e.uint32 = !base.uint32;
@@ -735,7 +735,7 @@ namespace vush {
 
             case AST_Node_Type::bool_literal: {
                 Bool_Literal& expr = (Bool_Literal&)expression;
-                Const_Expr_Value e;
+                Expr_Value e;
                 e.type = Expr_Value_Type::int32;
                 e.boolean = expr.value;
                 return {expected_value, e};
@@ -744,7 +744,7 @@ namespace vush {
             case AST_Node_Type::integer_literal: {
                 Integer_Literal& expr = (Integer_Literal&)expression;
                 i64 value = str_to_i64(expr.value);
-                Const_Expr_Value e;
+                Expr_Value e;
                 e.type = Expr_Value_Type::int32;
                 e.int32 = value;
                 return {expected_value, e};

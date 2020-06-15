@@ -14,7 +14,7 @@ namespace vush {
         }
     }
 
-    static void stringify(anton::String& out, Syntax_Tree_Node& ast_node, Format_Options const& format, Codegen_Context& ctx) {
+    static void stringify(anton::String& out, AST_Node& ast_node, Format_Options const& format, Codegen_Context& ctx) {
         switch(ast_node.node_type) {
             case AST_Node_Type::identifier: {
                 Identifier& node = (Identifier&)ast_node;
