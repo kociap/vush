@@ -1,5 +1,6 @@
 run.sh
 build.bat
+buildf.bat
 CMakeSettings.json
 
 .vs

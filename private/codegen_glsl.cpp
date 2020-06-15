@@ -116,6 +116,16 @@ namespace vush {
                 return;
             }
 
+            case AST_Node_Type::sourced_function_param: {
+                Sourced_Function_Param& node = (Sourced_Function_Param&)ast_node;
+                stringify(out, *node.type, format, ctx);
+                out += u8" ";
+                stringify(out, *node.identifier, format, ctx);
+                out += u8" from ";
+                stringify(out, *node.source, format, ctx);
+                return;
+            }
+
             case AST_Node_Type::statement_list: {
                 Statement_List& node = (Statement_List&)ast_node;
                 for(auto& statement: node.statements) {
@@ -627,7 +637,6 @@ namespace vush {
             case AST_Node_Type::import_decl:
             case AST_Node_Type::function_body:
             case AST_Node_Type::function_param_if:
-            case AST_Node_Type::sourced_function_param:
             case AST_Node_Type::pass_stage_declaration:
             case AST_Node_Type::expression_if:
             case AST_Node_Type::string_literal:
@@ -698,7 +707,8 @@ namespace vush {
             stringify(out, *stage.return_type, format, ctx);
             out += u8" ";
             out += pass_function_name;
-            out += u8"() {\n";
+            stringify(out, *stage.param_list, format, ctx);
+            out += u8" {\n";
             ctx.indent += 1;
             stringify(out, *stage.body->statement_list, format, ctx);
             ctx.indent -= 1;

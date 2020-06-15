@@ -115,6 +115,142 @@ namespace vush {
         return {expected_value, anton::move(ast)};
     }
 
+    static Expected<bool, anton::String> process_fn_param_list(Context& ctx, Function_Param_List& param_list) {
+        anton::Array<Owning_Ptr<Function_Param>>& params = param_list.params;
+        for(i64 i = 0; i < params.size();) {
+            if(params[i]->node_type == AST_Node_Type::function_param_if) {
+                Function_Param_If& node = (Function_Param_If&)*params[i];
+                Expected<Const_Expr_Value, anton::String> result = evaluate_const_expr(ctx, *node.condition);
+                if(!result) {
+                    return {expected_error, anton::move(result.error())};
+                }
+
+                if(!is_implicitly_convertible_to_boolean(result.value().type)) {
+                    return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"expression is not implicitly convertible to bool")};
+                }
+
+                if(result.value().as_boolean()) {
+                    if(node.true_param) {
+                        params[i] = anton::move(node.true_param);
+                    } else {
+                        params.erase(params.begin() + i, params.begin() + i + 1);
+                    }
+                } else {
+                    if(node.false_param) {
+                        params[i] = anton::move(node.false_param);
+                    } else {
+                        params.erase(params.begin() + i, params.begin() + i + 1);
+                    }
+                }
+            } else {
+                ++i;
+            }
+        }
+
+        return {expected_value, true};
+    }
+
+    static Expected<bool, anton::String> process_ast(Context& ctx, Owning_Ptr<Syntax_Tree_Node>& ast_node) {
+        switch(ast_node->node_type) {
+            case AST_Node_Type::variable_declaration: {
+                Owning_Ptr<Variable_Declaration>& node = (Owning_Ptr<Variable_Declaration>&)ast_node;
+                if(node->initializer) {
+                    process_ast(ctx, (Owning_Ptr<Syntax_Tree_Node>&)node->initializer);
+                }
+                break;
+            }
+
+            case AST_Node_Type::constant_declaration: {
+                Owning_Ptr<Constant_Declaration>& node = (Owning_Ptr<Constant_Declaration>&)ast_node;
+                if(node->initializer) {
+                    process_ast(ctx, (Owning_Ptr<Syntax_Tree_Node>&)node->initializer);
+                }
+                break;
+            }
+
+            case AST_Node_Type::statement_list: {
+                Owning_Ptr<Statement_List>& node = (Owning_Ptr<Statement_List>&)ast_node;
+                for(auto& statement: node->statements) {
+                    process_ast(ctx, (Owning_Ptr<Syntax_Tree_Node>&)statement);
+                }
+                break;
+            }
+
+            case AST_Node_Type::block_statement: {
+                Owning_Ptr<Block_Statement>& node = (Owning_Ptr<Block_Statement>&)ast_node;
+                process_ast(ctx, (Owning_Ptr<Syntax_Tree_Node>&)node->statements);
+                break;
+            }
+
+            case AST_Node_Type::if_statement: {
+                // TODO: constant evaluation when possible.
+                Owning_Ptr<If_Statement>& node = (Owning_Ptr<If_Statement>&)ast_node;
+                process_ast(ctx, (Owning_Ptr<Syntax_Tree_Node>&)node->condition);
+                process_ast(ctx, (Owning_Ptr<Syntax_Tree_Node>&)node->true_statement);
+                if(node->false_statement) {
+                    process_ast(ctx, (Owning_Ptr<Syntax_Tree_Node>&)node->false_statement);
+                }
+                break;
+            }
+
+            case AST_Node_Type::declaration_statement: {
+                Owning_Ptr<Declaration_Statement>& node = (Owning_Ptr<Declaration_Statement>&)ast_node;
+                process_ast(ctx, (Owning_Ptr<Syntax_Tree_Node>&)node->declaration);
+                break;
+            }
+
+            case AST_Node_Type::expression_if: {
+                Owning_Ptr<Expression_If>& node = (Owning_Ptr<Expression_If>&)ast_node;
+                Expected<Const_Expr_Value, anton::String> result = evaluate_const_expr(ctx, *node->condition);
+                if(!result) {
+                    return {expected_error, anton::move(result.error())};
+                }
+
+                if(!is_implicitly_convertible_to_boolean(result.value().type)) {
+                    return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"expression is not implicitly convertible to bool")};
+                }
+
+                if(result.value().as_boolean()) {
+                    ast_node = anton::move((Owning_Ptr<Syntax_Tree_Node>&)node->true_expr);
+                } else {
+                    if(node->false_expr->node_type == AST_Node_Type::expression_if) {
+                        process_ast(ctx, (Owning_Ptr<Syntax_Tree_Node>&)node->false_expr);
+                    }
+
+                    ast_node = anton::move((Owning_Ptr<Syntax_Tree_Node>&)node->false_expr);
+                }
+                break;
+            }
+        }
+
+        return {expected_value, true};
+    }
+
+    static Expected<bool, anton::String> process_functions(Context& ctx, Declaration_List& ast) {
+        for(auto& node: ast.declarations) {
+            switch(node->node_type) {
+                case AST_Node_Type::function_declaration: {
+                    Function_Declaration& fn = (Function_Declaration&)*node;
+                    process_fn_param_list(ctx, *fn.param_list);
+                    process_ast(ctx, (Owning_Ptr<Syntax_Tree_Node>&)fn.body->statement_list);
+                    break;
+                }
+
+                case AST_Node_Type::pass_stage_declaration: {
+                    Pass_Stage_Declaration& fn = (Pass_Stage_Declaration&)*node;
+                    process_fn_param_list(ctx, *fn.param_list);
+                    process_ast(ctx, (Owning_Ptr<Syntax_Tree_Node>&)fn.body->statement_list);
+                    break;
+                }
+
+                default:
+                    break;
+            }
+        }
+
+        return {expected_value, true};
+    }
+
     Expected<anton::Array<GLSL_File>, anton::String> compile_to_glsl(Configuration const& config) {
         Context ctx = {};
         ctx.import_paths = config.import_directories;
@@ -135,12 +271,15 @@ namespace vush {
             }
         }
         anton::String path = config.source_path;
-        Expected<Owning_Ptr<Declaration_List>, anton::String> result = process_file_decl_ifs_and_resolve_imports(ctx, path);
-        if(!result) {
-            return {expected_error, anton::move(result.error())};
+        Expected<Owning_Ptr<Declaration_List>, anton::String> parse_res = process_file_decl_ifs_and_resolve_imports(ctx, path);
+        if(!parse_res) {
+            return {expected_error, anton::move(parse_res.error())};
         }
 
-        Expected<anton::Array<GLSL_File>, anton::String> codegen_res = generate_glsl(*result.value(), config.format);
+        Owning_Ptr<Declaration_List> ast = anton::move(parse_res.value());
+        Expected<bool, anton::String> process_res = process_functions(ctx, *ast);
+
+        Expected<anton::Array<GLSL_File>, anton::String> codegen_res = generate_glsl(*ast, config.format);
         if(codegen_res) {
             return {expected_value, anton::move(codegen_res.value())};
         } else {
