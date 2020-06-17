@@ -37,6 +37,8 @@ target_sources(vush
     "${CMAKE_CURRENT_SOURCE_DIR}/private/const_expr_eval.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/context.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/context.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/private/hierarchy_printer.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/private/hierarchy_printer.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/owning_ptr.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/parser.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/parser.hpp"

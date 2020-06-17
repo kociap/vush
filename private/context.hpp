@@ -23,4 +23,5 @@ namespace vush {
     // Adding a new symbol to scope might invalidate the pointer.
     //
     Symbol* find_symbol(Context& ctx, anton::String_View name);
+    Symbol const* find_symbol(Context const& ctx, anton::String_View name);
 } // namespace vush

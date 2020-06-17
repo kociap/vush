@@ -1,10 +1,13 @@
 #include <codegen.hpp>
 
+#include <anton/assert.hpp>
 #include <ast.hpp>
 #include <utility.hpp>
 
 namespace vush {
     struct Codegen_Context {
+        anton::String_View current_pass;
+        Pass_Stage_Type current_stage;
         i64 indent;
     };
 
@@ -123,6 +126,14 @@ namespace vush {
                 stringify(out, *node.identifier, format, ctx);
                 out += u8" from ";
                 stringify(out, *node.source, format, ctx);
+                return;
+            }
+
+            case AST_Node_Type::vertex_input_param: {
+                Vertex_Input_Param& node = (Vertex_Input_Param&)ast_node;
+                stringify(out, *node.type, format, ctx);
+                out += u8" ";
+                stringify(out, *node.identifier, format, ctx);
                 return;
             }
 
@@ -654,7 +665,57 @@ namespace vush {
         out += u8";\n";
     }
 
-    Expected<anton::Array<GLSL_File>, anton::String> generate_glsl(Declaration_List& node, Format_Options const& format) {
+    static void write_vertex_inputs(Context const& ctx, Codegen_Context& codegen_ctx, anton::String& out, Type const& type, anton::String const& input_name,
+                                    i64& input_location, anton::Array<anton::String>& input_names) {
+        ANTON_ASSERT(type.node_type == AST_Node_Type::builtin_type || type.node_type == AST_Node_Type::user_defined_type, "unknown ast node type");
+        if(type.node_type == AST_Node_Type::user_defined_type) {
+            User_Defined_Type const& node = (User_Defined_Type const&)type;
+            Symbol const* symbol = find_symbol(ctx, node.name);
+            ANTON_ASSERT(symbol, "undefined symbol");
+            Struct_Decl const* struct_decl = (Struct_Decl const*)symbol->declaration;
+            for(auto& member: struct_decl->members) {
+                anton::String nested_name = input_name + u8"_" + member->identifier->identifier;
+                write_vertex_inputs(ctx, codegen_ctx, out, *member->type, nested_name, input_location, input_names);
+            }
+        } else {
+            Builtin_Type const& node = (Builtin_Type const&)type;
+            out += u8"layout(location = ";
+            out += anton::to_string(input_location);
+            out += u8") in ";
+            out += stringify(node.type);
+            out += u8" ";
+            anton::String name = u8"_pass_" + codegen_ctx.current_pass + u8"_" + input_name + "_in";
+            out += name;
+            out += u8";\n";
+            input_names.emplace_back(anton::move(name));
+            input_location += 1;
+        }
+    }
+
+    static void write_input_assignments(Context const& ctx, Codegen_Context& codegen_ctx, anton::String& out, Type const& type, anton::String const& name,
+                                        anton::String const*& input_names) {
+        ANTON_ASSERT(type.node_type == AST_Node_Type::builtin_type || type.node_type == AST_Node_Type::user_defined_type, "unknown ast node type");
+        if(type.node_type == AST_Node_Type::user_defined_type) {
+            User_Defined_Type const& node = (User_Defined_Type const&)type;
+            Symbol const* symbol = find_symbol(ctx, node.name);
+            ANTON_ASSERT(symbol, "undefined symbol");
+            Struct_Decl const* struct_decl = (Struct_Decl const*)symbol->declaration;
+            for(auto& member: struct_decl->members) {
+                anton::String nested_name = name + u8"." + member->identifier->identifier;
+                write_input_assignments(ctx, codegen_ctx, out, *member->type, nested_name, input_names);
+            }
+        } else {
+            // Builtin_Type
+            write_indent(out, codegen_ctx.indent);
+            out += name;
+            out += u8" = ";
+            out += *input_names;
+            out += u8";\n";
+            input_names += 1;
+        }
+    }
+
+    Expected<anton::Array<GLSL_File>, anton::String> generate_glsl(Context const& ctx, Declaration_List& node, Format_Options const& format) {
         anton::Array<Declaration*> structs_and_consts;
         anton::Array<Declaration*> functions;
         anton::Array<Declaration*> pass_stages;
@@ -675,26 +736,26 @@ namespace vush {
             }
         }
 
-        Codegen_Context ctx;
-        ctx.indent = 0;
+        Codegen_Context codegen_ctx;
+        codegen_ctx.indent = 0;
 
         anton::String common;
         common += "#version 450 core\n";
 
         for(Declaration* decl: structs_and_consts) {
-            stringify(common, *decl, format, ctx);
+            stringify(common, *decl, format, codegen_ctx);
         }
 
         common += u8"\n";
 
         for(Declaration* decl: functions) {
-            stringify_function_forward_decl(common, (Function_Declaration&)*decl, format, ctx);
+            stringify_function_forward_decl(common, (Function_Declaration&)*decl, format, codegen_ctx);
         }
 
         common += u8"\n";
 
         for(Declaration* decl: functions) {
-            stringify(common, (Function_Declaration&)*decl, format, ctx);
+            stringify(common, (Function_Declaration&)*decl, format, codegen_ctx);
         }
 
         common += u8"\n";
@@ -703,17 +764,104 @@ namespace vush {
         for(Declaration* decl: pass_stages) {
             Pass_Stage_Declaration& stage = (Pass_Stage_Declaration&)*decl;
             anton::String pass_function_name = u8"_pass_" + stage.pass->identifier + u8"_stage_" + stringify(stage.stage);
+            anton::String out_variable_name = pass_function_name + u8"_out";
             anton::String out = common;
-            stringify(out, *stage.return_type, format, ctx);
-            out += u8" ";
-            out += pass_function_name;
-            stringify(out, *stage.param_list, format, ctx);
-            out += u8" {\n";
-            ctx.indent += 1;
-            stringify(out, *stage.body->statement_list, format, ctx);
-            ctx.indent -= 1;
-            out += u8"}\n";
-            files.emplace_back(anton::move(out));
+
+            codegen_ctx.current_pass = stage.pass->identifier;
+            codegen_ctx.current_stage = stage.stage;
+
+            switch(stage.stage) {
+                case Pass_Stage_Type::vertex: {
+                    i64 in_location = 0;
+                    anton::Array<anton::String> input_names;
+                    for(auto& param: stage.param_list->params) {
+                        if(param->node_type == AST_Node_Type::vertex_input_param) {
+                            Owning_Ptr<Vertex_Input_Param>& node = (Owning_Ptr<Vertex_Input_Param>&)param;
+                            write_vertex_inputs(ctx, codegen_ctx, out, *node->type, node->identifier->identifier, in_location, input_names);
+                        } else {
+                        }
+                    }
+                    out += u8"\n";
+
+                    // Stringify the stage function
+                    stringify(out, *stage.return_type, format, codegen_ctx);
+                    out += u8" ";
+                    out += pass_function_name;
+                    stringify(out, *stage.param_list, format, codegen_ctx);
+                    out += u8" {\n";
+                    codegen_ctx.indent += 1;
+                    stringify(out, *stage.body->statement_list, format, codegen_ctx);
+                    codegen_ctx.indent -= 1;
+                    out += u8"}\n\n";
+
+                    // Output main
+                    out += u8"void main() {\n";
+                    codegen_ctx.indent += 1;
+
+                    // Output sourced parameters
+                    anton::String const* input_name_iter = input_names.begin();
+                    i64 param_index = 0;
+                    anton::Array<anton::String> arguments;
+                    for(auto& param: stage.param_list->params) {
+                        if(param->node_type == AST_Node_Type::vertex_input_param) {
+                            Owning_Ptr<Vertex_Input_Param>& node = (Owning_Ptr<Vertex_Input_Param>&)param;
+                            write_indent(out, codegen_ctx.indent);
+                            stringify(out, *node->type, format, codegen_ctx);
+                            out += u8" ";
+                            anton::String argument_name = "_arg" + anton::to_string(param_index);
+                            out += argument_name;
+                            out += u8";\n";
+                            write_input_assignments(ctx, codegen_ctx, out, *node->type, argument_name, input_name_iter);
+                            arguments.emplace_back(anton::move(argument_name));
+                            param_index += 1;
+                        } else {
+                        }
+                    }
+
+                    write_indent(out, codegen_ctx.indent);
+                    out += out_variable_name;
+                    out += u8" = ";
+                    out += pass_function_name;
+                    out += u8"(";
+                    if(arguments.size() > 0) {
+                        out += arguments[0];
+                        for(i64 i = 1; i < arguments.size(); ++i) {
+                            out += u8", ";
+                            out += arguments[i];
+                        }
+                    }
+                    out += u8");\n";
+                    codegen_ctx.indent -= 1;
+                    out += u8"}\n";
+                } break;
+
+                case Pass_Stage_Type::fragment: {
+                    // TODO: validate there are no vertex input parameters
+                    // Stringify the stage function
+                    stringify(out, *stage.return_type, format, codegen_ctx);
+                    out += u8" ";
+                    out += pass_function_name;
+                    stringify(out, *stage.param_list, format, codegen_ctx);
+                    out += u8" {\n";
+                    codegen_ctx.indent += 1;
+                    stringify(out, *stage.body->statement_list, format, codegen_ctx);
+                    codegen_ctx.indent -= 1;
+                    out += u8"}\n\n";
+
+                    // Output main
+                    out += u8"void main() {\n";
+                    write_indent(out, 1);
+                    out += out_variable_name;
+                    out += u8" = ";
+                    out += pass_function_name;
+                    out += u8"();\n";
+                    out += u8"}\n";
+                } break;
+            }
+
+            if(stage.stage == Pass_Stage_Type::vertex) {
+                files.emplace_back(anton::move(out));
+            }
         }
 
         return {expected_value, anton::move(files)};

@@ -30,6 +30,7 @@ namespace vush {
     static constexpr anton::String_View kw_struct = u8"struct";
     static constexpr anton::String_View kw_import = u8"import";
     static constexpr anton::String_View kw_const = u8"const";
+    static constexpr anton::String_View kw_in = u8"in";
 
     // stages
 
@@ -737,7 +738,9 @@ namespace vush {
                     return nullptr;
                 }
 
-                if(anton::String identifier_str; _lexer.match_identifier(identifier_str)) {
+                if(_lexer.match(kw_in, true)) {
+                    return new Vertex_Input_Param(identifier.release(), parameter_type.release());
+                } else if(anton::String identifier_str; _lexer.match_identifier(identifier_str)) {
                     Identifier* source = new Identifier(anton::move(identifier_str));
                     return new Sourced_Function_Param(identifier.release(), parameter_type.release(), source);
                 } else {

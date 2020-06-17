@@ -20,6 +20,7 @@ namespace vush {
         ordinary_function_param,
         function_declaration,
         sourced_function_param,
+        vertex_input_param,
         pass_stage_declaration,
         expression_if,
         identifier_expression,
@@ -364,6 +365,13 @@ namespace vush {
 
         Sourced_Function_Param(Identifier* identifier, Type* type, Identifier* source)
             : Function_Param({}, AST_Node_Type::sourced_function_param), identifier(identifier), type(type), source(source) {}
+    };
+
+    struct Vertex_Input_Param: public Function_Param {
+        Owning_Ptr<Identifier> identifier;
+        Owning_Ptr<Type> type;
+
+        Vertex_Input_Param(Identifier* identifier, Type* type): Function_Param({}, AST_Node_Type::vertex_input_param), identifier(identifier), type(type) {}
     };
 
     enum struct Pass_Stage_Type {

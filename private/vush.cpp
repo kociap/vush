@@ -9,6 +9,8 @@
 #include <symbol.hpp>
 #include <utility.hpp>
 
+#include <hierarchy_printer.hpp>
+
 namespace vush {
     static Expected<anton::String, anton::String> resolve_import_path(Context& ctx, anton::String const& current_path, anton::String const& import_path) {
         bool found = false;
@@ -91,6 +93,12 @@ namespace vush {
                 case AST_Node_Type::function_declaration: {
                     Function_Declaration* node = static_cast<Function_Declaration*>(ast->declarations[i].get());
                     ctx.symbols[0].emplace(node->name->identifier, Symbol{Symbol_Type::function, node});
+                    i += 1;
+                } break;
+
+                case AST_Node_Type::struct_decl: {
+                    Struct_Decl* node = static_cast<Struct_Decl*>(ast->declarations[i].get());
+                    ctx.symbols[0].emplace(node->name->identifier, Symbol{Symbol_Type::struct_decl, node});
                     i += 1;
                 } break;
 
@@ -279,7 +287,9 @@ namespace vush {
         Owning_Ptr<Declaration_List> ast = anton::move(parse_res.value());
         Expected<bool, anton::String> process_res = process_functions(ctx, *ast);
 
-        Expected<anton::Array<GLSL_File>, anton::String> codegen_res = generate_glsl(*ast, config.format);
+        // print_ast(*ast);
+
+        Expected<anton::Array<GLSL_File>, anton::String> codegen_res = generate_glsl(ctx, *ast, config.format);
         if(codegen_res) {
             return {expected_value, anton::move(codegen_res.value())};
         } else {
