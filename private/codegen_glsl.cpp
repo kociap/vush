@@ -667,6 +667,7 @@ namespace vush {
 
     static void write_vertex_inputs(Context const& ctx, Codegen_Context& codegen_ctx, anton::String& out, Type const& type, anton::String const& input_name,
                                     i64& input_location, anton::Array<anton::String>& input_names) {
+        // TODO: fix location increment for types that require more than 1 slot
         ANTON_ASSERT(type.node_type == AST_Node_Type::builtin_type || type.node_type == AST_Node_Type::user_defined_type, "unknown ast node type");
         if(type.node_type == AST_Node_Type::user_defined_type) {
             User_Defined_Type const& node = (User_Defined_Type const&)type;
@@ -764,7 +765,6 @@ namespace vush {
         for(Declaration* decl: pass_stages) {
             Pass_Stage_Declaration& stage = (Pass_Stage_Declaration&)*decl;
             anton::String pass_function_name = u8"_pass_" + stage.pass->identifier + u8"_stage_" + stringify(stage.stage);
-            anton::String out_variable_name = pass_function_name + u8"_out";
             anton::String out = common;
 
             codegen_ctx.current_pass = stage.pass->identifier;
@@ -794,6 +794,23 @@ namespace vush {
                     codegen_ctx.indent -= 1;
                     out += u8"}\n\n";
 
+                    // Write output
+                    anton::String const out_name = u8"_pass_" + codegen_ctx.current_pass + u8"_stage_" + stringify(codegen_ctx.current_stage) + u8"_out";
+                    out += u8"out ";
+                    AST_Node_Type const return_ast_type = stage.return_type->node_type;
+                    ANTON_ASSERT(return_ast_type == AST_Node_Type::builtin_type || return_ast_type == AST_Node_Type::user_defined_type,
+                                 "unknown ast node type");
+                    if(return_ast_type == AST_Node_Type::builtin_type) {
+                        Builtin_Type& node = (Builtin_Type&)*stage.return_type;
+                        out += stringify(node.type);
+                    } else {
+                        User_Defined_Type& node = (User_Defined_Type&)*stage.return_type;
+                        out += node.name;
+                    }
+                    out += u8" ";
+                    out += out_name;
+                    out += u8";\n\n";
+
                     // Output main
                     out += u8"void main() {\n";
                     codegen_ctx.indent += 1;
@@ -819,7 +836,7 @@ namespace vush {
                     }
 
                     write_indent(out, codegen_ctx.indent);
-                    out += out_variable_name;
+                    out += out_name;
                     out += u8" = ";
                     out += pass_function_name;
                     out += u8"(";
@@ -851,7 +868,7 @@ namespace vush {
                     // Output main
                     out += u8"void main() {\n";
                     write_indent(out, 1);
-                    out += out_variable_name;
+                    // out += out_variable_name;
                     out += u8" = ";
                     out += pass_function_name;
                     out += u8"();\n";
