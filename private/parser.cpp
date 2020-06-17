@@ -709,24 +709,18 @@ namespace vush {
                 return param_if;
             }
 
+            Owning_Ptr parameter_type = try_type();
+            if(!parameter_type) {
+                set_error("expected parameter type");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
             Owning_Ptr<Identifier> identifier = nullptr;
             if(anton::String identifier_str; _lexer.match_identifier(identifier_str)) {
                 identifier = new Identifier(anton::move(identifier_str));
             } else {
                 set_error(u8"expected parameter name");
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            if(!_lexer.match(token_colon)) {
-                set_error(u8"expected ':' after parameter name");
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            Owning_Ptr parameter_type = try_type();
-            if(!parameter_type) {
-                set_error("expected parameter type");
                 _lexer.restore_state(state_backup);
                 return nullptr;
             }
