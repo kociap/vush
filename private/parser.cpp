@@ -191,6 +191,7 @@ namespace vush {
         bool match_identifier(anton::String& out) {
             ignore_whitespace_and_comments();
 
+
             // No need to backup the lexer state since we can predict whether the next
             // sequence of characters is an identifier using only the first character.
             char32 const next_char = peek_next();
@@ -282,7 +283,7 @@ namespace vush {
 
     class Parser {
     public:
-        Parser(std::istream& stream): _lexer(stream) {}
+        Parser(std::istream& stream, anton::String_View filename): _filename(filename), _lexer(stream) {}
 
         Owning_Ptr<Declaration_List> build_ast() {
             Owning_Ptr declarations = new Declaration_List;
@@ -301,6 +302,7 @@ namespace vush {
         }
 
     private:
+        anton::String_View _filename;
         Lexer _lexer;
         Parse_Error _last_error;
 
@@ -563,7 +565,7 @@ namespace vush {
             }
 
             if(struct_decl->size() == 0) {
-                set_error(u8"empty structs are not allowed");
+                set_error(u8"empty structs are not allowed", state_backup);
                 _lexer.restore_state(state_backup);
                 return nullptr;
             }
@@ -1138,7 +1140,7 @@ namespace vush {
                 return nullptr;
             }
 
-            return new For_Statement(variable_declaration.release(), condition.release(), post_expression.release(), block.release());
+            return new For_Statement(variable_declaration.release(), condition.release(), post_expression.release(), block.release(), {_filename, state_backup.line, state_backup.column, state_backup.stream_offset});
         }
 
         While_Statement* try_while_statement() {
@@ -1161,7 +1163,7 @@ namespace vush {
                 return nullptr;
             }
 
-            return new While_Statement(condition.release(), block.release());
+            return new While_Statement(condition.release(), block.release(), {_filename, state_backup.line, state_backup.column, state_backup.stream_offset});
         }
 
         Do_While_Statement* try_do_while_statement() {
@@ -1196,7 +1198,7 @@ namespace vush {
                 return nullptr;
             }
 
-            return new Do_While_Statement(condition.release(), block.release());
+            return new Do_While_Statement(condition.release(), block.release(), {_filename, state_backup.line, state_backup.column, state_backup.stream_offset});
         }
 
         Return_Statement* try_return_statement() {
@@ -1219,7 +1221,7 @@ namespace vush {
                 return nullptr;
             }
 
-            return new Return_Statement(return_expr.release());
+            return new Return_Statement(return_expr.release(), {_filename, state_backup.line, state_backup.column, state_backup.stream_offset});
         }
 
         Break_Statement* try_break_statement() {
@@ -1236,7 +1238,7 @@ namespace vush {
                 return nullptr;
             }
 
-            return new Break_Statement();
+            return new Break_Statement({_filename, state_backup.line, state_backup.column, state_backup.stream_offset});
         }
 
         Continue_Statement* try_continue_statement() {
@@ -1253,7 +1255,7 @@ namespace vush {
                 return nullptr;
             }
 
-            return new Continue_Statement();
+            return new Continue_Statement({_filename, state_backup.line, state_backup.column, state_backup.stream_offset});
         }
 
         Expression_Statement* try_expression_statement() {
@@ -2058,10 +2060,11 @@ namespace vush {
         }
 
         Bool_Literal* try_bool_literal() {
+            Lexer_State const state_backup = _lexer.get_current_state();
             if(_lexer.match(kw_true, true)) {
-                return new Bool_Literal(true);
+                return new Bool_Literal(true, {_filename, state_backup.line, state_backup.column, state_backup.stream_offset});
             } else if(_lexer.match(kw_false, true)) {
-                return new Bool_Literal(false);
+                return new Bool_Literal(false, {_filename, state_backup.line, state_backup.column, state_backup.stream_offset});
             } else {
                 set_error("expected bool literal");
                 return nullptr;
@@ -2113,7 +2116,7 @@ namespace vush {
             return {expected_error, anton::move(msg), 0, 0, 0};
         }
 
-        Parser parser(file);
+        Parser parser(file, path);
         Owning_Ptr ast = parser.build_ast();
         if(ast) {
             return {expected_value, anton::move(ast)};

@@ -73,7 +73,7 @@ namespace vush {
     };
 
     struct Source_Info {
-        anton::String* file_path;
+        anton::String_View file_path;
         i64 line;
         i64 column;
         i64 file_offset;
@@ -83,7 +83,7 @@ namespace vush {
         Source_Info source_info;
         AST_Node_Type node_type;
 
-        AST_Node(Source_Info source_info, AST_Node_Type node_type): source_info(source_info), node_type(node_type) {}
+        AST_Node(Source_Info const& source_info, AST_Node_Type node_type): source_info(source_info), node_type(node_type) {}
         virtual ~AST_Node() = default;
     };
 
@@ -665,7 +665,7 @@ namespace vush {
     struct Bool_Literal: public Expression {
         bool value;
 
-        Bool_Literal(bool value): Expression({}, AST_Node_Type::bool_literal), value(value) {}
+        Bool_Literal(bool value, Source_Info const& source_info): Expression(source_info, AST_Node_Type::bool_literal), value(value) {}
     };
 
     struct Integer_Literal: public Expression {
@@ -752,37 +752,37 @@ namespace vush {
         Owning_Ptr<Expression> post_expression;
         Owning_Ptr<Block_Statement> block;
 
-        For_Statement(Variable_Declaration* declaration, Expression* condition, Expression* post_expression, Block_Statement* block)
-            : Statement({}, AST_Node_Type::for_statement), declaration(declaration), condition(condition), post_expression(post_expression), block(block) {}
+        For_Statement(Variable_Declaration* declaration, Expression* condition, Expression* post_expression, Block_Statement* block, Source_Info const& source_info)
+            : Statement(source_info, AST_Node_Type::for_statement), declaration(declaration), condition(condition), post_expression(post_expression), block(block) {}
     };
 
     struct While_Statement: public Statement {
         Owning_Ptr<Expression> condition;
         Owning_Ptr<Block_Statement> block;
 
-        While_Statement(Expression* condition, Block_Statement* block): Statement({}, AST_Node_Type::while_statement), condition(condition), block(block) {}
+        While_Statement(Expression* condition, Block_Statement* block, Source_Info const& source_info): Statement(source_info, AST_Node_Type::while_statement), condition(condition), block(block) {}
     };
 
     struct Do_While_Statement: public Statement {
         Owning_Ptr<Expression> condition;
         Owning_Ptr<Block_Statement> block;
 
-        Do_While_Statement(Expression* condition, Block_Statement* block)
-            : Statement({}, AST_Node_Type::do_while_statement), condition(condition), block(block) {}
+        Do_While_Statement(Expression* condition, Block_Statement* block, Source_Info const& source_info)
+            : Statement(source_info, AST_Node_Type::do_while_statement), condition(condition), block(block) {}
     };
 
     struct Return_Statement: public Statement {
         Owning_Ptr<Expression> return_expr;
 
-        Return_Statement(Expression* return_expr): Statement({}, AST_Node_Type::return_statement), return_expr(return_expr) {}
+        Return_Statement(Expression* return_expr, Source_Info const& source_info): Statement(source_info, AST_Node_Type::return_statement), return_expr(return_expr) {}
     };
 
     struct Break_Statement: public Statement {
-        Break_Statement(): Statement({}, AST_Node_Type::break_statement) {}
+        Break_Statement(Source_Info const& source_info): Statement(source_info, AST_Node_Type::break_statement) {}
     };
 
     struct Continue_Statement: public Statement {
-        Continue_Statement(): Statement({}, AST_Node_Type::continue_statement) {}
+        Continue_Statement(Source_Info const& source_info): Statement(source_info, AST_Node_Type::continue_statement) {}
     };
 
     struct Declaration_Statement: public Statement {

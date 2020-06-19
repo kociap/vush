@@ -15,12 +15,12 @@ namespace vush {
                 Symbol* symbol = find_symbol(ctx, expr.identifier->identifier);
                 if(!symbol) {
                     anton::String msg = u8"unknown identifier '" + expr.identifier->identifier + u8"'";
-                    return {expected_error, build_error_message(*ctx.current_file, 0, 0, msg)};
+                    return {expected_error, build_error_message(*ctx.current_file, expr.source_info.line, expr.source_info.column, msg)};
                 }
 
                 if(symbol->type != Symbol_Type::constant) {
                     anton::String msg = u8"identifier '" + expr.identifier->identifier + u8"' does not name a constant";
-                    return {expected_error, build_error_message(*ctx.current_file, 0, 0, msg)};
+                    return {expected_error, build_error_message(*ctx.current_file, expr.source_info.line, expr.source_info.column, msg)};
                 }
 
                 Constant_Declaration* decl = (Constant_Declaration*)symbol->declaration;
@@ -35,7 +35,8 @@ namespace vush {
                 }
 
                 if(!is_implicitly_convertible_to_boolean(lhs_res.value().type)) {
-                    return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"expression is not implicitly convertible to bool")};
+                    return {expected_error, build_error_message(*ctx.current_file, expr.lhs->source_info.line, expr.lhs->source_info.column,
+                                                                u8"expression is not implicitly convertible to bool")};
                 }
 
                 Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
@@ -44,7 +45,8 @@ namespace vush {
                 }
 
                 if(!is_implicitly_convertible_to_boolean(rhs_res.value().type)) {
-                    return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"expression is not implicitly convertible to bool")};
+                    return {expected_error, build_error_message(*ctx.current_file, expr.rhs->source_info.line, expr.rhs->source_info.column,
+                                                                u8"expression is not implicitly convertible to bool")};
                 }
 
                 bool lhs_val = lhs_res.value().as_boolean();
@@ -63,7 +65,8 @@ namespace vush {
                 }
 
                 if(!is_implicitly_convertible_to_boolean(lhs_res.value().type)) {
-                    return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"expression is not implicitly convertible to bool")};
+                    return {expected_error, build_error_message(*ctx.current_file, expr.lhs->source_info.line, expr.lhs->source_info.column,
+                                                                u8"expression is not implicitly convertible to bool")};
                 }
 
                 Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
@@ -72,7 +75,8 @@ namespace vush {
                 }
 
                 if(!is_implicitly_convertible_to_boolean(rhs_res.value().type)) {
-                    return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"expression is not implicitly convertible to bool")};
+                    return {expected_error, build_error_message(*ctx.current_file, expr.rhs->source_info.line, expr.rhs->source_info.column,
+                                                                u8"expression is not implicitly convertible to bool")};
                 }
 
                 bool lhs_val = lhs_res.value().as_boolean();
@@ -91,7 +95,8 @@ namespace vush {
                 }
 
                 if(!is_implicitly_convertible_to_boolean(lhs_res.value().type)) {
-                    return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"expression is not implicitly convertible to bool")};
+                    return {expected_error, build_error_message(*ctx.current_file, expr.lhs->source_info.line, expr.lhs->source_info.column,
+                                                                u8"expression is not implicitly convertible to bool")};
                 }
 
                 Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
@@ -100,7 +105,8 @@ namespace vush {
                 }
 
                 if(!is_implicitly_convertible_to_boolean(rhs_res.value().type)) {
-                    return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"expression is not implicitly convertible to bool")};
+                    return {expected_error, build_error_message(*ctx.current_file, expr.rhs->source_info.line, expr.rhs->source_info.column,
+                                                                u8"expression is not implicitly convertible to bool")};
                 }
 
                 bool lhs_val = lhs_res.value().as_boolean();
@@ -130,7 +136,7 @@ namespace vush {
                 if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
                    lhs.type != Expr_Value_Type::int32) {
                     anton::String stringified_relational = expr.is_equality ? u8"==" : u8"!=";
-                    return {expected_error, build_error_message(*ctx.current_file, 0, 0,
+                    return {expected_error, build_error_message(*ctx.current_file, expr.lhs->source_info.line, expr.lhs->source_info.column,
                                                                 u8"left-hand side of '" + stringified_relational +
                                                                     "' is not of a scalar integer or a scalar floating-point type")};
                 }
@@ -138,7 +144,7 @@ namespace vush {
                 if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
                    rhs.type != Expr_Value_Type::int32) {
                     anton::String stringified_relational = expr.is_equality ? u8"==" : u8"!=";
-                    return {expected_error, build_error_message(*ctx.current_file, 0, 0,
+                    return {expected_error, build_error_message(*ctx.current_file, expr.rhs->source_info.line, expr.rhs->source_info.column,
                                                                 u8"right-hand side of '" + stringified_relational +
                                                                     "' is not of a scalar integer or a scalar floating-point type")};
                 }
@@ -212,7 +218,7 @@ namespace vush {
                             break;
                     }
 
-                    return {expected_error, build_error_message(*ctx.current_file, 0, 0,
+                    return {expected_error, build_error_message(*ctx.current_file, expr.lhs->source_info.line, expr.lhs->source_info.column,
                                                                 u8"left-hand side of '" + stringified_relational +
                                                                     "' is not of a scalar integer or a scalar floating-point type")};
                 }
@@ -235,7 +241,7 @@ namespace vush {
                             break;
                     }
 
-                    return {expected_error, build_error_message(*ctx.current_file, 0, 0,
+                    return {expected_error, build_error_message(*ctx.current_file, expr.rhs->source_info.line, expr.rhs->source_info.column,
                                                                 u8"right-hand side of '" + stringified_relational +
                                                                     "' is not of a scalar integer or a scalar floating-point type")};
                 }
@@ -326,11 +332,13 @@ namespace vush {
                 Expr_Value lhs = lhs_res.value();
                 Expr_Value rhs = rhs_res.value();
                 if(lhs.type != Expr_Value_Type::uint32 && lhs.type != Expr_Value_Type::int32) {
-                    return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"left-hand side of '<<' is not of a scalar integer type")};
+                    return {expected_error, build_error_message(*ctx.current_file, expr.lhs->source_info.line, expr.lhs->source_info.column,
+                                                                u8"left-hand side of '<<' is not of a scalar integer type")};
                 }
 
                 if(rhs.type != Expr_Value_Type::uint32 && rhs.type != Expr_Value_Type::int32) {
-                    return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"right-hand side of '<<' is not of a scalar integer type")};
+                    return {expected_error, build_error_message(*ctx.current_file, expr.rhs->source_info.line, expr.rhs->source_info.column,
+                                                                u8"right-hand side of '<<' is not of a scalar integer type")};
                 }
 
                 Expr_Value e;
@@ -339,7 +347,8 @@ namespace vush {
                 if(rhs.type == Expr_Value_Type::int32) {
                     i32 shift = rhs.int32;
                     if(shift < 0) {
-                        return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"right-hand side of '<<' is negative")};
+                        return {expected_error, build_error_message(*ctx.current_file, expr.rhs->source_info.line, expr.rhs->source_info.column,
+                                                                    u8"right-hand side of '<<' is negative")};
                     }
 
                     e.uint32 <<= shift;
@@ -365,11 +374,13 @@ namespace vush {
                 Expr_Value lhs = lhs_res.value();
                 Expr_Value rhs = rhs_res.value();
                 if(lhs.type != Expr_Value_Type::uint32 && lhs.type != Expr_Value_Type::int32) {
-                    return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"left-hand side of '>>' is not of a scalar integer type")};
+                    return {expected_error, build_error_message(*ctx.current_file, expr.lhs->source_info.line, expr.lhs->source_info.column,
+                                                                u8"left-hand side of '>>' is not of a scalar integer type")};
                 }
 
                 if(rhs.type != Expr_Value_Type::uint32 && rhs.type != Expr_Value_Type::int32) {
-                    return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"right-hand side of '>>' is not of a scalar integer type")};
+                    return {expected_error, build_error_message(*ctx.current_file, expr.rhs->source_info.line, expr.rhs->source_info.column,
+                                                                u8"right-hand side of '>>' is not of a scalar integer type")};
                 }
 
                 Expr_Value e;
@@ -379,7 +390,8 @@ namespace vush {
                     if(rhs.type == Expr_Value_Type::int32) {
                         i32 shift = rhs.int32;
                         if(shift < 0) {
-                            return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"right-hand side of '>>' is negative")};
+                            return {expected_error, build_error_message(*ctx.current_file, expr.rhs->source_info.line, expr.rhs->source_info.column,
+                                                                        u8"right-hand side of '>>' is negative")};
                         }
 
                         e.int32 >>= shift;
@@ -391,7 +403,8 @@ namespace vush {
                     if(rhs.type == Expr_Value_Type::int32) {
                         i32 shift = rhs.int32;
                         if(shift < 0) {
-                            return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"right-hand side of '>>' is negative")};
+                            return {expected_error, build_error_message(*ctx.current_file, expr.rhs->source_info.line, expr.rhs->source_info.column,
+                                                                        u8"right-hand side of '>>' is negative")};
                         }
 
                         e.int32 >>= shift;
@@ -421,13 +434,13 @@ namespace vush {
                 Expr_Value rhs = rhs_res.value();
                 if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
                    lhs.type != Expr_Value_Type::int32) {
-                    return {expected_error,
-                            build_error_message(*ctx.current_file, 0, 0, u8"left-hand side of '+' is not of a scalar integer or a scalar floating-point type")};
+                    return {expected_error, build_error_message(*ctx.current_file, expr.lhs->source_info.line, expr.lhs->source_info.column,
+                                                                u8"left-hand side of '+' is not of a scalar integer or a scalar floating-point type")};
                 }
 
                 if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
                    rhs.type != Expr_Value_Type::int32) {
-                    return {expected_error, build_error_message(*ctx.current_file, 0, 0,
+                    return {expected_error, build_error_message(*ctx.current_file, expr.rhs->source_info.line, expr.rhs->source_info.column,
                                                                 u8"right-hand side of '+' is not of a scalar integer or a scalar floating-point type")};
                 }
 
@@ -469,13 +482,13 @@ namespace vush {
                 Expr_Value rhs = rhs_res.value();
                 if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
                    lhs.type != Expr_Value_Type::int32) {
-                    return {expected_error,
-                            build_error_message(*ctx.current_file, 0, 0, u8"left-hand side of '-' is not of a scalar integer or a scalar floating-point type")};
+                    return {expected_error, build_error_message(*ctx.current_file, expr.lhs->source_info.line, expr.lhs->source_info.column,
+                                                                u8"left-hand side of '-' is not of a scalar integer or a scalar floating-point type")};
                 }
 
                 if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
                    rhs.type != Expr_Value_Type::int32) {
-                    return {expected_error, build_error_message(*ctx.current_file, 0, 0,
+                    return {expected_error, build_error_message(*ctx.current_file, expr.rhs->source_info.line, expr.rhs->source_info.column,
                                                                 u8"right-hand side of '-' is not of a scalar integer or a scalar floating-point type")};
                 }
 
@@ -517,13 +530,13 @@ namespace vush {
                 Expr_Value rhs = rhs_res.value();
                 if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
                    lhs.type != Expr_Value_Type::int32) {
-                    return {expected_error,
-                            build_error_message(*ctx.current_file, 0, 0, u8"left-hand side of '*' is not of a scalar integer or a scalar floating-point type")};
+                    return {expected_error, build_error_message(*ctx.current_file, expr.lhs->source_info.line, expr.lhs->source_info.column,
+                                                                u8"left-hand side of '*' is not of a scalar integer or a scalar floating-point type")};
                 }
 
                 if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
                    rhs.type != Expr_Value_Type::int32) {
-                    return {expected_error, build_error_message(*ctx.current_file, 0, 0,
+                    return {expected_error, build_error_message(*ctx.current_file, expr.rhs->source_info.line, expr.rhs->source_info.column,
                                                                 u8"right-hand side of '*' is not of a scalar integer or a scalar floating-point type")};
                 }
 
@@ -565,13 +578,13 @@ namespace vush {
                 Expr_Value rhs = rhs_res.value();
                 if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
                    lhs.type != Expr_Value_Type::int32) {
-                    return {expected_error,
-                            build_error_message(*ctx.current_file, 0, 0, u8"left-hand side of '/' is not of a scalar integer or a scalar floating-point type")};
+                    return {expected_error, build_error_message(*ctx.current_file, expr.lhs->source_info.line, expr.lhs->source_info.column,
+                                                                u8"left-hand side of '/' is not of a scalar integer or a scalar floating-point type")};
                 }
 
                 if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
                    rhs.type != Expr_Value_Type::int32) {
-                    return {expected_error, build_error_message(*ctx.current_file, 0, 0,
+                    return {expected_error, build_error_message(*ctx.current_file, expr.rhs->source_info.line, expr.rhs->source_info.column,
                                                                 u8"right-hand side of '/' is not of a scalar integer or a scalar floating-point type")};
                 }
 
@@ -612,11 +625,13 @@ namespace vush {
                 Expr_Value lhs = lhs_res.value();
                 Expr_Value rhs = rhs_res.value();
                 if(lhs.type != Expr_Value_Type::uint32 && lhs.type != Expr_Value_Type::int32) {
-                    return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"left-hand side of '%' is not of a scalar integer type")};
+                    return {expected_error, build_error_message(*ctx.current_file, expr.lhs->source_info.line, expr.lhs->source_info.column,
+                                                                u8"left-hand side of '%' is not of a scalar integer type")};
                 }
 
                 if(rhs.type != Expr_Value_Type::uint32 && rhs.type != Expr_Value_Type::int32) {
-                    return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"right-hand side of '%' is not of a scalar integer type")};
+                    return {expected_error, build_error_message(*ctx.current_file, expr.rhs->source_info.line, expr.rhs->source_info.column,
+                                                                u8"right-hand side of '%' is not of a scalar integer type")};
                 }
 
                 Expr_Value e;
@@ -662,7 +677,7 @@ namespace vush {
                         Expr_Value base = base_res.value();
                         if(base.type != Expr_Value_Type::float64 && base.type != Expr_Value_Type::float32 && base.type != Expr_Value_Type::uint32 &&
                            base.type != Expr_Value_Type::int32) {
-                            return {expected_error, build_error_message(*ctx.current_file, 0, 0,
+                            return {expected_error, build_error_message(*ctx.current_file, expr.source_info.line, expr.source_info.column,
                                                                         u8"right-hand side of '-' is not of a scalar integer or a scalar floating-point type")};
                         }
 
@@ -694,7 +709,8 @@ namespace vush {
 
                         Expr_Value base = base_res.value();
                         if(base.type != Expr_Value_Type::boolean && !is_implicitly_convertible_to_boolean(base.type)) {
-                            return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"right-hand side of '!' is not a boolean")};
+                            return {expected_error, build_error_message(*ctx.current_file, expr.source_info.line, expr.source_info.column,
+                                                                        u8"right-hand side of '!' is not a boolean")};
                         }
 
                         Expr_Value e;
@@ -713,7 +729,8 @@ namespace vush {
 
                         Expr_Value base = base_res.value();
                         if(base.type != Expr_Value_Type::uint32 && base.type != Expr_Value_Type::int32) {
-                            return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"right-hand side of '~' is not a scalar integer")};
+                            return {expected_error, build_error_message(*ctx.current_file, expr.source_info.line, expr.source_info.column,
+                                                                        u8"right-hand side of '~' is not a scalar integer")};
                         }
 
                         Expr_Value e;
@@ -753,7 +770,8 @@ namespace vush {
                 // case AST_Node_Type::float_literal: {}
 
             default: {
-                return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"non-constant expression")};
+                return {expected_error,
+                        build_error_message(*ctx.current_file, expression.source_info.line, expression.source_info.column, u8"non-constant expression")};
             }
         }
     }

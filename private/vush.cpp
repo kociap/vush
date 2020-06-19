@@ -1,3 +1,5 @@
+// TODO: dynamic ifs
+
 #include <vush/vush.hpp>
 
 #include <anton/filesystem.hpp>
@@ -12,7 +14,8 @@
 #include <hierarchy_printer.hpp>
 
 namespace vush {
-    static Expected<anton::String, anton::String> resolve_import_path(Context& ctx, anton::String const& current_path, anton::String const& import_path) {
+    static Expected<anton::String, anton::String> resolve_import_path(Context& ctx, anton::String const& current_path, anton::String const& import_path,
+                                                                      Source_Info const& source_info) {
         bool found = false;
         anton::String out_path;
         for(char const* const* path = ctx.import_paths; path != ctx.import_paths_end; ++path) {
@@ -23,7 +26,7 @@ namespace vush {
                     found = true;
                     out_path = anton::move(resolved_path);
                 } else {
-                    anton::String error_msg = build_error_message(current_path, 0, 0, u8"ambiguous import path");
+                    anton::String error_msg = build_error_message(current_path, source_info.line, source_info.column, u8"ambiguous import path");
                     return {expected_error, anton::move(error_msg)};
                 }
             }
@@ -32,7 +35,7 @@ namespace vush {
         if(found) {
             return {expected_value, anton::move(out_path)};
         } else {
-            anton::String error_msg = build_error_message(current_path, 0, 0, u8"could not resolve import path");
+            anton::String error_msg = build_error_message(current_path, source_info.line, source_info.column, u8"could not resolve import path");
             return {expected_error, anton::move(error_msg)};
         }
     }
@@ -53,7 +56,7 @@ namespace vush {
             switch(ast->declarations[i]->node_type) {
                 case AST_Node_Type::import_decl: {
                     Owning_Ptr<Import_Decl> node = static_cast<Import_Decl*>(ast->declarations[i].release());
-                    Expected<anton::String, anton::String> import_path = resolve_import_path(ctx, path, node->path);
+                    Expected<anton::String, anton::String> import_path = resolve_import_path(ctx, path, node->path, node->source_info);
                     if(!import_path) {
                         return {expected_error, anton::move(import_path.error())};
                     }
@@ -78,7 +81,8 @@ namespace vush {
                     }
 
                     if(!is_implicitly_convertible_to_boolean(result.value().type)) {
-                        return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"expression is not implicitly convertible to bool")};
+                        return {expected_error, build_error_message(*ctx.current_file, node->source_info.line, node->source_info.column,
+                                                                    u8"expression is not implicitly convertible to bool")};
                     }
 
                     ast->declarations.erase(ast->declarations.begin() + i, ast->declarations.begin() + i + 1);
@@ -103,7 +107,9 @@ namespace vush {
                 } break;
 
                 case AST_Node_Type::variable_declaration: {
-                    anton::String error_msg = build_error_message(path, 0, 0, u8"illegal variable declaration in global scope");
+                    Variable_Declaration& node = (Variable_Declaration&)*ast->declarations[i];
+                    anton::String error_msg =
+                        build_error_message(path, node.source_info.line, node.source_info.column, u8"illegal variable declaration in global scope");
                     return {expected_error, anton::move(error_msg)};
                 } break;
 
@@ -134,7 +140,8 @@ namespace vush {
                 }
 
                 if(!is_implicitly_convertible_to_boolean(result.value().type)) {
-                    return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"expression is not implicitly convertible to bool")};
+                    return {expected_error, build_error_message(*ctx.current_file, node.source_info.line, node.source_info.column,
+                                                                u8"expression is not implicitly convertible to bool")};
                 }
 
                 if(result.value().as_boolean()) {
@@ -215,7 +222,8 @@ namespace vush {
                 }
 
                 if(!is_implicitly_convertible_to_boolean(result.value().type)) {
-                    return {expected_error, build_error_message(*ctx.current_file, 0, 0, u8"expression is not implicitly convertible to bool")};
+                    return {expected_error, build_error_message(*ctx.current_file, node->source_info.line, node->source_info.column,
+                                                                u8"expression is not implicitly convertible to bool")};
                 }
 
                 if(result.value().as_boolean()) {
