@@ -94,7 +94,7 @@ namespace vush {
     struct Identifier: public AST_Node {
         anton::String identifier;
 
-        Identifier(anton::String string): AST_Node({}, AST_Node_Type::identifier), identifier(anton::move(string)) {}
+        Identifier(anton::String string, Source_Info const& source_info): AST_Node(source_info, AST_Node_Type::identifier), identifier(anton::move(string)) {}
     };
 
     struct Type: public AST_Node {
@@ -229,13 +229,13 @@ namespace vush {
     struct Builtin_Type: public Type {
         Builtin_GLSL_Type type;
 
-        Builtin_Type(Builtin_GLSL_Type type): Type({}, AST_Node_Type::builtin_type), type(type) {}
+        Builtin_Type(Builtin_GLSL_Type type, Source_Info const& source_info): Type(source_info, AST_Node_Type::builtin_type), type(type) {}
     };
 
     struct User_Defined_Type: public Type {
         anton::String name;
 
-        User_Defined_Type(anton::String name): Type({}, AST_Node_Type::user_defined_type), name(name) {}
+        User_Defined_Type(anton::String name, Source_Info const& source_info): Type(source_info, AST_Node_Type::user_defined_type), name(anton::move(name)) {}
     };
 
     struct Declaration: public AST_Node {
@@ -261,15 +261,15 @@ namespace vush {
         Owning_Ptr<Declaration_List> true_declarations;
         Owning_Ptr<Declaration_List> false_declarations;
 
-        Declaration_If(Expression* condition, Declaration_List* true_declarations, Declaration_List* false_declarations)
-            : Declaration({}, AST_Node_Type::declaration_if), condition(condition), true_declarations(true_declarations),
+        Declaration_If(Expression* condition, Declaration_List* true_declarations, Declaration_List* false_declarations, Source_Info const& source_info)
+            : Declaration(source_info, AST_Node_Type::declaration_if), condition(condition), true_declarations(true_declarations),
               false_declarations(false_declarations) {}
     };
 
     struct Import_Decl: public Declaration {
         anton::String path;
 
-        Import_Decl(anton::String path): Declaration({}, AST_Node_Type::import_decl), path(anton::move(path)) {}
+        Import_Decl(anton::String path, Source_Info const& source_info): Declaration(source_info, AST_Node_Type::import_decl), path(anton::move(path)) {}
     };
 
     struct Variable_Declaration: public Declaration {
@@ -294,7 +294,7 @@ namespace vush {
         Owning_Ptr<Identifier> name;
         anton::Array<Owning_Ptr<Variable_Declaration>> members;
 
-        Struct_Decl(Identifier* name): Declaration({}, AST_Node_Type::struct_decl), name(name) {}
+        Struct_Decl(Identifier* name, Source_Info const& source_info): Declaration(source_info, AST_Node_Type::struct_decl), name(name) {}
 
         void append(Variable_Declaration* decl) {
             members.emplace_back(decl);
@@ -752,15 +752,18 @@ namespace vush {
         Owning_Ptr<Expression> post_expression;
         Owning_Ptr<Block_Statement> block;
 
-        For_Statement(Variable_Declaration* declaration, Expression* condition, Expression* post_expression, Block_Statement* block, Source_Info const& source_info)
-            : Statement(source_info, AST_Node_Type::for_statement), declaration(declaration), condition(condition), post_expression(post_expression), block(block) {}
+        For_Statement(Variable_Declaration* declaration, Expression* condition, Expression* post_expression, Block_Statement* block,
+                      Source_Info const& source_info)
+            : Statement(source_info, AST_Node_Type::for_statement), declaration(declaration), condition(condition), post_expression(post_expression),
+              block(block) {}
     };
 
     struct While_Statement: public Statement {
         Owning_Ptr<Expression> condition;
         Owning_Ptr<Block_Statement> block;
 
-        While_Statement(Expression* condition, Block_Statement* block, Source_Info const& source_info): Statement(source_info, AST_Node_Type::while_statement), condition(condition), block(block) {}
+        While_Statement(Expression* condition, Block_Statement* block, Source_Info const& source_info)
+            : Statement(source_info, AST_Node_Type::while_statement), condition(condition), block(block) {}
     };
 
     struct Do_While_Statement: public Statement {
@@ -774,7 +777,8 @@ namespace vush {
     struct Return_Statement: public Statement {
         Owning_Ptr<Expression> return_expr;
 
-        Return_Statement(Expression* return_expr, Source_Info const& source_info): Statement(source_info, AST_Node_Type::return_statement), return_expr(return_expr) {}
+        Return_Statement(Expression* return_expr, Source_Info const& source_info)
+            : Statement(source_info, AST_Node_Type::return_statement), return_expr(return_expr) {}
     };
 
     struct Break_Statement: public Statement {
