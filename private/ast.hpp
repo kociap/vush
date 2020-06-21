@@ -14,7 +14,6 @@ namespace vush {
         variable_declaration,
         constant_declaration,
         struct_decl,
-        function_body,
         function_param_list,
         function_param_if,
         ordinary_function_param,
@@ -307,12 +306,6 @@ namespace vush {
 
     struct Statement_List;
 
-    struct Function_Body: public AST_Node {
-        Owning_Ptr<Statement_List> statement_list;
-
-        Function_Body(Statement_List* statement_list): AST_Node({}, AST_Node_Type::function_body), statement_list(statement_list) {}
-    };
-
     struct Function_Param: public AST_Node {
         using AST_Node::AST_Node;
     };
@@ -352,9 +345,9 @@ namespace vush {
         Owning_Ptr<Identifier> name;
         Owning_Ptr<Function_Param_List> param_list;
         Owning_Ptr<Type> return_type;
-        Owning_Ptr<Function_Body> body;
+        Owning_Ptr<Statement_List> body;
 
-        Function_Declaration(Identifier* name, Function_Param_List* function_param_list, Type* return_type, Function_Body* body)
+        Function_Declaration(Identifier* name, Function_Param_List* function_param_list, Type* return_type, Statement_List* body)
             : Declaration({}, AST_Node_Type::function_declaration), name(name), param_list(function_param_list), return_type(return_type), body(body) {}
     };
 
@@ -396,9 +389,9 @@ namespace vush {
         Pass_Stage_Type stage;
         Owning_Ptr<Function_Param_List> param_list;
         Owning_Ptr<Type> return_type;
-        Owning_Ptr<Function_Body> body;
+        Owning_Ptr<Statement_List> body;
 
-        Pass_Stage_Declaration(Identifier* pass, Pass_Stage_Type stage, Function_Param_List* parameter_list, Type* return_type, Function_Body* body)
+        Pass_Stage_Declaration(Identifier* pass, Pass_Stage_Type stage, Function_Param_List* parameter_list, Type* return_type, Statement_List* body)
             : Declaration({}, AST_Node_Type::pass_stage_declaration), pass(pass), stage(stage), param_list(parameter_list), return_type(return_type),
               body(body) {}
     };

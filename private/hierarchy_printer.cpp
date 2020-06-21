@@ -127,17 +127,6 @@ namespace vush {
                 return;
             }
 
-            case AST_Node_Type::function_body: {
-                Function_Body& node = (Function_Body&)ast_node;
-                std::cout << indent << "Function_Body:\n";
-                if(node.statement_list) {
-                    indent += 1;
-                    print_hierarchy(*node.statement_list, indent);
-                    indent -= 1;
-                }
-                return;
-            }
-
             case AST_Node_Type::function_param_list: {
                 Function_Param_List& node = (Function_Param_List&)ast_node;
                 std::cout << indent << "Function_Param_List:\n";

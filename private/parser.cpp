@@ -624,13 +624,21 @@ namespace vush {
                 return nullptr;
             }
 
-            Owning_Ptr function_body = try_function_body();
-            if(!function_body) {
-                _lexer.restore_state(state_backup);
+            // function body
+
+            if(!_lexer.match(token_brace_open)) {
+                set_error("expected '{' at the beginning of function body");
                 return nullptr;
             }
 
-            return new Pass_Stage_Declaration(pass.release(), stage_type, param_list.release(), return_type.release(), function_body.release());
+            Owning_Ptr body = try_statement_list();
+
+            if(!_lexer.match(token_brace_close)) {
+                set_error("expected '}' at the end of the function body");
+                return nullptr;
+            }
+
+            return new Pass_Stage_Declaration(pass.release(), stage_type, param_list.release(), return_type.release(), body.release());
         }
 
         Function_Declaration* try_function_declaration() {
@@ -655,13 +663,21 @@ namespace vush {
                 return nullptr;
             }
 
-            Owning_Ptr function_body = try_function_body();
-            if(!function_body) {
-                _lexer.restore_state(state_backup);
+            // function body
+
+            if(!_lexer.match(token_brace_open)) {
+                set_error("expected '{' at the beginning of function body");
                 return nullptr;
             }
 
-            return new Function_Declaration(name.release(), param_list.release(), return_type.release(), function_body.release());
+            Owning_Ptr body = try_statement_list();
+
+            if(!_lexer.match(token_brace_close)) {
+                set_error("expected '}' at the end of the function body");
+                return nullptr;
+            }
+
+            return new Function_Declaration(name.release(), param_list.release(), return_type.release(), body.release());
         }
 
         Function_Param_List* try_function_param_list(bool const allow_sourced_params) {
@@ -798,29 +814,6 @@ namespace vush {
             } else {
                 return new Function_Param_If(condition.release(), true_param.release(), nullptr);
             }
-        }
-
-        Function_Body* try_function_body() {
-            if(!_lexer.match(token_brace_open)) {
-                set_error("expected '{' at the beginning of function body");
-                return nullptr;
-            }
-
-            if(_lexer.match(token_brace_close)) {
-                return new Function_Body(nullptr);
-            }
-
-            Owning_Ptr statements = try_statement_list();
-            if(statements->size() == 0) {
-                return nullptr;
-            }
-
-            if(!_lexer.match(token_brace_close)) {
-                set_error("expected '}' at the end of the function body");
-                return nullptr;
-            }
-
-            return new Function_Body(statements.release());
         }
 
         Statement_List* try_statement_list() {

@@ -88,8 +88,8 @@ namespace vush {
                 stringify(out, *node.param_list, format, ctx);
                 out += u8" {\n";
                 ctx.indent += 1;
-                Function_Body& body = (Function_Body&)*node.body;
-                stringify(out, *body.statement_list, format, ctx);
+                Statement_List& body = (Statement_List&)*node.body;
+                stringify(out, body, format, ctx);
                 ctx.indent -= 1;
                 out += u8"}\n";
                 return;
@@ -646,7 +646,6 @@ namespace vush {
             case AST_Node_Type::declaration_list:
             case AST_Node_Type::declaration_if:
             case AST_Node_Type::import_decl:
-            case AST_Node_Type::function_body:
             case AST_Node_Type::function_param_if:
             case AST_Node_Type::pass_stage_declaration:
             case AST_Node_Type::expression_if:
@@ -841,7 +840,7 @@ namespace vush {
                     stringify(out, *stage.param_list, format, codegen_ctx);
                     out += u8" {\n";
                     codegen_ctx.indent += 1;
-                    stringify(out, *stage.body->statement_list, format, codegen_ctx);
+                    stringify(out, *stage.body, format, codegen_ctx);
                     codegen_ctx.indent -= 1;
                     out += u8"}\n\n";
 
@@ -914,7 +913,7 @@ namespace vush {
                     stringify(out, *stage.param_list, format, codegen_ctx);
                     out += u8" {\n";
                     codegen_ctx.indent += 1;
-                    stringify(out, *stage.body->statement_list, format, codegen_ctx);
+                    stringify(out, *stage.body, format, codegen_ctx);
                     codegen_ctx.indent -= 1;
                     out += u8"}\n\n";
 

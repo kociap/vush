@@ -248,14 +248,14 @@ namespace vush {
                 case AST_Node_Type::function_declaration: {
                     Function_Declaration& fn = (Function_Declaration&)*node;
                     process_fn_param_list(ctx, *fn.param_list);
-                    process_ast(ctx, (Owning_Ptr<AST_Node>&)fn.body->statement_list);
+                    process_ast(ctx, (Owning_Ptr<AST_Node>&)fn.body);
                     break;
                 }
 
                 case AST_Node_Type::pass_stage_declaration: {
                     Pass_Stage_Declaration& fn = (Pass_Stage_Declaration&)*node;
                     process_fn_param_list(ctx, *fn.param_list);
-                    process_ast(ctx, (Owning_Ptr<AST_Node>&)fn.body->statement_list);
+                    process_ast(ctx, (Owning_Ptr<AST_Node>&)fn.body);
                     break;
                 }
 
