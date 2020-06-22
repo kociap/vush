@@ -279,9 +279,9 @@ namespace vush {
             for(Constant_Define const* define = config.defines; define != defines_end; ++define) {
                 Symbol symbol;
                 symbol.type = Symbol_Type::constant;
-                Constant_Declaration* decl =
-                    new Constant_Declaration(new Builtin_Type(Builtin_GLSL_Type::glsl_int, {config.source_path, 0, 0, 0}),
-                                             new Identifier(define->name, {config.source_path, 0, 0, 0}), new Integer_Literal(anton::to_string(define->value)));
+                Constant_Declaration* decl = new Constant_Declaration(
+                    new Builtin_Type(Builtin_GLSL_Type::glsl_int, {config.source_path, 0, 0, 0}), new Identifier(define->name, {config.source_path, 0, 0, 0}),
+                    new Integer_Literal(anton::to_string(define->value), {config.source_path, 0, 0, 0}), {config.source_path, 0, 0, 0});
                 constant_decls.emplace_back(decl);
                 symbol.declaration = decl;
                 ctx.symbols[0].emplace(define->name, symbol);
