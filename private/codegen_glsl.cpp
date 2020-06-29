@@ -933,7 +933,7 @@ namespace vush {
                     write_indent(out, codegen_ctx.indent);
                     AST_Node_Type const return_ast_type = stage.return_type->node_type;
                     ANTON_ASSERT(return_ast_type == AST_Node_Type::builtin_type || return_ast_type == AST_Node_Type::user_defined_type,
-                                 "unknown ast node type");
+                                 u8"unknown ast node type");
                     // Write result type
                     if(return_ast_type == AST_Node_Type::builtin_type) {
                         Builtin_Type& node = (Builtin_Type&)*stage.return_type;

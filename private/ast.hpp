@@ -11,6 +11,10 @@ namespace vush {
         declaration_list,
         declaration_if,
         import_decl,
+        source_definition_property,
+        source_definition,
+        source_definition_emit_statement,
+        source_definition_for_statement,
         variable_declaration,
         constant_declaration,
         struct_decl,
@@ -89,6 +93,7 @@ namespace vush {
     struct Declaration;
     struct Expression;
     struct Statement;
+    struct String_Literal;
 
     struct Identifier: public AST_Node {
         anton::String identifier;
@@ -269,6 +274,60 @@ namespace vush {
         anton::String path;
 
         Import_Decl(anton::String path, Source_Info const& source_info): Declaration(source_info, AST_Node_Type::import_decl), path(anton::move(path)) {}
+    };
+
+    struct Source_Definition_Statement;
+
+    enum struct Source_Definition_Property_Type {
+        declaration,
+        bind,
+    };
+
+    struct Source_Definition_Property: public AST_Node {
+        Source_Definition_Property_Type type;
+        anton::Array<Owning_Ptr<Source_Definition_Statement>> statements;
+
+        Source_Definition_Property(Source_Definition_Property_Type type, Source_Info const& source_info)
+            : AST_Node(source_info, AST_Node_Type::source_definition_property), type(type) {}
+
+        void append(Source_Definition_Statement* statement) {
+            statements.emplace_back(statement);
+        }
+    };
+
+    struct Source_Definition: public Declaration {
+        Owning_Ptr<Identifier> name;
+        anton::Array<Owning_Ptr<Source_Definition_Property>> properties;
+
+        Source_Definition(Identifier* name, Source_Info const& source_info): Declaration(source_info, AST_Node_Type::source_definition), name(name) {}
+
+        void append(Source_Definition_Property* property) {
+            properties.emplace_back(property);
+        }
+    };
+
+    struct Source_Definition_Statement: public AST_Node {
+        using AST_Node::AST_Node;
+    };
+
+    struct Source_Definition_Emit_Statement: public Source_Definition_Statement {
+        Owning_Ptr<String_Literal> string;
+
+        Source_Definition_Emit_Statement(String_Literal* string, Source_Info const& source_info)
+            : Source_Definition_Statement(source_info, AST_Node_Type::source_definition_emit_statement), string(string) {}
+    };
+
+    struct Source_Definition_For_Statement: public Source_Definition_Statement {
+        Owning_Ptr<Identifier> iterator;
+        Owning_Ptr<Identifier> range_expr;
+        anton::Array<Owning_Ptr<Source_Definition_Statement>> statements;
+
+        Source_Definition_For_Statement(Identifier* iterator, Identifier* range_expr, Source_Info const& source_info)
+            : Source_Definition_Statement(source_info, AST_Node_Type::source_definition_for_statement), iterator(iterator), range_expr(range_expr) {}
+
+        void append(Source_Definition_Statement* statement) {
+            statements.emplace_back(statement);
+        }
     };
 
     struct Variable_Declaration: public Declaration {
