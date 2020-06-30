@@ -278,17 +278,10 @@ namespace vush {
 
     struct Source_Definition_Statement;
 
-    enum struct Source_Definition_Property_Type {
-        declaration,
-        bind,
-    };
-
     struct Source_Definition_Property: public AST_Node {
-        Source_Definition_Property_Type type;
         anton::Array<Owning_Ptr<Source_Definition_Statement>> statements;
 
-        Source_Definition_Property(Source_Definition_Property_Type type, Source_Info const& source_info)
-            : AST_Node(source_info, AST_Node_Type::source_definition_property), type(type) {}
+        Source_Definition_Property(Source_Info const& source_info): AST_Node(source_info, AST_Node_Type::source_definition_property) {}
 
         void append(Source_Definition_Statement* statement) {
             statements.emplace_back(statement);
@@ -297,13 +290,10 @@ namespace vush {
 
     struct Source_Definition: public Declaration {
         Owning_Ptr<Identifier> name;
-        anton::Array<Owning_Ptr<Source_Definition_Property>> properties;
+        Owning_Ptr<Source_Definition_Property> decl_prop;
+        Owning_Ptr<Source_Definition_Property> bind_prop;
 
         Source_Definition(Identifier* name, Source_Info const& source_info): Declaration(source_info, AST_Node_Type::source_definition), name(name) {}
-
-        void append(Source_Definition_Property* property) {
-            properties.emplace_back(property);
-        }
     };
 
     struct Source_Definition_Statement: public AST_Node {

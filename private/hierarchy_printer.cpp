@@ -88,6 +88,39 @@ namespace vush {
                 std::cout << indent << "Import_Decl: '" << node.path << "'\n";
             }
 
+            case AST_Node_Type::source_definition_property: {
+                Source_Definition_Property& node = (Source_Definition_Property&)ast_node;
+                std::cout << indent << u8"Source_Definition_Property:\n";
+                for(auto& statement: node.statements) {
+                    print_hierarchy(*statement, indent + 1);
+                }
+                return;
+            }
+
+            case AST_Node_Type::source_definition: {
+                Source_Definition& node = (Source_Definition&)ast_node;
+                std::cout << indent << u8"Source_Definition (" << node.name << "):\n";
+                print_hierarchy(*node.decl_prop, indent + 1);
+                print_hierarchy(*node.bind_prop, indent + 1);
+                return;
+            }
+
+            case AST_Node_Type::source_definition_emit_statement: {
+                Source_Definition_Emit_Statement& node = (Source_Definition_Emit_Statement&)ast_node;
+                std::cout << indent << u8"emit \"" << node.string->value << "\"\n";
+                return;
+            }
+
+            case AST_Node_Type::source_definition_for_statement: {
+                Source_Definition_For_Statement& node = (Source_Definition_For_Statement&)ast_node;
+                std::cout << indent << u8"for " << node.iterator << u8" in " << node.range_expr << u8" {\n";
+                for(auto& statement: node.statements) {
+                    print_hierarchy(*statement, indent + 1);
+                }
+                std::cout << indent << u8"}\n";
+                return;
+            }
+
             case AST_Node_Type::variable_declaration: {
                 Variable_Declaration& node = (Variable_Declaration&)ast_node;
                 std::cout << indent << "Variable_Declaration:\n";

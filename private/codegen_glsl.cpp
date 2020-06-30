@@ -664,6 +664,29 @@ namespace vush {
         out += u8";\n";
     }
 
+    static void instantiate_source_template(anton::String& out, Source_Definition const& source_def,
+                                            anton::Array<Sourced_Function_Param*> const& sourced_params, Format_Options const& format, Codegen_Context& ctx) {
+        anton::Array<Sourced_Function_Param*> params;
+        for(Sourced_Function_Param* param: sourced_params) {
+            if(param->source->identifier == source_def.name->identifier) {
+                params.emplace_back(param);
+            }
+        }
+
+        if(params.size() == 0) {
+            return;
+        }
+
+        for(auto& statement: source_def.decl_prop->statements) {
+            if(statement->node_type == AST_Node_Type::source_definition_emit_statement) {
+                Source_Definition_Emit_Statement* node = (Source_Definition_Emit_Statement*)statement.get();
+                write_indent(out, ctx.indent);
+                out += node->string->value;
+                out += U'\n';
+            }
+        }
+    }
+
     static void write_vertex_inputs(Context const& ctx, Codegen_Context& codegen_ctx, anton::String& out, Type const& type, anton::String const& input_name,
                                     i64& input_location, anton::Array<anton::String>& input_names) {
         // TODO: fix location increment for types that require more than 1 slot
@@ -770,6 +793,8 @@ namespace vush {
         anton::Array<Declaration*> structs_and_consts;
         anton::Array<Declaration*> functions;
         anton::Array<Declaration*> pass_stages;
+        anton::Array<Sourced_Function_Param*> sourced_params;
+        anton::Array<Source_Definition*> source_templates;
         for(auto& decl: node.declarations) {
             switch(decl->node_type) {
                 case AST_Node_Type::struct_decl:
@@ -783,7 +808,20 @@ namespace vush {
 
                 case AST_Node_Type::pass_stage_declaration: {
                     pass_stages.emplace_back(decl.get());
+                    Owning_Ptr<Pass_Stage_Declaration>& pass_stage = (Owning_Ptr<Pass_Stage_Declaration>&)decl;
+                    for(auto& param: pass_stage->param_list->params) {
+                        if(param->node_type == AST_Node_Type::sourced_function_param) {
+                            Sourced_Function_Param* sourced_param = (Sourced_Function_Param*)param.get();
+                            sourced_params.emplace_back(sourced_param);
+                        }
+                    }
                 } break;
+
+                case AST_Node_Type::source_definition: {
+                    Source_Definition* source = (Source_Definition*)decl.get();
+                    source_templates.emplace_back(source);
+                    break;
+                }
             }
         }
 
@@ -807,6 +845,13 @@ namespace vush {
 
         for(Declaration* decl: functions) {
             stringify(common, (Function_Declaration&)*decl, format, codegen_ctx);
+        }
+
+        common += u8"\n";
+
+        for(Source_Definition* source_template: source_templates) {
+            instantiate_source_template(common, *source_template, sourced_params, format, codegen_ctx);
+            common += U'\n';
         }
 
         common += u8"\n";

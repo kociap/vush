@@ -553,17 +553,6 @@ namespace vush {
                     break;
                 }
 
-                Source_Definition_Property_Type property_type;
-                if(property_name->identifier == u8"declaration") {
-                    property_type = Source_Definition_Property_Type::declaration;
-                } else if(property_name->identifier == u8"bind") {
-                    property_type = Source_Definition_Property_Type::bind;
-                } else {
-                    set_error(u8"unknown property '" + property_name->identifier + "'");
-                    _lexer.restore_state(state_backup);
-                    return nullptr;
-                }
-
                 if(!_lexer.match(token_drill)) {
                     set_error(u8"expected '->' after property name");
                     _lexer.restore_state(state_backup);
@@ -576,7 +565,7 @@ namespace vush {
                     return nullptr;
                 }
 
-                Owning_Ptr property = new Source_Definition_Property(property_type, src_info(property_state));
+                Owning_Ptr property = new Source_Definition_Property(src_info(property_state));
                 while(Source_Definition_Statement* statement = try_source_definition_statement()) {
                     property->append(statement);
                 }
@@ -587,7 +576,27 @@ namespace vush {
                     return nullptr;
                 }
 
-                source_definition->append(property.release());
+                if(property_name->identifier == u8"declaration") {
+                    if(source_definition->decl_prop) {
+                        set_error(u8"duplicate 'declaration' property", property_state);
+                        _lexer.restore_state(state_backup);
+                        return nullptr;
+                    }
+
+                    source_definition->decl_prop = anton::move(property);
+                } else if(property_name->identifier == u8"bind") {
+                    if(source_definition->bind_prop) {
+                        set_error(u8"duplicate 'bind' property", property_state);
+                        _lexer.restore_state(state_backup);
+                        return nullptr;
+                    }
+
+                    source_definition->bind_prop = anton::move(property);
+                } else {
+                    set_error(u8"unknown property '" + property_name->identifier + "'", property_state);
+                    _lexer.restore_state(state_backup);
+                    return nullptr;
+                }
             }
 
             if(!_lexer.match(token_brace_close)) {
