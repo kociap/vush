@@ -495,6 +495,7 @@ namespace vush {
                     anton::String _range_expr;
                     Lexer_State const _range_expr_state = _lexer.get_current_state();
                     if(_lexer.match(u8"$") && _lexer.match_identifier(_range_expr)) {
+                        _range_expr = u8"$" + _range_expr;
                         range_expr = new Identifier(anton::move(_range_expr), src_info(_range_expr_state));
                     } else {
                         set_error(u8"expected builtin variable");

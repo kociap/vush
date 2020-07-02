@@ -147,6 +147,11 @@ namespace vush {
         glsl_dmat4x3,
     };
 
+    constexpr bool is_opaque_type(Builtin_GLSL_Type) {
+        // Currently all types are non-opaque.
+        return false;
+    }
+
     constexpr anton::String_View stringify(Builtin_GLSL_Type type) {
         switch(type) {
             case Builtin_GLSL_Type::glsl_void:
@@ -241,6 +246,17 @@ namespace vush {
 
         User_Defined_Type(anton::String name, Source_Info const& source_info): Type(source_info, AST_Node_Type::user_defined_type), name(anton::move(name)) {}
     };
+
+    inline anton::String_View stringify_type(Type const& type) {
+        ANTON_ASSERT(type.node_type == AST_Node_Type::builtin_type || type.node_type == AST_Node_Type::user_defined_type, u8"unknown ast node type");
+        if(type.node_type == AST_Node_Type::builtin_type) {
+            Builtin_Type const& t = static_cast<Builtin_Type const&>(type);
+            return stringify(t.type);
+        } else {
+            User_Defined_Type const& t = static_cast<User_Defined_Type const&>(type);
+            return t.name;
+        }
+    }
 
     struct Declaration: public AST_Node {
         using AST_Node::AST_Node;

@@ -1,6 +1,10 @@
 #include <codegen.hpp>
 
+#include <anton/algorithm.hpp>
 #include <anton/assert.hpp>
+#include <anton/flat_hash_map.hpp>
+#include <anton/intrinsics.hpp>
+#include <anton/slice.hpp>
 #include <ast.hpp>
 #include <utility.hpp>
 
@@ -664,27 +668,155 @@ namespace vush {
         out += u8";\n";
     }
 
-    static void instantiate_source_template(anton::String& out, Source_Definition const& source_def,
-                                            anton::Array<Sourced_Function_Param*> const& sourced_params, Format_Options const& format, Codegen_Context& ctx) {
-        anton::Array<Sourced_Function_Param*> params;
-        for(Sourced_Function_Param* param: sourced_params) {
-            if(param->source->identifier == source_def.name->identifier) {
-                params.emplace_back(param);
+    static Expected<anton::String, anton::String> format_string(String_Literal const& string, anton::Flat_Hash_Map<anton::String, void*>& symbols) {
+        anton::String out;
+        auto iter1 = string.value.bytes_begin();
+        auto iter2 = string.value.bytes_begin();
+        auto const end = string.value.bytes_end();
+        while(true) {
+            while(iter2 != end && *iter2 != U'{') {
+                ++iter2;
             }
+
+            if(iter2 == end) {
+                out.append({iter1, iter2});
+                break;
+            }
+
+            ++iter2;
+            if(iter2 == end || *iter2 != U'{') {
+                // Single brace or end
+                continue;
+            }
+
+            out.append({iter1, iter2 - 1});
+
+            ++iter2;
+            iter1 = iter2;
+            while(iter2 != end && *iter2 != '}') {
+                ++iter2;
+            }
+
+            // Check for unterminated placeholder
+            if(iter2 == end || iter2 + 1 == end || *(iter2 + 1) != U'}') {
+                Source_Info const& src = string.source_info;
+                // We add 1 to account for the opening double quote ( " )
+                i64 const string_offset = 1 + (iter2 - string.value.bytes_begin());
+                return {expected_error, build_error_message(src.file_path, src.line, src.column + string_offset, u8"unterminated placeholder")};
+            }
+
+            anton::String_View const symbol_name = {iter1, iter2};
+            if(symbol_name == u8"$binding") {
+                auto iter = symbols.find(u8"$binding");
+                i64* binding = (i64*)iter->value;
+                out += anton::to_string(*binding);
+                *binding += 1;
+            } else {
+                i64 const dot_pos = anton::find_substring(symbol_name, u8".");
+                if(dot_pos == anton::npos) {
+                    // If it's not a builtin and doesn't have a dot, what is it?
+                    Source_Info const& src = string.source_info;
+                    // We add 1 to account for the opening double quote ( " )
+                    i64 const string_offset = 1 + (iter1 - string.value.bytes_begin());
+                    return {expected_error, build_error_message(src.file_path, src.line, src.column + string_offset, u8"invalid placeholder")};
+                }
+
+                anton::String_View const iterator_name = {symbol_name.data(), dot_pos};
+                anton::String_View const property_name = {symbol_name.data() + dot_pos + 1, symbol_name.bytes_end()};
+                auto iter = symbols.find(iterator_name);
+                if(iter == symbols.end()) {
+                    Source_Info const& src = string.source_info;
+                    // We add 1 to account for the opening double quote ( " )
+                    i64 const string_offset = 1 + (iter1 - string.value.bytes_begin());
+                    return {expected_error, build_error_message(src.file_path, src.line, src.column + string_offset, u8"unknown placeholder")};
+                }
+
+                Sourced_Function_Param* sourced_param = static_cast<Sourced_Function_Param*>(iter->value);
+                if(property_name == u8"type") {
+                    if(sourced_param->type->node_type == AST_Node_Type::builtin_type) {
+                        Builtin_Type* type = static_cast<Builtin_Type*>(sourced_param->type.get());
+                        out += stringify(type->type);
+                    } else {
+                        User_Defined_Type* type = static_cast<User_Defined_Type*>(sourced_param->type.get());
+                        out += type->name;
+                    }
+                } else if(property_name == u8"name") {
+                    out += sourced_param->identifier->identifier;
+                } else {
+                    Source_Info const& src = string.source_info;
+                    // We add 1 to account for the opening double quote ( " )
+                    i64 const string_offset = 1 + (iter1 - string.value.bytes_begin()) + dot_pos + 1;
+                    return {expected_error, build_error_message(src.file_path, src.line, src.column + string_offset, u8"unknown property name")};
+                }
+            }
+
+            // Skip the terminating }}
+            iter2 = iter2 + 2;
+            iter1 = iter2;
         }
 
-        if(params.size() == 0) {
-            return;
-        }
+        return {expected_value, anton::move(out)};
+    }
 
-        for(auto& statement: source_def.decl_prop->statements) {
-            if(statement->node_type == AST_Node_Type::source_definition_emit_statement) {
-                Source_Definition_Emit_Statement* node = (Source_Definition_Emit_Statement*)statement.get();
-                write_indent(out, ctx.indent);
-                out += node->string->value;
+    static Expected<bool, anton::String> process_source_definition_statement(anton::String& out, Source_Definition_Statement const& statement,
+                                                                             anton::Slice<Sourced_Function_Param*> const sourced_params, Context const& ctx,
+                                                                             Format_Options const& format, Codegen_Context& codegen_ctx,
+                                                                             anton::Flat_Hash_Map<anton::String, void*>& symbols) {
+        ANTON_ASSERT(statement.node_type == AST_Node_Type::source_definition_emit_statement ||
+                         statement.node_type == AST_Node_Type::source_definition_for_statement,
+                     u8"unknown node type");
+        switch(statement.node_type) {
+            case AST_Node_Type::source_definition_emit_statement: {
+                Source_Definition_Emit_Statement const& node = (Source_Definition_Emit_Statement const&)statement;
+                write_indent(out, codegen_ctx.indent);
+                Expected<anton::String, anton::String> result = format_string(*node.string, symbols);
+                if(!result) {
+                    return {expected_error, anton::move(result.error())};
+                }
+
+                out += result.value();
                 out += U'\n';
+            } break;
+
+            case AST_Node_Type::source_definition_for_statement: {
+                Source_Definition_For_Statement const& node = (Source_Definition_For_Statement const&)statement;
+                if(node.range_expr->identifier == u8"$variables") {
+                    for(Sourced_Function_Param* param: sourced_params) {
+                        symbols.emplace(node.iterator->identifier, param);
+                        ANTON_ASSERT(param->type->node_type == AST_Node_Type::builtin_type || param->type->node_type == AST_Node_Type::user_defined_type,
+                                     u8"unknown ast node type");
+                        if(Type* type = param->type.get();
+                           type->node_type == AST_Node_Type::builtin_type && is_opaque_type(static_cast<Builtin_Type*>(type)->type)) {
+                            continue;
+                        }
+
+                        for(auto& nested_statement: node.statements) {
+                            process_source_definition_statement(out, *nested_statement, sourced_params, ctx, format, codegen_ctx, symbols);
+                        }
+                    }
+                }
+            } break;
+
+            default:
+                ANTON_UNREACHABLE();
+        }
+
+        return {expected_value, true};
+    }
+
+    // The size of sourced_params should be > 0, otherwise empty definitions will be generated.
+    static Expected<bool, anton::String> instantiate_source_template(anton::String& out, Source_Definition const& source_def,
+                                                                     anton::Slice<Sourced_Function_Param*> const sourced_params, Context const& ctx,
+                                                                     Format_Options const& format, Codegen_Context& codegen_ctx,
+                                                                     anton::Flat_Hash_Map<anton::String, void*>& symbols) {
+        for(auto& statement: source_def.decl_prop->statements) {
+            Expected<bool, anton::String> result = process_source_definition_statement(out, *statement, sourced_params, ctx, format, codegen_ctx, symbols);
+            if(!result) {
+                return {expected_error, anton::move(result.error())};
             }
         }
+
+        return {expected_value, true};
     }
 
     static void write_vertex_inputs(Context const& ctx, Codegen_Context& codegen_ctx, anton::String& out, Type const& type, anton::String const& input_name,
@@ -793,7 +925,7 @@ namespace vush {
         anton::Array<Declaration*> structs_and_consts;
         anton::Array<Declaration*> functions;
         anton::Array<Declaration*> pass_stages;
-        anton::Array<Sourced_Function_Param*> sourced_params;
+        anton::Flat_Hash_Map<anton::String, anton::Array<Sourced_Function_Param*>> sourced_params;
         anton::Array<Source_Definition*> source_templates;
         for(auto& decl: node.declarations) {
             switch(decl->node_type) {
@@ -812,7 +944,8 @@ namespace vush {
                     for(auto& param: pass_stage->param_list->params) {
                         if(param->node_type == AST_Node_Type::sourced_function_param) {
                             Sourced_Function_Param* sourced_param = (Sourced_Function_Param*)param.get();
-                            sourced_params.emplace_back(sourced_param);
+                            auto iter = sourced_params.find_or_emplace(sourced_param->source->identifier);
+                            iter->value.emplace_back(sourced_param);
                         }
                     }
                 } break;
@@ -849,9 +982,55 @@ namespace vush {
 
         common += u8"\n";
 
-        for(Source_Definition* source_template: source_templates) {
-            instantiate_source_template(common, *source_template, sourced_params, format, codegen_ctx);
-            common += U'\n';
+        {
+            i64 binding = 0;
+            anton::Flat_Hash_Map<anton::String, void*> symbols;
+            symbols.emplace(u8"$binding", &binding);
+
+            for(Source_Definition* source_template: source_templates) {
+                auto iter = sourced_params.find(source_template->name->identifier);
+                if(iter != sourced_params.end()) {
+                    // TODO: Use stable sort to preserve the order and report duplicates in the correct order.
+                    anton::quick_sort(iter->value.begin(), iter->value.end(), [](Sourced_Function_Param* const lhs, Sourced_Function_Param* const rhs) {
+                        // TODO: String comparison function.
+                        anton::String const& lhs_str = lhs->identifier->identifier;
+                        anton::String const& rhs_str = rhs->identifier->identifier;
+                        auto lhs_i = lhs_str.bytes_begin(), rhs_i = rhs_str.bytes_begin(), lhs_end = lhs_str.bytes_end(), rhs_end = rhs_str.bytes_end();
+                        for(; lhs_i != lhs_end && rhs_i != rhs_end; ++lhs_i, ++rhs_i) {
+                            if(*lhs_i < *rhs_i) {
+                                return true;
+                            }
+                        }
+
+                        return lhs_i == lhs_end && rhs_i != rhs_end;
+                    });
+
+                    // Ensure there are no name duplicates with different types
+                    for(auto i = iter->value.begin(), j = iter->value.begin() + 1, end = iter->value.end(); j != end; ++i, ++j) {
+                        anton::String_View const i_type = stringify_type(*(*i)->type);
+                        anton::String_View const j_type = stringify_type(*(*j)->type);
+                        if((*i)->identifier->identifier == (*j)->identifier->identifier && i_type != j_type) {
+                            Source_Info const& src = (*j)->identifier->source_info;
+                            return {expected_error,
+                                    build_error_message(src.file_path, src.line, src.column, u8"duplicate sourced parameter name with a different type")};
+                        }
+                    }
+
+                    // Remove type duplicates
+                    auto end = anton::unique(iter->value.begin(), iter->value.end(), [](Sourced_Function_Param* lhs, Sourced_Function_Param* rhs) {
+                        anton::String_View const i_type = stringify_type(*lhs->type);
+                        anton::String_View const j_type = stringify_type(*rhs->type);
+                        return i_type == j_type;
+                    });
+
+                    Expected<bool, anton::String> result =
+                        instantiate_source_template(common, *source_template, {iter->value.begin(), end}, ctx, format, codegen_ctx, symbols);
+                    if(!result) {
+                        return {expected_error, anton::move(result.error())};
+                    }
+                    common += U'\n';
+                }
+            }
         }
 
         common += u8"\n";
