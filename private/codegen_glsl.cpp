@@ -733,13 +733,7 @@ namespace vush {
 
                 Sourced_Function_Param* sourced_param = static_cast<Sourced_Function_Param*>(iter->value);
                 if(property_name == u8"type") {
-                    if(sourced_param->type->node_type == AST_Node_Type::builtin_type) {
-                        Builtin_Type* type = static_cast<Builtin_Type*>(sourced_param->type.get());
-                        out += stringify(type->type);
-                    } else {
-                        User_Defined_Type* type = static_cast<User_Defined_Type*>(sourced_param->type.get());
-                        out += type->name;
-                    }
+                    out += stringify_type(*sourced_param->type);
                 } else if(property_name == u8"name") {
                     out += sourced_param->identifier->identifier;
                 } else {
@@ -794,6 +788,9 @@ namespace vush {
                             process_source_definition_statement(out, *nested_statement, sourced_params, ctx, format, codegen_ctx, symbols);
                         }
                     }
+                } else {
+                    Source_Info const& src = node.range_expr->source_info;
+                    return {expected_error, build_error_message(src.file_path, src.line, src.column, u8"invalid range expression")};
                 }
             } break;
 
@@ -1072,16 +1069,7 @@ namespace vush {
                     anton::String const shader_return_name =
                         u8"_pass_" + codegen_ctx.current_pass + u8"_stage_" + stringify(codegen_ctx.current_stage) + u8"_out";
                     out += u8"out ";
-                    AST_Node_Type const return_ast_type = stage.return_type->node_type;
-                    ANTON_ASSERT(return_ast_type == AST_Node_Type::builtin_type || return_ast_type == AST_Node_Type::user_defined_type,
-                                 "unknown ast node type");
-                    if(return_ast_type == AST_Node_Type::builtin_type) {
-                        Builtin_Type& node = (Builtin_Type&)*stage.return_type;
-                        out += stringify(node.type);
-                    } else {
-                        User_Defined_Type& node = (User_Defined_Type&)*stage.return_type;
-                        out += node.name;
-                    }
+                    out += stringify_type(*stage.return_type);
                     out += u8" ";
                     out += shader_return_name;
                     out += u8";\n\n";
@@ -1155,17 +1143,7 @@ namespace vush {
 
                     // Write stage function call
                     write_indent(out, codegen_ctx.indent);
-                    AST_Node_Type const return_ast_type = stage.return_type->node_type;
-                    ANTON_ASSERT(return_ast_type == AST_Node_Type::builtin_type || return_ast_type == AST_Node_Type::user_defined_type,
-                                 u8"unknown ast node type");
-                    // Write result type
-                    if(return_ast_type == AST_Node_Type::builtin_type) {
-                        Builtin_Type& node = (Builtin_Type&)*stage.return_type;
-                        out += stringify(node.type);
-                    } else {
-                        User_Defined_Type& node = (User_Defined_Type&)*stage.return_type;
-                        out += node.name;
-                    }
+                    out += stringify_type(*stage.return_type);
                     out += u8" ";
                     // Write result name
                     anton::String const shader_return_name = u8"_res";
