@@ -105,7 +105,7 @@ namespace vush {
         using AST_Node::AST_Node;
     };
 
-    enum struct Builtin_GLSL_Type {
+    enum struct Builtin_GLSL_Type : i32 {
         glsl_void,
         glsl_bool,
         glsl_int,
@@ -145,11 +145,124 @@ namespace vush {
         glsl_dmat3x4,
         glsl_dmat4x2,
         glsl_dmat4x3,
+        glsl_sampler1D,
+        glsl_texture1D,
+        glsl_image1D,
+        glsl_sampler1DShadow,
+        glsl_sampler1DArray,
+        glsl_texture1DArray,
+        glsl_image1DArray,
+        glsl_sampler1DArrayShadow,
+        glsl_sampler2D,
+        glsl_texture2D,
+        glsl_image2D,
+        glsl_sampler2DShadow,
+        glsl_sampler2DArray,
+        glsl_texture2DArray,
+        glsl_image2DArray,
+        glsl_sampler2DArrayShadow,
+        glsl_sampler2DMS,
+        glsl_texture2DMS,
+        glsl_image2DMS,
+        glsl_sampler2DMSArray,
+        glsl_texture2DMSArray,
+        glsl_image2DMSArray,
+        glsl_sampler2DRect,
+        glsl_texture2DRect,
+        glsl_image2DRect,
+        glsl_sampler2DRectShadow,
+        glsl_sampler3D,
+        glsl_texture3D,
+        glsl_image3D,
+        glsl_samplerCube,
+        glsl_textureCube,
+        glsl_imageCube,
+        glsl_samplerCubeShadow,
+        glsl_samplerCubeArray,
+        glsl_textureCubeArray,
+        glsl_imageCubeArray,
+        glsl_samplerCubeArrayShadow,
+        glsl_samplerBuffer,
+        glsl_textureBuffer,
+        glsl_imageBuffer,
+        glsl_subpassInput,
+        glsl_subpassInputMS,
+        glsl_isampler1D,
+        glsl_itexture1D,
+        glsl_iimage1D,
+        glsl_isampler1DArray,
+        glsl_itexture1DArray,
+        glsl_iimage1DArray,
+        glsl_isampler2D,
+        glsl_itexture2D,
+        glsl_iimage2D,
+        glsl_isampler2DArray,
+        glsl_itexture2DArray,
+        glsl_iimage2DArray,
+        glsl_isampler2DMS,
+        glsl_itexture2DMS,
+        glsl_iimage2DMS,
+        glsl_isampler2DMSArray,
+        glsl_itexture2DMSArray,
+        glsl_iimage2DMSArray,
+        glsl_isampler2DRect,
+        glsl_itexture2DRect,
+        glsl_iimage2DRect,
+        glsl_isampler3D,
+        glsl_itexture3D,
+        glsl_iimage3D,
+        glsl_isamplerCube,
+        glsl_itextureCube,
+        glsl_iimageCube,
+        glsl_isamplerCubeArray,
+        glsl_itextureCubeArray,
+        glsl_iimageCubeArray,
+        glsl_isamplerBuffer,
+        glsl_itextureBuffer,
+        glsl_iimageBuffer,
+        glsl_isubpassInput,
+        glsl_isubpassInputMS,
+        glsl_usampler1D,
+        glsl_utexture1D,
+        glsl_uimage1D,
+        glsl_usampler1DArray,
+        glsl_utexture1DArray,
+        glsl_uimage1DArray,
+        glsl_usampler2D,
+        glsl_utexture2D,
+        glsl_uimage2D,
+        glsl_usampler2DArray,
+        glsl_utexture2DArray,
+        glsl_uimage2DArray,
+        glsl_usampler2DMS,
+        glsl_utexture2DMS,
+        glsl_uimage2DMS,
+        glsl_usampler2DMSArray,
+        glsl_utexture2DMSArray,
+        glsl_uimage2DMSArray,
+        glsl_usampler2DRect,
+        glsl_utexture2DRect,
+        glsl_uimage2DRect,
+        glsl_usampler3D,
+        glsl_utexture3D,
+        glsl_uimage3D,
+        glsl_usamplerCube,
+        glsl_utextureCube,
+        glsl_uimageCube,
+        glsl_usamplerCubeArray,
+        glsl_utextureCubeArray,
+        glsl_uimageCubeArray,
+        glsl_usamplerBuffer,
+        glsl_utextureBuffer,
+        glsl_uimageBuffer,
+        glsl_usubpassInput,
+        glsl_usubpassInputMS,
+        glsl_sampler,
+        glsl_samplerShadow,
     };
 
-    constexpr bool is_opaque_type(Builtin_GLSL_Type) {
-        // Currently all types are non-opaque.
-        return false;
+    constexpr bool is_opaque_type(Builtin_GLSL_Type type) {
+        return static_cast<i32>(type) >= static_cast<i32>(Builtin_GLSL_Type::glsl_sampler1D);
     }
 
     constexpr anton::String_View stringify(Builtin_GLSL_Type type) {
@@ -232,6 +345,234 @@ namespace vush {
                 return u8"dmat4x2";
             case Builtin_GLSL_Type::glsl_dmat4x3:
                 return u8"dmat4x3";
+            case Builtin_GLSL_Type::glsl_sampler1D:
+                return u8"sampler1D";
+            case Builtin_GLSL_Type::glsl_texture1D:
+                return u8"texture1D";
+            case Builtin_GLSL_Type::glsl_image1D:
+                return u8"image1D";
+            case Builtin_GLSL_Type::glsl_sampler1DShadow:
+                return u8"sampler1DShadow";
+            case Builtin_GLSL_Type::glsl_sampler1DArray:
+                return u8"sampler1DArray";
+            case Builtin_GLSL_Type::glsl_texture1DArray:
+                return u8"texture1DArray";
+            case Builtin_GLSL_Type::glsl_image1DArray:
+                return u8"image1DArray";
+            case Builtin_GLSL_Type::glsl_sampler1DArrayShadow:
+                return u8"sampler1DArrayShadow";
+            case Builtin_GLSL_Type::glsl_sampler2D:
+                return u8"sampler2D";
+            case Builtin_GLSL_Type::glsl_texture2D:
+                return u8"texture2D";
+            case Builtin_GLSL_Type::glsl_image2D:
+                return u8"image2D";
+            case Builtin_GLSL_Type::glsl_sampler2DShadow:
+                return u8"sampler2DShadow";
+            case Builtin_GLSL_Type::glsl_sampler2DArray:
+                return u8"sampler2DArray";
+            case Builtin_GLSL_Type::glsl_texture2DArray:
+                return u8"texture2DArray";
+            case Builtin_GLSL_Type::glsl_image2DArray:
+                return u8"image2DArray";
+            case Builtin_GLSL_Type::glsl_sampler2DArrayShadow:
+                return u8"sampler2DArrayShadow";
+            case Builtin_GLSL_Type::glsl_sampler2DMS:
+                return u8"sampler2DMS";
+            case Builtin_GLSL_Type::glsl_texture2DMS:
+                return u8"texture2DMS";
+            case Builtin_GLSL_Type::glsl_image2DMS:
+                return u8"image2DMS";
+            case Builtin_GLSL_Type::glsl_sampler2DMSArray:
+                return u8"sampler2DMSArray";
+            case Builtin_GLSL_Type::glsl_texture2DMSArray:
+                return u8"texture2DMSArray";
+            case Builtin_GLSL_Type::glsl_image2DMSArray:
+                return u8"image2DMSArray";
+            case Builtin_GLSL_Type::glsl_sampler2DRect:
+                return u8"sampler2DRect";
+            case Builtin_GLSL_Type::glsl_texture2DRect:
+                return u8"texture2DRect";
+            case Builtin_GLSL_Type::glsl_image2DRect:
+                return u8"image2DRect";
+            case Builtin_GLSL_Type::glsl_sampler2DRectShadow:
+                return u8"sampler2DRectShadow";
+            case Builtin_GLSL_Type::glsl_sampler3D:
+                return u8"sampler3D";
+            case Builtin_GLSL_Type::glsl_texture3D:
+                return u8"texture3D";
+            case Builtin_GLSL_Type::glsl_image3D:
+                return u8"image3D";
+            case Builtin_GLSL_Type::glsl_samplerCube:
+                return u8"samplerCube";
+            case Builtin_GLSL_Type::glsl_textureCube:
+                return u8"textureCube";
+            case Builtin_GLSL_Type::glsl_imageCube:
+                return u8"imageCube";
+            case Builtin_GLSL_Type::glsl_samplerCubeShadow:
+                return u8"samplerCubeShadow";
+            case Builtin_GLSL_Type::glsl_samplerCubeArray:
+                return u8"samplerCubeArray";
+            case Builtin_GLSL_Type::glsl_textureCubeArray:
+                return u8"textureCubeArray";
+            case Builtin_GLSL_Type::glsl_imageCubeArray:
+                return u8"imageCubeArray";
+            case Builtin_GLSL_Type::glsl_samplerCubeArrayShadow:
+                return u8"samplerCubeArrayShadow";
+            case Builtin_GLSL_Type::glsl_samplerBuffer:
+                return u8"samplerBuffer";
+            case Builtin_GLSL_Type::glsl_textureBuffer:
+                return u8"textureBuffer";
+            case Builtin_GLSL_Type::glsl_imageBuffer:
+                return u8"imageBuffer";
+            case Builtin_GLSL_Type::glsl_subpassInput:
+                return u8"subpassInput";
+            case Builtin_GLSL_Type::glsl_subpassInputMS:
+                return u8"subpassInputMS";
+            case Builtin_GLSL_Type::glsl_isampler1D:
+                return u8"isampler1D";
+            case Builtin_GLSL_Type::glsl_itexture1D:
+                return u8"itexture1D";
+            case Builtin_GLSL_Type::glsl_iimage1D:
+                return u8"iimage1D";
+            case Builtin_GLSL_Type::glsl_isampler1DArray:
+                return u8"isampler1DArray";
+            case Builtin_GLSL_Type::glsl_itexture1DArray:
+                return u8"itexture1DArray";
+            case Builtin_GLSL_Type::glsl_iimage1DArray:
+                return u8"iimage1DArray";
+            case Builtin_GLSL_Type::glsl_isampler2D:
+                return u8"isampler2D";
+            case Builtin_GLSL_Type::glsl_itexture2D:
+                return u8"itexture2D";
+            case Builtin_GLSL_Type::glsl_iimage2D:
+                return u8"iimage2D";
+            case Builtin_GLSL_Type::glsl_isampler2DArray:
+                return u8"isampler2DArray";
+            case Builtin_GLSL_Type::glsl_itexture2DArray:
+                return u8"itexture2DArray";
+            case Builtin_GLSL_Type::glsl_iimage2DArray:
+                return u8"iimage2DArray";
+            case Builtin_GLSL_Type::glsl_isampler2DMS:
+                return u8"isampler2DMS";
+            case Builtin_GLSL_Type::glsl_itexture2DMS:
+                return u8"itexture2DMS";
+            case Builtin_GLSL_Type::glsl_iimage2DMS:
+                return u8"iimage2DMS";
+            case Builtin_GLSL_Type::glsl_isampler2DMSArray:
+                return u8"isampler2DMSArray";
+            case Builtin_GLSL_Type::glsl_itexture2DMSArray:
+                return u8"itexture2DMSArray";
+            case Builtin_GLSL_Type::glsl_iimage2DMSArray:
+                return u8"iimage2DMSArray";
+            case Builtin_GLSL_Type::glsl_isampler2DRect:
+                return u8"isampler2DRect";
+            case Builtin_GLSL_Type::glsl_itexture2DRect:
+                return u8"itexture2DRect";
+            case Builtin_GLSL_Type::glsl_iimage2DRect:
+                return u8"iimage2DRect";
+            case Builtin_GLSL_Type::glsl_isampler3D:
+                return u8"isampler3D";
+            case Builtin_GLSL_Type::glsl_itexture3D:
+                return u8"itexture3D";
+            case Builtin_GLSL_Type::glsl_iimage3D:
+                return u8"iimage3D";
+            case Builtin_GLSL_Type::glsl_isamplerCube:
+                return u8"isamplerCube";
+            case Builtin_GLSL_Type::glsl_itextureCube:
+                return u8"itextureCube";
+            case Builtin_GLSL_Type::glsl_iimageCube:
+                return u8"iimageCube";
+            case Builtin_GLSL_Type::glsl_isamplerCubeArray:
+                return u8"isamplerCubeArray";
+            case Builtin_GLSL_Type::glsl_itextureCubeArray:
+                return u8"itextureCubeArray";
+            case Builtin_GLSL_Type::glsl_iimageCubeArray:
+                return u8"iimageCubeArray";
+            case Builtin_GLSL_Type::glsl_isamplerBuffer:
+                return u8"isamplerBuffer";
+            case Builtin_GLSL_Type::glsl_itextureBuffer:
+                return u8"itextureBuffer";
+            case Builtin_GLSL_Type::glsl_iimageBuffer:
+                return u8"iimageBuffer";
+            case Builtin_GLSL_Type::glsl_isubpassInput:
+                return u8"isubpassInput";
+            case Builtin_GLSL_Type::glsl_isubpassInputMS:
+                return u8"isubpassInputMS";
+            case Builtin_GLSL_Type::glsl_usampler1D:
+                return u8"usampler1D";
+            case Builtin_GLSL_Type::glsl_utexture1D:
+                return u8"utexture1D";
+            case Builtin_GLSL_Type::glsl_uimage1D:
+                return u8"uimage1D";
+            case Builtin_GLSL_Type::glsl_usampler1DArray:
+                return u8"usampler1DArray";
+            case Builtin_GLSL_Type::glsl_utexture1DArray:
+                return u8"utexture1DArray";
+            case Builtin_GLSL_Type::glsl_uimage1DArray:
+                return u8"uimage1DArray";
+            case Builtin_GLSL_Type::glsl_usampler2D:
+                return u8"usampler2D";
+            case Builtin_GLSL_Type::glsl_utexture2D:
+                return u8"utexture2D";
+            case Builtin_GLSL_Type::glsl_uimage2D:
+                return u8"uimage2D";
+            case Builtin_GLSL_Type::glsl_usampler2DArray:
+                return u8"usampler2DArray";
+            case Builtin_GLSL_Type::glsl_utexture2DArray:
+                return u8"utexture2DArray";
+            case Builtin_GLSL_Type::glsl_uimage2DArray:
+                return u8"uimage2DArray";
+            case Builtin_GLSL_Type::glsl_usampler2DMS:
+                return u8"usampler2DMS";
+            case Builtin_GLSL_Type::glsl_utexture2DMS:
+                return u8"utexture2DMS";
+            case Builtin_GLSL_Type::glsl_uimage2DMS:
+                return u8"uimage2DMS";
+            case Builtin_GLSL_Type::glsl_usampler2DMSArray:
+                return u8"usampler2DMSArray";
+            case Builtin_GLSL_Type::glsl_utexture2DMSArray:
+                return u8"utexture2DMSArray";
+            case Builtin_GLSL_Type::glsl_uimage2DMSArray:
+                return u8"uimage2DMSArray";
+            case Builtin_GLSL_Type::glsl_usampler2DRect:
+                return u8"usampler2DRect";
+            case Builtin_GLSL_Type::glsl_utexture2DRect:
+                return u8"utexture2DRect";
+            case Builtin_GLSL_Type::glsl_uimage2DRect:
+                return u8"uimage2DRect";
+            case Builtin_GLSL_Type::glsl_usampler3D:
+                return u8"usampler3D";
+            case Builtin_GLSL_Type::glsl_utexture3D:
+                return u8"utexture3D";
+            case Builtin_GLSL_Type::glsl_uimage3D:
+                return u8"uimage3D";
+            case Builtin_GLSL_Type::glsl_usamplerCube:
+                return u8"usamplerCube";
+            case Builtin_GLSL_Type::glsl_utextureCube:
+                return u8"utextureCube";
+            case Builtin_GLSL_Type::glsl_uimageCube:
+                return u8"uimageCube";
+            case Builtin_GLSL_Type::glsl_usamplerCubeArray:
+                return u8"usamplerCubeArray";
+            case Builtin_GLSL_Type::glsl_utextureCubeArray:
+                return u8"utextureCubeArray";
+            case Builtin_GLSL_Type::glsl_uimageCubeArray:
+                return u8"uimageCubeArray";
+            case Builtin_GLSL_Type::glsl_usamplerBuffer:
+                return u8"usamplerBuffer";
+            case Builtin_GLSL_Type::glsl_utextureBuffer:
+                return u8"utextureBuffer";
+            case Builtin_GLSL_Type::glsl_uimageBuffer:
+                return u8"uimageBuffer";
+            case Builtin_GLSL_Type::glsl_usubpassInput:
+                return u8"usubpassInput";
+            case Builtin_GLSL_Type::glsl_usubpassInputMS:
+                return u8"usubpassInputMS";
+            case Builtin_GLSL_Type::glsl_sampler:
+                return u8"sampler";
+            case Builtin_GLSL_Type::glsl_samplerShadow:
+                return u8"samplerShadow";
         }
     }
 

@@ -731,7 +731,7 @@ namespace vush {
                     return {expected_error, build_error_message(src.file_path, src.line, src.column + string_offset, u8"unknown placeholder")};
                 }
 
-                Sourced_Function_Param* sourced_param = static_cast<Sourced_Function_Param*>(iter->value);
+                Sourced_Function_Param* const sourced_param = static_cast<Sourced_Function_Param*>(iter->value);
                 if(property_name == u8"type") {
                     out += stringify_type(*sourced_param->type);
                 } else if(property_name == u8"name") {
@@ -775,17 +775,29 @@ namespace vush {
             case AST_Node_Type::source_definition_for_statement: {
                 Source_Definition_For_Statement const& node = (Source_Definition_For_Statement const&)statement;
                 if(node.range_expr->identifier == u8"$variables") {
-                    for(Sourced_Function_Param* param: sourced_params) {
-                        symbols.emplace(node.iterator->identifier, param);
+                    for(Sourced_Function_Param* const param: sourced_params) {
                         ANTON_ASSERT(param->type->node_type == AST_Node_Type::builtin_type || param->type->node_type == AST_Node_Type::user_defined_type,
                                      u8"unknown ast node type");
-                        if(Type* type = param->type.get();
-                           type->node_type == AST_Node_Type::builtin_type && is_opaque_type(static_cast<Builtin_Type*>(type)->type)) {
-                            continue;
+                        Type* const type = param->type.get();
+                        bool const opaque = type->node_type == AST_Node_Type::builtin_type && is_opaque_type(static_cast<Builtin_Type*>(type)->type);
+                        if(!opaque) {
+                            symbols.emplace(node.iterator->identifier, param);
+                            for(auto& nested_statement: node.statements) {
+                                process_source_definition_statement(out, *nested_statement, sourced_params, ctx, format, codegen_ctx, symbols);
+                            }
                         }
-
-                        for(auto& nested_statement: node.statements) {
-                            process_source_definition_statement(out, *nested_statement, sourced_params, ctx, format, codegen_ctx, symbols);
+                    }
+                } else if(node.range_expr->identifier == u8"$opaque_variables") {
+                    for(Sourced_Function_Param* const param: sourced_params) {
+                        ANTON_ASSERT(param->type->node_type == AST_Node_Type::builtin_type || param->type->node_type == AST_Node_Type::user_defined_type,
+                                     u8"unknown ast node type");
+                        Type* const type = param->type.get();
+                        bool const opaque = type->node_type == AST_Node_Type::builtin_type && is_opaque_type(static_cast<Builtin_Type*>(type)->type);
+                        if(opaque) {
+                            symbols.emplace(node.iterator->identifier, param);
+                            for(auto& nested_statement: node.statements) {
+                                process_source_definition_statement(out, *nested_statement, sourced_params, ctx, format, codegen_ctx, symbols);
+                            }
                         }
                     }
                 } else {

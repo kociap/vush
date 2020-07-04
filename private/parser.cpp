@@ -88,6 +88,132 @@ namespace vush {
     static constexpr anton::String_View type_dmat4x2 = u8"dmat4x2";
     static constexpr anton::String_View type_dmat4x3 = u8"dmat4x3";
 
+    // opaque floating
+
+    static constexpr anton::String_View type_sampler1D = u8"sampler1D";
+    static constexpr anton::String_View type_texture1D = u8"texture1D";
+    static constexpr anton::String_View type_image1D = u8"image1D";
+    static constexpr anton::String_View type_sampler1DShadow = u8"sampler1DShadow";
+    static constexpr anton::String_View type_sampler1DArray = u8"sampler1DArray";
+    static constexpr anton::String_View type_texture1DArray = u8"texture1DArray";
+    static constexpr anton::String_View type_image1DArray = u8"image1DArray";
+    static constexpr anton::String_View type_sampler1DArrayShadow = u8"sampler1DArrayShadow";
+    static constexpr anton::String_View type_sampler2D = u8"sampler2D";
+    static constexpr anton::String_View type_texture2D = u8"texture2D";
+    static constexpr anton::String_View type_image2D = u8"image2D";
+    static constexpr anton::String_View type_sampler2DShadow = u8"sampler2DShadow";
+    static constexpr anton::String_View type_sampler2DArray = u8"sampler2DArray";
+    static constexpr anton::String_View type_texture2DArray = u8"texture2DArray";
+    static constexpr anton::String_View type_image2DArray = u8"image2DArray";
+    static constexpr anton::String_View type_sampler2DArrayShadow = u8"sampler2DArrayShadow";
+    static constexpr anton::String_View type_sampler2DMS = u8"sampler2DMS";
+    static constexpr anton::String_View type_texture2DMS = u8"texture2DMS";
+    static constexpr anton::String_View type_image2DMS = u8"image2DMS";
+    static constexpr anton::String_View type_sampler2DMSArray = u8"sampler2DMSArray";
+    static constexpr anton::String_View type_texture2DMSArray = u8"texture2DMSArray";
+    static constexpr anton::String_View type_image2DMSArray = u8"image2DMSArray";
+    static constexpr anton::String_View type_sampler2DRect = u8"sampler2DRect";
+    static constexpr anton::String_View type_texture2DRect = u8"texture2DRect";
+    static constexpr anton::String_View type_image2DRect = u8"image2DRect";
+    static constexpr anton::String_View type_sampler2DRectShadow = u8"sampler2DRectShadow";
+    static constexpr anton::String_View type_sampler3D = u8"sampler3D";
+    static constexpr anton::String_View type_texture3D = u8"texture3D";
+    static constexpr anton::String_View type_image3D = u8"image3D";
+    static constexpr anton::String_View type_samplerCube = u8"samplerCube";
+    static constexpr anton::String_View type_textureCube = u8"textureCube";
+    static constexpr anton::String_View type_imageCube = u8"imageCube";
+    static constexpr anton::String_View type_samplerCubeShadow = u8"samplerCubeShadow";
+    static constexpr anton::String_View type_samplerCubeArray = u8"samplerCubeArray";
+    static constexpr anton::String_View type_textureCubeArray = u8"textureCubeArray";
+    static constexpr anton::String_View type_imageCubeArray = u8"imageCubeArray";
+    static constexpr anton::String_View type_samplerCubeArrayShadow = u8"samplerCubeArrayShadow";
+    static constexpr anton::String_View type_samplerBuffer = u8"samplerBuffer";
+    static constexpr anton::String_View type_textureBuffer = u8"textureBuffer";
+    static constexpr anton::String_View type_imageBuffer = u8"imageBuffer";
+    static constexpr anton::String_View type_subpassInput = u8"subpassInput";
+    static constexpr anton::String_View type_subpassInputMS = u8"subpassInputMS";
+
+    // opaque signed
+
+    static constexpr anton::String_View type_isampler1D = u8"isampler1D";
+    static constexpr anton::String_View type_itexture1D = u8"itexture1D";
+    static constexpr anton::String_View type_iimage1D = u8"iimage1D";
+    static constexpr anton::String_View type_isampler1DArray = u8"isampler1DArray";
+    static constexpr anton::String_View type_itexture1DArray = u8"itexture1DArray";
+    static constexpr anton::String_View type_iimage1DArray = u8"iimage1DArray";
+    static constexpr anton::String_View type_isampler2D = u8"isampler2D";
+    static constexpr anton::String_View type_itexture2D = u8"itexture2D";
+    static constexpr anton::String_View type_iimage2D = u8"iimage2D";
+    static constexpr anton::String_View type_isampler2DArray = u8"isampler2DArray";
+    static constexpr anton::String_View type_itexture2DArray = u8"itexture2DArray";
+    static constexpr anton::String_View type_iimage2DArray = u8"iimage2DArray";
+    static constexpr anton::String_View type_isampler2DMS = u8"isampler2DMS";
+    static constexpr anton::String_View type_itexture2DMS = u8"itexture2DMS";
+    static constexpr anton::String_View type_iimage2DMS = u8"iimage2DMS";
+    static constexpr anton::String_View type_isampler2DMSArray = u8"isampler2DMSArray";
+    static constexpr anton::String_View type_itexture2DMSArray = u8"itexture2DMSArray";
+    static constexpr anton::String_View type_iimage2DMSArray = u8"iimage2DMSArray";
+    static constexpr anton::String_View type_isampler2DRect = u8"isampler2DRect";
+    static constexpr anton::String_View type_itexture2DRect = u8"itexture2DRect";
+    static constexpr anton::String_View type_iimage2DRect = u8"iimage2DRect";
+    static constexpr anton::String_View type_isampler3D = u8"isampler3D";
+    static constexpr anton::String_View type_itexture3D = u8"itexture3D";
+    static constexpr anton::String_View type_iimage3D = u8"iimage3D";
+    static constexpr anton::String_View type_isamplerCube = u8"isamplerCube";
+    static constexpr anton::String_View type_itextureCube = u8"itextureCube";
+    static constexpr anton::String_View type_iimageCube = u8"iimageCube";
+    static constexpr anton::String_View type_isamplerCubeArray = u8"isamplerCubeArray";
+    static constexpr anton::String_View type_itextureCubeArray = u8"itextureCubeArray";
+    static constexpr anton::String_View type_iimageCubeArray = u8"iimageCubeArray";
+    static constexpr anton::String_View type_isamplerBuffer = u8"isamplerBuffer";
+    static constexpr anton::String_View type_itextureBuffer = u8"itextureBuffer";
+    static constexpr anton::String_View type_iimageBuffer = u8"iimageBuffer";
+    static constexpr anton::String_View type_isubpassInput = u8"isubpassInput";
+    static constexpr anton::String_View type_isubpassInputMS = u8"isubpassInputMS";
+
+    // opaque unsigned
+
+    static constexpr anton::String_View type_usampler1D = u8"usampler1D";
+    static constexpr anton::String_View type_utexture1D = u8"utexture1D";
+    static constexpr anton::String_View type_uimage1D = u8"uimage1D";
+    static constexpr anton::String_View type_usampler1DArray = u8"usampler1DArray";
+    static constexpr anton::String_View type_utexture1DArray = u8"utexture1DArray";
+    static constexpr anton::String_View type_uimage1DArray = u8"uimage1DArray";
+    static constexpr anton::String_View type_usampler2D = u8"usampler2D";
+    static constexpr anton::String_View type_utexture2D = u8"utexture2D";
+    static constexpr anton::String_View type_uimage2D = u8"uimage2D";
+    static constexpr anton::String_View type_usampler2DArray = u8"usampler2DArray";
+    static constexpr anton::String_View type_utexture2DArray = u8"utexture2DArray";
+    static constexpr anton::String_View type_uimage2DArray = u8"uimage2DArray";
+    static constexpr anton::String_View type_usampler2DMS = u8"usampler2DMS";
+    static constexpr anton::String_View type_utexture2DMS = u8"utexture2DMS";
+    static constexpr anton::String_View type_uimage2DMS = u8"uimage2DMS";
+    static constexpr anton::String_View type_usampler2DMSArray = u8"usampler2DMSArray";
+    static constexpr anton::String_View type_utexture2DMSArray = u8"utexture2DMSArray";
+    static constexpr anton::String_View type_uimage2DMSArray = u8"uimage2DMSArray";
+    static constexpr anton::String_View type_usampler2DRect = u8"usampler2DRect";
+    static constexpr anton::String_View type_utexture2DRect = u8"utexture2DRect";
+    static constexpr anton::String_View type_uimage2DRect = u8"uimage2DRect";
+    static constexpr anton::String_View type_usampler3D = u8"usampler3D";
+    static constexpr anton::String_View type_utexture3D = u8"utexture3D";
+    static constexpr anton::String_View type_uimage3D = u8"uimage3D";
+    static constexpr anton::String_View type_usamplerCube = u8"usamplerCube";
+    static constexpr anton::String_View type_utextureCube = u8"utextureCube";
+    static constexpr anton::String_View type_uimageCube = u8"uimageCube";
+    static constexpr anton::String_View type_usamplerCubeArray = u8"usamplerCubeArray";
+    static constexpr anton::String_View type_utextureCubeArray = u8"utextureCubeArray";
+    static constexpr anton::String_View type_uimageCubeArray = u8"uimageCubeArray";
+    static constexpr anton::String_View type_usamplerBuffer = u8"usamplerBuffer";
+    static constexpr anton::String_View type_utextureBuffer = u8"utextureBuffer";
+    static constexpr anton::String_View type_uimageBuffer = u8"uimageBuffer";
+    static constexpr anton::String_View type_usubpassInput = u8"usubpassInput";
+    static constexpr anton::String_View type_usubpassInputMS = u8"usubpassInputMS";
+
+    // opaque sampler
+
+    static constexpr anton::String_View type_sampler = u8"sampler";
+    static constexpr anton::String_View type_samplerShadow = u8"samplerShadow";
+
     // separators and operators
 
     static constexpr anton::String_View token_brace_open = u8"{";
@@ -182,8 +308,14 @@ namespace vush {
                     return false;
                 }
             }
+
             if(must_not_be_followed_by_identifier_char) {
-                return !is_identifier_character(peek_next());
+                if(is_identifier_character(peek_next())) {
+                    restore_state(state_backup);
+                    return false;
+                } else {
+                    return true;
+                }
             } else {
                 return true;
             }
@@ -1046,28 +1178,332 @@ namespace vush {
 
         Type* try_type() {
             static constexpr anton::String_View builtin_types_strings[] = {
-                type_void,    type_bool,   type_int,     type_uint,    type_float,   type_double,  type_vec2,    type_vec3,    type_vec4,
-                type_dvec2,   type_dvec3,  type_dvec4,   type_bvec2,   type_bvec3,   type_bvec4,   type_ivec2,   type_ivec3,   type_ivec4,
-                type_uvec2,   type_uvec3,  type_uvec4,   type_mat2,    type_mat2x2,  type_mat3,    type_mat3x3,  type_mat4,    type_mat4x4,
-                type_mat2x3,  type_mat2x4, type_mat3x2,  type_mat3x4,  type_mat4x2,  type_mat4x3,  type_dmat2,   type_dmat2x2, type_dmat3,
-                type_dmat3x3, type_dmat4,  type_dmat4x4, type_dmat2x3, type_dmat2x4, type_dmat3x2, type_dmat3x4, type_dmat4x2, type_dmat4x3};
+                type_void,
+                type_bool,
+                type_int,
+                type_uint,
+                type_float,
+                type_double,
+                type_vec2,
+                type_vec3,
+                type_vec4,
+                type_dvec2,
+                type_dvec3,
+                type_dvec4,
+                type_bvec2,
+                type_bvec3,
+                type_bvec4,
+                type_ivec2,
+                type_ivec3,
+                type_ivec4,
+                type_uvec2,
+                type_uvec3,
+                type_uvec4,
+                type_mat2,
+                type_mat2x2,
+                type_mat3,
+                type_mat3x3,
+                type_mat4,
+                type_mat4x4,
+                type_mat2x3,
+                type_mat2x4,
+                type_mat3x2,
+                type_mat3x4,
+                type_mat4x2,
+                type_mat4x3,
+                type_dmat2,
+                type_dmat2x2,
+                type_dmat3,
+                type_dmat3x3,
+                type_dmat4,
+                type_dmat4x4,
+                type_dmat2x3,
+                type_dmat2x4,
+                type_dmat3x2,
+                type_dmat3x4,
+                type_dmat4x2,
+                type_dmat4x3,
+                type_sampler1D,
+                type_texture1D,
+                type_image1D,
+                type_sampler1DShadow,
+                type_sampler1DArray,
+                type_texture1DArray,
+                type_image1DArray,
+                type_sampler1DArrayShadow,
+                type_sampler2D,
+                type_texture2D,
+                type_image2D,
+                type_sampler2DShadow,
+                type_sampler2DArray,
+                type_texture2DArray,
+                type_image2DArray,
+                type_sampler2DArrayShadow,
+                type_sampler2DMS,
+                type_texture2DMS,
+                type_image2DMS,
+                type_sampler2DMSArray,
+                type_texture2DMSArray,
+                type_image2DMSArray,
+                type_sampler2DRect,
+                type_texture2DRect,
+                type_image2DRect,
+                type_sampler2DRectShadow,
+                type_sampler3D,
+                type_texture3D,
+                type_image3D,
+                type_samplerCube,
+                type_textureCube,
+                type_imageCube,
+                type_samplerCubeShadow,
+                type_samplerCubeArray,
+                type_textureCubeArray,
+                type_imageCubeArray,
+                type_samplerCubeArrayShadow,
+                type_samplerBuffer,
+                type_textureBuffer,
+                type_imageBuffer,
+                type_subpassInput,
+                type_subpassInputMS,
+                type_isampler1D,
+                type_itexture1D,
+                type_iimage1D,
+                type_isampler1DArray,
+                type_itexture1DArray,
+                type_iimage1DArray,
+                type_isampler2D,
+                type_itexture2D,
+                type_iimage2D,
+                type_isampler2DArray,
+                type_itexture2DArray,
+                type_iimage2DArray,
+                type_isampler2DMS,
+                type_itexture2DMS,
+                type_iimage2DMS,
+                type_isampler2DMSArray,
+                type_itexture2DMSArray,
+                type_iimage2DMSArray,
+                type_isampler2DRect,
+                type_itexture2DRect,
+                type_iimage2DRect,
+                type_isampler3D,
+                type_itexture3D,
+                type_iimage3D,
+                type_isamplerCube,
+                type_itextureCube,
+                type_iimageCube,
+                type_isamplerCubeArray,
+                type_itextureCubeArray,
+                type_iimageCubeArray,
+                type_isamplerBuffer,
+                type_itextureBuffer,
+                type_iimageBuffer,
+                type_isubpassInput,
+                type_isubpassInputMS,
+                type_usampler1D,
+                type_utexture1D,
+                type_uimage1D,
+                type_usampler1DArray,
+                type_utexture1DArray,
+                type_uimage1DArray,
+                type_usampler2D,
+                type_utexture2D,
+                type_uimage2D,
+                type_usampler2DArray,
+                type_utexture2DArray,
+                type_uimage2DArray,
+                type_usampler2DMS,
+                type_utexture2DMS,
+                type_uimage2DMS,
+                type_usampler2DMSArray,
+                type_utexture2DMSArray,
+                type_uimage2DMSArray,
+                type_usampler2DRect,
+                type_utexture2DRect,
+                type_uimage2DRect,
+                type_usampler3D,
+                type_utexture3D,
+                type_uimage3D,
+                type_usamplerCube,
+                type_utextureCube,
+                type_uimageCube,
+                type_usamplerCubeArray,
+                type_utextureCubeArray,
+                type_uimageCubeArray,
+                type_usamplerBuffer,
+                type_utextureBuffer,
+                type_uimageBuffer,
+                type_usubpassInput,
+                type_usubpassInputMS,
+                type_sampler,
+                type_samplerShadow,
+            };
 
             static constexpr Builtin_GLSL_Type builtin_types[] = {
-                Builtin_GLSL_Type::glsl_void,    Builtin_GLSL_Type::glsl_bool,    Builtin_GLSL_Type::glsl_int,     Builtin_GLSL_Type::glsl_uint,
-                Builtin_GLSL_Type::glsl_float,   Builtin_GLSL_Type::glsl_double,  Builtin_GLSL_Type::glsl_vec2,    Builtin_GLSL_Type::glsl_vec3,
-                Builtin_GLSL_Type::glsl_vec4,    Builtin_GLSL_Type::glsl_dvec2,   Builtin_GLSL_Type::glsl_dvec3,   Builtin_GLSL_Type::glsl_dvec4,
-                Builtin_GLSL_Type::glsl_bvec2,   Builtin_GLSL_Type::glsl_bvec3,   Builtin_GLSL_Type::glsl_bvec4,   Builtin_GLSL_Type::glsl_ivec2,
-                Builtin_GLSL_Type::glsl_ivec3,   Builtin_GLSL_Type::glsl_ivec4,   Builtin_GLSL_Type::glsl_uvec2,   Builtin_GLSL_Type::glsl_uvec3,
-                Builtin_GLSL_Type::glsl_uvec4,   Builtin_GLSL_Type::glsl_mat2,    Builtin_GLSL_Type::glsl_mat2,    Builtin_GLSL_Type::glsl_mat3,
-                Builtin_GLSL_Type::glsl_mat3,    Builtin_GLSL_Type::glsl_mat4,    Builtin_GLSL_Type::glsl_mat4,    Builtin_GLSL_Type::glsl_mat2x3,
-                Builtin_GLSL_Type::glsl_mat2x4,  Builtin_GLSL_Type::glsl_mat3x2,  Builtin_GLSL_Type::glsl_mat3x4,  Builtin_GLSL_Type::glsl_mat4x2,
-                Builtin_GLSL_Type::glsl_mat4x3,  Builtin_GLSL_Type::glsl_dmat2,   Builtin_GLSL_Type::glsl_dmat2,   Builtin_GLSL_Type::glsl_dmat3,
-                Builtin_GLSL_Type::glsl_dmat3,   Builtin_GLSL_Type::glsl_dmat4,   Builtin_GLSL_Type::glsl_dmat4,   Builtin_GLSL_Type::glsl_dmat2x3,
-                Builtin_GLSL_Type::glsl_dmat2x4, Builtin_GLSL_Type::glsl_dmat3x2, Builtin_GLSL_Type::glsl_dmat3x4, Builtin_GLSL_Type::glsl_dmat4x2,
-                Builtin_GLSL_Type::glsl_dmat4x3};
+                Builtin_GLSL_Type::glsl_void,
+                Builtin_GLSL_Type::glsl_bool,
+                Builtin_GLSL_Type::glsl_int,
+                Builtin_GLSL_Type::glsl_uint,
+                Builtin_GLSL_Type::glsl_float,
+                Builtin_GLSL_Type::glsl_double,
+                Builtin_GLSL_Type::glsl_vec2,
+                Builtin_GLSL_Type::glsl_vec3,
+                Builtin_GLSL_Type::glsl_vec4,
+                Builtin_GLSL_Type::glsl_dvec2,
+                Builtin_GLSL_Type::glsl_dvec3,
+                Builtin_GLSL_Type::glsl_dvec4,
+                Builtin_GLSL_Type::glsl_bvec2,
+                Builtin_GLSL_Type::glsl_bvec3,
+                Builtin_GLSL_Type::glsl_bvec4,
+                Builtin_GLSL_Type::glsl_ivec2,
+                Builtin_GLSL_Type::glsl_ivec3,
+                Builtin_GLSL_Type::glsl_ivec4,
+                Builtin_GLSL_Type::glsl_uvec2,
+                Builtin_GLSL_Type::glsl_uvec3,
+                Builtin_GLSL_Type::glsl_uvec4,
+                Builtin_GLSL_Type::glsl_mat2,
+                Builtin_GLSL_Type::glsl_mat2,
+                Builtin_GLSL_Type::glsl_mat3,
+                Builtin_GLSL_Type::glsl_mat3,
+                Builtin_GLSL_Type::glsl_mat4,
+                Builtin_GLSL_Type::glsl_mat4,
+                Builtin_GLSL_Type::glsl_mat2x3,
+                Builtin_GLSL_Type::glsl_mat2x4,
+                Builtin_GLSL_Type::glsl_mat3x2,
+                Builtin_GLSL_Type::glsl_mat3x4,
+                Builtin_GLSL_Type::glsl_mat4x2,
+                Builtin_GLSL_Type::glsl_mat4x3,
+                Builtin_GLSL_Type::glsl_dmat2,
+                Builtin_GLSL_Type::glsl_dmat2,
+                Builtin_GLSL_Type::glsl_dmat3,
+                Builtin_GLSL_Type::glsl_dmat3,
+                Builtin_GLSL_Type::glsl_dmat4,
+                Builtin_GLSL_Type::glsl_dmat4,
+                Builtin_GLSL_Type::glsl_dmat2x3,
+                Builtin_GLSL_Type::glsl_dmat2x4,
+                Builtin_GLSL_Type::glsl_dmat3x2,
+                Builtin_GLSL_Type::glsl_dmat3x4,
+                Builtin_GLSL_Type::glsl_dmat4x2,
+                Builtin_GLSL_Type::glsl_dmat4x3,
+                Builtin_GLSL_Type::glsl_sampler1D,
+                Builtin_GLSL_Type::glsl_texture1D,
+                Builtin_GLSL_Type::glsl_image1D,
+                Builtin_GLSL_Type::glsl_sampler1DShadow,
+                Builtin_GLSL_Type::glsl_sampler1DArray,
+                Builtin_GLSL_Type::glsl_texture1DArray,
+                Builtin_GLSL_Type::glsl_image1DArray,
+                Builtin_GLSL_Type::glsl_sampler1DArrayShadow,
+                Builtin_GLSL_Type::glsl_sampler2D,
+                Builtin_GLSL_Type::glsl_texture2D,
+                Builtin_GLSL_Type::glsl_image2D,
+                Builtin_GLSL_Type::glsl_sampler2DShadow,
+                Builtin_GLSL_Type::glsl_sampler2DArray,
+                Builtin_GLSL_Type::glsl_texture2DArray,
+                Builtin_GLSL_Type::glsl_image2DArray,
+                Builtin_GLSL_Type::glsl_sampler2DArrayShadow,
+                Builtin_GLSL_Type::glsl_sampler2DMS,
+                Builtin_GLSL_Type::glsl_texture2DMS,
+                Builtin_GLSL_Type::glsl_image2DMS,
+                Builtin_GLSL_Type::glsl_sampler2DMSArray,
+                Builtin_GLSL_Type::glsl_texture2DMSArray,
+                Builtin_GLSL_Type::glsl_image2DMSArray,
+                Builtin_GLSL_Type::glsl_sampler2DRect,
+                Builtin_GLSL_Type::glsl_texture2DRect,
+                Builtin_GLSL_Type::glsl_image2DRect,
+                Builtin_GLSL_Type::glsl_sampler2DRectShadow,
+                Builtin_GLSL_Type::glsl_sampler3D,
+                Builtin_GLSL_Type::glsl_texture3D,
+                Builtin_GLSL_Type::glsl_image3D,
+                Builtin_GLSL_Type::glsl_samplerCube,
+                Builtin_GLSL_Type::glsl_textureCube,
+                Builtin_GLSL_Type::glsl_imageCube,
+                Builtin_GLSL_Type::glsl_samplerCubeShadow,
+                Builtin_GLSL_Type::glsl_samplerCubeArray,
+                Builtin_GLSL_Type::glsl_textureCubeArray,
+                Builtin_GLSL_Type::glsl_imageCubeArray,
+                Builtin_GLSL_Type::glsl_samplerCubeArrayShadow,
+                Builtin_GLSL_Type::glsl_samplerBuffer,
+                Builtin_GLSL_Type::glsl_textureBuffer,
+                Builtin_GLSL_Type::glsl_imageBuffer,
+                Builtin_GLSL_Type::glsl_subpassInput,
+                Builtin_GLSL_Type::glsl_subpassInputMS,
+                Builtin_GLSL_Type::glsl_isampler1D,
+                Builtin_GLSL_Type::glsl_itexture1D,
+                Builtin_GLSL_Type::glsl_iimage1D,
+                Builtin_GLSL_Type::glsl_isampler1DArray,
+                Builtin_GLSL_Type::glsl_itexture1DArray,
+                Builtin_GLSL_Type::glsl_iimage1DArray,
+                Builtin_GLSL_Type::glsl_isampler2D,
+                Builtin_GLSL_Type::glsl_itexture2D,
+                Builtin_GLSL_Type::glsl_iimage2D,
+                Builtin_GLSL_Type::glsl_isampler2DArray,
+                Builtin_GLSL_Type::glsl_itexture2DArray,
+                Builtin_GLSL_Type::glsl_iimage2DArray,
+                Builtin_GLSL_Type::glsl_isampler2DMS,
+                Builtin_GLSL_Type::glsl_itexture2DMS,
+                Builtin_GLSL_Type::glsl_iimage2DMS,
+                Builtin_GLSL_Type::glsl_isampler2DMSArray,
+                Builtin_GLSL_Type::glsl_itexture2DMSArray,
+                Builtin_GLSL_Type::glsl_iimage2DMSArray,
+                Builtin_GLSL_Type::glsl_isampler2DRect,
+                Builtin_GLSL_Type::glsl_itexture2DRect,
+                Builtin_GLSL_Type::glsl_iimage2DRect,
+                Builtin_GLSL_Type::glsl_isampler3D,
+                Builtin_GLSL_Type::glsl_itexture3D,
+                Builtin_GLSL_Type::glsl_iimage3D,
+                Builtin_GLSL_Type::glsl_isamplerCube,
+                Builtin_GLSL_Type::glsl_itextureCube,
+                Builtin_GLSL_Type::glsl_iimageCube,
+                Builtin_GLSL_Type::glsl_isamplerCubeArray,
+                Builtin_GLSL_Type::glsl_itextureCubeArray,
+                Builtin_GLSL_Type::glsl_iimageCubeArray,
+                Builtin_GLSL_Type::glsl_isamplerBuffer,
+                Builtin_GLSL_Type::glsl_itextureBuffer,
+                Builtin_GLSL_Type::glsl_iimageBuffer,
+                Builtin_GLSL_Type::glsl_isubpassInput,
+                Builtin_GLSL_Type::glsl_isubpassInputMS,
+                Builtin_GLSL_Type::glsl_usampler1D,
+                Builtin_GLSL_Type::glsl_utexture1D,
+                Builtin_GLSL_Type::glsl_uimage1D,
+                Builtin_GLSL_Type::glsl_usampler1DArray,
+                Builtin_GLSL_Type::glsl_utexture1DArray,
+                Builtin_GLSL_Type::glsl_uimage1DArray,
+                Builtin_GLSL_Type::glsl_usampler2D,
+                Builtin_GLSL_Type::glsl_utexture2D,
+                Builtin_GLSL_Type::glsl_uimage2D,
+                Builtin_GLSL_Type::glsl_usampler2DArray,
+                Builtin_GLSL_Type::glsl_utexture2DArray,
+                Builtin_GLSL_Type::glsl_uimage2DArray,
+                Builtin_GLSL_Type::glsl_usampler2DMS,
+                Builtin_GLSL_Type::glsl_utexture2DMS,
+                Builtin_GLSL_Type::glsl_uimage2DMS,
+                Builtin_GLSL_Type::glsl_usampler2DMSArray,
+                Builtin_GLSL_Type::glsl_utexture2DMSArray,
+                Builtin_GLSL_Type::glsl_uimage2DMSArray,
+                Builtin_GLSL_Type::glsl_usampler2DRect,
+                Builtin_GLSL_Type::glsl_utexture2DRect,
+                Builtin_GLSL_Type::glsl_uimage2DRect,
+                Builtin_GLSL_Type::glsl_usampler3D,
+                Builtin_GLSL_Type::glsl_utexture3D,
+                Builtin_GLSL_Type::glsl_uimage3D,
+                Builtin_GLSL_Type::glsl_usamplerCube,
+                Builtin_GLSL_Type::glsl_utextureCube,
+                Builtin_GLSL_Type::glsl_uimageCube,
+                Builtin_GLSL_Type::glsl_usamplerCubeArray,
+                Builtin_GLSL_Type::glsl_utextureCubeArray,
+                Builtin_GLSL_Type::glsl_uimageCubeArray,
+                Builtin_GLSL_Type::glsl_usamplerBuffer,
+                Builtin_GLSL_Type::glsl_utextureBuffer,
+                Builtin_GLSL_Type::glsl_uimageBuffer,
+                Builtin_GLSL_Type::glsl_usubpassInput,
+                Builtin_GLSL_Type::glsl_usubpassInputMS,
+                Builtin_GLSL_Type::glsl_sampler,
+                Builtin_GLSL_Type::glsl_samplerShadow,
+            };
 
             Lexer_State const state_backup = _lexer.get_current_state();
-            for(i64 i = 0; i < 45; ++i) {
+            constexpr i64 array_size = sizeof(builtin_types_strings) / sizeof(anton::String_View);
+            for(i64 i = 0; i < array_size; ++i) {
                 if(_lexer.match(builtin_types_strings[i], true)) {
                     return new Builtin_Type(builtin_types[i], src_info(state_backup));
                 }
