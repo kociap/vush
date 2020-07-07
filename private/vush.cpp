@@ -14,8 +14,7 @@
 #include <hierarchy_printer.hpp>
 
 namespace vush {
-    static anton::Expected<anton::String, anton::String> resolve_import_path(Context& ctx, anton::String const& current_path, anton::String const& import_path,
-                                                                             Source_Info const& source_info) {
+    static anton::Expected<anton::String, anton::String> resolve_import_path(Context& ctx, anton::String const& import_path, Source_Info const& src) {
         bool found = false;
         anton::String out_path;
         for(char const* const* path = ctx.import_paths; path != ctx.import_paths_end; ++path) {
@@ -26,7 +25,7 @@ namespace vush {
                     found = true;
                     out_path = anton::move(resolved_path);
                 } else {
-                    anton::String error_msg = build_error_message(current_path, source_info.line, source_info.column, u8"ambiguous import path");
+                    anton::String error_msg = build_error_message(src.file_path, src.line, src.column, u8"ambiguous import path");
                     return {anton::expected_error, anton::move(error_msg)};
                 }
             }
@@ -35,11 +34,12 @@ namespace vush {
         if(found) {
             return {anton::expected_value, anton::move(out_path)};
         } else {
-            anton::String error_msg = build_error_message(current_path, source_info.line, source_info.column, u8"could not resolve import path");
+            anton::String error_msg = build_error_message(src.file_path, src.line, src.column, u8"could not resolve import path");
             return {anton::expected_error, anton::move(error_msg)};
         }
     }
 
+    // Parse file, process imports, declaration ifs, build top-level symbol table.
     static anton::Expected<Owning_Ptr<Declaration_List>, anton::String> process_file_decl_ifs_and_resolve_imports(Context& ctx, anton::String const& path) {
         anton::Expected<Owning_Ptr<Declaration_List>, Parse_Error> parse_result = parse_file(path);
         if(!parse_result) {
@@ -52,11 +52,11 @@ namespace vush {
         ctx.current_file = &path;
 
         Owning_Ptr<Declaration_List>& ast = parse_result.value();
-        for(i64 i = 0; i < (i64)ast->declarations.size();) {
+        for(i64 i = 0; i < ast->declarations.size();) {
             switch(ast->declarations[i]->node_type) {
                 case AST_Node_Type::import_decl: {
                     Owning_Ptr<Import_Decl> node = static_cast<Import_Decl*>(ast->declarations[i].release());
-                    anton::Expected<anton::String, anton::String> import_path = resolve_import_path(ctx, path, node->path, node->source_info);
+                    anton::Expected<anton::String, anton::String> import_path = resolve_import_path(ctx, node->path, node->source_info);
                     if(!import_path) {
                         return {anton::expected_error, anton::move(import_path.error())};
                     }
@@ -81,8 +81,9 @@ namespace vush {
                     }
 
                     if(!is_implicitly_convertible_to_boolean(result.value().type)) {
-                        return {anton::expected_error, build_error_message(*ctx.current_file, node->source_info.line, node->source_info.column,
-                                                                           u8"expression is not implicitly convertible to bool")};
+                        Source_Info const& src = node->source_info;
+                        return {anton::expected_error,
+                                build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
                     }
 
                     ast->declarations.erase(ast->declarations.begin() + i, ast->declarations.begin() + i + 1);
@@ -108,8 +109,8 @@ namespace vush {
 
                 case AST_Node_Type::variable_declaration: {
                     Variable_Declaration& node = (Variable_Declaration&)*ast->declarations[i];
-                    anton::String error_msg =
-                        build_error_message(path, node.source_info.line, node.source_info.column, u8"illegal variable declaration in global scope");
+                    Source_Info const& src = node.source_info;
+                    anton::String error_msg = build_error_message(src.file_path, src.line, src.column, u8"illegal variable declaration in global scope");
                     return {anton::expected_error, anton::move(error_msg)};
                 } break;
 
@@ -132,34 +133,57 @@ namespace vush {
     static anton::Expected<void, anton::String> process_fn_param_list(Context& ctx, Function_Param_List& param_list) {
         anton::Array<Owning_Ptr<Function_Param>>& params = param_list.params;
         for(i64 i = 0; i < params.size();) {
-            if(params[i]->node_type == AST_Node_Type::function_param_if) {
-                Function_Param_If& node = (Function_Param_If&)*params[i];
-                anton::Expected<Expr_Value, anton::String> result = evaluate_const_expr(ctx, *node.condition);
-                if(!result) {
-                    return {anton::expected_error, anton::move(result.error())};
-                }
-
-                if(!is_implicitly_convertible_to_boolean(result.value().type)) {
-                    return {anton::expected_error, build_error_message(*ctx.current_file, node.source_info.line, node.source_info.column,
-                                                                       u8"expression is not implicitly convertible to bool")};
-                }
-
-                if(result.value().as_boolean()) {
-                    if(node.true_param) {
-                        params[i] = anton::move(node.true_param);
-                    } else {
-                        params.erase(params.begin() + i, params.begin() + i + 1);
+            // If the node is a prameter if, we replace it with the contents of one of the branches.
+            // We do not advance in that case in order to check the replaced node.
+            bool const should_advance = params[i]->node_type == AST_Node_Type::function_param_if;
+            switch(params[i]->node_type) {
+                case AST_Node_Type::function_param_if: {
+                    Function_Param_If& node = (Function_Param_If&)*params[i];
+                    anton::Expected<Expr_Value, anton::String> result = evaluate_const_expr(ctx, *node.condition);
+                    if(!result) {
+                        return {anton::expected_error, anton::move(result.error())};
                     }
-                } else {
-                    if(node.false_param) {
-                        params[i] = anton::move(node.false_param);
-                    } else {
-                        params.erase(params.begin() + i, params.begin() + i + 1);
+
+                    if(!is_implicitly_convertible_to_boolean(result.value().type)) {
+                        Source_Info const& src = node.source_info;
+                        return {anton::expected_error,
+                                build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
                     }
-                }
-            } else {
-                ++i;
+
+                    if(result.value().as_boolean()) {
+                        if(node.true_param) {
+                            params[i] = anton::move(node.true_param);
+                        } else {
+                            params.erase(params.begin() + i, params.begin() + i + 1);
+                        }
+                    } else {
+                        if(node.false_param) {
+                            params[i] = anton::move(node.false_param);
+                        } else {
+                            params.erase(params.begin() + i, params.begin() + i + 1);
+                        }
+                    }
+                } break;
+
+                case AST_Node_Type::sourced_function_param: {
+                    // Check whether the type of the parameter is a non-opaque builtin or user-defined
+                    Sourced_Function_Param& node = (Sourced_Function_Param&)*params[i];
+                    Type& type = *node.type;
+                    if(type.node_type == AST_Node_Type::builtin_type) {
+                        Builtin_Type& t = (Builtin_Type&)type;
+                        if(is_opaque_type(t.type)) {
+                            Source_Info const& src = node.source_info;
+                            return {anton::expected_error, build_error_message(src.file_path, src.line, src.column,
+                                                                               u8"sourced parameters must be of non-opaque builtin type or user-defined type")};
+                        }
+                    }
+                } break;
+
+                default:
+                    break;
             }
+
+            i += should_advance;
         }
 
         return {anton::expected_value};
@@ -222,8 +246,9 @@ namespace vush {
                 }
 
                 if(!is_implicitly_convertible_to_boolean(result.value().type)) {
-                    return {anton::expected_error, build_error_message(*ctx.current_file, node->source_info.line, node->source_info.column,
-                                                                       u8"expression is not implicitly convertible to bool")};
+                    Source_Info const& src = node->source_info;
+                    return {anton::expected_error,
+                            build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
                 }
 
                 if(result.value().as_boolean()) {
