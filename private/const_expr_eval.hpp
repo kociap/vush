@@ -1,9 +1,9 @@
 #pragma once
 
+#include <anton/expected.hpp>
 #include <ast.hpp>
 #include <context.hpp>
 #include <owning_ptr.hpp>
-#include <vush/expected.hpp>
 
 namespace vush {
     enum struct Expr_Value_Type {
@@ -66,5 +66,5 @@ namespace vush {
     };
 
     bool is_implicitly_convertible_to_boolean(Expr_Value_Type type);
-    Expected<Expr_Value, anton::String> evaluate_const_expr(Context& ctx, Expression& expression);
+    anton::Expected<Expr_Value, anton::String> evaluate_const_expr(Context& ctx, Expression& expression);
 } // namespace vush

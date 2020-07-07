@@ -1,9 +1,9 @@
 #pragma once
 
+#include <anton/expected.hpp>
 #include <anton/string.hpp>
 #include <ast.hpp>
 #include <owning_ptr.hpp>
-#include <vush/expected.hpp>
 
 namespace vush {
     struct Parse_Error {
@@ -13,5 +13,5 @@ namespace vush {
         i64 file_offset = 0;
     };
 
-    Expected<Owning_Ptr<Declaration_List>, Parse_Error> parse_file(anton::String const& path);
+    anton::Expected<Owning_Ptr<Declaration_List>, Parse_Error> parse_file(anton::String const& path);
 } // namespace vush

@@ -668,7 +668,7 @@ namespace vush {
         out += u8";\n";
     }
 
-    static Expected<anton::String, anton::String> format_string(String_Literal const& string, anton::Flat_Hash_Map<anton::String, void*>& symbols) {
+    static anton::Expected<anton::String, anton::String> format_string(String_Literal const& string, anton::Flat_Hash_Map<anton::String, void*>& symbols) {
         anton::String out;
         auto iter1 = string.value.bytes_begin();
         auto iter2 = string.value.bytes_begin();
@@ -702,7 +702,7 @@ namespace vush {
                 Source_Info const& src = string.source_info;
                 // We add 1 to account for the opening double quote ( " )
                 i64 const string_offset = 1 + (iter2 - string.value.bytes_begin());
-                return {expected_error, build_error_message(src.file_path, src.line, src.column + string_offset, u8"unterminated placeholder")};
+                return {anton::expected_error, build_error_message(src.file_path, src.line, src.column + string_offset, u8"unterminated placeholder")};
             }
 
             anton::String_View const symbol_name = {iter1, iter2};
@@ -718,7 +718,7 @@ namespace vush {
                     Source_Info const& src = string.source_info;
                     // We add 1 to account for the opening double quote ( " )
                     i64 const string_offset = 1 + (iter1 - string.value.bytes_begin());
-                    return {expected_error, build_error_message(src.file_path, src.line, src.column + string_offset, u8"invalid placeholder")};
+                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column + string_offset, u8"invalid placeholder")};
                 }
 
                 anton::String_View const iterator_name = {symbol_name.data(), dot_pos};
@@ -728,7 +728,7 @@ namespace vush {
                     Source_Info const& src = string.source_info;
                     // We add 1 to account for the opening double quote ( " )
                     i64 const string_offset = 1 + (iter1 - string.value.bytes_begin());
-                    return {expected_error, build_error_message(src.file_path, src.line, src.column + string_offset, u8"unknown placeholder")};
+                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column + string_offset, u8"unknown placeholder")};
                 }
 
                 Sourced_Function_Param* const sourced_param = static_cast<Sourced_Function_Param*>(iter->value);
@@ -740,7 +740,7 @@ namespace vush {
                     Source_Info const& src = string.source_info;
                     // We add 1 to account for the opening double quote ( " )
                     i64 const string_offset = 1 + (iter1 - string.value.bytes_begin()) + dot_pos + 1;
-                    return {expected_error, build_error_message(src.file_path, src.line, src.column + string_offset, u8"unknown property name")};
+                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column + string_offset, u8"unknown property name")};
                 }
             }
 
@@ -749,10 +749,10 @@ namespace vush {
             iter1 = iter2;
         }
 
-        return {expected_value, anton::move(out)};
+        return {anton::expected_value, anton::move(out)};
     }
 
-    static Expected<bool, anton::String> process_source_definition_statement(anton::String& out, Source_Definition_Statement const& statement,
+    static anton::Expected<void, anton::String> process_source_definition_statement(anton::String& out, Source_Definition_Statement const& statement,
                                                                              anton::Slice<Sourced_Function_Param*> const sourced_params, Context const& ctx,
                                                                              Format_Options const& format, Codegen_Context& codegen_ctx,
                                                                              anton::Flat_Hash_Map<anton::String, void*>& symbols) {
@@ -763,9 +763,9 @@ namespace vush {
             case AST_Node_Type::source_definition_emit_statement: {
                 Source_Definition_Emit_Statement const& node = (Source_Definition_Emit_Statement const&)statement;
                 write_indent(out, codegen_ctx.indent);
-                Expected<anton::String, anton::String> result = format_string(*node.string, symbols);
+                anton::Expected<anton::String, anton::String> result = format_string(*node.string, symbols);
                 if(!result) {
-                    return {expected_error, anton::move(result.error())};
+                    return {anton::expected_error, anton::move(result.error())};
                 }
 
                 out += result.value();
@@ -802,7 +802,7 @@ namespace vush {
                     }
                 } else {
                     Source_Info const& src = node.range_expr->source_info;
-                    return {expected_error, build_error_message(src.file_path, src.line, src.column, u8"invalid range expression")};
+                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"invalid range expression")};
                 }
             } break;
 
@@ -810,22 +810,22 @@ namespace vush {
                 ANTON_UNREACHABLE();
         }
 
-        return {expected_value, true};
+        return {anton::expected_value};
     }
 
     // The size of sourced_params should be > 0, otherwise empty definitions will be generated.
-    static Expected<bool, anton::String> instantiate_source_template(anton::String& out, Source_Definition const& source_def,
+    static anton::Expected<void, anton::String> instantiate_source_template(anton::String& out, Source_Definition const& source_def,
                                                                      anton::Slice<Sourced_Function_Param*> const sourced_params, Context const& ctx,
                                                                      Format_Options const& format, Codegen_Context& codegen_ctx,
                                                                      anton::Flat_Hash_Map<anton::String, void*>& symbols) {
         for(auto& statement: source_def.decl_prop->statements) {
-            Expected<bool, anton::String> result = process_source_definition_statement(out, *statement, sourced_params, ctx, format, codegen_ctx, symbols);
+            anton::Expected<void, anton::String> result = process_source_definition_statement(out, *statement, sourced_params, ctx, format, codegen_ctx, symbols);
             if(!result) {
-                return {expected_error, anton::move(result.error())};
+                return anton::move(result);
             }
         }
 
-        return {expected_value, true};
+        return {anton::expected_value};
     }
 
     static void write_vertex_inputs(Context const& ctx, Codegen_Context& codegen_ctx, anton::String& out, Type const& type, anton::String const& input_name,
@@ -930,7 +930,7 @@ namespace vush {
         }
     }
 
-    Expected<anton::Array<GLSL_File>, anton::String> generate_glsl(Context const& ctx, Declaration_List& node, Format_Options const& format) {
+    anton::Expected<anton::Array<GLSL_File>, anton::String> generate_glsl(Context const& ctx, Declaration_List& node, Format_Options const& format) {
         anton::Array<Declaration*> structs_and_consts;
         anton::Array<Declaration*> functions;
         anton::Array<Declaration*> pass_stages;
@@ -1020,7 +1020,7 @@ namespace vush {
                         anton::String_View const j_type = stringify_type(*(*j)->type);
                         if((*i)->identifier->identifier == (*j)->identifier->identifier && i_type != j_type) {
                             Source_Info const& src = (*j)->identifier->source_info;
-                            return {expected_error,
+                            return {anton::expected_error,
                                     build_error_message(src.file_path, src.line, src.column, u8"duplicate sourced parameter name with a different type")};
                         }
                     }
@@ -1032,10 +1032,10 @@ namespace vush {
                         return i_type == j_type;
                     });
 
-                    Expected<bool, anton::String> result =
+                    anton::Expected<void, anton::String> result =
                         instantiate_source_template(common, *source_template, {iter->value.begin(), end}, ctx, format, codegen_ctx, symbols);
                     if(!result) {
-                        return {expected_error, anton::move(result.error())};
+                        return {anton::expected_error, anton::move(result.error())};
                     }
                     common += U'\n';
                 }
@@ -1175,6 +1175,6 @@ namespace vush {
             files.emplace_back(anton::move(out));
         }
 
-        return {expected_value, anton::move(files)};
+        return {anton::expected_value, anton::move(files)};
     }
 } // namespace vush

@@ -11,7 +11,7 @@ int main() {
     config.import_directories = import_directories;
     config.import_directories_count = 1;
     config.source_path = u8"C:/Users/an0num0us/documents/vush2/build/shader.vush";
-    vush::Expected<anton::Array<vush::GLSL_File>, anton::String> result = vush ::compile_to_glsl(config);
+    anton::Expected<anton::Array<vush::GLSL_File>, anton::String> result = vush ::compile_to_glsl(config);
     if(result) {
         for(vush::GLSL_File& file: result.value()) {
             std::cout << file.data.data() << "\n\n";

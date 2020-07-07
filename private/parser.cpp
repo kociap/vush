@@ -2713,20 +2713,20 @@ namespace vush {
         }
     };
 
-    Expected<Owning_Ptr<Declaration_List>, Parse_Error> parse_file(anton::String const& path) {
+    anton::Expected<Owning_Ptr<Declaration_List>, Parse_Error> parse_file(anton::String const& path) {
         std::ifstream file(path.data());
         if(!file) {
             anton::String msg = "could not open file " + path + " for reading.";
-            return {expected_error, anton::move(msg), 0, 0, 0};
+            return {anton::expected_error, anton::move(msg), 0, 0, 0};
         }
 
         Parser parser(file, path);
         Owning_Ptr ast = parser.build_ast();
         if(ast) {
-            return {expected_value, anton::move(ast)};
+            return {anton::expected_value, anton::move(ast)};
         } else {
             Parse_Error error = parser.get_last_error();
-            return {expected_error, anton::move(error)};
+            return {anton::expected_error, anton::move(error)};
         }
     }
 } // namespace vush

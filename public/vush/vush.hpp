@@ -1,8 +1,8 @@
 #pragma once
 
 #include <anton/array.hpp>
+#include <anton/expected.hpp>
 #include <anton/string.hpp>
-#include <vush/expected.hpp>
 #include <vush/types.hpp>
 
 namespace vush {
@@ -32,5 +32,5 @@ namespace vush {
     //
     // Returns compiled glsl file or error message.
     //
-    Expected<anton::Array<GLSL_File>, anton::String> compile_to_glsl(Configuration const& config);
+    anton::Expected<anton::Array<GLSL_File>, anton::String> compile_to_glsl(Configuration const& config);
 } // namespace vush
