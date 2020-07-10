@@ -15,7 +15,7 @@ namespace vush {
         source_definition_decl,
         source_definition_emit_statement,
         source_definition_for_statement,
-        source_declaration,
+        sourced_global_decl,
         variable_declaration,
         constant_declaration,
         struct_decl,
@@ -97,9 +97,9 @@ namespace vush {
     struct String_Literal;
 
     struct Identifier: public AST_Node {
-        anton::String identifier;
+        anton::String value;
 
-        Identifier(anton::String string, Source_Info const& source_info): AST_Node(source_info, AST_Node_Type::identifier), identifier(anton::move(string)) {}
+        Identifier(anton::String value, Source_Info const& source_info): AST_Node(source_info, AST_Node_Type::identifier), value(anton::move(value)) {}
     };
 
     struct Type: public AST_Node {
@@ -678,13 +678,13 @@ namespace vush {
         }
     };
 
-    struct Source_Declaration: public Declaration {
+    struct Sourced_Global_Decl: public Declaration {
         Owning_Ptr<Type> type;
         Owning_Ptr<Identifier> name;
         Owning_Ptr<Identifier> source;
 
-        Source_Declaration(Type* type, Identifier* name, Identifier* source, Source_Info const& source_info)
-            : Declaration(source_info, AST_Node_Type::source_declaration), type(type), name(name), source(source) {}
+        Sourced_Global_Decl(Type* type, Identifier* name, Identifier* source, Source_Info const& source_info)
+            : Declaration(source_info, AST_Node_Type::sourced_global_decl), type(type), name(name), source(source) {}
     };
 
     struct Variable_Declaration: public Declaration {

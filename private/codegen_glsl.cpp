@@ -25,7 +25,7 @@ namespace vush {
         switch(ast_node.node_type) {
             case AST_Node_Type::identifier: {
                 Identifier& node = (Identifier&)ast_node;
-                out += node.identifier;
+                out += node.value;
                 return;
             }
 
@@ -674,7 +674,8 @@ namespace vush {
         Identifier* source;
     };
 
-    static anton::Expected<anton::String, anton::String> format_string(String_Literal const& string, anton::Flat_Hash_Map<anton::String, void const*>& symbols) {
+    static anton::Expected<anton::String, anton::String> format_string(String_Literal const& string,
+                                                                       anton::Flat_Hash_Map<anton::String, void const*>& symbols) {
         anton::String out;
         auto iter1 = string.value.bytes_begin();
         auto iter2 = string.value.bytes_begin();
@@ -742,7 +743,7 @@ namespace vush {
                 if(property_name == u8"type") {
                     out += stringify_type(*data->type);
                 } else if(property_name == u8"name") {
-                    out += data->name->identifier;
+                    out += data->name->value;
                 } else {
                     Source_Info const& src = string.source_info;
                     // We add 1 to account for the opening double quote ( " )
@@ -760,9 +761,8 @@ namespace vush {
     }
 
     static anton::Expected<void, anton::String> process_source_definition_statement(anton::String& out, Source_Definition_Statement const& statement,
-                                                                                    anton::Slice<Sourced_Data const> const sourced_data,
-                                                                                    Context const& ctx, Format_Options const& format,
-                                                                                    Codegen_Context& codegen_ctx,
+                                                                                    anton::Slice<Sourced_Data const> const sourced_data, Context const& ctx,
+                                                                                    Format_Options const& format, Codegen_Context& codegen_ctx,
                                                                                     anton::Flat_Hash_Map<anton::String, void const*>& symbols) {
         ANTON_ASSERT(statement.node_type == AST_Node_Type::source_definition_emit_statement ||
                          statement.node_type == AST_Node_Type::source_definition_for_statement,
@@ -782,27 +782,27 @@ namespace vush {
 
             case AST_Node_Type::source_definition_for_statement: {
                 Source_Definition_For_Statement const& node = (Source_Definition_For_Statement const&)statement;
-                if(node.range_expr->identifier == u8"$variables") {
+                if(node.range_expr->value == u8"$variables") {
                     for(Sourced_Data const& data: sourced_data) {
                         ANTON_ASSERT(data.type->node_type == AST_Node_Type::builtin_type || data.type->node_type == AST_Node_Type::user_defined_type,
                                      u8"unknown ast node type");
                         Type* const type = data.type;
                         bool const opaque = type->node_type == AST_Node_Type::builtin_type && is_opaque_type(static_cast<Builtin_Type*>(type)->type);
                         if(!opaque) {
-                            symbols.emplace(node.iterator->identifier, &data);
+                            symbols.emplace(node.iterator->value, &data);
                             for(auto& nested_statement: node.statements) {
                                 process_source_definition_statement(out, *nested_statement, sourced_data, ctx, format, codegen_ctx, symbols);
                             }
                         }
                     }
-                } else if(node.range_expr->identifier == u8"$opaque_variables") {
+                } else if(node.range_expr->value == u8"$opaque_variables") {
                     for(Sourced_Data const& data: sourced_data) {
                         ANTON_ASSERT(data.type->node_type == AST_Node_Type::builtin_type || data.type->node_type == AST_Node_Type::user_defined_type,
                                      u8"unknown ast node type");
                         Type* const type = data.type;
                         bool const opaque = type->node_type == AST_Node_Type::builtin_type && is_opaque_type(static_cast<Builtin_Type*>(type)->type);
                         if(opaque) {
-                            symbols.emplace(node.iterator->identifier, &data);
+                            symbols.emplace(node.iterator->value, &data);
                             for(auto& nested_statement: node.statements) {
                                 process_source_definition_statement(out, *nested_statement, sourced_data, ctx, format, codegen_ctx, symbols);
                             }
@@ -827,8 +827,7 @@ namespace vush {
                                                                             Format_Options const& format, Codegen_Context& codegen_ctx,
                                                                             anton::Flat_Hash_Map<anton::String, void const*>& symbols) {
         for(auto& statement: source_def.decl_prop->statements) {
-            anton::Expected<void, anton::String> result =
-                process_source_definition_statement(out, *statement, sourced_data, ctx, format, codegen_ctx, symbols);
+            anton::Expected<void, anton::String> result = process_source_definition_statement(out, *statement, sourced_data, ctx, format, codegen_ctx, symbols);
             if(!result) {
                 return anton::move(result);
             }
@@ -847,7 +846,7 @@ namespace vush {
             ANTON_ASSERT(symbol, "undefined symbol");
             Struct_Decl const* struct_decl = (Struct_Decl const*)symbol->declaration;
             for(auto& member: struct_decl->members) {
-                anton::String nested_name = input_name + u8"_" + member->identifier->identifier;
+                anton::String nested_name = input_name + u8"_" + member->identifier->value;
                 write_vertex_inputs(ctx, codegen_ctx, out, *member->type, nested_name, input_location, input_names);
             }
         } else {
@@ -874,7 +873,7 @@ namespace vush {
             ANTON_ASSERT(symbol, "undefined symbol");
             Struct_Decl const* struct_decl = (Struct_Decl const*)symbol->declaration;
             for(auto& member: struct_decl->members) {
-                anton::String nested_name = name + u8"." + member->identifier->identifier;
+                anton::String nested_name = name + u8"." + member->identifier->value;
                 write_vertex_input_assignments(ctx, codegen_ctx, out, *member->type, nested_name, input_names);
             }
         } else {
@@ -898,7 +897,7 @@ namespace vush {
             ANTON_ASSERT(symbol, "undefined symbol");
             Struct_Decl const* struct_decl = (Struct_Decl const*)symbol->declaration;
             for(auto& member: struct_decl->members) {
-                anton::String nested_name = output_name + u8"_" + member->identifier->identifier;
+                anton::String nested_name = output_name + u8"_" + member->identifier->value;
                 write_fragment_outputs(ctx, codegen_ctx, out, *member->type, nested_name, output_location, output_names);
             }
         } else {
@@ -925,7 +924,7 @@ namespace vush {
             ANTON_ASSERT(symbol, "undefined symbol");
             Struct_Decl const* struct_decl = (Struct_Decl const*)symbol->declaration;
             for(auto& member: struct_decl->members) {
-                anton::String nested_name = name + u8"." + member->identifier->identifier;
+                anton::String nested_name = name + u8"." + member->identifier->value;
                 write_fragment_output_assignments(ctx, codegen_ctx, out, *member->type, nested_name, output_names);
             }
         } else {
@@ -963,7 +962,7 @@ namespace vush {
                     for(auto& param: pass_stage->param_list->params) {
                         if(param->node_type == AST_Node_Type::sourced_function_param) {
                             Sourced_Function_Param* sourced_param = (Sourced_Function_Param*)param.get();
-                            auto iter = sourced_data.find_or_emplace(sourced_param->source->identifier);
+                            auto iter = sourced_data.find_or_emplace(sourced_param->source->value);
                             Sourced_Data data{sourced_param->type.get(), sourced_param->identifier.get(), sourced_param->source.get()};
                             iter->value.emplace_back(data);
                         }
@@ -975,9 +974,9 @@ namespace vush {
                     source_templates.emplace_back(source);
                 } break;
 
-                case AST_Node_Type::source_declaration: {
-                    Source_Declaration* source = (Source_Declaration*)decl.get();
-                    auto iter = sourced_data.find_or_emplace(source->source->identifier);
+                case AST_Node_Type::sourced_global_decl: {
+                    Sourced_Global_Decl* source = (Sourced_Global_Decl*)decl.get();
+                    auto iter = sourced_data.find_or_emplace(source->source->value);
                     Sourced_Data data{source->type.get(), source->name.get(), source->source.get()};
                     iter->value.emplace_back(data);
                 } break;
@@ -1014,12 +1013,12 @@ namespace vush {
             symbols.emplace(u8"$binding", &binding);
 
             for(Source_Definition_Decl* source_template: source_templates) {
-                auto iter = sourced_data.find(source_template->name->identifier);
+                auto iter = sourced_data.find(source_template->name->value);
                 if(iter != sourced_data.end()) {
                     // TODO: Use stable sort to preserve the order and report duplicates in the correct order.
                     anton::quick_sort(iter->value.begin(), iter->value.end(), [](Sourced_Data const& lhs, Sourced_Data const& rhs) {
-                        anton::String const& lhs_str = lhs.name->identifier;
-                        anton::String const& rhs_str = rhs.name->identifier;
+                        anton::String const& lhs_str = lhs.name->value;
+                        anton::String const& rhs_str = rhs.name->value;
                         return anton::compare(lhs_str, rhs_str) == -1;
                     });
 
@@ -1027,7 +1026,7 @@ namespace vush {
                     for(auto i = iter->value.begin(), j = iter->value.begin() + 1, end = iter->value.end(); j != end; ++i, ++j) {
                         anton::String_View const i_type = stringify_type(*i->type);
                         anton::String_View const j_type = stringify_type(*j->type);
-                        if(i->name->identifier == j->name->identifier && i_type != j_type) {
+                        if(i->name->value == j->name->value && i_type != j_type) {
                             Source_Info const& src = j->name->source_info;
                             return {anton::expected_error,
                                     build_error_message(src.file_path, src.line, src.column, u8"duplicate sourced parameter name with a different type")};
@@ -1056,10 +1055,10 @@ namespace vush {
         anton::Array<GLSL_File> files(anton::reserve, pass_stages.size());
         for(Declaration* decl: pass_stages) {
             Pass_Stage_Declaration& stage = (Pass_Stage_Declaration&)*decl;
-            anton::String pass_function_name = u8"_pass_" + stage.pass->identifier + u8"_stage_" + stringify(stage.stage);
+            anton::String pass_function_name = u8"_pass_" + stage.pass->value + u8"_stage_" + stringify(stage.stage);
             anton::String out = common;
 
-            codegen_ctx.current_pass = stage.pass->identifier;
+            codegen_ctx.current_pass = stage.pass->value;
             codegen_ctx.current_stage = stage.stage;
 
             switch(stage.stage) {
@@ -1069,7 +1068,7 @@ namespace vush {
                     for(auto& param: stage.param_list->params) {
                         if(param->node_type == AST_Node_Type::vertex_input_param) {
                             Owning_Ptr<Vertex_Input_Param>& node = (Owning_Ptr<Vertex_Input_Param>&)param;
-                            write_vertex_inputs(ctx, codegen_ctx, out, *node->type, node->identifier->identifier, in_location, input_names);
+                            write_vertex_inputs(ctx, codegen_ctx, out, *node->type, node->identifier->value, in_location, input_names);
                         } else {
                         }
                     }

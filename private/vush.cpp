@@ -95,13 +95,13 @@ namespace vush {
 
                 case AST_Node_Type::function_declaration: {
                     Function_Declaration* node = static_cast<Function_Declaration*>(ast->declarations[i].get());
-                    ctx.symbols[0].emplace(node->name->identifier, Symbol{Symbol_Type::function, node});
+                    ctx.symbols[0].emplace(node->name->value, Symbol{Symbol_Type::function, node});
                     i += 1;
                 } break;
 
                 case AST_Node_Type::struct_decl: {
                     Struct_Decl* node = static_cast<Struct_Decl*>(ast->declarations[i].get());
-                    ctx.symbols[0].emplace(node->name->identifier, Symbol{Symbol_Type::struct_decl, node});
+                    ctx.symbols[0].emplace(node->name->value, Symbol{Symbol_Type::struct_decl, node});
                     i += 1;
                 } break;
 
@@ -114,7 +114,7 @@ namespace vush {
 
                 case AST_Node_Type::constant_declaration: {
                     Constant_Declaration* node = static_cast<Constant_Declaration*>(ast->declarations[i].get());
-                    ctx.symbols[0].emplace(node->identifier->identifier, Symbol{Symbol_Type::constant, node});
+                    ctx.symbols[0].emplace(node->identifier->value, Symbol{Symbol_Type::constant, node});
                     i += 1;
                 } break;
 

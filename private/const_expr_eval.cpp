@@ -12,14 +12,14 @@ namespace vush {
         switch(expression.node_type) {
             case AST_Node_Type::identifier_expression: {
                 Identifier_Expression& expr = (Identifier_Expression&)expression;
-                Symbol* symbol = find_symbol(ctx, expr.identifier->identifier);
+                Symbol* symbol = find_symbol(ctx, expr.identifier->value);
                 if(!symbol) {
-                    anton::String msg = u8"unknown identifier '" + expr.identifier->identifier + u8"'";
+                    anton::String msg = u8"unknown identifier '" + expr.identifier->value + u8"'";
                     return {anton::expected_error, build_error_message(*ctx.current_file, expr.source_info.line, expr.source_info.column, msg)};
                 }
 
                 if(symbol->type != Symbol_Type::constant) {
-                    anton::String msg = u8"identifier '" + expr.identifier->identifier + u8"' does not name a constant";
+                    anton::String msg = u8"identifier '" + expr.identifier->value + u8"' does not name a constant";
                     return {anton::expected_error, build_error_message(*ctx.current_file, expr.source_info.line, expr.source_info.column, msg)};
                 }
 

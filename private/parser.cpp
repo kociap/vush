@@ -476,7 +476,7 @@ namespace vush {
                 return src_def;
             }
 
-            if(Source_Declaration* src_decl = try_source_declaration()) {
+            if(Sourced_Global_Decl* src_decl = try_source_declaration()) {
                 return src_decl;
             }
 
@@ -714,7 +714,7 @@ namespace vush {
                     return nullptr;
                 }
 
-                if(property_name->identifier == u8"declaration") {
+                if(property_name->value == u8"declaration") {
                     if(source_definition->decl_prop) {
                         set_error(u8"duplicate 'declaration' property", property_state);
                         _lexer.restore_state(state_backup);
@@ -722,7 +722,7 @@ namespace vush {
                     }
 
                     source_definition->decl_prop = anton::move(property);
-                } else if(property_name->identifier == u8"bind") {
+                } else if(property_name->value == u8"bind") {
                     if(source_definition->bind_prop) {
                         set_error(u8"duplicate 'bind' property", property_state);
                         _lexer.restore_state(state_backup);
@@ -731,7 +731,7 @@ namespace vush {
 
                     source_definition->bind_prop = anton::move(property);
                 } else {
-                    set_error(u8"unknown property '" + property_name->identifier + "'", property_state);
+                    set_error(u8"unknown property '" + property_name->value + "'", property_state);
                     _lexer.restore_state(state_backup);
                     return nullptr;
                 }
@@ -746,7 +746,7 @@ namespace vush {
             return source_definition.release();
         }
 
-        Source_Declaration* try_source_declaration() {
+        Sourced_Global_Decl* try_source_declaration() {
             Lexer_State const state_backup = _lexer.get_current_state();
 
             if(!_lexer.match(kw_source, true)) {
@@ -768,7 +768,7 @@ namespace vush {
                 return nullptr;
             }
 
-            if(name->identifier == kw_from) {
+            if(name->value == kw_from) {
                 set_error(u8"expected name before 'from'", name_backup);
                 _lexer.restore_state(state_backup);
                 return nullptr;
@@ -792,7 +792,7 @@ namespace vush {
                 return nullptr;
             }
 
-            return new Source_Declaration(type.release(), name.release(), source.release(), src_info(state_backup));
+            return new Sourced_Global_Decl(type.release(), name.release(), source.release(), src_info(state_backup));
         }
 
         Variable_Declaration* try_variable_declaration() {
