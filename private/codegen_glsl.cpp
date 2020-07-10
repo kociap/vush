@@ -668,7 +668,13 @@ namespace vush {
         out += u8";\n";
     }
 
-    static anton::Expected<anton::String, anton::String> format_string(String_Literal const& string, anton::Flat_Hash_Map<anton::String, void*>& symbols) {
+    struct Sourced_Data {
+        Type* type;
+        Identifier* name;
+        Identifier* source;
+    };
+
+    static anton::Expected<anton::String, anton::String> format_string(String_Literal const& string, anton::Flat_Hash_Map<anton::String, void const*>& symbols) {
         anton::String out;
         auto iter1 = string.value.bytes_begin();
         auto iter2 = string.value.bytes_begin();
@@ -708,6 +714,7 @@ namespace vush {
             anton::String_View const symbol_name = {iter1, iter2};
             if(symbol_name == u8"$binding") {
                 auto iter = symbols.find(u8"$binding");
+                // Casting the const away is legal because the pointed to variable is not const.
                 i64* binding = (i64*)iter->value;
                 out += anton::to_string(*binding);
                 *binding += 1;
@@ -731,11 +738,11 @@ namespace vush {
                     return {anton::expected_error, build_error_message(src.file_path, src.line, src.column + string_offset, u8"unknown placeholder")};
                 }
 
-                Sourced_Function_Param* const sourced_param = static_cast<Sourced_Function_Param*>(iter->value);
+                Sourced_Data const* const data = static_cast<Sourced_Data const*>(iter->value);
                 if(property_name == u8"type") {
-                    out += stringify_type(*sourced_param->type);
+                    out += stringify_type(*data->type);
                 } else if(property_name == u8"name") {
-                    out += sourced_param->identifier->identifier;
+                    out += data->name->identifier;
                 } else {
                     Source_Info const& src = string.source_info;
                     // We add 1 to account for the opening double quote ( " )
@@ -753,9 +760,10 @@ namespace vush {
     }
 
     static anton::Expected<void, anton::String> process_source_definition_statement(anton::String& out, Source_Definition_Statement const& statement,
-                                                                             anton::Slice<Sourced_Function_Param*> const sourced_params, Context const& ctx,
-                                                                             Format_Options const& format, Codegen_Context& codegen_ctx,
-                                                                             anton::Flat_Hash_Map<anton::String, void*>& symbols) {
+                                                                                    anton::Slice<Sourced_Data const> const sourced_data,
+                                                                                    Context const& ctx, Format_Options const& format,
+                                                                                    Codegen_Context& codegen_ctx,
+                                                                                    anton::Flat_Hash_Map<anton::String, void const*>& symbols) {
         ANTON_ASSERT(statement.node_type == AST_Node_Type::source_definition_emit_statement ||
                          statement.node_type == AST_Node_Type::source_definition_for_statement,
                      u8"unknown node type");
@@ -775,28 +783,28 @@ namespace vush {
             case AST_Node_Type::source_definition_for_statement: {
                 Source_Definition_For_Statement const& node = (Source_Definition_For_Statement const&)statement;
                 if(node.range_expr->identifier == u8"$variables") {
-                    for(Sourced_Function_Param* const param: sourced_params) {
-                        ANTON_ASSERT(param->type->node_type == AST_Node_Type::builtin_type || param->type->node_type == AST_Node_Type::user_defined_type,
+                    for(Sourced_Data const& data: sourced_data) {
+                        ANTON_ASSERT(data.type->node_type == AST_Node_Type::builtin_type || data.type->node_type == AST_Node_Type::user_defined_type,
                                      u8"unknown ast node type");
-                        Type* const type = param->type.get();
+                        Type* const type = data.type;
                         bool const opaque = type->node_type == AST_Node_Type::builtin_type && is_opaque_type(static_cast<Builtin_Type*>(type)->type);
                         if(!opaque) {
-                            symbols.emplace(node.iterator->identifier, param);
+                            symbols.emplace(node.iterator->identifier, &data);
                             for(auto& nested_statement: node.statements) {
-                                process_source_definition_statement(out, *nested_statement, sourced_params, ctx, format, codegen_ctx, symbols);
+                                process_source_definition_statement(out, *nested_statement, sourced_data, ctx, format, codegen_ctx, symbols);
                             }
                         }
                     }
                 } else if(node.range_expr->identifier == u8"$opaque_variables") {
-                    for(Sourced_Function_Param* const param: sourced_params) {
-                        ANTON_ASSERT(param->type->node_type == AST_Node_Type::builtin_type || param->type->node_type == AST_Node_Type::user_defined_type,
+                    for(Sourced_Data const& data: sourced_data) {
+                        ANTON_ASSERT(data.type->node_type == AST_Node_Type::builtin_type || data.type->node_type == AST_Node_Type::user_defined_type,
                                      u8"unknown ast node type");
-                        Type* const type = param->type.get();
+                        Type* const type = data.type;
                         bool const opaque = type->node_type == AST_Node_Type::builtin_type && is_opaque_type(static_cast<Builtin_Type*>(type)->type);
                         if(opaque) {
-                            symbols.emplace(node.iterator->identifier, param);
+                            symbols.emplace(node.iterator->identifier, &data);
                             for(auto& nested_statement: node.statements) {
-                                process_source_definition_statement(out, *nested_statement, sourced_params, ctx, format, codegen_ctx, symbols);
+                                process_source_definition_statement(out, *nested_statement, sourced_data, ctx, format, codegen_ctx, symbols);
                             }
                         }
                     }
@@ -813,13 +821,14 @@ namespace vush {
         return {anton::expected_value};
     }
 
-    // The size of sourced_params should be > 0, otherwise empty definitions will be generated.
-    static anton::Expected<void, anton::String> instantiate_source_template(anton::String& out, Source_Definition const& source_def,
-                                                                     anton::Slice<Sourced_Function_Param*> const sourced_params, Context const& ctx,
-                                                                     Format_Options const& format, Codegen_Context& codegen_ctx,
-                                                                     anton::Flat_Hash_Map<anton::String, void*>& symbols) {
+    // The size of sourced_data should be > 0, otherwise empty definitions will be generated.
+    static anton::Expected<void, anton::String> instantiate_source_template(anton::String& out, Source_Definition_Decl const& source_def,
+                                                                            anton::Slice<Sourced_Data const> const sourced_data, Context const& ctx,
+                                                                            Format_Options const& format, Codegen_Context& codegen_ctx,
+                                                                            anton::Flat_Hash_Map<anton::String, void const*>& symbols) {
         for(auto& statement: source_def.decl_prop->statements) {
-            anton::Expected<void, anton::String> result = process_source_definition_statement(out, *statement, sourced_params, ctx, format, codegen_ctx, symbols);
+            anton::Expected<void, anton::String> result =
+                process_source_definition_statement(out, *statement, sourced_data, ctx, format, codegen_ctx, symbols);
             if(!result) {
                 return anton::move(result);
             }
@@ -934,8 +943,9 @@ namespace vush {
         anton::Array<Declaration*> structs_and_consts;
         anton::Array<Declaration*> functions;
         anton::Array<Declaration*> pass_stages;
-        anton::Flat_Hash_Map<anton::String, anton::Array<Sourced_Function_Param*>> sourced_params;
-        anton::Array<Source_Definition*> source_templates;
+        // Maps source name to sourced params and globals
+        anton::Flat_Hash_Map<anton::String, anton::Array<Sourced_Data>> sourced_data;
+        anton::Array<Source_Definition_Decl*> source_templates;
         for(auto& decl: node.declarations) {
             switch(decl->node_type) {
                 case AST_Node_Type::struct_decl:
@@ -949,21 +959,28 @@ namespace vush {
 
                 case AST_Node_Type::pass_stage_declaration: {
                     pass_stages.emplace_back(decl.get());
-                    Owning_Ptr<Pass_Stage_Declaration>& pass_stage = (Owning_Ptr<Pass_Stage_Declaration>&)decl;
+                    Pass_Stage_Declaration* pass_stage = (Pass_Stage_Declaration*)decl.get();
                     for(auto& param: pass_stage->param_list->params) {
                         if(param->node_type == AST_Node_Type::sourced_function_param) {
                             Sourced_Function_Param* sourced_param = (Sourced_Function_Param*)param.get();
-                            auto iter = sourced_params.find_or_emplace(sourced_param->source->identifier);
-                            iter->value.emplace_back(sourced_param);
+                            auto iter = sourced_data.find_or_emplace(sourced_param->source->identifier);
+                            Sourced_Data data{sourced_param->type.get(), sourced_param->identifier.get(), sourced_param->source.get()};
+                            iter->value.emplace_back(data);
                         }
                     }
                 } break;
 
-                case AST_Node_Type::source_definition: {
-                    Source_Definition* source = (Source_Definition*)decl.get();
+                case AST_Node_Type::source_definition_decl: {
+                    Source_Definition_Decl* source = (Source_Definition_Decl*)decl.get();
                     source_templates.emplace_back(source);
-                    break;
-                }
+                } break;
+
+                case AST_Node_Type::source_declaration: {
+                    Source_Declaration* source = (Source_Declaration*)decl.get();
+                    auto iter = sourced_data.find_or_emplace(source->source->identifier);
+                    Sourced_Data data{source->type.get(), source->name.get(), source->source.get()};
+                    iter->value.emplace_back(data);
+                } break;
             }
         }
 
@@ -993,42 +1010,34 @@ namespace vush {
 
         {
             i64 binding = 0;
-            anton::Flat_Hash_Map<anton::String, void*> symbols;
+            anton::Flat_Hash_Map<anton::String, void const*> symbols;
             symbols.emplace(u8"$binding", &binding);
 
-            for(Source_Definition* source_template: source_templates) {
-                auto iter = sourced_params.find(source_template->name->identifier);
-                if(iter != sourced_params.end()) {
+            for(Source_Definition_Decl* source_template: source_templates) {
+                auto iter = sourced_data.find(source_template->name->identifier);
+                if(iter != sourced_data.end()) {
                     // TODO: Use stable sort to preserve the order and report duplicates in the correct order.
-                    anton::quick_sort(iter->value.begin(), iter->value.end(), [](Sourced_Function_Param* const lhs, Sourced_Function_Param* const rhs) {
-                        // TODO: String comparison function.
-                        anton::String const& lhs_str = lhs->identifier->identifier;
-                        anton::String const& rhs_str = rhs->identifier->identifier;
-                        auto lhs_i = lhs_str.bytes_begin(), rhs_i = rhs_str.bytes_begin(), lhs_end = lhs_str.bytes_end(), rhs_end = rhs_str.bytes_end();
-                        for(; lhs_i != lhs_end && rhs_i != rhs_end; ++lhs_i, ++rhs_i) {
-                            if(*lhs_i < *rhs_i) {
-                                return true;
-                            }
-                        }
-
-                        return lhs_i == lhs_end && rhs_i != rhs_end;
+                    anton::quick_sort(iter->value.begin(), iter->value.end(), [](Sourced_Data const& lhs, Sourced_Data const& rhs) {
+                        anton::String const& lhs_str = lhs.name->identifier;
+                        anton::String const& rhs_str = rhs.name->identifier;
+                        return anton::compare(lhs_str, rhs_str) == -1;
                     });
 
                     // Ensure there are no name duplicates with different types
                     for(auto i = iter->value.begin(), j = iter->value.begin() + 1, end = iter->value.end(); j != end; ++i, ++j) {
-                        anton::String_View const i_type = stringify_type(*(*i)->type);
-                        anton::String_View const j_type = stringify_type(*(*j)->type);
-                        if((*i)->identifier->identifier == (*j)->identifier->identifier && i_type != j_type) {
-                            Source_Info const& src = (*j)->identifier->source_info;
+                        anton::String_View const i_type = stringify_type(*i->type);
+                        anton::String_View const j_type = stringify_type(*j->type);
+                        if(i->name->identifier == j->name->identifier && i_type != j_type) {
+                            Source_Info const& src = j->name->source_info;
                             return {anton::expected_error,
                                     build_error_message(src.file_path, src.line, src.column, u8"duplicate sourced parameter name with a different type")};
                         }
                     }
 
                     // Remove type duplicates
-                    auto end = anton::unique(iter->value.begin(), iter->value.end(), [](Sourced_Function_Param* lhs, Sourced_Function_Param* rhs) {
-                        anton::String_View const i_type = stringify_type(*lhs->type);
-                        anton::String_View const j_type = stringify_type(*rhs->type);
+                    auto end = anton::unique(iter->value.begin(), iter->value.end(), [](Sourced_Data const& lhs, Sourced_Data const& rhs) {
+                        anton::String_View const i_type = stringify_type(*lhs.type);
+                        anton::String_View const j_type = stringify_type(*rhs.type);
                         return i_type == j_type;
                     });
 

@@ -12,9 +12,10 @@ namespace vush {
         declaration_if,
         import_decl,
         source_definition_property,
-        source_definition,
+        source_definition_decl,
         source_definition_emit_statement,
         source_definition_for_statement,
+        source_declaration,
         variable_declaration,
         constant_declaration,
         struct_decl,
@@ -645,12 +646,12 @@ namespace vush {
         }
     };
 
-    struct Source_Definition: public Declaration {
+    struct Source_Definition_Decl: public Declaration {
         Owning_Ptr<Identifier> name;
         Owning_Ptr<Source_Definition_Property> decl_prop;
         Owning_Ptr<Source_Definition_Property> bind_prop;
 
-        Source_Definition(Identifier* name, Source_Info const& source_info): Declaration(source_info, AST_Node_Type::source_definition), name(name) {}
+        Source_Definition_Decl(Identifier* name, Source_Info const& source_info): Declaration(source_info, AST_Node_Type::source_definition_decl), name(name) {}
     };
 
     struct Source_Definition_Statement: public AST_Node {
@@ -675,6 +676,15 @@ namespace vush {
         void append(Source_Definition_Statement* statement) {
             statements.emplace_back(statement);
         }
+    };
+
+    struct Source_Declaration: public Declaration {
+        Owning_Ptr<Type> type;
+        Owning_Ptr<Identifier> name;
+        Owning_Ptr<Identifier> source;
+
+        Source_Declaration(Type* type, Identifier* name, Identifier* source, Source_Info const& source_info)
+            : Declaration(source_info, AST_Node_Type::source_declaration), type(type), name(name), source(source) {}
     };
 
     struct Variable_Declaration: public Declaration {

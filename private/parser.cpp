@@ -32,6 +32,7 @@ namespace vush {
     static constexpr anton::String_View kw_const = u8"const";
     static constexpr anton::String_View kw_in = u8"in";
     static constexpr anton::String_View kw_source_definition = u8"source_definition";
+    static constexpr anton::String_View kw_source = u8"source";
     static constexpr anton::String_View kw_emit = u8"emit";
 
     // stages
@@ -471,8 +472,12 @@ namespace vush {
                 return import_decl;
             }
 
-            if(Source_Definition* src_def = try_source_definition()) {
+            if(Source_Definition_Decl* src_def = try_source_definition_decl()) {
                 return src_def;
+            }
+
+            if(Source_Declaration* src_decl = try_source_declaration()) {
+                return src_decl;
             }
 
             if(Struct_Decl* struct_decl = try_struct_decl()) {
@@ -659,7 +664,7 @@ namespace vush {
             return nullptr;
         }
 
-        Source_Definition* try_source_definition() {
+        Source_Definition_Decl* try_source_definition_decl() {
             Lexer_State const state_backup = _lexer.get_current_state();
             if(!_lexer.match(kw_source_definition, true)) {
                 set_error(u8"expected 'source_definition'");
@@ -678,7 +683,7 @@ namespace vush {
                 return nullptr;
             }
 
-            Owning_Ptr source_definition = new Source_Definition(source_name.release(), src_info(state_backup));
+            Owning_Ptr source_definition = new Source_Definition_Decl(source_name.release(), src_info(state_backup));
             while(true) {
                 Lexer_State const property_state = _lexer.get_current_state();
                 Owning_Ptr property_name = try_identifier();
@@ -739,6 +744,55 @@ namespace vush {
             }
 
             return source_definition.release();
+        }
+
+        Source_Declaration* try_source_declaration() {
+            Lexer_State const state_backup = _lexer.get_current_state();
+
+            if(!_lexer.match(kw_source, true)) {
+                set_error(u8"expected 'source'");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            Owning_Ptr type = try_type();
+            if(!type) {
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            Lexer_State const name_backup = _lexer.get_current_state();
+            Owning_Ptr name = try_identifier();
+            if(!name) {
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            if(name->identifier == kw_from) {
+                set_error(u8"expected name before 'from'", name_backup);
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            if(!_lexer.match(kw_from, true)) {
+                set_error(u8"expected 'from'");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            Owning_Ptr source = try_identifier();
+            if(!source) {
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            if(!_lexer.match(token_semicolon)) {
+                set_error(u8"expected ';' after sourced global");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            return new Source_Declaration(type.release(), name.release(), source.release(), src_info(state_backup));
         }
 
         Variable_Declaration* try_variable_declaration() {

@@ -11,8 +11,6 @@
 #include <symbol.hpp>
 #include <utility.hpp>
 
-#include <hierarchy_printer.hpp>
-
 namespace vush {
     static anton::Expected<anton::String, anton::String> resolve_import_path(Context& ctx, anton::String const& import_path, Source_Info const& src) {
         bool found = false;
@@ -135,7 +133,7 @@ namespace vush {
         for(i64 i = 0; i < params.size();) {
             // If the node is a prameter if, we replace it with the contents of one of the branches.
             // We do not advance in that case in order to check the replaced node.
-            bool const should_advance = params[i]->node_type == AST_Node_Type::function_param_if;
+            bool const should_advance = params[i]->node_type != AST_Node_Type::function_param_if;
             switch(params[i]->node_type) {
                 case AST_Node_Type::function_param_if: {
                     Function_Param_If& node = (Function_Param_If&)*params[i];
@@ -169,13 +167,10 @@ namespace vush {
                     // Check whether the type of the parameter is a non-opaque builtin or user-defined
                     Sourced_Function_Param& node = (Sourced_Function_Param&)*params[i];
                     Type& type = *node.type;
-                    if(type.node_type == AST_Node_Type::builtin_type) {
-                        Builtin_Type& t = (Builtin_Type&)type;
-                        if(is_opaque_type(t.type)) {
-                            Source_Info const& src = node.source_info;
-                            return {anton::expected_error, build_error_message(src.file_path, src.line, src.column,
-                                                                               u8"sourced parameters must be of non-opaque builtin type or user-defined type")};
-                        }
+                    if(type.node_type == AST_Node_Type::builtin_type && is_opaque_type(static_cast<Builtin_Type&>(type).type)) {
+                        Source_Info const& src = type.source_info;
+                        return {anton::expected_error, build_error_message(src.file_path, src.line, src.column,
+                                                                           u8"sourced parameters must be of non-opaque builtin type or user-defined type")};
                     }
                 } break;
 
@@ -196,30 +191,26 @@ namespace vush {
                 if(node->initializer) {
                     process_ast(ctx, (Owning_Ptr<AST_Node>&)node->initializer);
                 }
-                break;
-            }
+            } break;
 
             case AST_Node_Type::constant_declaration: {
                 Owning_Ptr<Constant_Declaration>& node = (Owning_Ptr<Constant_Declaration>&)ast_node;
                 if(node->initializer) {
                     process_ast(ctx, (Owning_Ptr<AST_Node>&)node->initializer);
                 }
-                break;
-            }
+            } break;
 
             case AST_Node_Type::statement_list: {
                 Owning_Ptr<Statement_List>& node = (Owning_Ptr<Statement_List>&)ast_node;
                 for(auto& statement: node->statements) {
                     process_ast(ctx, (Owning_Ptr<AST_Node>&)statement);
                 }
-                break;
-            }
+            } break;
 
             case AST_Node_Type::block_statement: {
                 Owning_Ptr<Block_Statement>& node = (Owning_Ptr<Block_Statement>&)ast_node;
                 process_ast(ctx, (Owning_Ptr<AST_Node>&)node->statements);
-                break;
-            }
+            } break;
 
             case AST_Node_Type::if_statement: {
                 // TODO: constant evaluation when possible.
@@ -229,14 +220,12 @@ namespace vush {
                 if(node->false_statement) {
                     process_ast(ctx, (Owning_Ptr<AST_Node>&)node->false_statement);
                 }
-                break;
-            }
+            } break;
 
             case AST_Node_Type::declaration_statement: {
                 Owning_Ptr<Declaration_Statement>& node = (Owning_Ptr<Declaration_Statement>&)ast_node;
                 process_ast(ctx, (Owning_Ptr<AST_Node>&)node->declaration);
-                break;
-            }
+            } break;
 
             case AST_Node_Type::expression_if: {
                 Owning_Ptr<Expression_If>& node = (Owning_Ptr<Expression_If>&)ast_node;
@@ -260,8 +249,10 @@ namespace vush {
 
                     ast_node = anton::move((Owning_Ptr<AST_Node>&)node->false_expr);
                 }
+            } break;
+
+            default:
                 break;
-            }
         }
 
         return {anton::expected_value};
@@ -320,8 +311,9 @@ namespace vush {
 
         Owning_Ptr<Declaration_List> ast = anton::move(parse_res.value());
         anton::Expected<void, anton::String> process_res = process_functions(ctx, *ast);
-
-        // print_ast(*ast);
+        if(!process_res) {
+            return {anton::expected_error, anton::move(process_res.error())};
+        }
 
         anton::Expected<anton::Array<GLSL_File>, anton::String> codegen_res = generate_glsl(ctx, *ast, config.format);
         if(codegen_res) {
