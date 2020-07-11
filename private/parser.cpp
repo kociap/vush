@@ -6,7 +6,8 @@
 
 // TODO: When matching keywords, ensure that the keyword is followed by non-identifier character (Find a cleaner way).
 // TODO: Figure out a way to match operators that use overlapping symbols (+ and +=) in a clean way.
-// TODO: const and array types.
+// TODO: const types.
+// TODO: add constructors (currently function call which will break if we use an array type).
 // TODO: Add settings block.
 // TODO: Should we include comma?
 
@@ -1556,18 +1557,37 @@ namespace vush {
             };
 
             Lexer_State const state_backup = _lexer.get_current_state();
+            anton::String type_name;
+            if(!_lexer.match_identifier(type_name)) {
+                set_error(u8"expected type identifier");
+                return nullptr;
+            }
+
+            Owning_Ptr<Type> base_type;
             constexpr i64 array_size = sizeof(builtin_types_strings) / sizeof(anton::String_View);
             for(i64 i = 0; i < array_size; ++i) {
-                if(_lexer.match(builtin_types_strings[i], true)) {
-                    return new Builtin_Type(builtin_types[i], src_info(state_backup));
+                if(type_name == builtin_types_strings[i]) {
+                    base_type = new Builtin_Type(builtin_types[i], src_info(state_backup));
+                    break;
                 }
             }
 
-            if(anton::String name; _lexer.match_identifier(name)) {
-                return new User_Defined_Type(anton::move(name), src_info(state_backup));
+            if(!base_type) {
+                base_type = new User_Defined_Type(anton::move(type_name), src_info(state_backup));
+            }
+
+            if(!_lexer.match(token_bracket_open)) {
+                return base_type.release();
             } else {
-                set_error("expected identifier");
-                return nullptr;
+                Owning_Ptr array_size = try_integer_literal();
+                if(!_lexer.match(token_bracket_close)) {
+                    set_error(u8"expected ']'");
+                    _lexer.restore_state(state_backup);
+                    return nullptr;
+                }
+
+                // We don't support nested array types (yet), so we don't continue checking for brackets.
+                return new Array_Type(base_type.release(), array_size.release(), src_info(state_backup));
             }
         }
 

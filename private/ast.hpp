@@ -8,6 +8,7 @@ namespace vush {
         identifier,
         builtin_type,
         user_defined_type,
+        array_type,
         declaration_list,
         declaration_if,
         import_decl,
@@ -95,6 +96,7 @@ namespace vush {
     struct Expression;
     struct Statement;
     struct String_Literal;
+    struct Integer_Literal;
 
     struct Identifier: public AST_Node {
         anton::String value;
@@ -262,11 +264,11 @@ namespace vush {
         glsl_samplerShadow,
     };
 
-    constexpr bool is_opaque_type(Builtin_GLSL_Type type) {
+    [[nodiscard]] constexpr bool is_opaque_type(Builtin_GLSL_Type type) {
         return static_cast<i32>(type) >= static_cast<i32>(Builtin_GLSL_Type::glsl_sampler1D);
     }
 
-    constexpr anton::String_View stringify(Builtin_GLSL_Type type) {
+    [[nodiscard]] constexpr anton::String_View stringify(Builtin_GLSL_Type type) {
         switch(type) {
             case Builtin_GLSL_Type::glsl_void:
                 return u8"void";
@@ -589,16 +591,15 @@ namespace vush {
         User_Defined_Type(anton::String name, Source_Info const& source_info): Type(source_info, AST_Node_Type::user_defined_type), name(anton::move(name)) {}
     };
 
-    inline anton::String_View stringify_type(Type const& type) {
-        ANTON_ASSERT(type.node_type == AST_Node_Type::builtin_type || type.node_type == AST_Node_Type::user_defined_type, u8"unknown ast node type");
-        if(type.node_type == AST_Node_Type::builtin_type) {
-            Builtin_Type const& t = static_cast<Builtin_Type const&>(type);
-            return stringify(t.type);
-        } else {
-            User_Defined_Type const& t = static_cast<User_Defined_Type const&>(type);
-            return t.name;
-        }
-    }
+    struct Array_Type: public Type {
+        Owning_Ptr<Type> base;
+        Owning_Ptr<Integer_Literal> size;
+
+        Array_Type(Type* base, Integer_Literal* size, Source_Info const& source_info): Type(source_info, AST_Node_Type::array_type), base(base), size(size) {}
+    };
+
+    [[nodiscard]] bool is_opaque_type(Type const& type);
+    [[nodiscard]] anton::String stringify_type(Type const& type);
 
     struct Declaration: public AST_Node {
         using AST_Node::AST_Node;

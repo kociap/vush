@@ -41,6 +41,17 @@ namespace vush {
                 return;
             }
 
+            case AST_Node_Type::array_type: {
+                Array_Type& node = (Array_Type&)ast_node;
+                stringify(out, *node.base, format, ctx);
+                out += u8"[";
+                if(node.size) {
+                    stringify(out, *node.size, format, ctx);
+                }
+                out += u8"]";
+                return;
+            }
+
             case AST_Node_Type::constant_declaration: {
                 Constant_Declaration& node = (Constant_Declaration&)ast_node;
                 out += u8"const ";
@@ -784,11 +795,7 @@ namespace vush {
                 Source_Definition_For_Statement const& node = (Source_Definition_For_Statement const&)statement;
                 if(node.range_expr->value == u8"$variables") {
                     for(Sourced_Data const& data: sourced_data) {
-                        ANTON_ASSERT(data.type->node_type == AST_Node_Type::builtin_type || data.type->node_type == AST_Node_Type::user_defined_type,
-                                     u8"unknown ast node type");
-                        Type* const type = data.type;
-                        bool const opaque = type->node_type == AST_Node_Type::builtin_type && is_opaque_type(static_cast<Builtin_Type*>(type)->type);
-                        if(!opaque) {
+                        if(!is_opaque_type(*data.type)) {
                             symbols.emplace(node.iterator->value, &data);
                             for(auto& nested_statement: node.statements) {
                                 process_source_definition_statement(out, *nested_statement, sourced_data, ctx, format, codegen_ctx, symbols);
@@ -797,11 +804,7 @@ namespace vush {
                     }
                 } else if(node.range_expr->value == u8"$opaque_variables") {
                     for(Sourced_Data const& data: sourced_data) {
-                        ANTON_ASSERT(data.type->node_type == AST_Node_Type::builtin_type || data.type->node_type == AST_Node_Type::user_defined_type,
-                                     u8"unknown ast node type");
-                        Type* const type = data.type;
-                        bool const opaque = type->node_type == AST_Node_Type::builtin_type && is_opaque_type(static_cast<Builtin_Type*>(type)->type);
-                        if(opaque) {
+                        if(is_opaque_type(*data.type)) {
                             symbols.emplace(node.iterator->value, &data);
                             for(auto& nested_statement: node.statements) {
                                 process_source_definition_statement(out, *nested_statement, sourced_data, ctx, format, codegen_ctx, symbols);
@@ -835,6 +838,8 @@ namespace vush {
 
         return {anton::expected_value};
     }
+
+    // TODO: Arrays in vertex inputs/fragment outputs are illegal (for now). Add error handling.
 
     static void write_vertex_inputs(Context const& ctx, Codegen_Context& codegen_ctx, anton::String& out, Type const& type, anton::String const& input_name,
                                     i64& input_location, anton::Array<anton::String>& input_names) {

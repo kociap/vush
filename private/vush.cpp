@@ -164,13 +164,24 @@ namespace vush {
                 } break;
 
                 case AST_Node_Type::sourced_function_param: {
-                    // Check whether the type of the parameter is a non-opaque builtin or user-defined
+                    // Validate sourced parameters
                     Sourced_Function_Param& node = (Sourced_Function_Param&)*params[i];
                     Type& type = *node.type;
-                    if(type.node_type == AST_Node_Type::builtin_type && is_opaque_type(static_cast<Builtin_Type&>(type).type)) {
+
+                    // Sourced parameters must not be opaque
+                    if(is_opaque_type(type)) {
                         Source_Info const& src = type.source_info;
-                        return {anton::expected_error, build_error_message(src.file_path, src.line, src.column,
-                                                                           u8"sourced parameters must be of non-opaque builtin type or user-defined type")};
+                        return {
+                            anton::expected_error,
+                            build_error_message(src.file_path, src.line, src.column,
+                                                u8"sourced parameters must be of non-opaque builtin type, user-defined type and an array of non-opaque type")};
+                    }
+
+                    // Sourced parameters that are arrays must be sized
+                    if(type.node_type == AST_Node_Type::array_type && !static_cast<Array_Type&>(type).size) {
+                        Source_Info const& src = type.source_info;
+                        return {anton::expected_error,
+                                build_error_message(src.file_path, src.line, src.column, u8"sourced parameters must not be unsized arrays")};
                     }
                 } break;
 
@@ -258,7 +269,7 @@ namespace vush {
         return {anton::expected_value};
     }
 
-    static anton::Expected<void, anton::String> process_functions(Context& ctx, Declaration_List& ast) {
+    static anton::Expected<void, anton::String> process_top_level_ast(Context& ctx, Declaration_List& ast) {
         for(auto& node: ast.declarations) {
             switch(node->node_type) {
                 case AST_Node_Type::function_declaration: {
@@ -310,7 +321,7 @@ namespace vush {
         }
 
         Owning_Ptr<Declaration_List> ast = anton::move(parse_res.value());
-        anton::Expected<void, anton::String> process_res = process_functions(ctx, *ast);
+        anton::Expected<void, anton::String> process_res = process_top_level_ast(ctx, *ast);
         if(!process_res) {
             return {anton::expected_error, anton::move(process_res.error())};
         }
