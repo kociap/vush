@@ -662,6 +662,62 @@ namespace vush {
                 return for_statement.release();
             }
 
+            if(_lexer.match(kw_if, true)) {
+                // TODO: We hack around the requirement that all variables be builtin by matching $ and the identifier manually.
+                //       Either allow all identifiers or extend the identifier matching function.
+                Owning_Ptr<Identifier> condition;
+                {
+                    anton::String _condition;
+                    Lexer_State const _condition_state = _lexer.get_current_state();
+                    if(_lexer.match(u8"$") && _lexer.match_identifier(_condition)) {
+                        _condition = u8"$" + _condition;
+                        condition = new Identifier(anton::move(_condition), src_info(_condition_state));
+                    } else {
+                        set_error(u8"expected builtin variable");
+                        _lexer.restore_state(state_backup);
+                        return nullptr;
+                    }
+                }
+
+                Owning_Ptr if_statement = new Source_Definition_If_Statement(condition.release(), src_info(state_backup));
+
+                if(!_lexer.match(token_brace_open)) {
+                    set_error(u8"expected '{'");
+                    _lexer.restore_state(state_backup);
+                    return nullptr;
+                }
+
+                while(Source_Definition_Statement* statement = try_source_definition_statement()) {
+                    if_statement->true_branch.emplace_back(statement);
+                }
+
+                if(!_lexer.match(token_brace_close)) {
+                    set_error(u8"expected '}'");
+                    _lexer.restore_state(state_backup);
+                    return nullptr;
+                }
+
+                if(_lexer.match(kw_else, true)) {
+                    if(!_lexer.match(token_brace_open)) {
+                        set_error(u8"expected '{'");
+                        _lexer.restore_state(state_backup);
+                        return nullptr;
+                    }
+
+                    while(Source_Definition_Statement* statement = try_source_definition_statement()) {
+                        if_statement->false_branch.emplace_back(statement);
+                    }
+
+                    if(!_lexer.match(token_brace_close)) {
+                        set_error(u8"expected '}'");
+                        _lexer.restore_state(state_backup);
+                        return nullptr;
+                    }
+                }
+
+                return if_statement.release();
+            }
+
             return nullptr;
         }
 

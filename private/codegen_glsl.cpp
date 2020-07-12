@@ -776,7 +776,8 @@ namespace vush {
                                                                                     Format_Options const& format, Codegen_Context& codegen_ctx,
                                                                                     anton::Flat_Hash_Map<anton::String, void const*>& symbols) {
         ANTON_ASSERT(statement.node_type == AST_Node_Type::source_definition_emit_statement ||
-                         statement.node_type == AST_Node_Type::source_definition_for_statement,
+                         statement.node_type == AST_Node_Type::source_definition_for_statement ||
+                         statement.node_type == AST_Node_Type::source_definition_if_statement,
                      u8"unknown node type");
         switch(statement.node_type) {
             case AST_Node_Type::source_definition_emit_statement: {
@@ -789,6 +790,33 @@ namespace vush {
 
                 out += result.value();
                 out += U'\n';
+            } break;
+
+            case AST_Node_Type::source_definition_if_statement: {
+                Source_Definition_If_Statement const& node = (Source_Definition_If_Statement const&)statement;
+                i64 count = 0;
+                if(node.condition->value == u8"$variables") {
+                    for(Sourced_Data const& data: sourced_data) {
+                        count += !is_opaque_type(*data.type);
+                    }
+                } else if(node.condition->value == u8"$opaque_variables") {
+                    for(Sourced_Data const& data: sourced_data) {
+                        count += is_opaque_type(*data.type);
+                    }
+                } else {
+                    Source_Info const& src = node.condition->source_info;
+                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"invalid condition expression")};
+                }
+
+                if(count) {
+                    for(auto& nested_statement: node.true_branch) {
+                        process_source_definition_statement(out, *nested_statement, sourced_data, ctx, format, codegen_ctx, symbols);
+                    }
+                } else {
+                    for(auto& nested_statement: node.false_branch) {
+                        process_source_definition_statement(out, *nested_statement, sourced_data, ctx, format, codegen_ctx, symbols);
+                    }
+                }
             } break;
 
             case AST_Node_Type::source_definition_for_statement: {

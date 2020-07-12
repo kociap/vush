@@ -15,6 +15,7 @@ namespace vush {
         source_definition_property,
         source_definition_decl,
         source_definition_emit_statement,
+        source_definition_if_statement,
         source_definition_for_statement,
         sourced_global_decl,
         variable_declaration,
@@ -664,6 +665,15 @@ namespace vush {
 
         Source_Definition_Emit_Statement(String_Literal* string, Source_Info const& source_info)
             : Source_Definition_Statement(source_info, AST_Node_Type::source_definition_emit_statement), string(string) {}
+    };
+
+    struct Source_Definition_If_Statement: public Source_Definition_Statement {
+        Owning_Ptr<Identifier> condition;
+        anton::Array<Owning_Ptr<Source_Definition_Statement>> true_branch;
+        anton::Array<Owning_Ptr<Source_Definition_Statement>> false_branch;
+
+        Source_Definition_If_Statement(Identifier* condition, Source_Info const& source_info)
+            : Source_Definition_Statement(source_info, AST_Node_Type::source_definition_if_statement), condition(condition) {}
     };
 
     struct Source_Definition_For_Statement: public Source_Definition_Statement {

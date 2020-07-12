@@ -298,7 +298,7 @@ namespace vush {
         Context ctx = {};
         ctx.import_paths = config.import_directories;
         ctx.import_paths_end = config.import_directories + config.import_directories_count;
-        // Add global scope.
+        // Add global scope
         ctx.symbols.emplace_back();
         anton::Array<Owning_Ptr<Declaration>> constant_decls;
         {
@@ -327,10 +327,6 @@ namespace vush {
         }
 
         anton::Expected<anton::Array<GLSL_File>, anton::String> codegen_res = generate_glsl(ctx, *ast, config.format);
-        if(codegen_res) {
-            return {anton::expected_value, anton::move(codegen_res.value())};
-        } else {
-            return {anton::expected_error, anton::move(codegen_res.error())};
-        }
+        return anton::move(codegen_res);
     }
 } // namespace vush
