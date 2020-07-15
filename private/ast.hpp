@@ -12,7 +12,8 @@ namespace vush {
         declaration_list,
         declaration_if,
         import_decl,
-        source_definition_property,
+        source_definition_declaration_property,
+        source_definition_bind_property,
         source_definition_decl,
         source_definition_emit_statement,
         source_definition_if_statement,
@@ -638,20 +639,27 @@ namespace vush {
 
     struct Source_Definition_Statement;
 
-    struct Source_Definition_Property: public AST_Node {
+    struct Source_Definition_Declaration_Property: public AST_Node {
         anton::Array<Owning_Ptr<Source_Definition_Statement>> statements;
 
-        Source_Definition_Property(Source_Info const& source_info): AST_Node(source_info, AST_Node_Type::source_definition_property) {}
+        Source_Definition_Declaration_Property(Source_Info const& source_info): AST_Node(source_info, AST_Node_Type::source_definition_declaration_property) {}
 
         void append(Source_Definition_Statement* statement) {
             statements.emplace_back(statement);
         }
     };
 
+    struct Source_Definition_Bind_Property: AST_Node {
+        Owning_Ptr<String_Literal> string;
+
+        Source_Definition_Bind_Property(String_Literal* string, Source_Info const& source_info)
+            : AST_Node(source_info, AST_Node_Type::source_definition_bind_property), string(string) {}
+    };
+
     struct Source_Definition_Decl: public Declaration {
         Owning_Ptr<Identifier> name;
-        Owning_Ptr<Source_Definition_Property> decl_prop;
-        Owning_Ptr<Source_Definition_Property> bind_prop;
+        Owning_Ptr<Source_Definition_Declaration_Property> decl_prop;
+        Owning_Ptr<Source_Definition_Bind_Property> bind_prop;
 
         Source_Definition_Decl(Identifier* name, Source_Info const& source_info): Declaration(source_info, AST_Node_Type::source_definition_decl), name(name) {}
     };

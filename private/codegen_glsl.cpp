@@ -139,8 +139,6 @@ namespace vush {
                 stringify(out, *node.type, format, ctx);
                 out += u8" ";
                 stringify(out, *node.identifier, format, ctx);
-                out += u8" from ";
-                stringify(out, *node.source, format, ctx);
                 return;
             }
 
@@ -971,6 +969,79 @@ namespace vush {
         }
     }
 
+    static anton::Expected<anton::String, anton::String> format_bind_string(String_Literal const& string, Sourced_Data const& symbol) {
+        anton::String out;
+        auto iter1 = string.value.bytes_begin();
+        auto iter2 = string.value.bytes_begin();
+        auto const end = string.value.bytes_end();
+        while(true) {
+            while(iter2 != end && *iter2 != U'{') {
+                ++iter2;
+            }
+
+            if(iter2 == end) {
+                out.append({iter1, iter2});
+                break;
+            }
+
+            ++iter2;
+            if(iter2 == end || *iter2 != U'{') {
+                // Single brace or end
+                continue;
+            }
+
+            out.append({iter1, iter2 - 1});
+
+            ++iter2;
+            iter1 = iter2;
+            while(iter2 != end && *iter2 != '}') {
+                ++iter2;
+            }
+
+            // Check for unterminated placeholder
+            if(iter2 == end || iter2 + 1 == end || *(iter2 + 1) != U'}') {
+                Source_Info const& src = string.source_info;
+                // We add 1 to account for the opening double quote ( " )
+                i64 const string_offset = 1 + (iter2 - string.value.bytes_begin());
+                return {anton::expected_error, build_error_message(src.file_path, src.line, src.column + string_offset, u8"unterminated placeholder")};
+            }
+
+            anton::String_View const symbol_name = {iter1, iter2};
+            i64 const dot_pos = anton::find_substring(symbol_name, u8".");
+            if(dot_pos == anton::npos) {
+                // If it's not a builtin and doesn't have a dot, what is it?
+                Source_Info const& src = string.source_info;
+                // We add 1 to account for the opening double quote ( " )
+                i64 const string_offset = 1 + (iter1 - string.value.bytes_begin());
+                return {anton::expected_error, build_error_message(src.file_path, src.line, src.column + string_offset, u8"invalid placeholder")};
+            }
+
+            anton::String_View const iterator_name = {symbol_name.data(), dot_pos};
+            anton::String_View const property_name = {symbol_name.data() + dot_pos + 1, symbol_name.bytes_end()};
+            if(iterator_name != u8"$variable") {
+                Source_Info const& src = string.source_info;
+                // We add 1 to account for the opening double quote ( " )
+                i64 const string_offset = 1 + (iter1 - string.value.bytes_begin());
+                return {anton::expected_error, build_error_message(src.file_path, src.line, src.column + string_offset, u8"unknown placeholder")};
+            }
+
+            if(property_name == u8"name") {
+                out += symbol.name->value;
+            } else {
+                Source_Info const& src = string.source_info;
+                // We add 1 to account for the opening double quote ( " )
+                i64 const string_offset = 1 + (iter1 - string.value.bytes_begin()) + dot_pos + 1;
+                return {anton::expected_error, build_error_message(src.file_path, src.line, src.column + string_offset, u8"unknown property name")};
+            }
+
+            // Skip the terminating }}
+            iter2 = iter2 + 2;
+            iter1 = iter2;
+        }
+
+        return {anton::expected_value, anton::move(out)};
+    }
+
     anton::Expected<anton::Array<GLSL_File>, anton::String> generate_glsl(Context const& ctx, Declaration_List& node, Format_Options const& format) {
         anton::Array<Declaration*> structs_and_consts;
         anton::Array<Declaration*> functions;
@@ -978,6 +1049,7 @@ namespace vush {
         // Maps source name to sourced params and globals
         anton::Flat_Hash_Map<anton::String, anton::Array<Sourced_Data>> sourced_data;
         anton::Array<Source_Definition_Decl*> source_templates;
+        // TODO: Validate that a source is available for each sourced data
         for(auto& decl: node.declarations) {
             switch(decl->node_type) {
                 case AST_Node_Type::struct_decl:
@@ -1016,6 +1088,35 @@ namespace vush {
             }
         }
 
+        for(auto [source_name, data]: sourced_data) {
+            // TODO: Use stable sort to preserve the order and report duplicates in the correct order.
+            anton::quick_sort(data.begin(), data.end(), [](Sourced_Data const& lhs, Sourced_Data const& rhs) {
+                anton::String const& lhs_str = lhs.name->value;
+                anton::String const& rhs_str = rhs.name->value;
+                return anton::compare(lhs_str, rhs_str) == -1;
+            });
+
+            // Ensure there are no name duplicates with different types
+            for(auto i = data.begin(), j = data.begin() + 1, end = data.end(); j != end; ++i, ++j) {
+                anton::String_View const i_type = stringify_type(*i->type);
+                anton::String_View const j_type = stringify_type(*j->type);
+                if(i->name->value == j->name->value && i_type != j_type) {
+                    Source_Info const& src = j->name->source_info;
+                    return {anton::expected_error,
+                            build_error_message(src.file_path, src.line, src.column, u8"duplicate sourced parameter name with a different type")};
+                }
+            }
+
+            // Remove type duplicates
+            auto end = anton::unique(data.begin(), data.end(), [](Sourced_Data const& lhs, Sourced_Data const& rhs) {
+                anton::String_View const i_type = stringify_type(*lhs.type);
+                anton::String_View const j_type = stringify_type(*rhs.type);
+                return i_type == j_type;
+            });
+
+            data.erase(end, data.end());
+        }
+
         Codegen_Context codegen_ctx;
         codegen_ctx.indent = 0;
 
@@ -1040,6 +1141,7 @@ namespace vush {
 
         common += u8"\n";
 
+        // Instantiate source templates
         {
             i64 binding = 0;
             anton::Flat_Hash_Map<anton::String, void const*> symbols;
@@ -1048,33 +1150,8 @@ namespace vush {
             for(Source_Definition_Decl* source_template: source_templates) {
                 auto iter = sourced_data.find(source_template->name->value);
                 if(iter != sourced_data.end()) {
-                    // TODO: Use stable sort to preserve the order and report duplicates in the correct order.
-                    anton::quick_sort(iter->value.begin(), iter->value.end(), [](Sourced_Data const& lhs, Sourced_Data const& rhs) {
-                        anton::String const& lhs_str = lhs.name->value;
-                        anton::String const& rhs_str = rhs.name->value;
-                        return anton::compare(lhs_str, rhs_str) == -1;
-                    });
-
-                    // Ensure there are no name duplicates with different types
-                    for(auto i = iter->value.begin(), j = iter->value.begin() + 1, end = iter->value.end(); j != end; ++i, ++j) {
-                        anton::String_View const i_type = stringify_type(*i->type);
-                        anton::String_View const j_type = stringify_type(*j->type);
-                        if(i->name->value == j->name->value && i_type != j_type) {
-                            Source_Info const& src = j->name->source_info;
-                            return {anton::expected_error,
-                                    build_error_message(src.file_path, src.line, src.column, u8"duplicate sourced parameter name with a different type")};
-                        }
-                    }
-
-                    // Remove type duplicates
-                    auto end = anton::unique(iter->value.begin(), iter->value.end(), [](Sourced_Data const& lhs, Sourced_Data const& rhs) {
-                        anton::String_View const i_type = stringify_type(*lhs.type);
-                        anton::String_View const j_type = stringify_type(*rhs.type);
-                        return i_type == j_type;
-                    });
-
                     anton::Expected<void, anton::String> result =
-                        instantiate_source_template(common, *source_template, {iter->value.begin(), end}, ctx, format, codegen_ctx, symbols);
+                        instantiate_source_template(common, *source_template, {iter->value.begin(), iter->value.end()}, ctx, format, codegen_ctx, symbols);
                     if(!result) {
                         return {anton::expected_error, anton::move(result.error())};
                     }
@@ -1102,7 +1179,6 @@ namespace vush {
                         if(param->node_type == AST_Node_Type::vertex_input_param) {
                             Owning_Ptr<Vertex_Input_Param>& node = (Owning_Ptr<Vertex_Input_Param>&)param;
                             write_vertex_inputs(ctx, codegen_ctx, out, *node->type, node->identifier->value, in_location, input_names);
-                        } else {
                         }
                     }
                     out += u8"\n";
@@ -1131,23 +1207,45 @@ namespace vush {
                     out += u8"void main() {\n";
                     codegen_ctx.indent += 1;
 
-                    // Output sourced parameters
-                    anton::String const* input_names_iter = input_names.begin();
-                    i64 param_index = 0;
+                    // Generate sourced parameters
                     anton::Array<anton::String> arguments;
-                    for(auto& param: stage.param_list->params) {
-                        if(param->node_type == AST_Node_Type::vertex_input_param) {
-                            Owning_Ptr<Vertex_Input_Param>& node = (Owning_Ptr<Vertex_Input_Param>&)param;
-                            write_indent(out, codegen_ctx.indent);
-                            stringify(out, *node->type, format, codegen_ctx);
-                            out += u8" ";
-                            anton::String argument_name = "_arg" + anton::to_string(param_index);
-                            out += argument_name;
-                            out += u8";\n";
-                            write_vertex_input_assignments(ctx, codegen_ctx, out, *node->type, argument_name, input_names_iter);
-                            arguments.emplace_back(anton::move(argument_name));
-                            param_index += 1;
-                        } else {
+                    {
+                        anton::String const* input_names_iter = input_names.begin();
+                        i64 param_index = 0;
+                        for(auto& param: stage.param_list->params) {
+                            switch(param->node_type) {
+                                case AST_Node_Type::vertex_input_param: {
+                                    Vertex_Input_Param* const node = (Vertex_Input_Param*)param.get();
+                                    write_indent(out, codegen_ctx.indent);
+                                    stringify(out, *node->type, format, codegen_ctx);
+                                    out += u8" ";
+                                    anton::String argument_name = "_arg" + anton::to_string(param_index);
+                                    out += argument_name;
+                                    out += u8";\n";
+                                    write_vertex_input_assignments(ctx, codegen_ctx, out, *node->type, argument_name, input_names_iter);
+                                    arguments.emplace_back(anton::move(argument_name));
+                                    param_index += 1;
+                                } break;
+
+                                case AST_Node_Type::sourced_function_param: {
+                                    Sourced_Function_Param* const node = (Sourced_Function_Param*)param.get();
+                                    auto iter = anton::find_if(source_templates.cbegin(), source_templates.cend(),
+                                                               [node](Source_Definition_Decl const* const v) { return v->name->value == node->source->value; });
+                                    ANTON_ASSERT(iter != source_templates.cend(), u8"sourced parameter doesn't have an existing source");
+                                    Sourced_Data data{node->type.get(), node->identifier.get(), node->source.get()};
+                                    String_Literal const& string = *(*iter)->bind_prop->string;
+                                    anton::Expected<anton::String, anton::String> res = format_bind_string(string, data);
+                                    if(res) {
+                                        arguments.emplace_back(anton::move(res.value()));
+                                    } else {
+                                        return {anton::expected_error, anton::move(res.error())};
+                                    }
+                                } break;
+
+                                default:
+                                    // ANTON_UNREACHABLE();
+                                    break;
+                            }
                         }
                     }
 
@@ -1171,6 +1269,7 @@ namespace vush {
 
                 case Pass_Stage_Type::fragment: {
                     // TODO: validate there are no vertex input parameters
+
                     // Stringify the stage function
                     stringify(out, *stage.return_type, format, codegen_ctx);
                     out += u8" ";
@@ -1203,7 +1302,8 @@ namespace vush {
                     out += shader_return_name;
                     out += u8" = ";
                     out += pass_function_name;
-                    out += u8"();\n";
+                    out += u8"(";
+                    out += u8");\n";
 
                     anton::String const* output_names_iter = output_names.begin();
                     write_fragment_output_assignments(ctx, codegen_ctx, out, *stage.return_type, shader_return_name, output_names_iter);
