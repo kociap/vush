@@ -168,20 +168,20 @@ namespace vush {
                     Sourced_Function_Param& node = (Sourced_Function_Param&)*params[i];
                     Type& type = *node.type;
 
+                    // Sourced parameters that are arrays must be sized
+                    if(type.node_type == AST_Node_Type::array_type && !static_cast<Array_Type&>(type).size) {
+                        Source_Info const& src = type.source_info;
+                        return {anton::expected_error,
+                                build_error_message(src.file_path, src.line, src.column, u8"sourced parameters must not be unsized arrays")};
+                    }
+
                     // Sourced parameters must not be opaque
                     if(is_opaque_type(type)) {
                         Source_Info const& src = type.source_info;
                         return {
                             anton::expected_error,
                             build_error_message(src.file_path, src.line, src.column,
-                                                u8"sourced parameters must be of non-opaque builtin type, user-defined type and an array of non-opaque type")};
-                    }
-
-                    // Sourced parameters that are arrays must be sized
-                    if(type.node_type == AST_Node_Type::array_type && !static_cast<Array_Type&>(type).size) {
-                        Source_Info const& src = type.source_info;
-                        return {anton::expected_error,
-                                build_error_message(src.file_path, src.line, src.column, u8"sourced parameters must not be unsized arrays")};
+                                                u8"sourced parameters must be of non-opaque type (non-opaque builtin type or user defined type) or an array of non-opaque type")};
                     }
                 } break;
 
@@ -195,7 +195,7 @@ namespace vush {
         return {anton::expected_value};
     }
 
-    static anton::Expected<bool, anton::String> process_ast(Context& ctx, Owning_Ptr<AST_Node>& ast_node) {
+    static anton::Expected<void, anton::String> process_ast(Context& ctx, Owning_Ptr<AST_Node>& ast_node) {
         switch(ast_node->node_type) {
             case AST_Node_Type::variable_declaration: {
                 Owning_Ptr<Variable_Declaration>& node = (Owning_Ptr<Variable_Declaration>&)ast_node;
@@ -274,15 +274,27 @@ namespace vush {
             switch(node->node_type) {
                 case AST_Node_Type::function_declaration: {
                     Function_Declaration& fn = (Function_Declaration&)*node;
-                    process_fn_param_list(ctx, *fn.param_list);
-                    process_ast(ctx, (Owning_Ptr<AST_Node>&)fn.body);
+                    if(anton::Expected<void, anton::String> res = process_fn_param_list(ctx, *fn.param_list); !res) {
+                        return anton::move(res);
+                    }
+
+                    if(anton::Expected<void, anton::String> res = process_ast(ctx, (Owning_Ptr<AST_Node>&)fn.body); !res) {
+                        return anton::move(res);
+                    }
+
                     break;
                 }
 
                 case AST_Node_Type::pass_stage_declaration: {
                     Pass_Stage_Declaration& fn = (Pass_Stage_Declaration&)*node;
-                    process_fn_param_list(ctx, *fn.param_list);
-                    process_ast(ctx, (Owning_Ptr<AST_Node>&)fn.body);
+                    if(anton::Expected<void, anton::String> res = process_fn_param_list(ctx, *fn.param_list); !res) {
+                        return anton::move(res);
+                    }
+
+                    if(anton::Expected<void, anton::String> res = process_ast(ctx, (Owning_Ptr<AST_Node>&)fn.body); !res) {
+                        return anton::move(res);
+                    }
+
                     break;
                 }
 

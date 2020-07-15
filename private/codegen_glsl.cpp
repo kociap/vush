@@ -1135,12 +1135,6 @@ namespace vush {
 
         common += u8"\n";
 
-        for(Declaration* decl: functions) {
-            stringify(common, (Function_Declaration&)*decl, format, codegen_ctx);
-        }
-
-        common += u8"\n";
-
         // Instantiate source templates
         {
             i64 binding = 0;
@@ -1158,6 +1152,12 @@ namespace vush {
                     common += U'\n';
                 }
             }
+        }
+
+        common += u8"\n";
+
+        for(Declaration* decl: functions) {
+            stringify(common, (Function_Declaration&)*decl, format, codegen_ctx);
         }
 
         common += u8"\n";
