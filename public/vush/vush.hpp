@@ -2,23 +2,23 @@
 
 #include <anton/array.hpp>
 #include <anton/expected.hpp>
+#include <anton/slice.hpp>
 #include <anton/string.hpp>
+#include <anton/string_view.hpp>
 #include <vush/types.hpp>
 
 namespace vush {
     struct Constant_Define {
-        char const* name;
+        anton::String_View name;
         i64 value;
     };
 
     struct Format_Options {};
 
     struct Configuration {
-        char const* source_path;
-        char const* const* import_directories;
-        i64 import_directories_count;
-        Constant_Define const* defines;
-        i64 defines_count;
+        anton::String_View source_path;
+        anton::Slice<anton::String_View const> import_directories;
+        anton::Slice<Constant_Define const> defines;
         Format_Options format;
     };
 

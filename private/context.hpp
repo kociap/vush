@@ -2,15 +2,14 @@
 
 #include <anton/array.hpp>
 #include <anton/flat_hash_map.hpp>
+#include <anton/slice.hpp>
 #include <anton/string.hpp>
 #include <anton/string_view.hpp>
 #include <symbol.hpp>
 
 namespace vush {
     struct Context {
-        char const* const* import_paths;
-        char const* const* import_paths_end;
-        anton::String const* current_file;
+        anton::Slice<anton::String_View const> import_directories;
         anton::Array<anton::Flat_Hash_Map<anton::String, Symbol>> symbols;
     };
 

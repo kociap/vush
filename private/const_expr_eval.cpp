@@ -15,12 +15,14 @@ namespace vush {
                 Symbol* symbol = find_symbol(ctx, expr.identifier->value);
                 if(!symbol) {
                     anton::String msg = u8"unknown identifier '" + expr.identifier->value + u8"'";
-                    return {anton::expected_error, build_error_message(*ctx.current_file, expr.source_info.line, expr.source_info.column, msg)};
+                    Source_Info const& src = expr.source_info;
+                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, msg)};
                 }
 
                 if(symbol->type != Symbol_Type::constant) {
+                    Source_Info const& src = expr.source_info;
                     anton::String msg = u8"identifier '" + expr.identifier->value + u8"' does not name a constant";
-                    return {anton::expected_error, build_error_message(*ctx.current_file, expr.source_info.line, expr.source_info.column, msg)};
+                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, msg)};
                 }
 
                 Constant_Declaration* decl = (Constant_Declaration*)symbol->declaration;
@@ -31,22 +33,24 @@ namespace vush {
                 Logic_Or_Expr& expr = (Logic_Or_Expr&)expression;
                 anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
-                    return anton::move(lhs_res);
+                    return lhs_res;
                 }
 
                 if(!is_implicitly_convertible_to_boolean(lhs_res.value().type)) {
-                    return {anton::expected_error, build_error_message(*ctx.current_file, expr.lhs->source_info.line, expr.lhs->source_info.column,
-                                                                       u8"expression is not implicitly convertible to bool")};
+                    Source_Info const& src = expr.lhs->source_info;
+                    return {anton::expected_error,
+                            build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
                 }
 
                 anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
-                    return anton::move(rhs_res);
+                    return rhs_res;
                 }
 
                 if(!is_implicitly_convertible_to_boolean(rhs_res.value().type)) {
-                    return {anton::expected_error, build_error_message(*ctx.current_file, expr.rhs->source_info.line, expr.rhs->source_info.column,
-                                                                       u8"expression is not implicitly convertible to bool")};
+                    Source_Info const& src = expr.rhs->source_info;
+                    return {anton::expected_error,
+                            build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
                 }
 
                 bool lhs_val = lhs_res.value().as_boolean();
@@ -65,8 +69,9 @@ namespace vush {
                 }
 
                 if(!is_implicitly_convertible_to_boolean(lhs_res.value().type)) {
-                    return {anton::expected_error, build_error_message(*ctx.current_file, expr.lhs->source_info.line, expr.lhs->source_info.column,
-                                                                       u8"expression is not implicitly convertible to bool")};
+                    Source_Info const& src = expr.lhs->source_info;
+                    return {anton::expected_error,
+                            build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
                 }
 
                 anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
@@ -75,8 +80,9 @@ namespace vush {
                 }
 
                 if(!is_implicitly_convertible_to_boolean(rhs_res.value().type)) {
-                    return {anton::expected_error, build_error_message(*ctx.current_file, expr.rhs->source_info.line, expr.rhs->source_info.column,
-                                                                       u8"expression is not implicitly convertible to bool")};
+                    Source_Info const& src = expr.rhs->source_info;
+                    return {anton::expected_error,
+                            build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
                 }
 
                 bool lhs_val = lhs_res.value().as_boolean();
@@ -95,8 +101,9 @@ namespace vush {
                 }
 
                 if(!is_implicitly_convertible_to_boolean(lhs_res.value().type)) {
-                    return {anton::expected_error, build_error_message(*ctx.current_file, expr.lhs->source_info.line, expr.lhs->source_info.column,
-                                                                       u8"expression is not implicitly convertible to bool")};
+                    Source_Info const& src = expr.lhs->source_info;
+                    return {anton::expected_error,
+                            build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
                 }
 
                 anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
@@ -105,8 +112,9 @@ namespace vush {
                 }
 
                 if(!is_implicitly_convertible_to_boolean(rhs_res.value().type)) {
-                    return {anton::expected_error, build_error_message(*ctx.current_file, expr.rhs->source_info.line, expr.rhs->source_info.column,
-                                                                       u8"expression is not implicitly convertible to bool")};
+                    Source_Info const& src = expr.rhs->source_info;
+                    return {anton::expected_error,
+                            build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
                 }
 
                 bool lhs_val = lhs_res.value().as_boolean();
@@ -136,7 +144,8 @@ namespace vush {
                 if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
                    lhs.type != Expr_Value_Type::int32) {
                     anton::String stringified_relational = expr.is_equality ? u8"==" : u8"!=";
-                    return {anton::expected_error, build_error_message(*ctx.current_file, expr.lhs->source_info.line, expr.lhs->source_info.column,
+                    Source_Info const& src = expr.lhs->source_info;
+                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column,
                                                                        u8"left-hand side of '" + stringified_relational +
                                                                            "' is not of a scalar integer or a scalar floating-point type")};
                 }
@@ -144,7 +153,8 @@ namespace vush {
                 if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
                    rhs.type != Expr_Value_Type::int32) {
                     anton::String stringified_relational = expr.is_equality ? u8"==" : u8"!=";
-                    return {anton::expected_error, build_error_message(*ctx.current_file, expr.rhs->source_info.line, expr.rhs->source_info.column,
+                    Source_Info const& src = expr.rhs->source_info;
+                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column,
                                                                        u8"right-hand side of '" + stringified_relational +
                                                                            "' is not of a scalar integer or a scalar floating-point type")};
                 }
@@ -218,7 +228,8 @@ namespace vush {
                             break;
                     }
 
-                    return {anton::expected_error, build_error_message(*ctx.current_file, expr.lhs->source_info.line, expr.lhs->source_info.column,
+                    Source_Info const& src = expr.lhs->source_info;
+                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column,
                                                                        u8"left-hand side of '" + stringified_relational +
                                                                            "' is not of a scalar integer or a scalar floating-point type")};
                 }
@@ -241,7 +252,8 @@ namespace vush {
                             break;
                     }
 
-                    return {anton::expected_error, build_error_message(*ctx.current_file, expr.rhs->source_info.line, expr.rhs->source_info.column,
+                    Source_Info const& src = expr.rhs->source_info;
+                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column,
                                                                        u8"right-hand side of '" + stringified_relational +
                                                                            "' is not of a scalar integer or a scalar floating-point type")};
                 }
@@ -332,13 +344,15 @@ namespace vush {
                 Expr_Value lhs = lhs_res.value();
                 Expr_Value rhs = rhs_res.value();
                 if(lhs.type != Expr_Value_Type::uint32 && lhs.type != Expr_Value_Type::int32) {
-                    return {anton::expected_error, build_error_message(*ctx.current_file, expr.lhs->source_info.line, expr.lhs->source_info.column,
-                                                                       u8"left-hand side of '<<' is not of a scalar integer type")};
+                    Source_Info const& src = expr.lhs->source_info;
+                    return {anton::expected_error,
+                            build_error_message(src.file_path, src.line, src.column, u8"left-hand side of '<<' is not of a scalar integer type")};
                 }
 
                 if(rhs.type != Expr_Value_Type::uint32 && rhs.type != Expr_Value_Type::int32) {
-                    return {anton::expected_error, build_error_message(*ctx.current_file, expr.rhs->source_info.line, expr.rhs->source_info.column,
-                                                                       u8"right-hand side of '<<' is not of a scalar integer type")};
+                    Source_Info const& src = expr.rhs->source_info;
+                    return {anton::expected_error,
+                            build_error_message(src.file_path, src.line, src.column, u8"right-hand side of '<<' is not of a scalar integer type")};
                 }
 
                 Expr_Value e;
@@ -347,8 +361,8 @@ namespace vush {
                 if(rhs.type == Expr_Value_Type::int32) {
                     i32 shift = rhs.int32;
                     if(shift < 0) {
-                        return {anton::expected_error, build_error_message(*ctx.current_file, expr.rhs->source_info.line, expr.rhs->source_info.column,
-                                                                           u8"right-hand side of '<<' is negative")};
+                        Source_Info const& src = expr.rhs->source_info;
+                        return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"right-hand side of '<<' is negative")};
                     }
 
                     e.uint32 <<= shift;
@@ -374,13 +388,15 @@ namespace vush {
                 Expr_Value lhs = lhs_res.value();
                 Expr_Value rhs = rhs_res.value();
                 if(lhs.type != Expr_Value_Type::uint32 && lhs.type != Expr_Value_Type::int32) {
-                    return {anton::expected_error, build_error_message(*ctx.current_file, expr.lhs->source_info.line, expr.lhs->source_info.column,
-                                                                       u8"left-hand side of '>>' is not of a scalar integer type")};
+                    Source_Info const& src = expr.lhs->source_info;
+                    return {anton::expected_error,
+                            build_error_message(src.file_path, src.line, src.column, u8"left-hand side of '>>' is not of a scalar integer type")};
                 }
 
                 if(rhs.type != Expr_Value_Type::uint32 && rhs.type != Expr_Value_Type::int32) {
-                    return {anton::expected_error, build_error_message(*ctx.current_file, expr.rhs->source_info.line, expr.rhs->source_info.column,
-                                                                       u8"right-hand side of '>>' is not of a scalar integer type")};
+                    Source_Info const& src = expr.rhs->source_info;
+                    return {anton::expected_error,
+                            build_error_message(src.file_path, src.line, src.column, u8"right-hand side of '>>' is not of a scalar integer type")};
                 }
 
                 Expr_Value e;
@@ -390,8 +406,8 @@ namespace vush {
                     if(rhs.type == Expr_Value_Type::int32) {
                         i32 shift = rhs.int32;
                         if(shift < 0) {
-                            return {anton::expected_error, build_error_message(*ctx.current_file, expr.rhs->source_info.line, expr.rhs->source_info.column,
-                                                                               u8"right-hand side of '>>' is negative")};
+                            Source_Info const& src = expr.rhs->source_info;
+                            return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"right-hand side of '>>' is negative")};
                         }
 
                         e.int32 >>= shift;
@@ -403,8 +419,8 @@ namespace vush {
                     if(rhs.type == Expr_Value_Type::int32) {
                         i32 shift = rhs.int32;
                         if(shift < 0) {
-                            return {anton::expected_error, build_error_message(*ctx.current_file, expr.rhs->source_info.line, expr.rhs->source_info.column,
-                                                                               u8"right-hand side of '>>' is negative")};
+                            Source_Info const& src = expr.rhs->source_info;
+                            return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"right-hand side of '>>' is negative")};
                         }
 
                         e.int32 >>= shift;
@@ -434,13 +450,15 @@ namespace vush {
                 Expr_Value rhs = rhs_res.value();
                 if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
                    lhs.type != Expr_Value_Type::int32) {
-                    return {anton::expected_error, build_error_message(*ctx.current_file, expr.lhs->source_info.line, expr.lhs->source_info.column,
+                    Source_Info const& src = expr.lhs->source_info;
+                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column,
                                                                        u8"left-hand side of '+' is not of a scalar integer or a scalar floating-point type")};
                 }
 
                 if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
                    rhs.type != Expr_Value_Type::int32) {
-                    return {anton::expected_error, build_error_message(*ctx.current_file, expr.rhs->source_info.line, expr.rhs->source_info.column,
+                    Source_Info const& src = expr.rhs->source_info;
+                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column,
                                                                        u8"right-hand side of '+' is not of a scalar integer or a scalar floating-point type")};
                 }
 
@@ -482,13 +500,15 @@ namespace vush {
                 Expr_Value rhs = rhs_res.value();
                 if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
                    lhs.type != Expr_Value_Type::int32) {
-                    return {anton::expected_error, build_error_message(*ctx.current_file, expr.lhs->source_info.line, expr.lhs->source_info.column,
+                    Source_Info const& src = expr.lhs->source_info;
+                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column,
                                                                        u8"left-hand side of '-' is not of a scalar integer or a scalar floating-point type")};
                 }
 
                 if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
                    rhs.type != Expr_Value_Type::int32) {
-                    return {anton::expected_error, build_error_message(*ctx.current_file, expr.rhs->source_info.line, expr.rhs->source_info.column,
+                    Source_Info const& src = expr.rhs->source_info;
+                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column,
                                                                        u8"right-hand side of '-' is not of a scalar integer or a scalar floating-point type")};
                 }
 
@@ -530,13 +550,15 @@ namespace vush {
                 Expr_Value rhs = rhs_res.value();
                 if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
                    lhs.type != Expr_Value_Type::int32) {
-                    return {anton::expected_error, build_error_message(*ctx.current_file, expr.lhs->source_info.line, expr.lhs->source_info.column,
+                    Source_Info const& src = expr.lhs->source_info;
+                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column,
                                                                        u8"left-hand side of '*' is not of a scalar integer or a scalar floating-point type")};
                 }
 
                 if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
                    rhs.type != Expr_Value_Type::int32) {
-                    return {anton::expected_error, build_error_message(*ctx.current_file, expr.rhs->source_info.line, expr.rhs->source_info.column,
+                    Source_Info const& src = expr.rhs->source_info;
+                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column,
                                                                        u8"right-hand side of '*' is not of a scalar integer or a scalar floating-point type")};
                 }
 
@@ -578,13 +600,15 @@ namespace vush {
                 Expr_Value rhs = rhs_res.value();
                 if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
                    lhs.type != Expr_Value_Type::int32) {
-                    return {anton::expected_error, build_error_message(*ctx.current_file, expr.lhs->source_info.line, expr.lhs->source_info.column,
+                    Source_Info const& src = expr.lhs->source_info;
+                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column,
                                                                        u8"left-hand side of '/' is not of a scalar integer or a scalar floating-point type")};
                 }
 
                 if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
                    rhs.type != Expr_Value_Type::int32) {
-                    return {anton::expected_error, build_error_message(*ctx.current_file, expr.rhs->source_info.line, expr.rhs->source_info.column,
+                    Source_Info const& src = expr.rhs->source_info;
+                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column,
                                                                        u8"right-hand side of '/' is not of a scalar integer or a scalar floating-point type")};
                 }
 
@@ -625,13 +649,15 @@ namespace vush {
                 Expr_Value lhs = lhs_res.value();
                 Expr_Value rhs = rhs_res.value();
                 if(lhs.type != Expr_Value_Type::uint32 && lhs.type != Expr_Value_Type::int32) {
-                    return {anton::expected_error, build_error_message(*ctx.current_file, expr.lhs->source_info.line, expr.lhs->source_info.column,
-                                                                       u8"left-hand side of '%' is not of a scalar integer type")};
+                    Source_Info const& src = expr.lhs->source_info;
+                    return {anton::expected_error,
+                            build_error_message(src.file_path, src.line, src.column, u8"left-hand side of '%' is not of a scalar integer type")};
                 }
 
                 if(rhs.type != Expr_Value_Type::uint32 && rhs.type != Expr_Value_Type::int32) {
-                    return {anton::expected_error, build_error_message(*ctx.current_file, expr.rhs->source_info.line, expr.rhs->source_info.column,
-                                                                       u8"right-hand side of '%' is not of a scalar integer type")};
+                    Source_Info const& src = expr.rhs->source_info;
+                    return {anton::expected_error,
+                            build_error_message(src.file_path, src.line, src.column, u8"right-hand side of '%' is not of a scalar integer type")};
                 }
 
                 Expr_Value e;
@@ -673,8 +699,9 @@ namespace vush {
                         Expr_Value base = base_res.value();
                         if(base.type != Expr_Value_Type::float64 && base.type != Expr_Value_Type::float32 && base.type != Expr_Value_Type::uint32 &&
                            base.type != Expr_Value_Type::int32) {
+                            Source_Info const& src = expr.source_info;
                             return {anton::expected_error,
-                                    build_error_message(*ctx.current_file, expr.source_info.line, expr.source_info.column,
+                                    build_error_message(src.file_path, src.line, src.column,
                                                         u8"right-hand side of '-' is not of a scalar integer or a scalar floating-point type")};
                         }
 
@@ -701,13 +728,14 @@ namespace vush {
                     case Unary_Type::logic_not: {
                         anton::Expected<Expr_Value, anton::String> base_res = evaluate_const_expr(ctx, *expr.expression);
                         if(!base_res) {
-                            return anton::move(base_res);
+                            return base_res;
                         }
 
                         Expr_Value base = base_res.value();
                         if(base.type != Expr_Value_Type::boolean && !is_implicitly_convertible_to_boolean(base.type)) {
-                            return {anton::expected_error, build_error_message(*ctx.current_file, expr.source_info.line, expr.source_info.column,
-                                                                               u8"right-hand side of '!' is not a boolean")};
+                            Source_Info const& src = expr.source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column, u8"right-hand side of '!' is not a boolean")};
                         }
 
                         Expr_Value e;
@@ -726,8 +754,9 @@ namespace vush {
 
                         Expr_Value base = base_res.value();
                         if(base.type != Expr_Value_Type::uint32 && base.type != Expr_Value_Type::int32) {
-                            return {anton::expected_error, build_error_message(*ctx.current_file, expr.source_info.line, expr.source_info.column,
-                                                                               u8"right-hand side of '~' is not a scalar integer")};
+                            Source_Info const& src = expr.source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column, u8"right-hand side of '~' is not a scalar integer")};
                         }
 
                         Expr_Value e;
@@ -767,8 +796,8 @@ namespace vush {
                 // case AST_Node_Type::float_literal: {}
 
             default: {
-                return {anton::expected_error,
-                        build_error_message(*ctx.current_file, expression.source_info.line, expression.source_info.column, u8"non-constant expression")};
+                Source_Info const& src = expression.source_info;
+                return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"non-constant expression")};
             }
         }
     }

@@ -15,8 +15,8 @@ namespace vush {
     static anton::Expected<anton::String, anton::String> resolve_import_path(Context& ctx, anton::String const& import_path, Source_Info const& src) {
         bool found = false;
         anton::String out_path;
-        for(char const* const* path = ctx.import_paths; path != ctx.import_paths_end; ++path) {
-            anton::String resolved_path = anton::fs::concat_paths(*path, import_path);
+        for(anton::String_View const& path: ctx.import_directories) {
+            anton::String resolved_path = anton::fs::concat_paths(path, import_path);
             bool exists = anton::fs::exists(resolved_path);
             if(exists) {
                 if(!found) {
@@ -45,9 +45,6 @@ namespace vush {
             anton::String error_msg = build_error_message(path, error.line, error.column, error.message);
             return {anton::expected_error, anton::move(error_msg)};
         }
-
-        anton::String const* prev_file = ctx.current_file;
-        ctx.current_file = &path;
 
         Owning_Ptr<Declaration_List>& ast = parse_result.value();
         for(i64 i = 0; i < ast->declarations.size();) {
@@ -124,7 +121,6 @@ namespace vush {
             }
         }
 
-        ctx.current_file = prev_file;
         return {anton::expected_value, anton::move(ast)};
     }
 
@@ -178,10 +174,9 @@ namespace vush {
                     // Sourced parameters must not be opaque
                     if(is_opaque_type(type)) {
                         Source_Info const& src = type.source_info;
-                        return {
-                            anton::expected_error,
-                            build_error_message(src.file_path, src.line, src.column,
-                                                u8"sourced parameters must be of non-opaque type (non-opaque builtin type or user defined type) or an array of non-opaque type")};
+                        return {anton::expected_error, build_error_message(src.file_path, src.line, src.column,
+                                                                           u8"sourced parameters must be of non-opaque type (non-opaque builtin type or user "
+                                                                           u8"defined type) or an array of non-opaque type")};
                     }
                 } break;
 
@@ -308,25 +303,24 @@ namespace vush {
 
     anton::Expected<anton::Array<GLSL_File>, anton::String> compile_to_glsl(Configuration const& config) {
         Context ctx = {};
-        ctx.import_paths = config.import_directories;
-        ctx.import_paths_end = config.import_directories + config.import_directories_count;
+        ctx.import_directories = config.import_directories;
         // Add global scope
         ctx.symbols.emplace_back();
+        // Create symbols for the constant defines passed via config
         anton::Array<Owning_Ptr<Declaration>> constant_decls;
-        {
-            Constant_Define const* const defines_end = config.defines + config.defines_count;
-            for(Constant_Define const* define = config.defines; define != defines_end; ++define) {
-                Symbol symbol;
-                symbol.type = Symbol_Type::constant;
-                Constant_Declaration* decl = new Constant_Declaration(
-                    new Builtin_Type(Builtin_GLSL_Type::glsl_int, {config.source_path, 0, 0, 0}), new Identifier(define->name, {config.source_path, 0, 0, 0}),
-                    new Integer_Literal(anton::to_string(define->value), {config.source_path, 0, 0, 0}), {config.source_path, 0, 0, 0});
-                constant_decls.emplace_back(decl);
-                symbol.declaration = decl;
-                ctx.symbols[0].emplace(define->name, symbol);
-            }
+        for(Constant_Define const& define: config.defines) {
+            Symbol symbol;
+            symbol.type = Symbol_Type::constant;
+            Constant_Declaration* decl =
+                new Constant_Declaration(new Builtin_Type(Builtin_GLSL_Type::glsl_int, {config.source_path, 0, 0, 0}),
+                                         new Identifier(anton::String(define.name), {config.source_path, 0, 0, 0}),
+                                         new Integer_Literal(anton::to_string(define.value), {config.source_path, 0, 0, 0}), {config.source_path, 0, 0, 0});
+            constant_decls.emplace_back(decl);
+            symbol.declaration = decl;
+            ctx.symbols[0].emplace(define.name, symbol);
         }
-        anton::String path = config.source_path;
+
+        anton::String path{config.source_path};
         anton::Expected<Owning_Ptr<Declaration_List>, anton::String> parse_res = process_file_decl_ifs_and_resolve_imports(ctx, path);
         if(!parse_res) {
             return {anton::expected_error, anton::move(parse_res.error())};
@@ -339,6 +333,6 @@ namespace vush {
         }
 
         anton::Expected<anton::Array<GLSL_File>, anton::String> codegen_res = generate_glsl(ctx, *ast, config.format);
-        return anton::move(codegen_res);
+        return codegen_res;
     }
 } // namespace vush

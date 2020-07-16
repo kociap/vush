@@ -429,7 +429,7 @@ namespace vush {
                     return nullptr;
                 }
             }
-            return declarations.release();
+            return declarations;
         }
 
         [[nodiscard]] Parse_Error get_last_error() const {
