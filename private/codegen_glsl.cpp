@@ -1309,7 +1309,7 @@ namespace vush {
 
                         for(i64 i = is_prev_stage_input; i < stage.param_list->params.size(); ++i) {
                             // TODO: Validate that all params except possibly the first one are sourced params
-                            ANTON_ASSERT(stage.param_list->params[i]->node_type == AST_Node_Type::sourced_function_param, u8"");
+                            ANTON_ASSERT(stage.param_list->params[i]->node_type == AST_Node_Type::sourced_function_param, u8"invalid ast node type");
                             Sourced_Function_Param const& param = (Sourced_Function_Param const&)*stage.param_list->params[i];
                             auto iter = anton::find_if(source_templates.cbegin(), source_templates.cend(),
                                                        [&param](Source_Definition_Decl const* const v) { return v->name->value == param.source->value; });
