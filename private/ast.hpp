@@ -745,6 +745,7 @@ namespace vush {
         using AST_Node::AST_Node;
     };
 
+    // TODO: Remove
     struct Function_Param_List: public AST_Node {
         anton::Array<Owning_Ptr<Function_Param>> params;
 

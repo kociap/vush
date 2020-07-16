@@ -1243,6 +1243,7 @@ namespace vush {
                                 } break;
 
                                 default:
+                                    // TODO: Validate that there are no parameters other than vertex input and sourced
                                     // ANTON_UNREACHABLE();
                                     break;
                             }
@@ -1289,6 +1290,41 @@ namespace vush {
                     write_fragment_outputs(ctx, codegen_ctx, out, *stage.return_type, u8"frag", out_location, output_names);
                     out += u8"\n";
 
+                    // Generate parameters
+                    anton::Array<anton::String> arguments;
+                    {
+                        bool const is_prev_stage_input =
+                            stage.param_list->params.size() > 0 && stage.param_list->params[0]->node_type == AST_Node_Type::ordinary_function_param;
+                        // Write input from the previous stage if the first parameter is an ordinary parameter
+                        if(is_prev_stage_input) {
+                            Ordinary_Function_Param const& param = (Ordinary_Function_Param const&)*stage.param_list->params[0];
+                            out += u8"in ";
+                            out += stringify_type(*param.type);
+                            anton::String name = u8"_pass_" + stage.pass->value + u8"_" + param.identifier->value + u8"_in";
+                            out += u8" ";
+                            out += name;
+                            out += u8"\n\n";
+                            arguments.emplace_back(name);
+                        }
+
+                        for(i64 i = is_prev_stage_input; i < stage.param_list->params.size(); ++i) {
+                            // TODO: Validate that all params except possibly the first one are sourced params
+                            ANTON_ASSERT(stage.param_list->params[i]->node_type == AST_Node_Type::sourced_function_param, u8"");
+                            Sourced_Function_Param const& param = (Sourced_Function_Param const&)*stage.param_list->params[i];
+                            auto iter = anton::find_if(source_templates.cbegin(), source_templates.cend(),
+                                                       [&param](Source_Definition_Decl const* const v) { return v->name->value == param.source->value; });
+                            ANTON_ASSERT(iter != source_templates.cend(), u8"sourced parameter doesn't have an existing source");
+                            Sourced_Data data{param.type.get(), param.identifier.get(), param.source.get()};
+                            String_Literal const& string = *(*iter)->bind_prop->string;
+                            anton::Expected<anton::String, anton::String> res = format_bind_string(string, data);
+                            if(res) {
+                                arguments.emplace_back(anton::move(res.value()));
+                            } else {
+                                return {anton::expected_error, anton::move(res.error())};
+                            }
+                        }
+                    }
+
                     // Output main
                     out += u8"void main() {\n";
                     codegen_ctx.indent += 1;
@@ -1303,6 +1339,13 @@ namespace vush {
                     out += u8" = ";
                     out += pass_function_name;
                     out += u8"(";
+                    if(arguments.size() > 0) {
+                        out += arguments[0];
+                        for(i64 i = 1; i < arguments.size(); ++i) {
+                            out += u8", ";
+                            out += arguments[i];
+                        }
+                    }
                     out += u8");\n";
 
                     anton::String const* output_names_iter = output_names.begin();
