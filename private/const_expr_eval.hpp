@@ -28,19 +28,23 @@ namespace vush {
         T as() const {
             switch(type) {
                 case Expr_Value_Type::boolean:
-                    return boolean;
+                    return (T)boolean;
 
                 case Expr_Value_Type::uint32:
-                    return uint32;
+                    return (T)uint32;
 
                 case Expr_Value_Type::int32:
-                    return int32;
+                    return (T)int32;
 
                 case Expr_Value_Type::float32:
-                    return float32;
+                    return (T)float32;
 
                 case Expr_Value_Type::float64:
-                    return float64;
+                    return (T)float64;
+
+                default:
+                    ANTON_ASSERT(0, "");
+                    return T{};
             }
         }
 
@@ -56,7 +60,7 @@ namespace vush {
             return as<u32>();
         }
 
-        f64 as_float32() const {
+        f32 as_float32() const {
             return as<f32>();
         }
 
