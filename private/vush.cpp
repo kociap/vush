@@ -247,13 +247,13 @@ namespace vush {
                 }
 
                 if(result.value().as_boolean()) {
-                    ast_node = anton::move((Owning_Ptr<AST_Node>&)node->true_expr);
+                    ast_node = anton::move(node->true_expr);
                 } else {
                     if(node->false_expr->node_type == AST_Node_Type::expression_if) {
                         process_ast(ctx, (Owning_Ptr<AST_Node>&)node->false_expr);
                     }
 
-                    ast_node = anton::move((Owning_Ptr<AST_Node>&)node->false_expr);
+                    ast_node = anton::move(node->false_expr);
                 }
             } break;
 

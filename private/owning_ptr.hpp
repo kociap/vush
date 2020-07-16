@@ -15,8 +15,10 @@ namespace vush {
         Owning_Ptr(Owning_Ptr&& other): _pointer(other.release()) {}
 
         Owning_Ptr& operator=(Owning_Ptr&& other) {
-            delete _pointer;
+            ANTON_ASSERT(this != &other, u8"self-move-assignment of owning_ptr");
+            T* tmp = _pointer;
             _pointer = other.release();
+            delete tmp;
             return *this;
         }
 
@@ -25,8 +27,10 @@ namespace vush {
 
         template<typename U>
         anton::enable_if<anton::is_convertible<U*, T*>, Owning_Ptr&> operator=(Owning_Ptr<U>&& other) {
-            delete _pointer;
+            ANTON_ASSERT((void*)this != (void*)&other, u8"self-move-assignment of owning_ptr");
+            T* tmp = _pointer;
             _pointer = other.release();
+            delete tmp;
             return *this;
         }
 
