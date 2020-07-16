@@ -612,8 +612,8 @@ namespace vush {
 
         Declaration_List(): AST_Node({}, AST_Node_Type::declaration_list) {}
 
-        void append(Declaration* const declaration) {
-            declarations.emplace_back(declaration);
+        void append(Owning_Ptr<Declaration> declaration) {
+            declarations.emplace_back(anton::move(declaration));
         }
 
         [[nodiscard]] i64 size() const {

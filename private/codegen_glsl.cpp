@@ -1098,8 +1098,8 @@ namespace vush {
 
             // Ensure there are no name duplicates with different types
             for(auto i = data.begin(), j = data.begin() + 1, end = data.end(); j != end; ++i, ++j) {
-                anton::String_View const i_type = stringify_type(*i->type);
-                anton::String_View const j_type = stringify_type(*j->type);
+                anton::String const i_type = stringify_type(*i->type);
+                anton::String const j_type = stringify_type(*j->type);
                 if(i->name->value == j->name->value && i_type != j_type) {
                     Source_Info const& src = j->name->source_info;
                     return {anton::expected_error,
@@ -1109,8 +1109,8 @@ namespace vush {
 
             // Remove type duplicates
             auto end = anton::unique(data.begin(), data.end(), [](Sourced_Data const& lhs, Sourced_Data const& rhs) {
-                anton::String_View const i_type = stringify_type(*lhs.type);
-                anton::String_View const j_type = stringify_type(*rhs.type);
+                anton::String const i_type = stringify_type(*lhs.type);
+                anton::String const j_type = stringify_type(*rhs.type);
                 return i_type == j_type;
             });
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <anton/assert.hpp>
+#include <anton/type_traits.hpp>
 
 namespace vush {
     template<typename T>
@@ -11,14 +12,21 @@ namespace vush {
         Owning_Ptr(Owning_Ptr const&) = delete;
         Owning_Ptr& operator=(Owning_Ptr const&) = delete;
 
-        Owning_Ptr(Owning_Ptr&& other): _pointer(other._pointer) {
-            other._pointer = nullptr;
-        }
+        Owning_Ptr(Owning_Ptr&& other): _pointer(other.release()) {}
 
         Owning_Ptr& operator=(Owning_Ptr&& other) {
-            T* tmp = _pointer;
-            _pointer = other._pointer;
-            other._pointer = tmp;
+            delete _pointer;
+            _pointer = other.release();
+            return *this;
+        }
+
+        template<typename U>
+        Owning_Ptr(Owning_Ptr<U>&& other, anton::enable_if<anton::is_convertible<U*, T*>, anton::i32> = 0): _pointer(other.release()) {}
+
+        template<typename U>
+        anton::enable_if<anton::is_convertible<U*, T*>, Owning_Ptr&> operator=(Owning_Ptr<U>&& other) {
+            delete _pointer;
+            _pointer = other.release();
             return *this;
         }
 

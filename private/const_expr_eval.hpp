@@ -56,7 +56,7 @@ namespace vush {
             return as<u32>();
         }
 
-        f64 as_float32() const {
+        f32 as_float32() const {
             return as<f32>();
         }
 
