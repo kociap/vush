@@ -2,13 +2,15 @@
 
 #include <anton/assert.hpp>
 #include <anton/type_traits.hpp>
+#include <vush/types.hpp>
 
 namespace vush {
     template<typename T>
     struct Owning_Ptr {
     public:
         Owning_Ptr(): _pointer(nullptr) {}
-        Owning_Ptr(T* ptr): _pointer(ptr) {}
+        Owning_Ptr(nullptr_t): _pointer(nullptr) {}
+        explicit Owning_Ptr(T* ptr): _pointer(ptr) {}
         Owning_Ptr(Owning_Ptr const&) = delete;
         Owning_Ptr& operator=(Owning_Ptr const&) = delete;
 

@@ -22,4 +22,6 @@ namespace vush {
     using char8 = anton::char8;
     using char16 = anton::char16;
     using char32 = anton::char32;
+
+    using nullptr_t = anton::nullptr_t;
 } // namespace vush

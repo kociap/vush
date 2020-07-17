@@ -50,7 +50,7 @@ namespace vush {
         for(i64 i = 0; i < ast->declarations.size();) {
             switch(ast->declarations[i]->node_type) {
                 case AST_Node_Type::import_decl: {
-                    Owning_Ptr<Import_Decl> node = static_cast<Import_Decl*>(ast->declarations[i].release());
+                    Owning_Ptr<Import_Decl> node{static_cast<Import_Decl*>(ast->declarations[i].release())};
                     anton::Expected<anton::String, anton::String> import_path = resolve_import_path(ctx, node->path, node->source_info);
                     if(!import_path) {
                         return {anton::expected_error, anton::move(import_path.error())};
@@ -69,7 +69,7 @@ namespace vush {
                 } break;
 
                 case AST_Node_Type::declaration_if: {
-                    Owning_Ptr<Declaration_If> node = static_cast<Declaration_If*>(ast->declarations[i].release());
+                    Owning_Ptr<Declaration_If> node{static_cast<Declaration_If*>(ast->declarations[i].release())};
                     anton::Expected<Expr_Value, anton::String> result = evaluate_const_expr(ctx, *node->condition);
                     if(!result) {
                         return {anton::expected_error, anton::move(result.error())};
@@ -91,27 +91,27 @@ namespace vush {
                 } break;
 
                 case AST_Node_Type::function_declaration: {
-                    Function_Declaration* node = static_cast<Function_Declaration*>(ast->declarations[i].get());
-                    ctx.symbols[0].emplace(node->name->value, Symbol{Symbol_Type::function, node});
+                    Function_Declaration& node = static_cast<Function_Declaration&>(*ast->declarations[i]);
+                    ctx.symbols[0].emplace(node.name->value, Symbol{Symbol_Type::function, &node});
                     i += 1;
                 } break;
 
                 case AST_Node_Type::struct_decl: {
-                    Struct_Decl* node = static_cast<Struct_Decl*>(ast->declarations[i].get());
-                    ctx.symbols[0].emplace(node->name->value, Symbol{Symbol_Type::struct_decl, node});
+                    Struct_Decl& node = static_cast<Struct_Decl&>(*ast->declarations[i]);
+                    ctx.symbols[0].emplace(node.name->value, Symbol{Symbol_Type::struct_decl, &node});
                     i += 1;
                 } break;
 
                 case AST_Node_Type::variable_declaration: {
-                    Variable_Declaration& node = (Variable_Declaration&)*ast->declarations[i];
+                    Variable_Declaration& node = static_cast<Variable_Declaration&>(*ast->declarations[i]);
                     Source_Info const& src = node.source_info;
                     anton::String error_msg = build_error_message(src.file_path, src.line, src.column, u8"illegal variable declaration in global scope");
                     return {anton::expected_error, anton::move(error_msg)};
                 } break;
 
                 case AST_Node_Type::constant_declaration: {
-                    Constant_Declaration* node = static_cast<Constant_Declaration*>(ast->declarations[i].get());
-                    ctx.symbols[0].emplace(node->identifier->value, Symbol{Symbol_Type::constant, node});
+                    Constant_Declaration& node = static_cast<Constant_Declaration&>(*ast->declarations[i]);
+                    ctx.symbols[0].emplace(node.identifier->value, Symbol{Symbol_Type::constant, &node});
                     i += 1;
                 } break;
 
@@ -309,10 +309,10 @@ namespace vush {
         for(Constant_Define const& define: config.defines) {
             Symbol symbol;
             symbol.type = Symbol_Type::constant;
-            Constant_Declaration* decl =
-                new Constant_Declaration(new Builtin_Type(Builtin_GLSL_Type::glsl_int, {config.source_path, 0, 0, 0}),
-                                         new Identifier(anton::String(define.name), {config.source_path, 0, 0, 0}),
-                                         new Integer_Literal(anton::to_string(define.value), {config.source_path, 0, 0, 0}), {config.source_path, 0, 0, 0});
+            Constant_Declaration* decl = new Constant_Declaration(
+                Owning_Ptr{new Builtin_Type(Builtin_GLSL_Type::glsl_int, {config.source_path, 0, 0, 0})},
+                Owning_Ptr{new Identifier(anton::String(define.name), {config.source_path, 0, 0, 0})},
+                Owning_Ptr{new Integer_Literal(anton::to_string(define.value), {config.source_path, 0, 0, 0})}, {config.source_path, 0, 0, 0});
             constant_decls.emplace_back(decl);
             symbol.declaration = decl;
             ctx.symbols[0].emplace(define.name, symbol);
