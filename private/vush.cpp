@@ -270,28 +270,26 @@ namespace vush {
                 case AST_Node_Type::function_declaration: {
                     Function_Declaration& fn = (Function_Declaration&)*node;
                     if(anton::Expected<void, anton::String> res = process_fn_param_list(ctx, *fn.param_list); !res) {
-                        return anton::move(res);
+                        return res;
                     }
 
                     if(anton::Expected<void, anton::String> res = process_ast(ctx, (Owning_Ptr<AST_Node>&)fn.body); !res) {
-                        return anton::move(res);
+                        return res;
                     }
 
-                    break;
-                }
+                } break;
 
                 case AST_Node_Type::pass_stage_declaration: {
                     Pass_Stage_Declaration& fn = (Pass_Stage_Declaration&)*node;
                     if(anton::Expected<void, anton::String> res = process_fn_param_list(ctx, *fn.param_list); !res) {
-                        return anton::move(res);
+                        return res;
                     }
 
                     if(anton::Expected<void, anton::String> res = process_ast(ctx, (Owning_Ptr<AST_Node>&)fn.body); !res) {
-                        return anton::move(res);
+                        return res;
                     }
 
-                    break;
-                }
+                } break;
 
                 default:
                     break;

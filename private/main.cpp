@@ -1,11 +1,8 @@
 #include <vush/vush.hpp>
 
-#include <crtdbg.h>
 #include <iostream>
 
 int main() {
-    _CrtSetDbgFlag(_CRTDBG_CHECK_ALWAYS_DF);
-
     anton::String_View const import_directories[] = {"C:/Users/an0num0us/Documents/vush2/build"};
     vush::Constant_Define defines[1] = {{u8"_HAS_TEXTURE", 1}};
     vush::Configuration config;

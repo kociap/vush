@@ -65,7 +65,7 @@ namespace vush {
                 Logic_Or_Expr& expr = (Logic_Or_Expr&)expression;
                 anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
-                    return anton::move(lhs_res);
+                    return lhs_res;
                 }
 
                 if(!is_implicitly_convertible_to_boolean(lhs_res.value().type)) {
@@ -76,7 +76,7 @@ namespace vush {
 
                 anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
-                    return anton::move(rhs_res);
+                    return rhs_res;
                 }
 
                 if(!is_implicitly_convertible_to_boolean(rhs_res.value().type)) {
@@ -97,7 +97,7 @@ namespace vush {
                 Logic_Or_Expr& expr = (Logic_Or_Expr&)expression;
                 anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
-                    return anton::move(lhs_res);
+                    return lhs_res;
                 }
 
                 if(!is_implicitly_convertible_to_boolean(lhs_res.value().type)) {
@@ -108,7 +108,7 @@ namespace vush {
 
                 anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
-                    return anton::move(rhs_res);
+                    return rhs_res;
                 }
 
                 if(!is_implicitly_convertible_to_boolean(rhs_res.value().type)) {
@@ -129,12 +129,12 @@ namespace vush {
                 Relational_Equality_Expression& expr = (Relational_Equality_Expression&)expression;
                 anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
-                    return anton::move(lhs_res);
+                    return lhs_res;
                 }
 
                 anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
-                    return anton::move(rhs_res);
+                    return rhs_res;
                 }
 
                 // TODO: Extend to actual glsl behaviour of == and != operators
@@ -200,12 +200,12 @@ namespace vush {
                 Relational_Expression& expr = (Relational_Expression&)expression;
                 anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
-                    return anton::move(lhs_res);
+                    return lhs_res;
                 }
 
                 anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
-                    return anton::move(rhs_res);
+                    return rhs_res;
                 }
 
                 Expr_Value lhs = lhs_res.value();
@@ -377,12 +377,12 @@ namespace vush {
                 RShift_Expr& expr = (RShift_Expr&)expression;
                 anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
-                    return anton::move(lhs_res);
+                    return lhs_res;
                 }
 
                 anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
-                    return anton::move(rhs_res);
+                    return rhs_res;
                 }
 
                 Expr_Value lhs = lhs_res.value();
@@ -436,12 +436,12 @@ namespace vush {
                 Add_Expr& expr = (Add_Expr&)expression;
                 anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
-                    return anton::move(lhs_res);
+                    return lhs_res;
                 }
 
                 anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
-                    return anton::move(rhs_res);
+                    return rhs_res;
                 }
 
                 // TODO: Expand to include vectors and matrices.
@@ -486,12 +486,12 @@ namespace vush {
                 Sub_Expr& expr = (Sub_Expr&)expression;
                 anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
-                    return anton::move(lhs_res);
+                    return lhs_res;
                 }
 
                 anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
-                    return anton::move(rhs_res);
+                    return rhs_res;
                 }
 
                 // TODO: Expand to include vectors and matrices.
@@ -536,12 +536,12 @@ namespace vush {
                 Mul_Expr& expr = (Mul_Expr&)expression;
                 anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
-                    return anton::move(lhs_res);
+                    return lhs_res;
                 }
 
                 anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
-                    return anton::move(rhs_res);
+                    return rhs_res;
                 }
 
                 // TODO: Expand to include vectors and matrices.
@@ -586,12 +586,12 @@ namespace vush {
                 Div_Expr& expr = (Div_Expr&)expression;
                 anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
-                    return anton::move(lhs_res);
+                    return lhs_res;
                 }
 
                 anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
-                    return anton::move(rhs_res);
+                    return rhs_res;
                 }
 
                 // TODO: Expand to include vectors and matrices.
@@ -636,12 +636,12 @@ namespace vush {
                 Add_Expr& expr = (Add_Expr&)expression;
                 anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                 if(!lhs_res) {
-                    return anton::move(lhs_res);
+                    return lhs_res;
                 }
 
                 anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
                 if(!rhs_res) {
-                    return anton::move(rhs_res);
+                    return rhs_res;
                 }
 
                 // TODO: Expand to include integer vectors.
@@ -685,13 +685,13 @@ namespace vush {
                 switch(expr.type) {
                     case Unary_Type::plus: {
                         anton::Expected<Expr_Value, anton::String> base = evaluate_const_expr(ctx, *expr.expression);
-                        return anton::move(base);
+                        return base;
                     }
 
                     case Unary_Type::minus: {
                         anton::Expected<Expr_Value, anton::String> base_res = evaluate_const_expr(ctx, *expr.expression);
                         if(!base_res) {
-                            return anton::move(base_res);
+                            return base_res;
                         }
 
                         // TODO: Extend to vectors and matrices.

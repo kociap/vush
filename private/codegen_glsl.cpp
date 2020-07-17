@@ -858,7 +858,7 @@ namespace vush {
         for(auto& statement: source_def.decl_prop->statements) {
             anton::Expected<void, anton::String> result = process_source_definition_statement(out, *statement, sourced_data, ctx, format, codegen_ctx, symbols);
             if(!result) {
-                return anton::move(result);
+                return result;
             }
         }
 
