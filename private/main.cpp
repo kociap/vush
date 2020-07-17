@@ -8,7 +8,7 @@ int main() {
     vush::Configuration config;
     config.defines = defines;
     config.import_directories = import_directories;
-    config.source_path = u8"C:/Users/an0num0us/documents/vush2/build/shader.vush";
+    config.source_path = u8"C:/Users/an0num0us/documents/vush2/build/skin.vush";
     anton::Expected<anton::Array<vush::GLSL_File>, anton::String> result = vush ::compile_to_glsl(config);
     if(result) {
         for(vush::GLSL_File& file: result.value()) {
