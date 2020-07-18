@@ -1,5 +1,6 @@
 #include <parser.hpp>
 
+#include <anton/optional.hpp>
 #include <anton/string_view.hpp>
 
 #include <fstream>
@@ -1026,7 +1027,7 @@ namespace vush {
                 }
             }
 
-            Owning_Ptr param_list = try_function_param_list(true);
+            auto param_list = try_function_param_list(true);
             if(!param_list) {
                 _lexer.restore_state(state_backup);
                 return nullptr;
@@ -1046,8 +1047,8 @@ namespace vush {
                 return nullptr;
             }
 
-            return Owning_Ptr{new Pass_Stage_Declaration(anton::move(pass), stage_type, anton::move(param_list), anton::move(return_type), anton::move(body),
-                                                         src_info(state_backup))};
+            return Owning_Ptr{new Pass_Stage_Declaration(anton::move(pass), stage_type, anton::move(param_list.value()), anton::move(return_type),
+                                                         anton::move(body), src_info(state_backup))};
         }
 
         Owning_Ptr<Function_Declaration> try_function_declaration() {
@@ -1066,7 +1067,7 @@ namespace vush {
                 return nullptr;
             }
 
-            Owning_Ptr param_list = try_function_param_list(false);
+            auto param_list = try_function_param_list(false);
             if(!param_list) {
                 _lexer.restore_state(state_backup);
                 return nullptr;
@@ -1086,42 +1087,40 @@ namespace vush {
                 return nullptr;
             }
 
-            return Owning_Ptr{
-                new Function_Declaration(anton::move(name), anton::move(param_list), anton::move(return_type), anton::move(body), src_info(state_backup))};
+            return Owning_Ptr{new Function_Declaration(anton::move(name), anton::move(param_list.value()), anton::move(return_type), anton::move(body),
+                                                       src_info(state_backup))};
         }
 
-        Owning_Ptr<Function_Param_List> try_function_param_list(bool const allow_sourced_params) {
+        anton::Optional<anton::Array<Owning_Ptr<Function_Param>>> try_function_param_list(bool const allow_sourced_params) {
             Lexer_State const state_backup = _lexer.get_current_state();
             if(!_lexer.match(token_paren_open)) {
                 set_error(u8"expected '('");
                 _lexer.restore_state(state_backup);
-                return nullptr;
+                return anton::null_optional;
             }
 
             if(_lexer.match(token_paren_close)) {
-                return Owning_Ptr{new Function_Param_List};
+                return anton::Array<Owning_Ptr<Function_Param>>{};
             }
 
+            anton::Array<Owning_Ptr<Function_Param>> param_list;
             // Match parameters
-            Owning_Ptr param_list{new Function_Param_List};
-            {
-                do {
-                    if(Owning_Ptr param = try_function_param(allow_sourced_params)) {
-                        param_list->append_parameter(anton::move(param));
-                    } else {
-                        _lexer.restore_state(state_backup);
-                        return nullptr;
-                    }
-                } while(_lexer.match(token_comma));
-            }
+            do {
+                if(Owning_Ptr param = try_function_param(allow_sourced_params)) {
+                    param_list.emplace_back(anton::move(param));
+                } else {
+                    _lexer.restore_state(state_backup);
+                    return anton::null_optional;
+                }
+            } while(_lexer.match(token_comma));
 
             if(!_lexer.match(token_paren_close)) {
                 set_error(u8"expected ')' after function parameter list");
                 _lexer.restore_state(state_backup);
-                return nullptr;
+                return anton::null_optional;
             }
 
-            return param_list;
+            return anton::move(param_list);
         }
 
         Owning_Ptr<Function_Param> try_function_param(bool const allow_sourced_params) {

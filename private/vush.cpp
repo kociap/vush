@@ -1,4 +1,5 @@
 // TODO: dynamic ifs
+// TODO: Annotated variables
 
 #include <vush/vush.hpp>
 
@@ -143,7 +144,7 @@ namespace vush {
     //  - all sourced parameters are of non-opaque types or are sized arrays of non-opaque types
     //
     static anton::Expected<void, anton::String> process_fn_param_list(Context& ctx, Function_Declaration& function) {
-        anton::Array<Owning_Ptr<Function_Param>>& params = function.param_list->params;
+        anton::Array<Owning_Ptr<Function_Param>>& params = function.params;
         for(i64 i = 0; i < params.size();) {
             // If the node is a prameter if, we replace it with the contents of one of the branches.
             // We do not advance in that case in order to check the replaced node.
@@ -207,7 +208,7 @@ namespace vush {
     }
 
     static anton::Expected<void, anton::String> process_fn_param_list(Context& ctx, Pass_Stage_Declaration& function) {
-        anton::Array<Owning_Ptr<Function_Param>>& params = function.param_list->params;
+        anton::Array<Owning_Ptr<Function_Param>>& params = function.params;
         for(i64 i = 0; i < params.size();) {
             // If the node is a prameter if, we replace it with the contents of one of the branches.
             // We do not advance in that case in order to check the replaced node.

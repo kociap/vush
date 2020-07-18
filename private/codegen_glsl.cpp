@@ -10,6 +10,7 @@
 
 namespace vush {
     struct Codegen_Context {
+        Format_Options format;
         anton::String_View current_pass;
         Pass_Stage_Type current_stage;
         i64 indent;
@@ -21,7 +22,7 @@ namespace vush {
         }
     }
 
-    static void stringify(anton::String& out, AST_Node& ast_node, Format_Options const& format, Codegen_Context& ctx) {
+    static void stringify(anton::String& out, AST_Node& ast_node, Codegen_Context& ctx) {
         switch(ast_node.node_type) {
             case AST_Node_Type::identifier: {
                 Identifier& node = (Identifier&)ast_node;
@@ -43,10 +44,10 @@ namespace vush {
 
             case AST_Node_Type::array_type: {
                 Array_Type& node = (Array_Type&)ast_node;
-                stringify(out, *node.base, format, ctx);
+                stringify(out, *node.base, ctx);
                 out += u8"[";
                 if(node.size) {
-                    stringify(out, *node.size, format, ctx);
+                    stringify(out, *node.size, ctx);
                 }
                 out += u8"]";
                 return;
@@ -55,23 +56,23 @@ namespace vush {
             case AST_Node_Type::constant_declaration: {
                 Constant_Declaration& node = (Constant_Declaration&)ast_node;
                 out += u8"const ";
-                stringify(out, *node.type, format, ctx);
+                stringify(out, *node.type, ctx);
                 out += u8" ";
-                stringify(out, *node.identifier, format, ctx);
+                stringify(out, *node.identifier, ctx);
                 out += u8" = ";
-                stringify(out, *node.initializer, format, ctx);
+                stringify(out, *node.initializer, ctx);
                 out += u8";\n";
                 return;
             }
 
             case AST_Node_Type::variable_declaration: {
                 Variable_Declaration& node = (Variable_Declaration&)ast_node;
-                stringify(out, *node.type, format, ctx);
+                stringify(out, *node.type, ctx);
                 out += u8" ";
-                stringify(out, *node.identifier, format, ctx);
+                stringify(out, *node.identifier, ctx);
                 if(node.initializer) {
                     out += u8" = ";
-                    stringify(out, *node.initializer, format, ctx);
+                    stringify(out, *node.initializer, ctx);
                 }
                 out += u8";\n";
                 return;
@@ -80,14 +81,14 @@ namespace vush {
             case AST_Node_Type::struct_decl: {
                 Struct_Decl& node = (Struct_Decl&)ast_node;
                 out += u8"struct ";
-                stringify(out, *node.name, format, ctx);
+                stringify(out, *node.name, ctx);
                 out += u8" {\n";
                 ctx.indent += 1;
                 for(auto& member: node.members) {
                     write_indent(out, ctx.indent);
-                    stringify(out, *member->type, format, ctx);
+                    stringify(out, *member->type, ctx);
                     out += u8" ";
-                    stringify(out, *member->identifier, format, ctx);
+                    stringify(out, *member->identifier, ctx);
                     out += u8";\n";
                 }
                 ctx.indent -= 1;
@@ -97,63 +98,55 @@ namespace vush {
 
             case AST_Node_Type::function_declaration: {
                 Function_Declaration& node = (Function_Declaration&)ast_node;
-                stringify(out, *node.return_type, format, ctx);
+                stringify(out, *node.return_type, ctx);
                 out += u8" ";
-                stringify(out, *node.name, format, ctx);
-                stringify(out, *node.param_list, format, ctx);
-                out += u8" {\n";
+                stringify(out, *node.name, ctx);
+                // param list
+                out += u8"(";
+                if(node.params.size() > 0) {
+                    stringify(out, *node.params[0], ctx);
+                    for(i64 i = 1; i != node.params.size(); ++i) {
+                        out += u8", ";
+                        stringify(out, *node.params[i], ctx);
+                    }
+                }
+                out += u8") {\n";
                 ctx.indent += 1;
                 Statement_List& body = (Statement_List&)*node.body;
-                stringify(out, body, format, ctx);
+                stringify(out, body, ctx);
                 ctx.indent -= 1;
                 out += u8"}\n";
                 return;
             }
 
-            case AST_Node_Type::function_param_list: {
-                Function_Param_List& node = (Function_Param_List&)ast_node;
-                out += u8"(";
-                if(node.params.size() > 0) {
-                    stringify(out, *node.params[0], format, ctx);
-
-                    for(i64 i = 1; i != node.params.size(); ++i) {
-                        out += u8", ";
-                        stringify(out, *node.params[i], format, ctx);
-                    }
-                }
-
-                out += u8")";
-                return;
-            }
-
             case AST_Node_Type::ordinary_function_param: {
                 Ordinary_Function_Param& node = (Ordinary_Function_Param&)ast_node;
-                stringify(out, *node.type, format, ctx);
+                stringify(out, *node.type, ctx);
                 out += u8" ";
-                stringify(out, *node.identifier, format, ctx);
+                stringify(out, *node.identifier, ctx);
                 return;
             }
 
             case AST_Node_Type::sourced_function_param: {
                 Sourced_Function_Param& node = (Sourced_Function_Param&)ast_node;
-                stringify(out, *node.type, format, ctx);
+                stringify(out, *node.type, ctx);
                 out += u8" ";
-                stringify(out, *node.identifier, format, ctx);
+                stringify(out, *node.identifier, ctx);
                 return;
             }
 
             case AST_Node_Type::vertex_input_param: {
                 Vertex_Input_Param& node = (Vertex_Input_Param&)ast_node;
-                stringify(out, *node.type, format, ctx);
+                stringify(out, *node.type, ctx);
                 out += u8" ";
-                stringify(out, *node.identifier, format, ctx);
+                stringify(out, *node.identifier, ctx);
                 return;
             }
 
             case AST_Node_Type::statement_list: {
                 Statement_List& node = (Statement_List&)ast_node;
                 for(auto& statement: node.statements) {
-                    stringify(out, *statement, format, ctx);
+                    stringify(out, *statement, ctx);
                 }
                 return;
             }
@@ -163,7 +156,7 @@ namespace vush {
                 write_indent(out, ctx.indent);
                 out += u8"{\n";
                 ctx.indent += 1;
-                stringify(out, *node.statements, format, ctx);
+                stringify(out, *node.statements, ctx);
                 ctx.indent -= 1;
                 write_indent(out, ctx.indent);
                 out += u8"}\n";
@@ -175,12 +168,12 @@ namespace vush {
                 If_Statement* node = (If_Statement*)&ast_node;
                 while(true) {
                     out += u8"if(";
-                    stringify(out, *node->condition, format, ctx);
+                    stringify(out, *node->condition, ctx);
                     out += u8") {\n";
                     ctx.indent += 1;
                     Block_Statement& true_statement = (Block_Statement&)*node->true_statement;
                     for(auto& statement: true_statement.statements->statements) {
-                        stringify(out, *statement, format, ctx);
+                        stringify(out, *statement, ctx);
                     }
                     ctx.indent -= 1;
                     if(node->false_statement && node->false_statement->node_type == AST_Node_Type::if_statement) {
@@ -198,7 +191,7 @@ namespace vush {
                     ctx.indent += 1;
                     Block_Statement& false_statement = (Block_Statement&)*node->false_statement;
                     for(auto& statement: false_statement.statements->statements) {
-                        stringify(out, *statement, format, ctx);
+                        stringify(out, *statement, ctx);
                     }
                     ctx.indent -= 1;
                 }
@@ -211,23 +204,23 @@ namespace vush {
                 Switch_Statement& node = (Switch_Statement&)ast_node;
                 write_indent(out, ctx.indent);
                 out += u8"switch(";
-                stringify(out, *node.match_expr, format, ctx);
+                stringify(out, *node.match_expr, ctx);
                 out += u8") {\n";
                 for(auto& switch_node: node.cases) {
                     write_indent(out, ctx.indent + 1);
                     if(switch_node->node_type == AST_Node_Type::case_statement) {
                         Case_Statement& switch_case = (Case_Statement&)*switch_node;
                         out += u8"case ";
-                        stringify(out, *switch_case.condition, format, ctx);
+                        stringify(out, *switch_case.condition, ctx);
                         out += ":\n";
                         ctx.indent += 2;
-                        stringify(out, *switch_case.statements, format, ctx);
+                        stringify(out, *switch_case.statements, ctx);
                         ctx.indent -= 2;
                     } else {
                         Default_Case_Statement& switch_case = (Default_Case_Statement&)*switch_node;
                         out += u8"default:\n";
                         ctx.indent += 2;
-                        stringify(out, *switch_case.statements, format, ctx);
+                        stringify(out, *switch_case.statements, ctx);
                         ctx.indent -= 2;
                     }
                 }
@@ -242,20 +235,20 @@ namespace vush {
                 out += u8"for(";
                 // We stringify the variable_decl manually because we need inline declaration;
                 Variable_Declaration& decl = *node.declaration;
-                stringify(out, *decl.type, format, ctx);
+                stringify(out, *decl.type, ctx);
                 out += u8" ";
-                stringify(out, *decl.identifier, format, ctx);
+                stringify(out, *decl.identifier, ctx);
                 out += u8" = ";
-                stringify(out, *decl.initializer, format, ctx);
+                stringify(out, *decl.initializer, ctx);
                 out += u8"; ";
-                stringify(out, *node.condition, format, ctx);
+                stringify(out, *node.condition, ctx);
                 out += u8"; ";
-                stringify(out, *node.post_expression, format, ctx);
+                stringify(out, *node.post_expression, ctx);
                 // We need no-braces block. We add them inline ourselves.
                 out += u8") {\n";
                 ctx.indent += 1;
                 for(auto& statement: node.block->statements->statements) {
-                    stringify(out, *statement, format, ctx);
+                    stringify(out, *statement, ctx);
                 }
                 ctx.indent -= 1;
                 write_indent(out, ctx.indent);
@@ -267,12 +260,12 @@ namespace vush {
                 While_Statement& node = (While_Statement&)ast_node;
                 write_indent(out, ctx.indent);
                 out += u8"while(";
-                stringify(out, *node.condition, format, ctx);
+                stringify(out, *node.condition, ctx);
                 // We need no-braces block. We add them inline ourselves.
                 out += u8") {\n";
                 ctx.indent += 1;
                 for(auto& statement: node.block->statements->statements) {
-                    stringify(out, *statement, format, ctx);
+                    stringify(out, *statement, ctx);
                 }
                 ctx.indent -= 1;
                 write_indent(out, ctx.indent);
@@ -287,12 +280,12 @@ namespace vush {
                 out += u8"do {\n";
                 ctx.indent += 1;
                 for(auto& statement: node.block->statements->statements) {
-                    stringify(out, *statement, format, ctx);
+                    stringify(out, *statement, ctx);
                 }
                 ctx.indent -= 1;
                 write_indent(out, ctx.indent);
                 out += u8"} while(";
-                stringify(out, *node.condition, format, ctx);
+                stringify(out, *node.condition, ctx);
                 out += u8");\n";
                 return;
             }
@@ -301,7 +294,7 @@ namespace vush {
                 Return_Statement& node = (Return_Statement&)ast_node;
                 write_indent(out, ctx.indent);
                 out += u8"return ";
-                stringify(out, *node.return_expr, format, ctx);
+                stringify(out, *node.return_expr, ctx);
                 out += u8";\n";
                 return;
             }
@@ -321,29 +314,29 @@ namespace vush {
             case AST_Node_Type::declaration_statement: {
                 Declaration_Statement& node = (Declaration_Statement&)ast_node;
                 write_indent(out, ctx.indent);
-                stringify(out, *node.declaration, format, ctx);
+                stringify(out, *node.declaration, ctx);
                 return;
             }
 
             case AST_Node_Type::expression_statement: {
                 Expression_Statement& node = (Expression_Statement&)ast_node;
                 write_indent(out, ctx.indent);
-                stringify(out, *node.expr, format, ctx);
+                stringify(out, *node.expr, ctx);
                 out += u8";\n";
                 return;
             }
 
             case AST_Node_Type::assignment_expression: {
                 Assignment_Expression& node = (Assignment_Expression&)ast_node;
-                stringify(out, *node.lhs, format, ctx);
+                stringify(out, *node.lhs, ctx);
                 out += u8" = ";
-                stringify(out, *node.rhs, format, ctx);
+                stringify(out, *node.rhs, ctx);
                 return;
             }
 
             case AST_Node_Type::arithmetic_assignment_expression: {
                 Arithmetic_Assignment_Expression& node = (Arithmetic_Assignment_Expression&)ast_node;
-                stringify(out, *node.lhs, format, ctx);
+                stringify(out, *node.lhs, ctx);
                 switch(node.type) {
                     case Arithmetic_Assignment_Type::plus: {
                         out += u8" += ";
@@ -385,55 +378,55 @@ namespace vush {
                         out += u8" |= ";
                     } break;
                 }
-                stringify(out, *node.rhs, format, ctx);
+                stringify(out, *node.rhs, ctx);
                 return;
             }
 
             case AST_Node_Type::elvis_expr: {
                 Elvis_Expr& node = (Elvis_Expr&)ast_node;
-                stringify(out, *node.condition, format, ctx);
+                stringify(out, *node.condition, ctx);
                 out += u8" ? ";
-                stringify(out, *node.true_expr, format, ctx);
+                stringify(out, *node.true_expr, ctx);
                 out += u8" : ";
-                stringify(out, *node.false_expr, format, ctx);
+                stringify(out, *node.false_expr, ctx);
                 return;
             }
 
             case AST_Node_Type::logic_or_expr: {
                 Logic_Or_Expr& node = (Logic_Or_Expr&)ast_node;
-                stringify(out, *node.lhs, format, ctx);
+                stringify(out, *node.lhs, ctx);
                 out += u8" || ";
-                stringify(out, *node.rhs, format, ctx);
+                stringify(out, *node.rhs, ctx);
                 return;
             }
 
             case AST_Node_Type::logic_xor_expr: {
                 Logic_Xor_Expr& node = (Logic_Xor_Expr&)ast_node;
-                stringify(out, *node.lhs, format, ctx);
+                stringify(out, *node.lhs, ctx);
                 out += u8" ^^ ";
-                stringify(out, *node.rhs, format, ctx);
+                stringify(out, *node.rhs, ctx);
                 return;
             }
 
             case AST_Node_Type::logic_and_expr: {
                 Logic_And_Expr& node = (Logic_And_Expr&)ast_node;
-                stringify(out, *node.lhs, format, ctx);
+                stringify(out, *node.lhs, ctx);
                 out += u8" && ";
-                stringify(out, *node.rhs, format, ctx);
+                stringify(out, *node.rhs, ctx);
                 return;
             }
 
             case AST_Node_Type::relational_equality_expression: {
                 Relational_Equality_Expression& node = (Relational_Equality_Expression&)ast_node;
-                stringify(out, *node.lhs, format, ctx);
+                stringify(out, *node.lhs, ctx);
                 out += (node.is_equality ? u8" == " : u8" != ");
-                stringify(out, *node.rhs, format, ctx);
+                stringify(out, *node.rhs, ctx);
                 return;
             }
 
             case AST_Node_Type::relational_expression: {
                 Relational_Expression& node = (Relational_Expression&)ast_node;
-                stringify(out, *node.lhs, format, ctx);
+                stringify(out, *node.lhs, ctx);
                 switch(node.type) {
                     case Relational_Type::greater_equal: {
                         out += u8" >= ";
@@ -451,87 +444,87 @@ namespace vush {
                         out += u8" < ";
                     } break;
                 }
-                stringify(out, *node.rhs, format, ctx);
+                stringify(out, *node.rhs, ctx);
                 return;
             }
 
             case AST_Node_Type::bit_or_expr: {
                 Bit_Or_Expr& node = (Bit_Or_Expr&)ast_node;
-                stringify(out, *node.lhs, format, ctx);
+                stringify(out, *node.lhs, ctx);
                 out += u8" | ";
-                stringify(out, *node.rhs, format, ctx);
+                stringify(out, *node.rhs, ctx);
                 return;
             }
 
             case AST_Node_Type::bit_xor_expr: {
                 Bit_Xor_Expr& node = (Bit_Xor_Expr&)ast_node;
-                stringify(out, *node.lhs, format, ctx);
+                stringify(out, *node.lhs, ctx);
                 out += u8" ^ ";
-                stringify(out, *node.rhs, format, ctx);
+                stringify(out, *node.rhs, ctx);
                 return;
             }
 
             case AST_Node_Type::bit_and_expr: {
                 Bit_And_Expr& node = (Bit_And_Expr&)ast_node;
-                stringify(out, *node.lhs, format, ctx);
+                stringify(out, *node.lhs, ctx);
                 out += u8" & ";
-                stringify(out, *node.rhs, format, ctx);
+                stringify(out, *node.rhs, ctx);
                 return;
             }
 
             case AST_Node_Type::lshift_expr: {
                 LShift_Expr& node = (LShift_Expr&)ast_node;
-                stringify(out, *node.lhs, format, ctx);
+                stringify(out, *node.lhs, ctx);
                 out += u8" << ";
-                stringify(out, *node.rhs, format, ctx);
+                stringify(out, *node.rhs, ctx);
                 return;
             }
 
             case AST_Node_Type::rshift_expr: {
                 RShift_Expr& node = (RShift_Expr&)ast_node;
-                stringify(out, *node.lhs, format, ctx);
+                stringify(out, *node.lhs, ctx);
                 out += u8" >> ";
-                stringify(out, *node.rhs, format, ctx);
+                stringify(out, *node.rhs, ctx);
                 return;
             }
 
             case AST_Node_Type::add_expr: {
                 Add_Expr& node = (Add_Expr&)ast_node;
-                stringify(out, *node.lhs, format, ctx);
+                stringify(out, *node.lhs, ctx);
                 out += u8" + ";
-                stringify(out, *node.rhs, format, ctx);
+                stringify(out, *node.rhs, ctx);
                 return;
             }
 
             case AST_Node_Type::sub_expr: {
                 Sub_Expr& node = (Sub_Expr&)ast_node;
-                stringify(out, *node.lhs, format, ctx);
+                stringify(out, *node.lhs, ctx);
                 out += u8" - ";
-                stringify(out, *node.rhs, format, ctx);
+                stringify(out, *node.rhs, ctx);
                 return;
             }
 
             case AST_Node_Type::mul_expr: {
                 Mul_Expr& node = (Mul_Expr&)ast_node;
-                stringify(out, *node.lhs, format, ctx);
+                stringify(out, *node.lhs, ctx);
                 out += u8" * ";
-                stringify(out, *node.rhs, format, ctx);
+                stringify(out, *node.rhs, ctx);
                 return;
             }
 
             case AST_Node_Type::div_expr: {
                 Div_Expr& node = (Div_Expr&)ast_node;
-                stringify(out, *node.lhs, format, ctx);
+                stringify(out, *node.lhs, ctx);
                 out += u8" / ";
-                stringify(out, *node.rhs, format, ctx);
+                stringify(out, *node.rhs, ctx);
                 return;
             }
 
             case AST_Node_Type::mod_expr: {
                 Mod_Expr& node = (Mod_Expr&)ast_node;
-                stringify(out, *node.lhs, format, ctx);
+                stringify(out, *node.lhs, ctx);
                 out += u8" % ";
-                stringify(out, *node.rhs, format, ctx);
+                stringify(out, *node.rhs, ctx);
                 return;
             }
 
@@ -553,32 +546,32 @@ namespace vush {
                         out += u8"~";
                     } break;
                 }
-                stringify(out, *node.expression, format, ctx);
+                stringify(out, *node.expression, ctx);
                 return;
             }
 
             case AST_Node_Type::prefix_inc_expr: {
                 Prefix_Inc_Expr& node = (Prefix_Inc_Expr&)ast_node;
                 out += u8"++";
-                stringify(out, *node.expression, format, ctx);
+                stringify(out, *node.expression, ctx);
                 return;
             }
 
             case AST_Node_Type::prefix_dec_expr: {
                 Prefix_Dec_Expr& node = (Prefix_Dec_Expr&)ast_node;
                 out += u8"--";
-                stringify(out, *node.expression, format, ctx);
+                stringify(out, *node.expression, ctx);
                 return;
             }
 
             case AST_Node_Type::argument_list: {
                 Argument_List& node = (Argument_List&)ast_node;
                 if(node.arguments.size() > 0) {
-                    stringify(out, *node.arguments[0], format, ctx);
+                    stringify(out, *node.arguments[0], ctx);
 
                     for(i64 i = 1; i != node.arguments.size(); ++i) {
                         out += u8", ";
-                        stringify(out, *node.arguments[i], format, ctx);
+                        stringify(out, *node.arguments[i], ctx);
                     }
                 }
                 return;
@@ -586,54 +579,54 @@ namespace vush {
 
             case AST_Node_Type::function_call_expression: {
                 Function_Call_Expression& node = (Function_Call_Expression&)ast_node;
-                stringify(out, *node.identifier, format, ctx);
+                stringify(out, *node.identifier, ctx);
                 out += u8"(";
-                stringify(out, *node.arg_list, format, ctx);
+                stringify(out, *node.arg_list, ctx);
                 out += u8")";
                 return;
             }
 
             case AST_Node_Type::member_access_expression: {
                 Member_Access_Expression& node = (Member_Access_Expression&)ast_node;
-                stringify(out, *node.base, format, ctx);
+                stringify(out, *node.base, ctx);
                 out += u8".";
-                stringify(out, *node.member, format, ctx);
+                stringify(out, *node.member, ctx);
                 return;
             }
 
             case AST_Node_Type::array_access_expression: {
                 Array_Access_Expression& node = (Array_Access_Expression&)ast_node;
-                stringify(out, *node.base, format, ctx);
+                stringify(out, *node.base, ctx);
                 out += u8"[";
-                stringify(out, *node.index, format, ctx);
+                stringify(out, *node.index, ctx);
                 out += u8"]";
                 return;
             }
 
             case AST_Node_Type::postfix_inc_expr: {
                 Postfix_Inc_Expr& node = (Postfix_Inc_Expr&)ast_node;
-                stringify(out, *node.base, format, ctx);
+                stringify(out, *node.base, ctx);
                 out += u8"++";
                 return;
             }
 
             case AST_Node_Type::postfix_dec_expr: {
                 Postfix_Dec_Expr& node = (Postfix_Dec_Expr&)ast_node;
-                stringify(out, *node.base, format, ctx);
+                stringify(out, *node.base, ctx);
                 out += u8"--";
                 return;
             }
 
             case AST_Node_Type::identifier_expression: {
                 Identifier_Expression& node = (Identifier_Expression&)ast_node;
-                stringify(out, *node.identifier, format, ctx);
+                stringify(out, *node.identifier, ctx);
                 return;
             }
 
             case AST_Node_Type::paren_expr: {
                 Paren_Expr& node = (Paren_Expr&)ast_node;
                 out += u8"(";
-                stringify(out, *node.expr, format, ctx);
+                stringify(out, *node.expr, ctx);
                 out += u8")";
                 return;
             }
@@ -669,12 +662,20 @@ namespace vush {
         }
     }
 
-    static void stringify_function_forward_decl(anton::String& out, Function_Declaration& node, Format_Options const& format, Codegen_Context& ctx) {
-        stringify(out, *node.return_type, format, ctx);
+    static void stringify_function_forward_decl(anton::String& out, Function_Declaration& node, Codegen_Context& ctx) {
+        stringify(out, *node.return_type, ctx);
         out += u8" ";
-        stringify(out, *node.name, format, ctx);
-        stringify(out, *node.param_list, format, ctx);
-        out += u8";\n";
+        stringify(out, *node.name, ctx);
+        // param list
+        out += u8"(";
+        if(node.params.size() > 0) {
+            stringify(out, *node.params[0], ctx);
+            for(i64 i = 1; i != node.params.size(); ++i) {
+                out += u8", ";
+                stringify(out, *node.params[i], ctx);
+            }
+        }
+        out += u8");\n";
     }
 
     struct Sourced_Data {
@@ -1077,7 +1078,7 @@ namespace vush {
                 case AST_Node_Type::pass_stage_declaration: {
                     pass_stages.emplace_back(decl.get());
                     Pass_Stage_Declaration* pass_stage = (Pass_Stage_Declaration*)decl.get();
-                    for(auto& param: pass_stage->param_list->params) {
+                    for(auto& param: pass_stage->params) {
                         if(param->node_type == AST_Node_Type::sourced_function_param) {
                             Sourced_Function_Param* sourced_param = (Sourced_Function_Param*)param.get();
                             auto iter = sourced_data.find_or_emplace(sourced_param->source->value);
@@ -1098,6 +1099,9 @@ namespace vush {
                     Sourced_Data data{source->type.get(), source->name.get(), source->source.get()};
                     iter->value.emplace_back(data);
                 } break;
+
+                default:
+                    break;
             }
         }
 
@@ -1131,6 +1135,7 @@ namespace vush {
         }
 
         Codegen_Context codegen_ctx;
+        codegen_ctx.format = format;
         codegen_ctx.indent = 0;
 
         anton::String common;
@@ -1138,7 +1143,7 @@ namespace vush {
 
         if(structs_and_consts.size() > 0) {
             for(Declaration* decl: structs_and_consts) {
-                stringify(common, *decl, format, codegen_ctx);
+                stringify(common, *decl, codegen_ctx);
             }
 
             common += u8"\n";
@@ -1146,7 +1151,7 @@ namespace vush {
 
         if(functions.size() > 0) {
             for(Declaration* decl: functions) {
-                stringify_function_forward_decl(common, (Function_Declaration&)*decl, format, codegen_ctx);
+                stringify_function_forward_decl(common, (Function_Declaration&)*decl, codegen_ctx);
             }
 
             common += u8"\n";
@@ -1177,7 +1182,7 @@ namespace vush {
         }
 
         for(Declaration* decl: functions) {
-            stringify(common, (Function_Declaration&)*decl, format, codegen_ctx);
+            stringify(common, (Function_Declaration&)*decl, codegen_ctx);
             common += u8"\n";
         }
 
@@ -1191,13 +1196,21 @@ namespace vush {
             codegen_ctx.current_stage = stage.stage;
 
             // Stringify the stage function
-            stringify(out, *stage.return_type, format, codegen_ctx);
+            stringify(out, *stage.return_type, codegen_ctx);
             out += u8" ";
             out += pass_function_name;
-            stringify(out, *stage.param_list, format, codegen_ctx);
-            out += u8" {\n";
+            // param list
+            out += u8"(";
+            if(stage.params.size() > 0) {
+                stringify(out, *stage.params[0], codegen_ctx);
+                for(i64 i = 1; i != stage.params.size(); ++i) {
+                    out += u8", ";
+                    stringify(out, *stage.params[i], codegen_ctx);
+                }
+            }
+            out += u8") {\n";
             codegen_ctx.indent += 1;
-            stringify(out, *stage.body, format, codegen_ctx);
+            stringify(out, *stage.body, codegen_ctx);
             codegen_ctx.indent -= 1;
             out += u8"}\n\n";
 
@@ -1208,7 +1221,7 @@ namespace vush {
                 case Pass_Stage_Type::vertex: {
                     i64 in_location = 0;
                     anton::Array<anton::String> input_names;
-                    for(auto& param: stage.param_list->params) {
+                    for(auto& param: stage.params) {
                         if(param->node_type == AST_Node_Type::vertex_input_param) {
                             Owning_Ptr<Vertex_Input_Param>& node = (Owning_Ptr<Vertex_Input_Param>&)param;
                             write_vertex_inputs(ctx, codegen_ctx, out, *node->type, node->identifier->value, in_location, input_names);
@@ -1236,14 +1249,14 @@ namespace vush {
                     {
                         anton::String const* input_names_iter = input_names.begin();
                         i64 param_index = 0;
-                        for(auto& param: stage.param_list->params) {
+                        for(auto& param: stage.params) {
                             ANTON_ASSERT(param->node_type == AST_Node_Type::vertex_input_param || param->node_type == AST_Node_Type::sourced_function_param,
                                          u8"invalid parameter type");
                             switch(param->node_type) {
                                 case AST_Node_Type::vertex_input_param: {
                                     Vertex_Input_Param* const node = (Vertex_Input_Param*)param.get();
                                     write_indent(out, codegen_ctx.indent);
-                                    stringify(out, *node->type, format, codegen_ctx);
+                                    stringify(out, *node->type, codegen_ctx);
                                     out += u8" ";
                                     anton::String argument_name = "_arg" + anton::to_string(param_index);
                                     out += argument_name;
@@ -1308,11 +1321,10 @@ namespace vush {
                     // Generate parameters
                     anton::Array<anton::String> arguments;
                     {
-                        bool const has_prev_stage_input =
-                            stage.param_list->params.size() > 0 && stage.param_list->params[0]->node_type == AST_Node_Type::ordinary_function_param;
+                        bool const has_prev_stage_input = stage.params.size() > 0 && stage.params[0]->node_type == AST_Node_Type::ordinary_function_param;
                         // Write input from the previous stage if the first parameter is an ordinary parameter
                         if(has_prev_stage_input) {
-                            Ordinary_Function_Param const& param = (Ordinary_Function_Param const&)*stage.param_list->params[0];
+                            Ordinary_Function_Param const& param = (Ordinary_Function_Param const&)*stage.params[0];
                             out += u8"in ";
                             out += stringify_type(*param.type);
                             anton::String name = u8"_pass_" + stage.pass->value + u8"_" + param.identifier->value + u8"_in";
@@ -1322,9 +1334,9 @@ namespace vush {
                             arguments.emplace_back(name);
                         }
 
-                        for(i64 i = has_prev_stage_input; i < stage.param_list->params.size(); ++i) {
-                            ANTON_ASSERT(stage.param_list->params[i]->node_type == AST_Node_Type::sourced_function_param, u8"invalid parameter type");
-                            Sourced_Function_Param const& param = (Sourced_Function_Param const&)*stage.param_list->params[i];
+                        for(i64 i = has_prev_stage_input; i < stage.params.size(); ++i) {
+                            ANTON_ASSERT(stage.params[i]->node_type == AST_Node_Type::sourced_function_param, u8"invalid parameter type");
+                            Sourced_Function_Param const& param = (Sourced_Function_Param const&)*stage.params[i];
                             auto iter = anton::find_if(source_templates.cbegin(), source_templates.cend(),
                                                        [&param](Source_Definition_Decl const* const v) { return v->name->value == param.source->value; });
                             ANTON_ASSERT(iter != source_templates.cend(), u8"sourced parameter doesn't have an existing source");
@@ -1391,7 +1403,7 @@ namespace vush {
                     out += u8"(";
 
                     // Write arguments
-                    for(auto& param: stage.param_list->params) {
+                    for(auto& param: stage.params) {
                         ANTON_ASSERT(param->node_type == AST_Node_Type::sourced_function_param, u8"invalid parameter type");
                         Sourced_Function_Param* const node = (Sourced_Function_Param*)param.get();
                         auto iter = anton::find_if(source_templates.cbegin(), source_templates.cend(),
