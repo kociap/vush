@@ -38,4 +38,12 @@ namespace vush {
             return str;
         }
     }
+
+    bool is_unsized_array(Type const& type) {
+        return type.node_type == AST_Node_Type::array_type && !static_cast<Array_Type const&>(type).size;
+    }
+
+    bool is_sized_array(Type const& type) {
+        return type.node_type == AST_Node_Type::array_type && static_cast<Array_Type const&>(type).size;
+    }
 } // namespace vush

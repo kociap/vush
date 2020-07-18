@@ -769,10 +769,6 @@ namespace vush {
         return {anton::expected_value, anton::move(out)};
     }
 
-    [[nodiscard]] static bool is_unsized_array(Type const& type) {
-        return type.node_type == AST_Node_Type::array_type && !static_cast<Array_Type const&>(type).size;
-    }
-
     static anton::Expected<void, anton::String> process_source_definition_statement(anton::String& out, Source_Definition_Statement const& statement,
                                                                                     anton::Slice<Sourced_Data const> const sourced_data, Context const& ctx,
                                                                                     Format_Options const& format, Codegen_Context& codegen_ctx,
@@ -1241,6 +1237,8 @@ namespace vush {
                         anton::String const* input_names_iter = input_names.begin();
                         i64 param_index = 0;
                         for(auto& param: stage.param_list->params) {
+                            ANTON_ASSERT(param->node_type == AST_Node_Type::vertex_input_param || param->node_type == AST_Node_Type::sourced_function_param,
+                                         u8"invalid parameter type");
                             switch(param->node_type) {
                                 case AST_Node_Type::vertex_input_param: {
                                     Vertex_Input_Param* const node = (Vertex_Input_Param*)param.get();
@@ -1271,9 +1269,7 @@ namespace vush {
                                 } break;
 
                                 default:
-                                    // TODO: Validate that there are no parameters other than vertex input and sourced
-                                    // ANTON_UNREACHABLE();
-                                    break;
+                                    ANTON_UNREACHABLE();
                             }
                         }
                     }
@@ -1299,8 +1295,6 @@ namespace vush {
                 } break;
 
                 case Pass_Stage_Type::fragment: {
-                    // TODO: validate there are no vertex input parameters
-
                     // Decompose return type to individual outputs
                     anton::Array<anton::String> output_names;
                     if(!return_type_is_void) {
@@ -1329,8 +1323,7 @@ namespace vush {
                         }
 
                         for(i64 i = has_prev_stage_input; i < stage.param_list->params.size(); ++i) {
-                            // TODO: Validate that all params except possibly the first one are sourced params
-                            ANTON_ASSERT(stage.param_list->params[i]->node_type == AST_Node_Type::sourced_function_param, u8"invalid ast node type");
+                            ANTON_ASSERT(stage.param_list->params[i]->node_type == AST_Node_Type::sourced_function_param, u8"invalid parameter type");
                             Sourced_Function_Param const& param = (Sourced_Function_Param const&)*stage.param_list->params[i];
                             auto iter = anton::find_if(source_templates.cbegin(), source_templates.cend(),
                                                        [&param](Source_Definition_Decl const* const v) { return v->name->value == param.source->value; });
@@ -1381,7 +1374,12 @@ namespace vush {
                 } break;
 
                 case Pass_Stage_Type::compute: {
-                    // TODO: Validate that all parameters are sourced and the return type is void
+                    // TODO: Move return type validation to vush.cpp
+                    if(!return_type_is_void) {
+                        Source_Info const& src = stage.return_type->source_info;
+                        return {anton::expected_error,
+                                build_error_message(src.file_path, src.line, src.column, u8"the return type of compute stage must be void")};
+                    }
 
                     // Output main
                     out += u8"void main() {\n";
@@ -1394,7 +1392,7 @@ namespace vush {
 
                     // Write arguments
                     for(auto& param: stage.param_list->params) {
-                        ANTON_ASSERT(param->node_type == AST_Node_Type::sourced_function_param, u8"invalid ast node type");
+                        ANTON_ASSERT(param->node_type == AST_Node_Type::sourced_function_param, u8"invalid parameter type");
                         Sourced_Function_Param* const node = (Sourced_Function_Param*)param.get();
                         auto iter = anton::find_if(source_templates.cbegin(), source_templates.cend(),
                                                    [node](Source_Definition_Decl const* const v) { return v->name->value == node->source->value; });

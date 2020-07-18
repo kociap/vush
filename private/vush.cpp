@@ -124,67 +124,263 @@ namespace vush {
         return {anton::expected_value, anton::move(ast)};
     }
 
-    static anton::Expected<void, anton::String> process_fn_param_list(Context& ctx, Function_Param_List& param_list) {
-        anton::Array<Owning_Ptr<Function_Param>>& params = param_list.params;
+    // process_fn_param_list
+    // Resolves any function parameter ifs and validates that the following requirements are met:
+    //  - for functions only ordinary parameters are allowed
+    //  - for vertex stages only vertex input parameters and sourced parameters are allowed
+    //  - for fragment stages all parameters must be sourced with the exception of the first one which might be an ordinary parameter that is used as the input from the previous stage
+    //  - for compute stages only sourced parameters are allowed
+    //  - all ordinary parameters that are arrays are sized
+    //  - all sourced parameters are of non-opaque types or are sized arrays of non-opaque types
+    //
+    static anton::Expected<void, anton::String> process_fn_param_list(Context& ctx, Function_Declaration& function) {
+        anton::Array<Owning_Ptr<Function_Param>>& params = function.param_list->params;
         for(i64 i = 0; i < params.size();) {
             // If the node is a prameter if, we replace it with the contents of one of the branches.
             // We do not advance in that case in order to check the replaced node.
-            bool const should_advance = params[i]->node_type != AST_Node_Type::function_param_if;
-            switch(params[i]->node_type) {
-                case AST_Node_Type::function_param_if: {
-                    Function_Param_If& node = (Function_Param_If&)*params[i];
-                    anton::Expected<Expr_Value, anton::String> result = evaluate_const_expr(ctx, *node.condition);
-                    if(!result) {
-                        return {anton::expected_error, anton::move(result.error())};
-                    }
+            if(params[i]->node_type == AST_Node_Type::function_param_if) {
+                Function_Param_If& node = (Function_Param_If&)*params[i];
+                anton::Expected<Expr_Value, anton::String> result = evaluate_const_expr(ctx, *node.condition);
+                if(!result) {
+                    return {anton::expected_error, anton::move(result.error())};
+                }
 
-                    if(!is_implicitly_convertible_to_boolean(result.value().type)) {
-                        Source_Info const& src = node.source_info;
+                if(!is_implicitly_convertible_to_boolean(result.value().type)) {
+                    Source_Info const& src = node.source_info;
+                    return {anton::expected_error,
+                            build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
+                }
+
+                if(result.value().as_boolean()) {
+                    if(node.true_param) {
+                        params[i] = anton::move(node.true_param);
+                    } else {
+                        params.erase(params.begin() + i, params.begin() + i + 1);
+                    }
+                } else {
+                    if(node.false_param) {
+                        params[i] = anton::move(node.false_param);
+                    } else {
+                        params.erase(params.begin() + i, params.begin() + i + 1);
+                    }
+                }
+            } else {
+                i += 1;
+            }
+        }
+
+        for(auto& param: params) {
+            if(param->node_type == AST_Node_Type::ordinary_function_param) {
+                Ordinary_Function_Param& node = (Ordinary_Function_Param&)*param;
+                Type& type = *node.type;
+
+                // Ordinary parameters that are arrays must be sized
+                if(is_unsized_array(type)) {
+                    Source_Info const& src = type.source_info;
+                    return {anton::expected_error,
+                            build_error_message(src.file_path, src.line, src.column, u8"ordinary parameters must not be unsized arrays")};
+                }
+            } else if(param->node_type == AST_Node_Type::sourced_function_param) {
+                Source_Info const& src = param->source_info;
+                return {anton::expected_error,
+                        build_error_message(src.file_path, src.line, src.column, u8"sourced parameters are not allowed on ordinary functions")};
+            } else if(param->node_type == AST_Node_Type::vertex_input_param) {
+                Source_Info const& src = param->source_info;
+                return {anton::expected_error,
+                        build_error_message(src.file_path, src.line, src.column, u8"vertex input parameters are not allowed on ordinary functions")};
+            } else {
+                Source_Info const& src = param->source_info;
+                return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"unknown parameter type")};
+            }
+        }
+
+        return {anton::expected_value};
+    }
+
+    static anton::Expected<void, anton::String> process_fn_param_list(Context& ctx, Pass_Stage_Declaration& function) {
+        anton::Array<Owning_Ptr<Function_Param>>& params = function.param_list->params;
+        for(i64 i = 0; i < params.size();) {
+            // If the node is a prameter if, we replace it with the contents of one of the branches.
+            // We do not advance in that case in order to check the replaced node.
+            if(params[i]->node_type == AST_Node_Type::function_param_if) {
+                Function_Param_If& node = (Function_Param_If&)*params[i];
+                anton::Expected<Expr_Value, anton::String> result = evaluate_const_expr(ctx, *node.condition);
+                if(!result) {
+                    return {anton::expected_error, anton::move(result.error())};
+                }
+
+                if(!is_implicitly_convertible_to_boolean(result.value().type)) {
+                    Source_Info const& src = node.source_info;
+                    return {anton::expected_error,
+                            build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
+                }
+
+                if(result.value().as_boolean()) {
+                    if(node.true_param) {
+                        params[i] = anton::move(node.true_param);
+                    } else {
+                        params.erase(params.begin() + i, params.begin() + i + 1);
+                    }
+                } else {
+                    if(node.false_param) {
+                        params[i] = anton::move(node.false_param);
+                    } else {
+                        params.erase(params.begin() + i, params.begin() + i + 1);
+                    }
+                }
+            } else {
+                i += 1;
+            }
+        }
+
+        switch(function.stage) {
+            case Pass_Stage_Type::vertex: {
+                for(auto& param: params) {
+                    if(param->node_type == AST_Node_Type::ordinary_function_param) {
+                        Source_Info const& src = param->source_info;
                         return {anton::expected_error,
-                                build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
-                    }
+                                build_error_message(src.file_path, src.line, src.column, u8"ordinary parameters are not allowed on vertex stage")};
+                    } else if(param->node_type == AST_Node_Type::sourced_function_param) {
+                        Sourced_Function_Param& node = (Sourced_Function_Param&)*param;
+                        Type& type = *node.type;
 
-                    if(result.value().as_boolean()) {
-                        if(node.true_param) {
-                            params[i] = anton::move(node.true_param);
-                        } else {
-                            params.erase(params.begin() + i, params.begin() + i + 1);
+                        // Sourced parameters that are arrays must be sized
+                        if(is_unsized_array(type)) {
+                            Source_Info const& src = type.source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column, u8"sourced parameters must not be unsized arrays")};
+                        }
+
+                        // Sourced parameters must not be opaque
+                        if(is_opaque_type(type)) {
+                            Source_Info const& src = type.source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column,
+                                                        u8"sourced parameters must be of non-opaque type (non-opaque builtin type or user "
+                                                        u8"defined type) or an array of non-opaque type")};
+                        }
+                    } else if(param->node_type == AST_Node_Type::vertex_input_param) {
+                        Vertex_Input_Param& node = (Vertex_Input_Param&)*param;
+                        Type& type = *node.type;
+
+                        // Vertex input parameters must not be arrays (we do not support them yet)
+                        if(type.node_type == AST_Node_Type::array_type) {
+                            Source_Info const& src = type.source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column, u8"vertex input parameters must not be arrays")};
+                        }
+
+                        // Vertex input parameters must not be opaque
+                        if(is_opaque_type(type)) {
+                            Source_Info const& src = type.source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column,
+                                                        u8"vertex input parameters must be of non-opaque type (non-opaque builtin type or user "
+                                                        u8"defined type) or an array of non-opaque type")};
                         }
                     } else {
-                        if(node.false_param) {
-                            params[i] = anton::move(node.false_param);
-                        } else {
-                            params.erase(params.begin() + i, params.begin() + i + 1);
+                        Source_Info const& src = param->source_info;
+                        return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"unknown parameter type")};
+                    }
+                }
+            } break;
+
+            case Pass_Stage_Type::fragment: {
+                if(params.size() > 0) {
+                    bool const has_ordinary_parameter = params[0]->node_type == AST_Node_Type::ordinary_function_param;
+                    if(has_ordinary_parameter) {
+                        Ordinary_Function_Param& node = (Ordinary_Function_Param&)*params[0];
+                        Type& type = *node.type;
+
+                        // Sourced parameters that are arrays must be sized
+                        if(is_unsized_array(type)) {
+                            Source_Info const& src = type.source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column, u8"stage input parameters must not be unsized arrays")};
+                        }
+
+                        // Sourced parameters must not be opaque
+                        if(is_opaque_type(type)) {
+                            Source_Info const& src = type.source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column,
+                                                        u8"stage input parameters must be of non-opaque type (non-opaque builtin type or user "
+                                                        u8"defined type) or an array of non-opaque type")};
                         }
                     }
-                } break;
 
-                case AST_Node_Type::sourced_function_param: {
-                    // Validate sourced parameters
-                    Sourced_Function_Param& node = (Sourced_Function_Param&)*params[i];
-                    Type& type = *node.type;
+                    for(i64 i = has_ordinary_parameter; i < params.size(); ++i) {
+                        auto& param = params[i];
+                        if(param->node_type == AST_Node_Type::sourced_function_param) {
+                            Sourced_Function_Param& node = (Sourced_Function_Param&)*param;
+                            Type& type = *node.type;
 
-                    // Sourced parameters that are arrays must be sized
-                    if(type.node_type == AST_Node_Type::array_type && !static_cast<Array_Type&>(type).size) {
-                        Source_Info const& src = type.source_info;
+                            // Sourced parameters that are arrays must be sized
+                            if(is_unsized_array(type)) {
+                                Source_Info const& src = type.source_info;
+                                return {anton::expected_error,
+                                        build_error_message(src.file_path, src.line, src.column, u8"sourced parameters must not be unsized arrays")};
+                            }
+
+                            // Sourced parameters must not be opaque
+                            if(is_opaque_type(type)) {
+                                Source_Info const& src = type.source_info;
+                                return {anton::expected_error,
+                                        build_error_message(src.file_path, src.line, src.column,
+                                                            u8"sourced parameters must be of non-opaque type (non-opaque builtin type or user "
+                                                            u8"defined type) or an array of non-opaque type")};
+                            }
+                        } else if(param->node_type == AST_Node_Type::ordinary_function_param) {
+                            Source_Info const& src = param->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column, u8"ordinary parameters are not allowed on fragment stage")};
+                        } else if(param->node_type == AST_Node_Type::vertex_input_param) {
+                            Source_Info const& src = param->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column, u8"vertex input parameters are not allowed on fragment stage")};
+                        } else {
+                            Source_Info const& src = param->source_info;
+                            return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"unknown parameter type")};
+                        }
+                    }
+                }
+            } break;
+
+            case Pass_Stage_Type::compute: {
+                for(auto& param: params) {
+                    if(param->node_type == AST_Node_Type::ordinary_function_param) {
+                        Source_Info const& src = param->source_info;
                         return {anton::expected_error,
-                                build_error_message(src.file_path, src.line, src.column, u8"sourced parameters must not be unsized arrays")};
+                                build_error_message(src.file_path, src.line, src.column, u8"ordinary parameters are not allowed on compute stage")};
+                    } else if(param->node_type == AST_Node_Type::sourced_function_param) {
+                        Sourced_Function_Param& node = (Sourced_Function_Param&)*param;
+                        Type& type = *node.type;
+
+                        // Sourced parameters that are arrays must be sized
+                        if(is_unsized_array(type)) {
+                            Source_Info const& src = type.source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column, u8"sourced parameters must not be unsized arrays")};
+                        }
+
+                        // Sourced parameters must not be opaque
+                        if(is_opaque_type(type)) {
+                            Source_Info const& src = type.source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column,
+                                                        u8"sourced parameters must be of non-opaque type (non-opaque builtin type or user "
+                                                        u8"defined type) or an array of non-opaque type")};
+                        }
+                    } else if(param->node_type == AST_Node_Type::vertex_input_param) {
+                        Source_Info const& src = param->source_info;
+                        return {anton::expected_error,
+                                build_error_message(src.file_path, src.line, src.column, u8"vertex input parameters are not allowed on compute stage")};
+                    } else {
+                        Source_Info const& src = param->source_info;
+                        return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"unknown parameter type")};
                     }
-
-                    // Sourced parameters must not be opaque
-                    if(is_opaque_type(type)) {
-                        Source_Info const& src = type.source_info;
-                        return {anton::expected_error, build_error_message(src.file_path, src.line, src.column,
-                                                                           u8"sourced parameters must be of non-opaque type (non-opaque builtin type or user "
-                                                                           u8"defined type) or an array of non-opaque type")};
-                    }
-                } break;
-
-                default:
-                    break;
-            }
-
-            i += should_advance;
+                }
+            } break;
         }
 
         return {anton::expected_value};
@@ -269,26 +465,24 @@ namespace vush {
             switch(node->node_type) {
                 case AST_Node_Type::function_declaration: {
                     Function_Declaration& fn = (Function_Declaration&)*node;
-                    if(anton::Expected<void, anton::String> res = process_fn_param_list(ctx, *fn.param_list); !res) {
+                    if(anton::Expected<void, anton::String> res = process_fn_param_list(ctx, fn); !res) {
                         return res;
                     }
 
                     if(anton::Expected<void, anton::String> res = process_ast(ctx, (Owning_Ptr<AST_Node>&)fn.body); !res) {
                         return res;
                     }
-
                 } break;
 
                 case AST_Node_Type::pass_stage_declaration: {
                     Pass_Stage_Declaration& fn = (Pass_Stage_Declaration&)*node;
-                    if(anton::Expected<void, anton::String> res = process_fn_param_list(ctx, *fn.param_list); !res) {
+                    if(anton::Expected<void, anton::String> res = process_fn_param_list(ctx, fn); !res) {
                         return res;
                     }
 
                     if(anton::Expected<void, anton::String> res = process_ast(ctx, (Owning_Ptr<AST_Node>&)fn.body); !res) {
                         return res;
                     }
-
                 } break;
 
                 default:

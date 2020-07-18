@@ -603,6 +603,8 @@ namespace vush {
 
     [[nodiscard]] bool is_opaque_type(Type const& type);
     [[nodiscard]] anton::String stringify_type(Type const& type);
+    [[nodiscard]] bool is_unsized_array(Type const& type);
+    [[nodiscard]] bool is_sized_array(Type const& type);
 
     struct Declaration: public AST_Node {
         using AST_Node::AST_Node;
