@@ -2,6 +2,7 @@
 
 #include <vush/vush.hpp>
 
+#include <anton/algorithm.hpp>
 #include <anton/filesystem.hpp>
 #include <anton/iterators.hpp>
 #include <codegen.hpp>
@@ -39,7 +40,15 @@ namespace vush {
 
     // Parse file, process imports, declaration ifs, build top-level symbol table.
     static anton::Expected<Owning_Ptr<Declaration_List>, anton::String> process_file_decl_ifs_and_resolve_imports(Context& ctx, anton::String const& path) {
-        anton::Expected<Owning_Ptr<Declaration_List>, Parse_Error> parse_result = parse_file(path);
+        // Ensure we're not importing the same file multiple times
+        auto iter = anton::find_if(ctx.imported_files.begin(), ctx.imported_files.end(), [&path](Owning_Ptr<anton::String> const& v) { return *v == path; });
+        if(iter != ctx.imported_files.end()) {
+            // Always return valid result to reduce the number of cases
+            return {anton::expected_value, Owning_Ptr(new Declaration_List)};
+        }
+
+        Owning_Ptr<anton::String> const& current_file = ctx.imported_files.emplace_back(Owning_Ptr{new anton::String{path}});
+        anton::Expected<Owning_Ptr<Declaration_List>, Parse_Error> parse_result = parse_file(*current_file);
         if(!parse_result) {
             Parse_Error error = anton::move(parse_result.error());
             anton::String error_msg = build_error_message(path, error.line, error.column, error.message);
