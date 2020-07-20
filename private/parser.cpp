@@ -1,5 +1,6 @@
 #include <parser.hpp>
 
+#include <anton/filesystem.hpp>
 #include <anton/optional.hpp>
 #include <anton/string_view.hpp>
 
@@ -9,7 +10,6 @@
 // TODO: Figure out a way to match operators that use overlapping symbols (+ and +=) in a clean way.
 // TODO: const types.
 // TODO: add constructors (currently function call which will break if we use an array type).
-// TODO: Add settings block.
 // TODO: Should we include comma?
 
 namespace vush {
@@ -1124,9 +1124,9 @@ namespace vush {
             }
 
             static constexpr anton::String_View stage_types_strings[] = {stage_vertex, stage_fragment, stage_compute};
-            static constexpr Pass_Stage_Type stage_types[] = {Pass_Stage_Type::vertex, Pass_Stage_Type::fragment, Pass_Stage_Type::compute};
+            static constexpr Stage_Type stage_types[] = {Stage_Type::vertex, Stage_Type::fragment, Stage_Type::compute};
 
-            Pass_Stage_Type stage_type;
+            Stage_Type stage_type;
             {
                 bool found = false;
                 for(i64 i = 0; i < 3; ++i) {

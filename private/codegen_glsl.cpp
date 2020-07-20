@@ -12,7 +12,7 @@ namespace vush {
     struct Codegen_Context {
         Format_Options format;
         anton::String_View current_pass;
-        Pass_Stage_Type current_stage;
+        Stage_Type current_stage;
         i64 indent;
     };
 
@@ -1218,7 +1218,7 @@ namespace vush {
                 stage.return_type->node_type == AST_Node_Type::builtin_type && ((Builtin_Type&)*stage.return_type).type == Builtin_GLSL_Type::glsl_void;
 
             switch(stage.stage) {
-                case Pass_Stage_Type::vertex: {
+                case Stage_Type::vertex: {
                     i64 in_location = 0;
                     anton::Array<anton::String> input_names;
                     for(auto& param: stage.params) {
@@ -1307,7 +1307,7 @@ namespace vush {
                     out += u8"}\n";
                 } break;
 
-                case Pass_Stage_Type::fragment: {
+                case Stage_Type::fragment: {
                     // Decompose return type to individual outputs
                     anton::Array<anton::String> output_names;
                     if(!return_type_is_void) {
@@ -1385,7 +1385,7 @@ namespace vush {
                     out += u8"}\n";
                 } break;
 
-                case Pass_Stage_Type::compute: {
+                case Stage_Type::compute: {
                     // TODO: Move return type validation to vush.cpp
                     if(!return_type_is_void) {
                         Source_Info const& src = stage.return_type->source_info;
@@ -1425,7 +1425,8 @@ namespace vush {
                 } break;
             }
 
-            files.emplace_back(anton::move(out));
+            // TODO: Merge shader_type and pass_stage_type
+            files.emplace_back(GLSL_File{anton::move(out), anton::String{codegen_ctx.current_pass}, codegen_ctx.current_stage});
         }
 
         return {anton::expected_value, anton::move(files)};

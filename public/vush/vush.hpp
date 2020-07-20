@@ -22,8 +22,16 @@ namespace vush {
         Format_Options format;
     };
 
+    enum struct Stage_Type {
+        vertex,
+        fragment,
+        compute,
+    };
+
     struct GLSL_File {
         anton::String data;
+        anton::String pass_name;
+        Stage_Type shader_type;
     };
 
     struct Setting_Key_Value {

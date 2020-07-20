@@ -245,7 +245,7 @@ namespace vush {
         }
 
         switch(function.stage) {
-            case Pass_Stage_Type::vertex: {
+            case Stage_Type::vertex: {
                 for(auto& param: params) {
                     if(param->node_type == AST_Node_Type::ordinary_function_param) {
                         Source_Info const& src = param->source_info;
@@ -296,7 +296,7 @@ namespace vush {
                 }
             } break;
 
-            case Pass_Stage_Type::fragment: {
+            case Stage_Type::fragment: {
                 if(params.size() > 0) {
                     bool const has_ordinary_parameter = params[0]->node_type == AST_Node_Type::ordinary_function_param;
                     if(has_ordinary_parameter) {
@@ -357,7 +357,7 @@ namespace vush {
                 }
             } break;
 
-            case Pass_Stage_Type::compute: {
+            case Stage_Type::compute: {
                 for(auto& param: params) {
                     if(param->node_type == AST_Node_Type::ordinary_function_param) {
                         Source_Info const& src = param->source_info;

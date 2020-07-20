@@ -811,19 +811,13 @@ namespace vush {
               return_type(anton::move(return_type)), body(anton::move(body)) {}
     };
 
-    enum struct Pass_Stage_Type {
-        vertex,
-        fragment,
-        compute,
-    };
-
-    constexpr anton::String_View stringify(Pass_Stage_Type type) {
+    constexpr anton::String_View stringify(Stage_Type type) {
         switch(type) {
-            case Pass_Stage_Type::vertex:
+            case Stage_Type::vertex:
                 return u8"vertex";
-            case Pass_Stage_Type::fragment:
+            case Stage_Type::fragment:
                 return u8"fragment";
-            case Pass_Stage_Type::compute:
+            case Stage_Type::compute:
                 return u8"compute";
         }
     }
@@ -833,10 +827,10 @@ namespace vush {
         Owning_Ptr<Identifier> pass;
         Owning_Ptr<Type> return_type;
         Owning_Ptr<Statement_List> body;
-        Pass_Stage_Type stage;
+        Stage_Type stage;
 
-        Pass_Stage_Declaration(Owning_Ptr<Identifier> pass, Pass_Stage_Type stage, anton::Array<Owning_Ptr<Function_Param>>&& params,
-                               Owning_Ptr<Type> return_type, Owning_Ptr<Statement_List> body, Source_Info const& source_info)
+        Pass_Stage_Declaration(Owning_Ptr<Identifier> pass, Stage_Type stage, anton::Array<Owning_Ptr<Function_Param>>&& params, Owning_Ptr<Type> return_type,
+                               Owning_Ptr<Statement_List> body, Source_Info const& source_info)
             : Declaration(source_info, AST_Node_Type::pass_stage_declaration), params(anton::move(params)), pass(anton::move(pass)),
               return_type(anton::move(return_type)), body(anton::move(body)), stage(anton::move(stage)) {}
     };
