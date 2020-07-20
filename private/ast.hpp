@@ -22,6 +22,7 @@ namespace vush {
         variable_declaration,
         constant_declaration,
         struct_decl,
+        settings_decl,
         function_param_if,
         ordinary_function_param,
         sourced_function_param,
@@ -745,6 +746,14 @@ namespace vush {
         i64 size() const {
             return members.size();
         }
+    };
+
+    struct Settings_Decl: public Declaration {
+        Owning_Ptr<Identifier> pass_name;
+        anton::Array<Settings_Group> settings_groups;
+
+        Settings_Decl(Owning_Ptr<Identifier> pass_name, Source_Info const& source_info)
+            : Declaration(source_info, AST_Node_Type::settings_decl), pass_name(anton::move(pass_name)) {}
     };
 
     struct Statement_List;

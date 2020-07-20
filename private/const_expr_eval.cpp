@@ -143,7 +143,7 @@ namespace vush {
                 Expr_Value rhs = rhs_res.value();
                 if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
                    lhs.type != Expr_Value_Type::int32) {
-                    anton::String stringified_relational = expr.is_equality ? u8"==" : u8"!=";
+                    anton::String stringified_relational{expr.is_equality ? u8"==" : u8"!="};
                     Source_Info const& src = expr.lhs->source_info;
                     return {anton::expected_error, build_error_message(src.file_path, src.line, src.column,
                                                                        u8"left-hand side of '" + stringified_relational +
@@ -152,7 +152,7 @@ namespace vush {
 
                 if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
                    rhs.type != Expr_Value_Type::int32) {
-                    anton::String stringified_relational = expr.is_equality ? u8"==" : u8"!=";
+                    anton::String stringified_relational{expr.is_equality ? u8"==" : u8"!="};
                     Source_Info const& src = expr.rhs->source_info;
                     return {anton::expected_error, build_error_message(src.file_path, src.line, src.column,
                                                                        u8"right-hand side of '" + stringified_relational +

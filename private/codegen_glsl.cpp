@@ -901,7 +901,7 @@ namespace vush {
             out += u8") in ";
             out += stringify(node.type);
             out += u8" ";
-            anton::String name = u8"_pass_" + codegen_ctx.current_pass + u8"_" + input_name + "_in";
+            anton::String name = anton::String{u8"_pass_"} + codegen_ctx.current_pass + u8"_" + input_name + "_in";
             out += name;
             out += u8";\n";
             input_names.emplace_back(anton::move(name));
@@ -952,7 +952,7 @@ namespace vush {
             out += u8") out ";
             out += stringify(node.type);
             out += u8" ";
-            anton::String name = u8"_pass_" + codegen_ctx.current_pass + u8"_" + output_name + "_out";
+            anton::String name = anton::String{u8"_pass_"} + codegen_ctx.current_pass + u8"_" + output_name + "_out";
             out += name;
             out += u8";\n";
             output_names.emplace_back(anton::move(name));
@@ -1230,7 +1230,7 @@ namespace vush {
                     out += u8"\n";
 
                     anton::String const shader_return_name =
-                        u8"_pass_" + codegen_ctx.current_pass + u8"_stage_" + stringify(codegen_ctx.current_stage) + u8"_out";
+                        anton::String{u8"_pass_"} + codegen_ctx.current_pass + u8"_stage_" + stringify(codegen_ctx.current_stage) + u8"_out";
                     if(!return_type_is_void) {
                         // Write output
                         out += u8"out ";
@@ -1314,7 +1314,7 @@ namespace vush {
                         i64 out_location = 0;
                         // write_fragment_outputs will append underscore to the name we supply and then prepend pass name ending with underscore.
                         // We use a dummy name ("frag") to avoid the double underscore.
-                        write_fragment_outputs(ctx, codegen_ctx, out, *stage.return_type, u8"frag", out_location, output_names);
+                        write_fragment_outputs(ctx, codegen_ctx, out, *stage.return_type, anton::String{u8"frag"}, out_location, output_names);
                         out += u8"\n";
                     }
 
@@ -1356,7 +1356,7 @@ namespace vush {
                     codegen_ctx.indent += 1;
 
                     // Write stage function call
-                    anton::String const shader_return_name = u8"_res";
+                    anton::String const shader_return_name{u8"_res"};
                     write_indent(out, codegen_ctx.indent);
                     if(!return_type_is_void) {
                         out += stringify_type(*stage.return_type);

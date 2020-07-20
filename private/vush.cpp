@@ -1,5 +1,6 @@
 // TODO: dynamic ifs
 // TODO: Annotated variables
+// TODO: constant initializers in structs
 
 #include <vush/vush.hpp>
 
@@ -470,7 +471,7 @@ namespace vush {
         return {anton::expected_value};
     }
 
-    static anton::Expected<void, anton::String> process_top_level_ast(Context& ctx, Declaration_List& ast) {
+    static anton::Expected<void, anton::String> process_top_level_ast(Context& ctx, Declaration_List& ast, anton::Array<Pass_Settings>& settings) {
         for(auto& node: ast.declarations) {
             switch(node->node_type) {
                 case AST_Node_Type::function_declaration: {
@@ -495,6 +496,37 @@ namespace vush {
                     }
                 } break;
 
+                case AST_Node_Type::settings_decl: {
+                    Settings_Decl& decl = (Settings_Decl&)*node;
+                    Pass_Settings* pass_iter = anton::find_if(
+                        settings.begin(), settings.end(), [&pass_name = decl.pass_name->value](Pass_Settings const& v) { return v.pass_name == pass_name; });
+                    if(pass_iter == settings.end()) {
+                        Pass_Settings& v = settings.emplace_back(Pass_Settings{decl.pass_name->value, {}});
+                        pass_iter = &v;
+                    }
+
+                    anton::Array<Settings_Group>& settings_groups = pass_iter->settings_groups;
+                    for(Settings_Group& group: decl.settings_groups) {
+                        Settings_Group* group_iter = anton::find_if(settings_groups.begin(), settings_groups.end(),
+                                                                    [&group](Settings_Group const& v) { return v.group_name == group.group_name; });
+                        if(group_iter == settings_groups.end()) {
+                            Settings_Group& g = settings_groups.emplace_back(Settings_Group{group.group_name, {}});
+                            group_iter = &g;
+                        }
+
+                        // N^2 loop to overwrite duplicates in the order of occurence
+                        for(Setting_Key_Value const& kv_new: group.settings) {
+                            auto end = group_iter->settings.end();
+                            auto i = anton::find_if(group_iter->settings.begin(), end, [&kv_new](Setting_Key_Value const& v) { return kv_new.key == v.key; });
+                            if(i != end) {
+                                i->value = kv_new.value;
+                            } else {
+                                group_iter->settings.emplace_back(kv_new);
+                            }
+                        }
+                    }
+                } break;
+
                 default:
                     break;
             }
@@ -503,7 +535,7 @@ namespace vush {
         return {anton::expected_value};
     }
 
-    anton::Expected<anton::Array<GLSL_File>, anton::String> compile_to_glsl(Configuration const& config) {
+    anton::Expected<Build_Result, anton::String> compile_to_glsl(Configuration const& config) {
         Context ctx = {};
         ctx.import_directories = config.import_directories;
         // Add global scope
@@ -528,13 +560,18 @@ namespace vush {
             return {anton::expected_error, anton::move(parse_res.error())};
         }
 
+        anton::Array<Pass_Settings> settings;
         Owning_Ptr<Declaration_List> ast = anton::move(parse_res.value());
-        anton::Expected<void, anton::String> process_res = process_top_level_ast(ctx, *ast);
+        anton::Expected<void, anton::String> process_res = process_top_level_ast(ctx, *ast, settings);
         if(!process_res) {
             return {anton::expected_error, anton::move(process_res.error())};
         }
 
         anton::Expected<anton::Array<GLSL_File>, anton::String> codegen_res = generate_glsl(ctx, *ast, config.format);
-        return codegen_res;
+        if(!codegen_res) {
+            return {anton::expected_error, anton::move(codegen_res.error())};
+        }
+
+        return {anton::expected_value, Build_Result{anton::move(settings), anton::move(codegen_res.value())}};
     }
 } // namespace vush

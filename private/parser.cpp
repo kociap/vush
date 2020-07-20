@@ -36,6 +36,7 @@ namespace vush {
     static constexpr anton::String_View kw_source_definition = u8"source_definition";
     static constexpr anton::String_View kw_source = u8"source";
     static constexpr anton::String_View kw_emit = u8"emit";
+    static constexpr anton::String_View kw_settings = u8"settings";
 
     // stages
 
@@ -472,6 +473,10 @@ namespace vush {
 
             if(Owning_Ptr import_decl = try_import_decl()) {
                 return import_decl;
+            }
+
+            if(Owning_Ptr settings_decl = try_settings_decl()) {
+                return settings_decl;
             }
 
             if(Owning_Ptr src_def = try_source_definition_decl()) {
@@ -982,6 +987,118 @@ namespace vush {
             }
 
             return struct_decl;
+        }
+
+        Owning_Ptr<Settings_Decl> try_settings_decl() {
+            Lexer_State const state_backup = _lexer.get_current_state();
+
+            if(!_lexer.match(kw_settings, true)) {
+                set_error(u8"expected 'settings'");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            Owning_Ptr pass_name = try_identifier();
+            if(!pass_name) {
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            Owning_Ptr settings_decl{new Settings_Decl(anton::move(pass_name), src_info(state_backup))};
+            if(!_lexer.match(token_brace_open)) {
+                set_error(u8"expected '{'");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            auto match_string = [this, &state_backup]() -> anton::Optional<anton::String> {
+                _lexer.ignore_whitespace_and_comments();
+                anton::String string;
+                while(true) {
+                    char32 next_char = _lexer.peek_next();
+                    if(next_char == eof_char32) {
+                        set_error(u8"unexpected end of file");
+                        _lexer.restore_state(state_backup);
+                        return anton::null_optional;
+                    } else if(is_whitespace(next_char) || next_char == U':' || next_char == U'}' || next_char == U'{') {
+                        return {anton::move(string)};
+                    } else {
+                        string += next_char;
+                        _lexer.get_next();
+                    }
+                }
+            };
+
+            while(true) {
+                if(_lexer.match(token_brace_close)) {
+                    break;
+                }
+
+                auto group_name = match_string();
+                if(!group_name) {
+                    _lexer.restore_state(state_backup);
+                    return nullptr;
+                }
+
+                if(group_name.value().size_bytes() == 0) {
+                    set_error(u8"expected group name");
+                    _lexer.restore_state(state_backup);
+                    return nullptr;
+                }
+
+                if(!_lexer.match(token_colon)) {
+                    set_error(u8"expected ':'");
+                    _lexer.restore_state(state_backup);
+                    return nullptr;
+                }
+
+                if(!_lexer.match(token_brace_open)) {
+                    set_error(u8"expected '{'");
+                    _lexer.restore_state(state_backup);
+                    return nullptr;
+                }
+
+                Settings_Group& group = settings_decl->settings_groups.emplace_back(Settings_Group{anton::move(group_name.value()), {}});
+                while(true) {
+                    if(_lexer.match(token_brace_close)) {
+                        break;
+                    }
+
+                    auto key = match_string();
+                    if(!key) {
+                        _lexer.restore_state(state_backup);
+                        return nullptr;
+                    }
+
+                    if(key.value().size_bytes() == 0) {
+                        set_error(u8"expected key string");
+                        _lexer.restore_state(state_backup);
+                        return nullptr;
+                    }
+
+                    if(!_lexer.match(token_colon)) {
+                        set_error(u8"expected ':'");
+                        _lexer.restore_state(state_backup);
+                        return nullptr;
+                    }
+
+                    auto value = match_string();
+                    if(!value) {
+                        _lexer.restore_state(state_backup);
+                        return nullptr;
+                    }
+
+                    if(value.value().size_bytes() == 0) {
+                        set_error(u8"expected value string after ':'");
+                        _lexer.restore_state(state_backup);
+                        return nullptr;
+                    }
+
+                    group.settings.emplace_back(Setting_Key_Value{anton::move(key.value()), anton::move(value.value())});
+                }
+            }
+
+            return settings_decl;
         }
 
         Owning_Ptr<Pass_Stage_Declaration> try_pass_stage_declaration() {
@@ -2815,8 +2932,8 @@ namespace vush {
             while(true) {
                 char32 next_char = _lexer.peek_next();
                 if(next_char == U'\\') {
-                    string += (char)_lexer.get_next();
-                    string += (char)_lexer.get_next();
+                    string += _lexer.get_next();
+                    string += _lexer.get_next();
                 } else if(next_char == eof_char32) {
                     set_error(u8"unexpected end of file");
                     _lexer.restore_state(state_backup);
@@ -2825,7 +2942,7 @@ namespace vush {
                     _lexer.get_next();
                     return Owning_Ptr{new String_Literal(anton::move(string), src_info(state_backup))};
                 } else {
-                    string += (char)next_char;
+                    string += next_char;
                     _lexer.get_next();
                 }
             }
