@@ -2,9 +2,8 @@
 
 #include <anton/filesystem.hpp>
 #include <anton/optional.hpp>
+#include <anton/stream.hpp>
 #include <anton/string_view.hpp>
-
-#include <fstream>
 
 // TODO: When matching keywords, ensure that the keyword is followed by non-identifier character (Find a cleaner way).
 // TODO: Figure out a way to match operators that use overlapping symbols (+ and +=) in a clean way.
@@ -300,7 +299,7 @@ namespace vush {
 
     class Lexer {
     public:
-        Lexer(std::istream& file): _stream(file) {}
+        Lexer(anton::Input_Stream& file): _stream(file) {}
 
         bool match(anton::String_View const string, bool const must_not_be_followed_by_identifier_char = false) {
             ignore_whitespace_and_comments();
@@ -373,7 +372,7 @@ namespace vush {
                         continue;
                     } else {
                         // Not a comment. End skipping.
-                        unget();
+                        unget(U'/');
                         break;
                     }
                 }
@@ -384,11 +383,11 @@ namespace vush {
 
         Lexer_State get_current_state() {
             ignore_whitespace_and_comments();
-            return {_stream.tellg(), _line, _column};
+            return {_stream.tell(), _line, _column};
         }
 
         void restore_state(Lexer_State const state) {
-            _stream.seekg(state.stream_offset, std::ios_base::beg);
+            _stream.seek(anton::Seek_Dir::beg, state.stream_offset);
             _line = state.line;
             _column = state.column;
         }
@@ -408,19 +407,19 @@ namespace vush {
             return _stream.peek();
         }
 
-        void unget() {
-            _stream.unget();
+        void unget(char32 c) {
+            _stream.unget(c);
         }
 
     private:
-        std::istream& _stream;
+        anton::Input_Stream& _stream;
         i64 _line = 0;
         i64 _column = 0;
     };
 
     class Parser {
     public:
-        Parser(std::istream& stream, anton::String_View filename): _filename(filename), _lexer(stream) {}
+        Parser(anton::Input_Stream& stream, anton::String_View filename): _filename(filename), _lexer(stream) {}
 
         Owning_Ptr<Declaration_List> build_ast() {
             Owning_Ptr declarations{new Declaration_List};
@@ -2970,8 +2969,8 @@ namespace vush {
     };
 
     anton::Expected<Owning_Ptr<Declaration_List>, Parse_Error> parse_file(anton::String const& path) {
-        std::ifstream file(path.data());
-        if(!file) {
+        anton::fs::Input_File_Stream file;
+        if(!file.open(path)) {
             anton::String msg = "could not open file " + path + " for reading.";
             return {anton::expected_error, anton::move(msg), 0, 0, 0};
         }
