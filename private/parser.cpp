@@ -1,6 +1,5 @@
 #include <parser.hpp>
 
-#include <anton/filesystem.hpp>
 #include <anton/optional.hpp>
 #include <anton/stream.hpp>
 #include <anton/string_view.hpp>
@@ -299,7 +298,7 @@ namespace vush {
 
     class Lexer {
     public:
-        Lexer(anton::Input_Stream& file): _stream(file) {}
+        Lexer(anton::Input_Stream& stream): _stream(stream) {}
 
         bool match(anton::String_View const string, bool const must_not_be_followed_by_identifier_char = false) {
             ignore_whitespace_and_comments();
@@ -372,7 +371,7 @@ namespace vush {
                         continue;
                     } else {
                         // Not a comment. End skipping.
-                        unget(U'/');
+                        unget();
                         break;
                     }
                 }
@@ -407,8 +406,8 @@ namespace vush {
             return _stream.peek();
         }
 
-        void unget(char32 c) {
-            _stream.unget(c);
+        void unget() {
+            _stream.unget();
         }
 
     private:
@@ -419,7 +418,7 @@ namespace vush {
 
     class Parser {
     public:
-        Parser(anton::Input_Stream& stream, anton::String_View filename): _filename(filename), _lexer(stream) {}
+        Parser(anton::Input_Stream& stream, anton::String_View source_name): _source_name(source_name), _lexer(stream) {}
 
         Owning_Ptr<Declaration_List> build_ast() {
             Owning_Ptr declarations{new Declaration_List};
@@ -438,31 +437,31 @@ namespace vush {
         }
 
     private:
-        anton::String_View _filename;
+        anton::String_View _source_name;
         Lexer _lexer;
         Parse_Error _last_error;
 
         void set_error(anton::String_View const message, Lexer_State const& state) {
-            if(state.stream_offset >= _last_error.file_offset) {
+            if(state.stream_offset >= _last_error.stream_offset) {
                 _last_error.message = message;
                 _last_error.line = state.line;
                 _last_error.column = state.column;
-                _last_error.file_offset = state.stream_offset;
+                _last_error.stream_offset = state.stream_offset;
             }
         }
 
         void set_error(anton::String_View const message) {
             Lexer_State const state = _lexer.get_current_state();
-            if(state.stream_offset >= _last_error.file_offset) {
+            if(state.stream_offset >= _last_error.stream_offset) {
                 _last_error.message = message;
                 _last_error.line = state.line;
                 _last_error.column = state.column;
-                _last_error.file_offset = state.stream_offset;
+                _last_error.stream_offset = state.stream_offset;
             }
         }
 
         Source_Info src_info(Lexer_State const& state) {
-            return Source_Info{_filename, state.line, state.column, state.stream_offset};
+            return Source_Info{_source_name, state.line, state.column, state.stream_offset};
         }
 
         Owning_Ptr<Declaration> try_declaration() {
@@ -2968,14 +2967,8 @@ namespace vush {
         }
     };
 
-    anton::Expected<Owning_Ptr<Declaration_List>, Parse_Error> parse_file(anton::String const& path) {
-        anton::fs::Input_File_Stream file;
-        if(!file.open(path)) {
-            anton::String msg = "could not open file " + path + " for reading.";
-            return {anton::expected_error, anton::move(msg), 0, 0, 0};
-        }
-
-        Parser parser(file, path);
+    anton::Expected<Owning_Ptr<Declaration_List>, Parse_Error> parse_source(anton::Input_Stream& stream, anton::String_View const path) {
+        Parser parser(stream, path);
         Owning_Ptr ast = parser.build_ast();
         if(ast) {
             return {anton::expected_value, anton::move(ast)};

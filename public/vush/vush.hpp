@@ -28,12 +28,6 @@ namespace vush {
         compute,
     };
 
-    struct GLSL_File {
-        anton::String data;
-        anton::String pass_name;
-        Stage_Type shader_type;
-    };
-
     struct Setting_Key_Value {
         anton::String key;
         anton::String value;
@@ -49,16 +43,39 @@ namespace vush {
         anton::Array<Settings_Group> settings_groups;
     };
 
+    struct GLSL_File {
+        anton::String data;
+        anton::String pass_name;
+        Stage_Type shader_type;
+    };
+
+    struct Source_Request_Result {
+        anton::String source_name;
+        anton::String data;
+    };
+
     struct Build_Result {
         anton::Array<Pass_Settings> settings;
         anton::Array<GLSL_File> files;
     };
 
+    using source_request_callback = anton::Expected<Source_Request_Result, anton::String> (*)(anton::String const& path, void* user_data);
+
     // compile_to_glsl
     // Compiles given vush shader to glsl shader.
-    // Uses the import paths provided in import_paths to resolve import directives.
+    // Uses the callback to request source.
+    // Does not use import_directories.
     //
-    // Returns compiled glsl file or error message.
+    // Returns compiled glsl files or error message.
+    //
+    anton::Expected<Build_Result, anton::String> compile_to_glsl(Configuration const& config, source_request_callback callback, void* user_data);
+
+    // compile_to_glsl
+    // Compiles given vush shader to glsl shader.
+    // Reads the source files from the disk.
+    // Uses the import paths provided in import_directories to resolve import directives.
+    //
+    // Returns compiled glsl files or error message.
     //
     anton::Expected<Build_Result, anton::String> compile_to_glsl(Configuration const& config);
 } // namespace vush

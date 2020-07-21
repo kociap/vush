@@ -11,72 +11,68 @@
 #include <const_expr_eval.hpp>
 #include <context.hpp>
 #include <parser.hpp>
+#include <string_stream.hpp>
 #include <symbol.hpp>
 #include <utility.hpp>
 
 namespace vush {
-    static anton::Expected<anton::String, anton::String> resolve_import_path(Context& ctx, anton::String const& import_path, Source_Info const& src) {
-        bool found = false;
-        anton::String out_path;
-        for(anton::String_View const& path: ctx.import_directories) {
-            anton::String resolved_path = anton::fs::concat_paths(path, import_path);
-            bool exists = anton::fs::exists(resolved_path);
-            if(exists) {
-                if(!found) {
-                    found = true;
-                    out_path = anton::move(resolved_path);
-                } else {
-                    anton::String error_msg = build_error_message(src.file_path, src.line, src.column, u8"ambiguous import path");
-                    return {anton::expected_error, anton::move(error_msg)};
-                }
+    // Parse file, process imports, declaration ifs, build top-level symbol table.
+    static anton::Expected<Owning_Ptr<Declaration_List>, anton::String> process_file_decl_ifs_and_resolve_imports(Context& ctx, anton::String const& path) {
+        Owning_Ptr<Declaration_List> ast;
+        // Parse the entry source
+        {
+            anton::Expected<Source_Request_Result, anton::String> source_request_res = ctx.source_request_cb(path, ctx.source_request_user_data);
+            if(!source_request_res) {
+                // TODO: Error message
+                return {anton::expected_error, anton::move(source_request_res.error())};
+            }
+
+            Source_Request_Result& request_res = source_request_res.value();
+            Input_String_Stream stream{anton::move(request_res.data)};
+            Owning_Ptr<anton::String> const& current_source_name =
+                ctx.imported_sources.emplace_back(Owning_Ptr{new anton::String{anton::move(request_res.source_name)}});
+            anton::Expected<Owning_Ptr<Declaration_List>, Parse_Error> parse_result = parse_source(stream, *current_source_name);
+            if(parse_result) {
+                ast = anton::move(parse_result.value());
+            } else {
+                Parse_Error const& error = parse_result.error();
+                anton::String error_msg = build_error_message(path, error.line, error.column, error.message);
+                return {anton::expected_error, anton::move(error_msg)};
             }
         }
 
-        if(found) {
-            return {anton::expected_value, anton::move(out_path)};
-        } else {
-            anton::String error_msg = build_error_message(src.file_path, src.line, src.column, u8"could not resolve import path");
-            return {anton::expected_error, anton::move(error_msg)};
-        }
-    }
-
-    // Parse file, process imports, declaration ifs, build top-level symbol table.
-    static anton::Expected<Owning_Ptr<Declaration_List>, anton::String> process_file_decl_ifs_and_resolve_imports(Context& ctx, anton::String const& path) {
-        // Ensure we're not importing the same file multiple times
-        auto iter = anton::find_if(ctx.imported_files.begin(), ctx.imported_files.end(), [&path](Owning_Ptr<anton::String> const& v) { return *v == path; });
-        if(iter != ctx.imported_files.end()) {
-            // Always return valid result to reduce the number of cases
-            return {anton::expected_value, Owning_Ptr(new Declaration_List)};
-        }
-
-        Owning_Ptr<anton::String> const& current_file = ctx.imported_files.emplace_back(Owning_Ptr{new anton::String{path}});
-        anton::Expected<Owning_Ptr<Declaration_List>, Parse_Error> parse_result = parse_file(*current_file);
-        if(!parse_result) {
-            Parse_Error error = anton::move(parse_result.error());
-            anton::String error_msg = build_error_message(path, error.line, error.column, error.message);
-            return {anton::expected_error, anton::move(error_msg)};
-        }
-
-        Owning_Ptr<Declaration_List>& ast = parse_result.value();
         for(i64 i = 0; i < ast->declarations.size();) {
             switch(ast->declarations[i]->node_type) {
                 case AST_Node_Type::import_decl: {
                     Owning_Ptr<Import_Decl> node{static_cast<Import_Decl*>(ast->declarations[i].release())};
-                    anton::Expected<anton::String, anton::String> import_path = resolve_import_path(ctx, node->path, node->source_info);
-                    if(!import_path) {
-                        return {anton::expected_error, anton::move(import_path.error())};
-                    }
-
-                    anton::Expected<Owning_Ptr<Declaration_List>, anton::String> result = process_file_decl_ifs_and_resolve_imports(ctx, import_path.value());
-                    if(!result) {
-                        return {anton::expected_error, anton::move(result.error())};
+                    anton::Expected<Source_Request_Result, anton::String> source_request_res = ctx.source_request_cb(node->path, ctx.source_request_user_data);
+                    if(!source_request_res) {
+                        // TODO: Error message
+                        return {anton::expected_error, anton::move(source_request_res.error())};
                     }
 
                     ast->declarations.erase(ast->declarations.begin() + i, ast->declarations.begin() + i + 1);
-                    Declaration_List* decls = result.value().get();
-                    anton::Move_Iterator begin(decls->declarations.begin());
-                    anton::Move_Iterator end(decls->declarations.end());
-                    ast->declarations.insert(i, begin, end);
+                    Source_Request_Result& request_res = source_request_res.value();
+
+                    // Ensure we're not importing the same source multiple times
+                    auto iter = anton::find_if(ctx.imported_sources.begin(), ctx.imported_sources.end(),
+                                               [&source_name = request_res.source_name](Owning_Ptr<anton::String> const& v) { return *v == source_name; });
+                    if(iter == ctx.imported_sources.end()) {
+                        Input_String_Stream stream{anton::move(request_res.data)};
+                        Owning_Ptr<anton::String> const& current_source_name =
+                            ctx.imported_sources.emplace_back(Owning_Ptr{new anton::String{anton::move(request_res.source_name)}});
+                        anton::Expected<Owning_Ptr<Declaration_List>, Parse_Error> parse_result = parse_source(stream, *current_source_name);
+                        if(!parse_result) {
+                            Parse_Error const& error = anton::move(parse_result.error());
+                            anton::String error_msg = build_error_message(path, error.line, error.column, error.message);
+                            return {anton::expected_error, anton::move(error_msg)};
+                        }
+
+                        Declaration_List& decls = *parse_result.value();
+                        anton::Move_Iterator begin(decls.declarations.begin());
+                        anton::Move_Iterator end(decls.declarations.end());
+                        ast->declarations.insert(i, begin, end);
+                    }
                 } break;
 
                 case AST_Node_Type::declaration_if: {
@@ -471,6 +467,7 @@ namespace vush {
         return {anton::expected_value};
     }
 
+    // TODO: merge with process_file_decl_ifs_and_resolve_imports
     static anton::Expected<void, anton::String> process_top_level_ast(Context& ctx, Declaration_List& ast, anton::Array<Pass_Settings>& settings) {
         for(auto& node: ast.declarations) {
             switch(node->node_type) {
@@ -535,9 +532,10 @@ namespace vush {
         return {anton::expected_value};
     }
 
-    anton::Expected<Build_Result, anton::String> compile_to_glsl(Configuration const& config) {
+    anton::Expected<Build_Result, anton::String> compile_to_glsl(Configuration const& config, source_request_callback callback, void* user_data) {
         Context ctx = {};
-        ctx.import_directories = config.import_directories;
+        ctx.source_request_cb = callback;
+        ctx.source_request_user_data = user_data;
         // Add global scope
         ctx.symbols.emplace_back();
         // Create symbols for the constant defines passed via config
@@ -573,5 +571,55 @@ namespace vush {
         }
 
         return {anton::expected_value, Build_Result{anton::move(settings), anton::move(codegen_res.value())}};
+    }
+
+    static anton::Expected<anton::String, anton::String> resolve_import_path(anton::String const& import_path,
+                                                                             anton::Slice<anton::String_View const> const import_directories) {
+        bool found = false;
+        anton::String out_path;
+        for(anton::String_View const& path: import_directories) {
+            anton::String resolved_path = anton::fs::concat_paths(path, import_path);
+            bool exists = anton::fs::exists(resolved_path);
+            if(exists) {
+                if(!found) {
+                    found = true;
+                    out_path = anton::move(resolved_path);
+                } else {
+                    return {anton::expected_error, anton::String{u8"ambiguous import path"}};
+                }
+            }
+        }
+
+        if(found) {
+            return {anton::expected_value, anton::move(out_path)};
+        } else {
+            return {anton::expected_error, anton::String{u8"could not resolve import path"}};
+        }
+    }
+
+    static anton::Expected<Source_Request_Result, anton::String> file_read_callback(anton::String const& path, void* user_data) {
+        anton::Slice<anton::String_View const>& import_directories = *reinterpret_cast<anton::Slice<anton::String_View const>*>(user_data);
+        anton::Expected<anton::String, anton::String> res = resolve_import_path(path, import_directories);
+        if(!res) {
+            return {anton::expected_error, anton::move(res.error())};
+        }
+
+        anton::fs::Input_File_Stream file;
+        if(!file.open(res.value())) {
+            return {anton::expected_error, u8"could not open " + res.value() + u8" for reading"};
+        }
+
+        file.seek(anton::Seek_Dir::end, 0);
+        i64 size = file.tell();
+        file.seek(anton::Seek_Dir::beg, 0);
+        anton::String file_contents{anton::reserve, size};
+        file_contents.force_size(size);
+        file.read(file_contents.data(), size);
+        return {anton::expected_value, Source_Request_Result{anton::move(res.value()), anton::move(file_contents)}};
+    }
+
+    anton::Expected<Build_Result, anton::String> compile_to_glsl(Configuration const& config) {
+        anton::Slice<anton::String_View const> import_directories{config.import_directories};
+        return compile_to_glsl(config, file_read_callback, &import_directories);
     }
 } // namespace vush

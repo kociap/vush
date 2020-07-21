@@ -7,12 +7,14 @@
 #include <anton/string_view.hpp>
 #include <owning_ptr.hpp>
 #include <symbol.hpp>
+#include <vush/vush.hpp>
 
 namespace vush {
     struct Context {
-        anton::Slice<anton::String_View const> import_directories;
-        anton::Array<Owning_Ptr<anton::String>> imported_files;
+        anton::Array<Owning_Ptr<anton::String>> imported_sources;
         anton::Array<anton::Flat_Hash_Map<anton::String, Symbol>> symbols;
+        source_request_callback source_request_cb;
+        void* source_request_user_data;
     };
 
     // find_symbol
