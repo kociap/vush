@@ -1139,7 +1139,7 @@ namespace vush {
         codegen_ctx.indent = 0;
 
         anton::String common;
-        common += "#version 450 core\n\n";
+        common += "";
 
         if(structs_and_consts.size() > 0) {
             for(Declaration* decl: structs_and_consts) {
@@ -1194,6 +1194,8 @@ namespace vush {
 
             codegen_ctx.current_pass = stage.pass->value;
             codegen_ctx.current_stage = stage.stage;
+
+            out = anton::String("#version 450 core\n#pragma shader_stage(") + stringify(stage.stage) + ")\n\n" + out;
 
             // Stringify the stage function
             stringify(out, *stage.return_type, codegen_ctx);
@@ -1325,12 +1327,13 @@ namespace vush {
                         // Write input from the previous stage if the first parameter is an ordinary parameter
                         if(has_prev_stage_input) {
                             Ordinary_Function_Param const& param = (Ordinary_Function_Param const&)*stage.params[0];
+                            out += u8"layout(location = 0) ";
                             out += u8"in ";
                             out += stringify_type(*param.type);
                             anton::String name = u8"_pass_" + stage.pass->value + u8"_" + param.identifier->value + u8"_in";
                             out += u8" ";
                             out += name;
-                            out += u8"\n\n";
+                            out += u8";\n\n";
                             arguments.emplace_back(name);
                         }
 

@@ -19,6 +19,10 @@ if(VUSH_COMPILER_CLANGPP)
         -fno-rtti 
         -fno-exceptions
     )
+else()
+  set(VUSH_COMPILE_FLAGS
+        /GF
+    )
 endif()
 
 add_subdirectory(ext/anton_core)
