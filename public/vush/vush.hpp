@@ -45,18 +45,22 @@ namespace vush {
 
     struct GLSL_File {
         anton::String data;
-        anton::String pass_name;
         Stage_Type stage_type;
+    };
+
+    struct Pass_Data {
+        anton::String name;
+        anton::Array<GLSL_File> files;
+    };
+
+    struct Build_Result {
+        anton::Array<Pass_Settings> settings;
+        anton::Array<Pass_Data> passes;
     };
 
     struct Source_Request_Result {
         anton::String source_name;
         anton::String data;
-    };
-
-    struct Build_Result {
-        anton::Array<Pass_Settings> settings;
-        anton::Array<GLSL_File> files;
     };
 
     using source_request_callback = anton::Expected<Source_Request_Result, anton::String> (*)(anton::String const& path, void* user_data);

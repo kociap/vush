@@ -1056,7 +1056,7 @@ namespace vush {
         return {anton::expected_value, anton::move(out)};
     }
 
-    anton::Expected<anton::Array<GLSL_File>, anton::String> generate_glsl(Context const& ctx, Declaration_List& node, Format_Options const& format) {
+    anton::Expected<anton::Array<Pass_Data>, anton::String> generate_glsl(Context const& ctx, Declaration_List& node, Format_Options const& format) {
         anton::Array<Declaration*> structs_and_consts;
         anton::Array<Declaration*> functions;
         anton::Array<Declaration*> pass_stages;
@@ -1186,7 +1186,7 @@ namespace vush {
             common += u8"\n";
         }
 
-        anton::Array<GLSL_File> files(anton::reserve, pass_stages.size());
+        anton::Array<Pass_Data> passes;
         for(Declaration* decl: pass_stages) {
             Pass_Stage_Declaration& stage = (Pass_Stage_Declaration&)*decl;
             anton::String const pass_function_name = u8"_pass_" + stage.pass->value + u8"_stage_" + stringify(stage.stage);
@@ -1428,10 +1428,15 @@ namespace vush {
                 } break;
             }
 
-            // TODO: Merge shader_type and pass_stage_type
-            files.emplace_back(GLSL_File{anton::move(out), anton::String{codegen_ctx.current_pass}, codegen_ctx.current_stage});
+            auto i = anton::find_if(passes.begin(), passes.end(), [cur_pass = codegen_ctx.current_pass](Pass_Data const& v) { return v.name == cur_pass; });
+            if(i == passes.end()) {
+                Pass_Data& v = passes.emplace_back(Pass_Data{anton::String{codegen_ctx.current_pass}, {}});
+                i = &v;
+            }
+
+            i->files.emplace_back(GLSL_File{anton::move(out), codegen_ctx.current_stage});
         }
 
-        return {anton::expected_value, anton::move(files)};
+        return {anton::expected_value, anton::move(passes)};
     }
 } // namespace vush

@@ -23,8 +23,11 @@ int main() {
         }
         std::cout << "\n\n";
 
-        for(vush::GLSL_File const& file: res.files) {
-            std::cout << file.data.data() << "\n\n";
+        for(vush::Pass_Data const& pass: res.passes) {
+            std::cout << "\n\nPASS " << pass.name.data() << "\n\n";
+            for(vush::GLSL_File const& file: pass.files) {
+                std::cout << file.data.data() << "\n\n";
+            }
         }
         return 0;
     } else {
