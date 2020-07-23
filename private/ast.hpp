@@ -23,6 +23,7 @@ namespace vush {
         constant_declaration,
         struct_decl,
         settings_decl,
+        workgroup_attribute,
         function_param_if,
         ordinary_function_param,
         sourced_function_param,
@@ -758,6 +759,19 @@ namespace vush {
 
     struct Statement_List;
 
+    struct Function_Attribute: public AST_Node {
+        using AST_Node::AST_Node;
+    };
+
+    struct Workgroup_Attribute: public Function_Attribute {
+        Owning_Ptr<Integer_Literal> x;
+        Owning_Ptr<Integer_Literal> y;
+        Owning_Ptr<Integer_Literal> z;
+
+        Workgroup_Attribute(Owning_Ptr<Integer_Literal> x, Owning_Ptr<Integer_Literal> y, Owning_Ptr<Integer_Literal> z, Source_Info const& source_info)
+            : Function_Attribute(source_info, AST_Node_Type::workgroup_attribute), x(anton::move(x)), y(anton::move(y)), z(anton::move(z)) {}
+    };
+
     struct Function_Param: public AST_Node {
         using AST_Node::AST_Node;
     };
@@ -801,14 +815,15 @@ namespace vush {
 
     struct Function_Declaration: public Declaration {
         anton::Array<Owning_Ptr<Function_Param>> params;
+        anton::Array<Owning_Ptr<Function_Attribute>> attributes;
         Owning_Ptr<Identifier> name;
         Owning_Ptr<Type> return_type;
         Owning_Ptr<Statement_List> body;
 
-        Function_Declaration(Owning_Ptr<Identifier> name, anton::Array<Owning_Ptr<Function_Param>>&& params, Owning_Ptr<Type> return_type,
-                             Owning_Ptr<Statement_List> body, Source_Info const& source_info)
-            : Declaration(source_info, AST_Node_Type::function_declaration), params(anton::move(params)), name(anton::move(name)),
-              return_type(anton::move(return_type)), body(anton::move(body)) {}
+        Function_Declaration(anton::Array<Owning_Ptr<Function_Attribute>>&& attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> name,
+                             anton::Array<Owning_Ptr<Function_Param>>&& params, Owning_Ptr<Statement_List> body, Source_Info const& source_info)
+            : Declaration(source_info, AST_Node_Type::function_declaration), params(anton::move(params)), attributes(anton::move(attributes)),
+              name(anton::move(name)), return_type(anton::move(return_type)), body(anton::move(body)) {}
     };
 
     constexpr anton::String_View stringify(Stage_Type type) {
@@ -824,15 +839,17 @@ namespace vush {
 
     struct Pass_Stage_Declaration: public Declaration {
         anton::Array<Owning_Ptr<Function_Param>> params;
+        anton::Array<Owning_Ptr<Function_Attribute>> attributes;
         Owning_Ptr<Identifier> pass;
         Owning_Ptr<Type> return_type;
         Owning_Ptr<Statement_List> body;
         Stage_Type stage;
 
-        Pass_Stage_Declaration(Owning_Ptr<Identifier> pass, Stage_Type stage, anton::Array<Owning_Ptr<Function_Param>>&& params, Owning_Ptr<Type> return_type,
-                               Owning_Ptr<Statement_List> body, Source_Info const& source_info)
-            : Declaration(source_info, AST_Node_Type::pass_stage_declaration), params(anton::move(params)), pass(anton::move(pass)),
-              return_type(anton::move(return_type)), body(anton::move(body)), stage(anton::move(stage)) {}
+        Pass_Stage_Declaration(anton::Array<Owning_Ptr<Function_Attribute>>&& attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> pass,
+                               Stage_Type stage, anton::Array<Owning_Ptr<Function_Param>>&& params, Owning_Ptr<Statement_List> body,
+                               Source_Info const& source_info)
+            : Declaration(source_info, AST_Node_Type::pass_stage_declaration), params(anton::move(params)), attributes(anton::move(attributes)),
+              pass(anton::move(pass)), return_type(anton::move(return_type)), body(anton::move(body)), stage(anton::move(stage)) {}
     };
 
     struct Expression: public AST_Node {

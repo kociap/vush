@@ -1,8 +1,3 @@
-// TODO: dynamic ifs
-// TODO: Annotated variables
-// TODO: constant initializers in structs
-// TODO: validate that a pass doesn't have more than 1 of each stages
-
 #include <vush/vush.hpp>
 
 #include <anton/algorithm.hpp>
@@ -279,6 +274,51 @@ namespace vush {
         return {anton::expected_value};
     }
 
+    // validate_function_attributes
+    // Validate function attributes present on the function according to the following requirements:
+    //  - compute stage might have the workgroup attribute (at most 1)
+    //  - other stages must not have any attributes
+    //  - ordinary functions must not have any attributes
+    //
+    static anton::Expected<void, anton::String> validate_function_attributes([[maybe_unused]] Context& ctx, Function_Declaration const& fn) {
+        for(auto& attribute: fn.attributes) {
+            Source_Info const& src = attribute->source_info;
+            return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"illegal attribute")};
+        }
+
+        return {anton::expected_value};
+    }
+
+    static anton::Expected<void, anton::String> validate_function_attributes([[maybe_unused]] Context& ctx, Pass_Stage_Declaration const& fn) {
+        switch(fn.stage) {
+            case Stage_Type::compute: {
+                bool has_workgroup = false;
+                for(auto& attribute: fn.attributes) {
+                    if(attribute->node_type == AST_Node_Type::workgroup_attribute) {
+                        if(!has_workgroup) {
+                            has_workgroup = true;
+                        } else {
+                            Source_Info const& src = attribute->source_info;
+                            return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"duplicate workgroup attribute")};
+                        }
+                    } else {
+                        Source_Info const& src = attribute->source_info;
+                        return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"illegal attribute")};
+                    }
+                }
+            } break;
+
+            default: {
+                for(auto& attribute: fn.attributes) {
+                    Source_Info const& src = attribute->source_info;
+                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"illegal attribute")};
+                }
+            } break;
+        }
+
+        return {anton::expected_value};
+    }
+
     static anton::Expected<void, anton::String> process_ast(Context& ctx, Owning_Ptr<AST_Node>& ast_node) {
         switch(ast_node->node_type) {
             case AST_Node_Type::variable_declaration: {
@@ -465,6 +505,10 @@ namespace vush {
                         return {anton::expected_error, anton::move(res.error())};
                     }
 
+                    if(anton::Expected<void, anton::String> res = validate_function_attributes(ctx, fn); !res) {
+                        return {anton::expected_error, anton::move(res.error())};
+                    }
+
                     if(anton::Expected<void, anton::String> res = process_ast(ctx, (Owning_Ptr<AST_Node>&)fn.body); !res) {
                         return {anton::expected_error, anton::move(res.error())};
                     }
@@ -473,6 +517,10 @@ namespace vush {
                 case AST_Node_Type::pass_stage_declaration: {
                     Pass_Stage_Declaration& fn = static_cast<Pass_Stage_Declaration&>(*ast->declarations[i]);
                     if(anton::Expected<void, anton::String> res = process_fn_param_list(ctx, fn); !res) {
+                        return {anton::expected_error, anton::move(res.error())};
+                    }
+
+                    if(anton::Expected<void, anton::String> res = validate_function_attributes(ctx, fn); !res) {
                         return {anton::expected_error, anton::move(res.error())};
                     }
 
@@ -507,9 +555,7 @@ namespace vush {
                     break;
             }
 
-            if(should_advance) {
-                i += 1;
-            }
+            i += should_advance;
         }
 
         return {anton::expected_value, anton::move(ast)};

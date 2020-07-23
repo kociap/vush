@@ -8,7 +8,6 @@
 // TODO: Figure out a way to match operators that use overlapping symbols (+ and +=) in a clean way.
 // TODO: const types.
 // TODO: add constructors (currently function call which will break if we use an array type).
-// TODO: Should we include comma?
 
 namespace vush {
     // keywords
@@ -35,6 +34,9 @@ namespace vush {
     static constexpr anton::String_View kw_source = u8"source";
     static constexpr anton::String_View kw_emit = u8"emit";
     static constexpr anton::String_View kw_settings = u8"settings";
+
+    // attributes
+    static constexpr anton::String_View attrib_workgroup = u8"workgroup";
 
     // stages
 
@@ -1090,8 +1092,80 @@ namespace vush {
             return settings_decl;
         }
 
+        Owning_Ptr<Workgroup_Attribute> try_workgroup_attribute() {
+            Lexer_State const state_backup = _lexer.get_current_state();
+            if(!_lexer.match(token_bracket_open)) {
+                set_error(u8"expected '['");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            if(!_lexer.match(attrib_workgroup, true)) {
+                set_error(u8"expected 'workgroup'");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            if(!_lexer.match(token_paren_open)) {
+                set_error(u8"expected '('");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            Owning_Ptr x = try_integer_literal();
+            if(!x) {
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            Owning_Ptr<Integer_Literal> y;
+            Owning_Ptr<Integer_Literal> z;
+            if(_lexer.match(token_comma)) {
+                y = try_integer_literal();
+                if(!y) {
+                    _lexer.restore_state(state_backup);
+                    return nullptr;
+                }
+
+                if(_lexer.match(token_comma)) {
+                    z = try_integer_literal();
+                    if(!z) {
+                        _lexer.restore_state(state_backup);
+                        return nullptr;
+                    }
+                }
+            }
+
+            if(!_lexer.match(token_paren_close)) {
+                set_error(u8"expected ')'");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            if(!_lexer.match(token_bracket_close)) {
+                set_error(u8"expected ']'");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            return Owning_Ptr{new Workgroup_Attribute(anton::move(x), anton::move(y), anton::move(z), src_info(state_backup))};
+        }
+
+        Owning_Ptr<Function_Attribute> try_function_attribute() {
+            if(Owning_Ptr attrib = try_workgroup_attribute()) {
+                return attrib;
+            }
+
+            return nullptr;
+        }
+
         Owning_Ptr<Pass_Stage_Declaration> try_pass_stage_declaration() {
             Lexer_State const state_backup = _lexer.get_current_state();
+            anton::Array<Owning_Ptr<Function_Attribute>> attributes;
+            while(Owning_Ptr attrib = try_function_attribute()) {
+                attributes.emplace_back(anton::move(attrib));
+            }
+
             Owning_Ptr return_type = try_type();
             if(!return_type) {
                 set_error(u8"expected type");
@@ -1153,12 +1227,17 @@ namespace vush {
                 return nullptr;
             }
 
-            return Owning_Ptr{new Pass_Stage_Declaration(anton::move(pass), stage_type, anton::move(param_list.value()), anton::move(return_type),
-                                                         anton::move(body), src_info(state_backup))};
+            return Owning_Ptr{new Pass_Stage_Declaration(anton::move(attributes), anton::move(return_type), anton::move(pass), stage_type,
+                                                         anton::move(param_list.value()), anton::move(body), src_info(state_backup))};
         }
 
         Owning_Ptr<Function_Declaration> try_function_declaration() {
             Lexer_State const state_backup = _lexer.get_current_state();
+            anton::Array<Owning_Ptr<Function_Attribute>> attributes;
+            while(Owning_Ptr attrib = try_function_attribute()) {
+                attributes.emplace_back(anton::move(attrib));
+            }
+
             Owning_Ptr return_type = try_type();
             if(!return_type) {
                 set_error(u8"expected type");
@@ -1193,8 +1272,8 @@ namespace vush {
                 return nullptr;
             }
 
-            return Owning_Ptr{new Function_Declaration(anton::move(name), anton::move(param_list.value()), anton::move(return_type), anton::move(body),
-                                                       src_info(state_backup))};
+            return Owning_Ptr{new Function_Declaration(anton::move(attributes), anton::move(return_type), anton::move(name), anton::move(param_list.value()),
+                                                       anton::move(body), src_info(state_backup))};
         }
 
         anton::Optional<anton::Array<Owning_Ptr<Function_Param>>> try_function_param_list(bool const allow_sourced_params) {

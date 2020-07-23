@@ -1394,6 +1394,28 @@ namespace vush {
                                 build_error_message(src.file_path, src.line, src.column, u8"the return type of compute stage must be void")};
                     }
 
+                    for(auto& attribute: stage.attributes) {
+                        switch(attribute->node_type) {
+                            case AST_Node_Type::workgroup_attribute: {
+                                Workgroup_Attribute& attrib = (Workgroup_Attribute&)*attribute;
+                                out += u8"layout(local_size_x = ";
+                                stringify(out, *attrib.x, codegen_ctx);
+                                if(attrib.y) {
+                                    out += u8", local_size_y = ";
+                                    stringify(out, *attrib.y, codegen_ctx);
+                                    if(attrib.z) {
+                                        out += u8", local_size_z = ";
+                                        stringify(out, *attrib.z, codegen_ctx);
+                                    }
+                                }
+                                out += u8") in;\n\n";
+                            } break;
+
+                            default:
+                                break;
+                        }
+                    }
+
                     // Output main
                     out += u8"void main() {\n";
                     codegen_ctx.indent += 1;
