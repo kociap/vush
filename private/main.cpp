@@ -14,11 +14,8 @@ int main() {
         vush::Build_Result const& res = result.value();
         for(vush::Pass_Settings const& pass_settings: res.settings) {
             std::cout << pass_settings.pass_name.data() << " settings:\n";
-            for(vush::Settings_Group const& group: pass_settings.settings_groups) {
-                std::cout << "  " << group.group_name.data() << " group:\n";
-                for(vush::Setting_Key_Value const& kv: group.settings) {
-                    std::cout << "    " << kv.key.data() << ": " << kv.value.data() << "\n";
-                }
+            for(vush::Setting_Key_Value const& kv: pass_settings.settings) {
+                std::cout << "    " << kv.key.data() << ": " << kv.value.data() << "\n";
             }
         }
         std::cout << "\n\n";

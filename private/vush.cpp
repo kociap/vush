@@ -1,6 +1,7 @@
 // TODO: dynamic ifs
 // TODO: Annotated variables
 // TODO: constant initializers in structs
+// TODO: validate that a pass doesn't have more than 1 of each stages
 
 #include <vush/vush.hpp>
 
@@ -489,24 +490,15 @@ namespace vush {
                         pass_iter = &v;
                     }
 
-                    anton::Array<Settings_Group>& settings_groups = pass_iter->settings_groups;
-                    for(Settings_Group& group: decl.settings_groups) {
-                        Settings_Group* group_iter = anton::find_if(settings_groups.begin(), settings_groups.end(),
-                                                                    [&group](Settings_Group const& v) { return v.group_name == group.group_name; });
-                        if(group_iter == settings_groups.end()) {
-                            Settings_Group& g = settings_groups.emplace_back(Settings_Group{group.group_name, {}});
-                            group_iter = &g;
-                        }
-
-                        // N^2 loop to overwrite duplicates in the order of occurence
-                        for(Setting_Key_Value const& kv_new: group.settings) {
-                            auto end = group_iter->settings.end();
-                            auto i = anton::find_if(group_iter->settings.begin(), end, [&kv_new](Setting_Key_Value const& v) { return kv_new.key == v.key; });
-                            if(i != end) {
-                                i->value = kv_new.value;
-                            } else {
-                                group_iter->settings.emplace_back(kv_new);
-                            }
+                    anton::Array<Setting_Key_Value>& pass_settings = pass_iter->settings;
+                    // N^2 loop to overwrite duplicates in the order of occurence
+                    for(Setting_Key_Value const& kv_new: decl.settings) {
+                        auto end = pass_settings.end();
+                        auto i = anton::find_if(pass_settings.begin(), end, [&kv_new](Setting_Key_Value const& v) { return kv_new.key == v.key; });
+                        if(i != end) {
+                            i->value = kv_new.value;
+                        } else {
+                            pass_settings.emplace_back(kv_new);
                         }
                     }
                 } break;

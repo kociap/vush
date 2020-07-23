@@ -33,14 +33,9 @@ namespace vush {
         anton::String value;
     };
 
-    struct Settings_Group {
-        anton::String group_name;
-        anton::Array<Setting_Key_Value> settings;
-    };
-
     struct Pass_Settings {
         anton::String pass_name;
-        anton::Array<Settings_Group> settings_groups;
+        anton::Array<Setting_Key_Value> settings;
     };
 
     struct GLSL_File {

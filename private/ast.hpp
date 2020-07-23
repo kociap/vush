@@ -750,7 +750,7 @@ namespace vush {
 
     struct Settings_Decl: public Declaration {
         Owning_Ptr<Identifier> pass_name;
-        anton::Array<Settings_Group> settings_groups;
+        anton::Array<Setting_Key_Value> settings;
 
         Settings_Decl(Owning_Ptr<Identifier> pass_name, Source_Info const& source_info)
             : Declaration(source_info, AST_Node_Type::settings_decl), pass_name(anton::move(pass_name)) {}
