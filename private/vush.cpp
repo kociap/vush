@@ -535,17 +535,16 @@ namespace vush {
             Symbol symbol;
             symbol.type = Symbol_Type::constant;
             Constant_Declaration* decl = new Constant_Declaration(
-                Owning_Ptr{new Builtin_Type(Builtin_GLSL_Type::glsl_int, {config.source_path, 0, 0, 0})},
-                Owning_Ptr{new Identifier(anton::String(define.name), {config.source_path, 0, 0, 0})},
-                Owning_Ptr{new Integer_Literal(anton::to_string(define.value), {config.source_path, 0, 0, 0})}, {config.source_path, 0, 0, 0});
+                Owning_Ptr{new Builtin_Type(Builtin_GLSL_Type::glsl_int, {config.source_name, 0, 0, 0})},
+                Owning_Ptr{new Identifier(anton::String(define.name), {config.source_name, 0, 0, 0})},
+                Owning_Ptr{new Integer_Literal(anton::to_string(define.value), {config.source_name, 0, 0, 0})}, {config.source_name, 0, 0, 0});
             constant_decls.emplace_back(decl);
             symbol.declaration = decl;
             ctx.symbols[0].emplace(define.name, symbol);
         }
 
-        anton::String path{config.source_path};
         anton::Array<Pass_Settings> settings;
-        anton::Expected<Owning_Ptr<Declaration_List>, anton::String> parse_res = build_ast_from_sources(ctx, path, settings);
+        anton::Expected<Owning_Ptr<Declaration_List>, anton::String> parse_res = build_ast_from_sources(ctx, config.source_name, settings);
         if(!parse_res) {
             return {anton::expected_error, anton::move(parse_res.error())};
         }
@@ -560,10 +559,10 @@ namespace vush {
     }
 
     static anton::Expected<anton::String, anton::String> resolve_import_path(anton::String const& import_path,
-                                                                             anton::Slice<anton::String_View const> const import_directories) {
+                                                                             anton::Slice<anton::String const> const import_directories) {
         bool found = false;
         anton::String out_path;
-        for(anton::String_View const& path: import_directories) {
+        for(anton::String const& path: import_directories) {
             anton::String resolved_path = anton::fs::concat_paths(path, import_path);
             bool exists = anton::fs::exists(resolved_path);
             if(exists) {
@@ -584,7 +583,7 @@ namespace vush {
     }
 
     static anton::Expected<Source_Request_Result, anton::String> file_read_callback(anton::String const& path, void* user_data) {
-        anton::Slice<anton::String_View const>& import_directories = *reinterpret_cast<anton::Slice<anton::String_View const>*>(user_data);
+        anton::Slice<anton::String const>& import_directories = *reinterpret_cast<anton::Slice<anton::String const>*>(user_data);
         anton::Expected<anton::String, anton::String> res = resolve_import_path(path, import_directories);
         if(!res) {
             return {anton::expected_error, anton::move(res.error())};
@@ -605,7 +604,7 @@ namespace vush {
     }
 
     anton::Expected<Build_Result, anton::String> compile_to_glsl(Configuration const& config) {
-        anton::Slice<anton::String_View const> import_directories{config.import_directories};
+        anton::Slice<anton::String const> import_directories{config.import_directories};
         return compile_to_glsl(config, file_read_callback, &import_directories);
     }
 } // namespace vush

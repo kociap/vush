@@ -9,16 +9,16 @@
 
 namespace vush {
     struct Constant_Define {
-        anton::String_View name;
+        anton::String name;
         i64 value;
     };
 
     struct Format_Options {};
 
     struct Configuration {
-        anton::String_View source_path;
-        anton::Slice<anton::String_View const> import_directories;
-        anton::Slice<Constant_Define const> defines;
+        anton::String source_name;
+        anton::Array<anton::String> import_directories;
+        anton::Array<Constant_Define> defines;
         Format_Options format;
     };
 
