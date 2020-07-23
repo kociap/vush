@@ -2967,8 +2967,8 @@ namespace vush {
         }
     };
 
-    anton::Expected<Owning_Ptr<Declaration_List>, Parse_Error> parse_source(anton::Input_Stream& stream, anton::String_View const path) {
-        Parser parser(stream, path);
+    anton::Expected<Owning_Ptr<Declaration_List>, Parse_Error> parse_source(anton::Input_Stream& stream, anton::String_View const source_name) {
+        Parser parser(stream, source_name);
         Owning_Ptr ast = parser.build_ast();
         if(ast) {
             return {anton::expected_value, anton::move(ast)};

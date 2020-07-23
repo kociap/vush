@@ -405,7 +405,7 @@ namespace vush {
                         anton::Expected<Owning_Ptr<Declaration_List>, Parse_Error> parse_result = parse_source(stream, *current_source_name);
                         if(!parse_result) {
                             Parse_Error const& error = anton::move(parse_result.error());
-                            anton::String error_msg = build_error_message(path, error.line, error.column, error.message);
+                            anton::String error_msg = build_error_message(*current_source_name, error.line, error.column, error.message);
                             return {anton::expected_error, anton::move(error_msg)};
                         }
 

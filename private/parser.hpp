@@ -18,5 +18,5 @@ namespace vush {
     // Builds ast from the contents of stream.
     // path must be address-stable
     //
-    anton::Expected<Owning_Ptr<Declaration_List>, Parse_Error> parse_source(anton::Input_Stream& stream, anton::String_View path);
+    anton::Expected<Owning_Ptr<Declaration_List>, Parse_Error> parse_source(anton::Input_Stream& stream, anton::String_View source_name);
 } // namespace vush
