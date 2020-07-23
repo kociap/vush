@@ -1139,7 +1139,6 @@ namespace vush {
         codegen_ctx.indent = 0;
 
         anton::String common;
-        common += "";
 
         if(structs_and_consts.size() > 0) {
             for(Declaration* decl: structs_and_consts) {
@@ -1190,12 +1189,11 @@ namespace vush {
         for(Declaration* decl: pass_stages) {
             Pass_Stage_Declaration& stage = (Pass_Stage_Declaration&)*decl;
             anton::String const pass_function_name = u8"_pass_" + stage.pass->value + u8"_stage_" + stringify(stage.stage);
-            anton::String out = common;
+            anton::String out = anton::String("#version 450 core\n#pragma shader_stage(") + stringify(stage.stage) + ")\n\n";
+            out += common;
 
             codegen_ctx.current_pass = stage.pass->value;
             codegen_ctx.current_stage = stage.stage;
-
-            out = anton::String("#version 450 core\n#pragma shader_stage(") + stringify(stage.stage) + ")\n\n" + out;
 
             // Stringify the stage function
             stringify(out, *stage.return_type, codegen_ctx);

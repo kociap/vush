@@ -19,7 +19,7 @@ if(VUSH_COMPILER_CLANGPP)
         -fno-rtti 
         -fno-exceptions
     )
-else()
+elseif(MSVC)
   set(VUSH_COMPILE_FLAGS
         /GF
     )
