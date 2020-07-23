@@ -505,6 +505,7 @@ namespace vush {
                 return constant;
             }
 
+            set_error(u8"expected declaration");
             return nullptr;
         }
 
