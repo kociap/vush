@@ -46,7 +46,7 @@ namespace vush {
     struct GLSL_File {
         anton::String data;
         anton::String pass_name;
-        Stage_Type shader_type;
+        Stage_Type stage_type;
     };
 
     struct Source_Request_Result {
