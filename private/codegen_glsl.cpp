@@ -1105,7 +1105,7 @@ namespace vush {
             }
         }
 
-        for(auto [source_name, data]: sourced_data) {
+        for(auto& [source_name, data]: sourced_data) {
             // TODO: Use stable sort to preserve the order and report duplicates in the correct order.
             anton::quick_sort(data.begin(), data.end(), [](Sourced_Data const& lhs, Sourced_Data const& rhs) {
                 anton::String const& lhs_str = lhs.name->value;
