@@ -319,51 +319,20 @@ namespace vush {
         return {anton::expected_value};
     }
 
-    static anton::Expected<void, anton::String> process_ast(Context& ctx, Owning_Ptr<AST_Node>& ast_node) {
-        switch(ast_node->node_type) {
-            case AST_Node_Type::variable_declaration: {
-                Owning_Ptr<Variable_Declaration>& node = (Owning_Ptr<Variable_Declaration>&)ast_node;
-                if(node->initializer) {
-                    process_ast(ctx, (Owning_Ptr<AST_Node>&)node->initializer);
-                }
-            } break;
-
-            case AST_Node_Type::constant_declaration: {
-                Owning_Ptr<Constant_Declaration>& node = (Owning_Ptr<Constant_Declaration>&)ast_node;
-                if(node->initializer) {
-                    process_ast(ctx, (Owning_Ptr<AST_Node>&)node->initializer);
-                }
-            } break;
-
-            case AST_Node_Type::statement_list: {
-                Owning_Ptr<Statement_List>& node = (Owning_Ptr<Statement_List>&)ast_node;
-                for(auto& statement: node->statements) {
-                    process_ast(ctx, (Owning_Ptr<AST_Node>&)statement);
-                }
-            } break;
-
-            case AST_Node_Type::block_statement: {
-                Owning_Ptr<Block_Statement>& node = (Owning_Ptr<Block_Statement>&)ast_node;
-                process_ast(ctx, (Owning_Ptr<AST_Node>&)node->statements);
-            } break;
-
-            case AST_Node_Type::if_statement: {
-                // TODO: constant evaluation when possible.
-                Owning_Ptr<If_Statement>& node = (Owning_Ptr<If_Statement>&)ast_node;
-                process_ast(ctx, (Owning_Ptr<AST_Node>&)node->condition);
-                process_ast(ctx, (Owning_Ptr<AST_Node>&)node->true_statement);
-                if(node->false_statement) {
-                    process_ast(ctx, (Owning_Ptr<AST_Node>&)node->false_statement);
-                }
-            } break;
-
-            case AST_Node_Type::declaration_statement: {
-                Owning_Ptr<Declaration_Statement>& node = (Owning_Ptr<Declaration_Statement>&)ast_node;
-                process_ast(ctx, (Owning_Ptr<AST_Node>&)node->declaration);
-            } break;
-
+    static anton::Expected<void, anton::String> process_expression(Context& ctx, Owning_Ptr<Expression>& expression) {
+        switch(expression->node_type) {
             case AST_Node_Type::expression_if: {
-                Owning_Ptr<Expression_If>& node = (Owning_Ptr<Expression_If>&)ast_node;
+                Owning_Ptr<Expression_If>& node = (Owning_Ptr<Expression_If>&)expression;
+                anton::Expected<void, anton::String> expr_res = process_expression(ctx, node->condition);
+                if(!expr_res) {
+                    return expr_res;
+                }
+
+                anton::Expected<bool, anton::String> compiletime_res = is_compiletime_evaluable(ctx, *node->condition);
+                if(!compiletime_res) {
+                    return {anton::expected_error, anton::move(compiletime_res.error())};
+                }
+
                 anton::Expected<Expr_Value, anton::String> result = evaluate_const_expr(ctx, *node->condition);
                 if(!result) {
                     return {anton::expected_error, anton::move(result.error())};
@@ -376,18 +345,97 @@ namespace vush {
                 }
 
                 if(result.value().as_boolean()) {
-                    ast_node = anton::move(node->true_expr);
+                    expression = anton::move(node->true_expr);
                 } else {
                     if(node->false_expr->node_type == AST_Node_Type::expression_if) {
-                        process_ast(ctx, (Owning_Ptr<AST_Node>&)node->false_expr);
+                        anton::Expected<void, anton::String> res = process_expression(ctx, node->false_expr);
+                        if(!res) {
+                            return res;
+                        }
                     }
 
-                    ast_node = anton::move(node->false_expr);
+                    expression = anton::move(node->false_expr);
                 }
             } break;
 
             default:
                 break;
+        }
+
+        return {anton::expected_value};
+    }
+
+    static anton::Expected<void, anton::String> process_statements(Context& ctx, anton::Array<Owning_Ptr<Statement>>& statements) {
+        for(i64 i = 0; i < statements.size();) {
+            bool should_advance = true;
+            switch(statements[i]->node_type) {
+                case AST_Node_Type::if_statement: {
+                    Owning_Ptr<If_Statement>& node = (Owning_Ptr<If_Statement>&)statements[i];
+                    anton::Expected<void, anton::String> expr_res = process_expression(ctx, node->condition);
+                    if(!expr_res) {
+                        return expr_res;
+                    }
+
+                    anton::Expected<bool, anton::String> compiletime_res = is_compiletime_evaluable(ctx, *node->condition);
+                    if(!compiletime_res) {
+                        return {anton::expected_error, anton::move(compiletime_res.error())};
+                    }
+
+                    if(compiletime_res.value()) {
+                        should_advance = false;
+
+                        anton::Expected<Expr_Value, anton::String> eval_res = evaluate_const_expr(ctx, *node->condition);
+                        if(!eval_res) {
+                            return {anton::expected_error, anton::move(eval_res.error())};
+                        }
+
+                        if(!is_implicitly_convertible_to_boolean(eval_res.value().type)) {
+                            Source_Info const& src = node->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
+                        }
+
+                        if(eval_res.value().as_boolean()) {
+                            if(node->true_statement) {
+                                statements[i] = anton::move(node->true_statement);
+                            } else {
+                                statements.erase(statements.begin() + i, statements.begin() + i + 1);
+                            }
+                        } else {
+                            if(node->false_statement) {
+                                statements[i] = anton::move(node->false_statement);
+                            } else {
+                                statements.erase(statements.begin() + i, statements.begin() + i + 1);
+                            }
+                        }
+                    } else {
+                        // TODO: process_statements(ctx, true_branch)
+                    }
+                } break;
+
+                case AST_Node_Type::declaration_statement: {
+                    Owning_Ptr<Declaration_Statement>& node = (Owning_Ptr<Declaration_Statement>&)statements[i];
+                    ANTON_ASSERT(node->declaration->node_type == AST_Node_Type::variable_declaration ||
+                                     node->declaration->node_type == AST_Node_Type::constant_declaration,
+                                 u8"invalid ast node type");
+                    if(node->declaration->node_type == AST_Node_Type::variable_declaration) {
+                        Variable_Declaration& decl = (Variable_Declaration&)*node->declaration;
+                        if(decl.initializer) {
+                            process_expression(ctx, decl.initializer);
+                        }
+                    } else {
+                        Constant_Declaration& decl = (Constant_Declaration&)*node->declaration;
+                        if(decl.initializer) {
+                            process_expression(ctx, decl.initializer);
+                        }
+                    }
+                } break;
+
+                default:
+                    break;
+            }
+
+            i += should_advance;
         }
 
         return {anton::expected_value};
@@ -509,7 +557,7 @@ namespace vush {
                         return {anton::expected_error, anton::move(res.error())};
                     }
 
-                    if(anton::Expected<void, anton::String> res = process_ast(ctx, (Owning_Ptr<AST_Node>&)fn.body); !res) {
+                    if(anton::Expected<void, anton::String> res = process_statements(ctx, fn.body->statements); !res) {
                         return {anton::expected_error, anton::move(res.error())};
                     }
                 } break;
@@ -524,7 +572,7 @@ namespace vush {
                         return {anton::expected_error, anton::move(res.error())};
                     }
 
-                    if(anton::Expected<void, anton::String> res = process_ast(ctx, (Owning_Ptr<AST_Node>&)fn.body); !res) {
+                    if(anton::Expected<void, anton::String> res = process_statements(ctx, fn.body->statements); !res) {
                         return {anton::expected_error, anton::move(res.error())};
                     }
                 } break;

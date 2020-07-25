@@ -65,6 +65,7 @@ namespace vush {
         }
     };
 
-    bool is_implicitly_convertible_to_boolean(Expr_Value_Type type);
+    [[nodiscard]] bool is_implicitly_convertible_to_boolean(Expr_Value_Type type);
+    anton::Expected<bool, anton::String> is_compiletime_evaluable(Context& ctx, Expression& expression);
     anton::Expected<Expr_Value, anton::String> evaluate_const_expr(Context& ctx, Expression& expression);
 } // namespace vush

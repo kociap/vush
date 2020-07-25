@@ -8,6 +8,266 @@ namespace vush {
         return true;
     }
 
+    anton::Expected<bool, anton::String> is_compiletime_evaluable(Context& ctx, Expression& expression) {
+        switch(expression.node_type) {
+            case AST_Node_Type::bool_literal:
+            case AST_Node_Type::integer_literal: {
+                return {anton::expected_value, true};
+            }
+
+            case AST_Node_Type::identifier_expression: {
+                Identifier_Expression& expr = (Identifier_Expression&)expression;
+                Symbol* symbol = find_symbol(ctx, expr.identifier->value);
+                if(!symbol) {
+                    anton::String msg = u8"unknown identifier '" + expr.identifier->value + u8"'";
+                    Source_Info const& src = expr.source_info;
+                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, msg)};
+                }
+
+                return {anton::expected_value, symbol->type == Symbol_Type::constant};
+            }
+
+            case AST_Node_Type::logic_or_expr: {
+                Logic_Or_Expr& expr = (Logic_Or_Expr&)expression;
+                anton::Expected<bool, anton::String> lhs_res = is_compiletime_evaluable(ctx, *expr.lhs);
+                if(!lhs_res) {
+                    return lhs_res;
+                }
+
+                anton::Expected<bool, anton::String> rhs_res = is_compiletime_evaluable(ctx, *expr.rhs);
+                if(!rhs_res) {
+                    return rhs_res;
+                }
+
+                return {anton::expected_value, lhs_res.value() && rhs_res.value()};
+            }
+
+            case AST_Node_Type::logic_xor_expr: {
+                Logic_Xor_Expr& expr = (Logic_Xor_Expr&)expression;
+                anton::Expected<bool, anton::String> lhs_res = is_compiletime_evaluable(ctx, *expr.lhs);
+                if(!lhs_res) {
+                    return lhs_res;
+                }
+
+                anton::Expected<bool, anton::String> rhs_res = is_compiletime_evaluable(ctx, *expr.rhs);
+                if(!rhs_res) {
+                    return rhs_res;
+                }
+
+                return {anton::expected_value, lhs_res.value() && rhs_res.value()};
+            }
+
+            case AST_Node_Type::logic_and_expr: {
+                Logic_And_Expr& expr = (Logic_And_Expr&)expression;
+                anton::Expected<bool, anton::String> lhs_res = is_compiletime_evaluable(ctx, *expr.lhs);
+                if(!lhs_res) {
+                    return lhs_res;
+                }
+
+                anton::Expected<bool, anton::String> rhs_res = is_compiletime_evaluable(ctx, *expr.rhs);
+                if(!rhs_res) {
+                    return rhs_res;
+                }
+
+                return {anton::expected_value, lhs_res.value() && rhs_res.value()};
+            }
+
+            case AST_Node_Type::relational_equality_expression: {
+                Relational_Equality_Expression& expr = (Relational_Equality_Expression&)expression;
+                anton::Expected<bool, anton::String> lhs_res = is_compiletime_evaluable(ctx, *expr.lhs);
+                if(!lhs_res) {
+                    return lhs_res;
+                }
+
+                anton::Expected<bool, anton::String> rhs_res = is_compiletime_evaluable(ctx, *expr.rhs);
+                if(!rhs_res) {
+                    return rhs_res;
+                }
+
+                return {anton::expected_value, lhs_res.value() && rhs_res.value()};
+            }
+
+            case AST_Node_Type::relational_expression: {
+                Relational_Expression& expr = (Relational_Expression&)expression;
+                anton::Expected<bool, anton::String> lhs_res = is_compiletime_evaluable(ctx, *expr.lhs);
+                if(!lhs_res) {
+                    return lhs_res;
+                }
+
+                anton::Expected<bool, anton::String> rhs_res = is_compiletime_evaluable(ctx, *expr.rhs);
+                if(!rhs_res) {
+                    return rhs_res;
+                }
+
+                return {anton::expected_value, lhs_res.value() && rhs_res.value()};
+            }
+
+            case AST_Node_Type::bit_or_expr: {
+                Bit_Or_Expr& expr = (Bit_Or_Expr&)expression;
+                anton::Expected<bool, anton::String> lhs_res = is_compiletime_evaluable(ctx, *expr.lhs);
+                if(!lhs_res) {
+                    return lhs_res;
+                }
+
+                anton::Expected<bool, anton::String> rhs_res = is_compiletime_evaluable(ctx, *expr.rhs);
+                if(!rhs_res) {
+                    return rhs_res;
+                }
+
+                return {anton::expected_value, lhs_res.value() && rhs_res.value()};
+            }
+
+            case AST_Node_Type::bit_xor_expr: {
+                Bit_Xor_Expr& expr = (Bit_Xor_Expr&)expression;
+                anton::Expected<bool, anton::String> lhs_res = is_compiletime_evaluable(ctx, *expr.lhs);
+                if(!lhs_res) {
+                    return lhs_res;
+                }
+
+                anton::Expected<bool, anton::String> rhs_res = is_compiletime_evaluable(ctx, *expr.rhs);
+                if(!rhs_res) {
+                    return rhs_res;
+                }
+
+                return {anton::expected_value, lhs_res.value() && rhs_res.value()};
+            }
+
+            case AST_Node_Type::bit_and_expr: {
+                Bit_And_Expr& expr = (Bit_And_Expr&)expression;
+                anton::Expected<bool, anton::String> lhs_res = is_compiletime_evaluable(ctx, *expr.lhs);
+                if(!lhs_res) {
+                    return lhs_res;
+                }
+
+                anton::Expected<bool, anton::String> rhs_res = is_compiletime_evaluable(ctx, *expr.rhs);
+                if(!rhs_res) {
+                    return rhs_res;
+                }
+
+                return {anton::expected_value, lhs_res.value() && rhs_res.value()};
+            }
+
+            case AST_Node_Type::lshift_expr: {
+                LShift_Expr& expr = (LShift_Expr&)expression;
+                anton::Expected<bool, anton::String> lhs_res = is_compiletime_evaluable(ctx, *expr.lhs);
+                if(!lhs_res) {
+                    return lhs_res;
+                }
+
+                anton::Expected<bool, anton::String> rhs_res = is_compiletime_evaluable(ctx, *expr.rhs);
+                if(!rhs_res) {
+                    return rhs_res;
+                }
+
+                return {anton::expected_value, lhs_res.value() && rhs_res.value()};
+            }
+
+            case AST_Node_Type::rshift_expr: {
+                RShift_Expr& expr = (RShift_Expr&)expression;
+                anton::Expected<bool, anton::String> lhs_res = is_compiletime_evaluable(ctx, *expr.lhs);
+                if(!lhs_res) {
+                    return lhs_res;
+                }
+
+                anton::Expected<bool, anton::String> rhs_res = is_compiletime_evaluable(ctx, *expr.rhs);
+                if(!rhs_res) {
+                    return rhs_res;
+                }
+
+                return {anton::expected_value, lhs_res.value() && rhs_res.value()};
+            }
+
+            case AST_Node_Type::add_expr: {
+                Add_Expr& expr = (Add_Expr&)expression;
+                anton::Expected<bool, anton::String> lhs_res = is_compiletime_evaluable(ctx, *expr.lhs);
+                if(!lhs_res) {
+                    return lhs_res;
+                }
+
+                anton::Expected<bool, anton::String> rhs_res = is_compiletime_evaluable(ctx, *expr.rhs);
+                if(!rhs_res) {
+                    return rhs_res;
+                }
+
+                return {anton::expected_value, lhs_res.value() && rhs_res.value()};
+            }
+
+            case AST_Node_Type::sub_expr: {
+                Sub_Expr& expr = (Sub_Expr&)expression;
+                anton::Expected<bool, anton::String> lhs_res = is_compiletime_evaluable(ctx, *expr.lhs);
+                if(!lhs_res) {
+                    return lhs_res;
+                }
+
+                anton::Expected<bool, anton::String> rhs_res = is_compiletime_evaluable(ctx, *expr.rhs);
+                if(!rhs_res) {
+                    return rhs_res;
+                }
+
+                return {anton::expected_value, lhs_res.value() && rhs_res.value()};
+            }
+
+            case AST_Node_Type::mul_expr: {
+                Mul_Expr& expr = (Mul_Expr&)expression;
+                anton::Expected<bool, anton::String> lhs_res = is_compiletime_evaluable(ctx, *expr.lhs);
+                if(!lhs_res) {
+                    return lhs_res;
+                }
+
+                anton::Expected<bool, anton::String> rhs_res = is_compiletime_evaluable(ctx, *expr.rhs);
+                if(!rhs_res) {
+                    return rhs_res;
+                }
+
+                return {anton::expected_value, lhs_res.value() && rhs_res.value()};
+            }
+
+            case AST_Node_Type::div_expr: {
+                Div_Expr& expr = (Div_Expr&)expression;
+                anton::Expected<bool, anton::String> lhs_res = is_compiletime_evaluable(ctx, *expr.lhs);
+                if(!lhs_res) {
+                    return lhs_res;
+                }
+
+                anton::Expected<bool, anton::String> rhs_res = is_compiletime_evaluable(ctx, *expr.rhs);
+                if(!rhs_res) {
+                    return rhs_res;
+                }
+
+                return {anton::expected_value, lhs_res.value() && rhs_res.value()};
+            }
+
+            case AST_Node_Type::mod_expr: {
+                Mod_Expr& expr = (Mod_Expr&)expression;
+                anton::Expected<bool, anton::String> lhs_res = is_compiletime_evaluable(ctx, *expr.lhs);
+                if(!lhs_res) {
+                    return lhs_res;
+                }
+
+                anton::Expected<bool, anton::String> rhs_res = is_compiletime_evaluable(ctx, *expr.rhs);
+                if(!rhs_res) {
+                    return rhs_res;
+                }
+
+                return {anton::expected_value, lhs_res.value() && rhs_res.value()};
+            }
+
+            case AST_Node_Type::unary_expression: {
+                Unary_Expression& expr = (Unary_Expression&)expression;
+                anton::Expected<bool, anton::String> res = is_compiletime_evaluable(ctx, *expr.expression);
+                return res;
+            }
+
+                // case AST_Node_Type::member_access_expression:
+
+                // case AST_Node_Type::array_access_expression:
+
+            default: {
+                return {anton::expected_value, false};
+            }
+        }
+    }
+
     anton::Expected<Expr_Value, anton::String> evaluate_const_expr(Context& ctx, Expression& expression) {
         switch(expression.node_type) {
             case AST_Node_Type::identifier_expression: {
