@@ -1002,7 +1002,6 @@ namespace vush {
         // Maps source name to sourced params and globals
         anton::Flat_Hash_Map<anton::String, anton::Array<Sourced_Data>> sourced_data;
         anton::Array<Source_Definition_Decl*> source_templates;
-        // TODO: Validate that a source is available for each sourced data
         for(auto& decl: node.declarations) {
             switch(decl->node_type) {
                 case AST_Node_Type::struct_decl:
@@ -1041,6 +1040,16 @@ namespace vush {
 
                 default:
                     break;
+            }
+        }
+
+        // Validate that a source is available for each sourced data
+        for(auto& [source_name, data]: sourced_data) {
+            auto iter = anton::find_if(source_templates.begin(), source_templates.end(),
+                                       [&n = source_name](Source_Definition_Decl const* const v) { return v->name->value == n; });
+            if(iter == source_templates.end()) {
+                Source_Info const& src = data[0].source->source_info;
+                return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"unknown source definition '" + source_name + "'")};
             }
         }
 
