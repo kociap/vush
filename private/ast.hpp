@@ -1069,12 +1069,13 @@ namespace vush {
             : Statement(source_info, AST_Node_Type::block_statement), statements(anton::move(statements)) {}
     };
 
+    // false_statement might be If_Statement ('else if' case), Block_Statement or nullptr (else branch missing)
     struct If_Statement: public Statement {
         Owning_Ptr<Expression> condition;
-        Owning_Ptr<Statement> true_statement;
+        Owning_Ptr<Block_Statement> true_statement;
         Owning_Ptr<Statement> false_statement;
 
-        If_Statement(Owning_Ptr<Expression> condition, Owning_Ptr<Statement> true_statement, Owning_Ptr<Statement> false_statement,
+        If_Statement(Owning_Ptr<Expression> condition, Owning_Ptr<Block_Statement> true_statement, Owning_Ptr<Statement> false_statement,
                      Source_Info const& source_info)
             : Statement(source_info, AST_Node_Type::if_statement), condition(anton::move(condition)), true_statement(anton::move(true_statement)),
               false_statement(anton::move(false_statement)) {}

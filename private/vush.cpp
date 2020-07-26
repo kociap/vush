@@ -409,7 +409,33 @@ namespace vush {
                             }
                         }
                     } else {
-                        // TODO: process_statements(ctx, true_branch)
+                        // We use the loop to process the 'else if' case (we treat 'else if' as a different 'if')
+                        If_Statement* s = node.get();
+                        while(true) {
+                            anton::Expected<void, anton::String> true_res = process_statements(ctx, s->true_statement->statements->statements);
+                            if(!true_res) {
+                                return true_res;
+                            }
+
+                            if(s->false_statement) {
+                                ANTON_ASSERT(s->false_statement->node_type == AST_Node_Type::if_statement ||
+                                                 s->false_statement->node_type == AST_Node_Type::block_statement,
+                                             u8"invalid ast node type in false branch of an if statement");
+                                if(s->false_statement->node_type == AST_Node_Type::block_statement) {
+                                    Block_Statement& b = (Block_Statement&)*s->false_statement;
+                                    anton::Expected<void, anton::String> false_res = process_statements(ctx, b.statements->statements);
+                                    if(!false_res) {
+                                        return false_res;
+                                    }
+                                    break;
+                                } else {
+                                    // 'else if' case
+                                    s = (If_Statement*)s->false_statement.get();
+                                }
+                            } else {
+                                break;
+                            }
+                        }
                     }
                 } break;
 
