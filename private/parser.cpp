@@ -561,23 +561,12 @@ namespace vush {
 
                     Owning_Ptr false_declarations{new Declaration_List};
                     while(!_lexer.match(token_brace_close)) {
-                        if(_lexer.match_eof()) {
-                            set_error(u8"unexpected end of file");
-                            _lexer.restore_state(state_backup);
-                            return nullptr;
-                        }
-
                         if(Owning_Ptr declaration = try_declaration()) {
                             false_declarations->append(anton::move(declaration));
                         } else {
+                            _lexer.restore_state(state_backup);
                             return nullptr;
                         }
-                    }
-
-                    if(!_lexer.match(token_brace_close)) {
-                        set_error(u8"expected '}' after expression");
-                        _lexer.restore_state(state_backup);
-                        return nullptr;
                     }
 
                     return Owning_Ptr{
