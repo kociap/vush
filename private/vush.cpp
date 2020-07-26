@@ -451,8 +451,7 @@ namespace vush {
         {
             anton::Expected<Source_Request_Result, anton::String> source_request_res = ctx.source_request_cb(path, ctx.source_request_user_data);
             if(!source_request_res) {
-                // TODO: Error message
-                return {anton::expected_error, anton::move(source_request_res.error())};
+                return {anton::expected_error, u8"error: " + source_request_res.error()};
             }
 
             Source_Request_Result& request_res = source_request_res.value();
@@ -477,8 +476,8 @@ namespace vush {
                     Owning_Ptr<Import_Decl> node{static_cast<Import_Decl*>(ast->declarations[i].release())};
                     anton::Expected<Source_Request_Result, anton::String> source_request_res = ctx.source_request_cb(node->path, ctx.source_request_user_data);
                     if(!source_request_res) {
-                        // TODO: Error message
-                        return {anton::expected_error, anton::move(source_request_res.error())};
+                        Source_Info const& src = node->source_info;
+                        return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, source_request_res.error())};
                     }
 
                     ast->declarations.erase(ast->declarations.begin() + i, ast->declarations.begin() + i + 1);
