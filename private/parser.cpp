@@ -2282,7 +2282,7 @@ namespace vush {
             Lexer_State op_state = _lexer.get_current_state();
             while(_lexer.match(token_logic_or)) {
                 if(Owning_Ptr rhs = try_logic_xor_expr()) {
-                    lhs = Owning_Ptr{new Logic_Or_Expr(anton::move(lhs), anton::move(rhs), src_info(op_state))};
+                    lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::logic_or, anton::move(lhs), anton::move(rhs), src_info(op_state))};
                 } else {
                     _lexer.restore_state(state_backup);
                     return nullptr;
@@ -2304,7 +2304,7 @@ namespace vush {
             Lexer_State op_state = _lexer.get_current_state();
             while(_lexer.match(token_logic_xor)) {
                 if(Owning_Ptr rhs = try_logic_and_expr()) {
-                    lhs = Owning_Ptr{new Logic_Xor_Expr(anton::move(lhs), anton::move(rhs), src_info(op_state))};
+                    lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::logic_xor, anton::move(lhs), anton::move(rhs), src_info(op_state))};
                 } else {
                     _lexer.restore_state(state_backup);
                     return nullptr;
@@ -2326,7 +2326,7 @@ namespace vush {
             Lexer_State op_state = _lexer.get_current_state();
             while(_lexer.match(token_logic_and)) {
                 if(Owning_Ptr rhs = try_bit_or_expr()) {
-                    lhs = Owning_Ptr{new Logic_And_Expr(anton::move(lhs), anton::move(rhs), src_info(op_state))};
+                    lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::logic_and, anton::move(lhs), anton::move(rhs), src_info(op_state))};
                 } else {
                     _lexer.restore_state(state_backup);
                     return nullptr;
@@ -2353,7 +2353,7 @@ namespace vush {
             Lexer_State op_state = _lexer.get_current_state();
             while(_lexer.match(token_bit_or)) {
                 if(Owning_Ptr rhs = try_bit_xor_expr()) {
-                    lhs = Owning_Ptr{new Bit_Or_Expr(anton::move(lhs), anton::move(rhs), src_info(op_state))};
+                    lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::bit_or, anton::move(lhs), anton::move(rhs), src_info(op_state))};
                 } else {
                     _lexer.restore_state(state_backup);
                     return nullptr;
@@ -2380,7 +2380,7 @@ namespace vush {
             Lexer_State op_state = _lexer.get_current_state();
             while(_lexer.match(token_bit_xor)) {
                 if(Owning_Ptr rhs = try_bit_and_expr()) {
-                    lhs = Owning_Ptr{new Bit_Xor_Expr(anton::move(lhs), anton::move(rhs), src_info(op_state))};
+                    lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::bit_xor, anton::move(lhs), anton::move(rhs), src_info(op_state))};
                 } else {
                     _lexer.restore_state(state_backup);
                     return nullptr;
@@ -2407,7 +2407,7 @@ namespace vush {
             Lexer_State op_state = _lexer.get_current_state();
             while(_lexer.match(token_bit_and)) {
                 if(Owning_Ptr rhs = try_relational_equality_expression()) {
-                    lhs = Owning_Ptr{new Bit_And_Expr(anton::move(lhs), anton::move(rhs), src_info(op_state))};
+                    lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::bit_and, anton::move(lhs), anton::move(rhs), src_info(op_state))};
                 } else {
                     _lexer.restore_state(state_backup);
                     return nullptr;
@@ -2430,14 +2430,14 @@ namespace vush {
                 Lexer_State const op_state = _lexer.get_current_state();
                 if(_lexer.match(token_equal)) {
                     if(Owning_Ptr rhs = try_relational_expression()) {
-                        lhs = Owning_Ptr{new Relational_Equality_Expression(true, anton::move(lhs), anton::move(rhs), src_info(op_state))};
+                        lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::equal, anton::move(lhs), anton::move(rhs), src_info(op_state))};
                     } else {
                         _lexer.restore_state(state_backup);
                         return nullptr;
                     }
                 } else if(_lexer.match(token_not_equal)) {
                     if(Owning_Ptr rhs = try_relational_expression()) {
-                        lhs = Owning_Ptr{new Relational_Equality_Expression(false, anton::move(lhs), anton::move(rhs), src_info(op_state))};
+                        lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::unequal, anton::move(lhs), anton::move(rhs), src_info(op_state))};
                     } else {
                         _lexer.restore_state(state_backup);
                         return nullptr;
@@ -2458,21 +2458,21 @@ namespace vush {
 
             while(true) {
                 Lexer_State const op_state = _lexer.get_current_state();
-                Relational_Type type;
+                Binary_Expr_Type type;
                 if(_lexer.match(token_less_equal)) {
-                    type = Relational_Type::less_equal;
+                    type = Binary_Expr_Type::less_equal;
                 } else if(_lexer.match(token_greater_equal)) {
-                    type = Relational_Type::greater_equal;
+                    type = Binary_Expr_Type::greater_equal;
                 } else if(_lexer.match(token_less)) {
-                    type = Relational_Type::less_than;
+                    type = Binary_Expr_Type::less_than;
                 } else if(_lexer.match(token_greater)) {
-                    type = Relational_Type::greater_than;
+                    type = Binary_Expr_Type::greater_than;
                 } else {
                     return lhs;
                 }
 
                 if(Owning_Ptr rhs = try_lshift_rshift_expr()) {
-                    lhs = Owning_Ptr{new Relational_Expression(type, anton::move(lhs), anton::move(rhs), src_info(op_state))};
+                    lhs = Owning_Ptr{new Binary_Expr(type, anton::move(lhs), anton::move(rhs), src_info(op_state))};
                 } else {
                     _lexer.restore_state(state_backup);
                     return nullptr;
@@ -2498,14 +2498,14 @@ namespace vush {
                 Lexer_State const op_state = _lexer.get_current_state();
                 if(_lexer.match(token_bit_lshift)) {
                     if(Owning_Ptr rhs = try_add_sub_expr()) {
-                        lhs = Owning_Ptr{new LShift_Expr(anton::move(lhs), anton::move(rhs), src_info(op_state))};
+                        lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::lshift, anton::move(lhs), anton::move(rhs), src_info(op_state))};
                     } else {
                         _lexer.restore_state(state_backup);
                         return nullptr;
                     }
                 } else if(_lexer.match(token_bit_rshift)) {
                     if(Owning_Ptr rhs = try_add_sub_expr()) {
-                        lhs = Owning_Ptr{new RShift_Expr(anton::move(lhs), anton::move(rhs), src_info(op_state))};
+                        lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::rshift, anton::move(lhs), anton::move(rhs), src_info(op_state))};
                     } else {
                         _lexer.restore_state(state_backup);
                         return nullptr;
@@ -2533,14 +2533,14 @@ namespace vush {
                 Lexer_State const op_state = _lexer.get_current_state();
                 if(_lexer.match(token_plus)) {
                     if(Owning_Ptr rhs = try_mul_div_mod_expr()) {
-                        lhs = Owning_Ptr{new Add_Expr(anton::move(lhs), anton::move(rhs), src_info(op_state))};
+                        lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::add, anton::move(lhs), anton::move(rhs), src_info(op_state))};
                     } else {
                         _lexer.restore_state(state_backup);
                         return nullptr;
                     }
                 } else if(_lexer.match(token_minus)) {
                     if(Owning_Ptr rhs = try_mul_div_mod_expr()) {
-                        lhs = Owning_Ptr{new Sub_Expr(anton::move(lhs), anton::move(rhs), src_info(op_state))};
+                        lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::sub, anton::move(lhs), anton::move(rhs), src_info(op_state))};
                     } else {
                         _lexer.restore_state(state_backup);
                         return nullptr;
@@ -2569,21 +2569,21 @@ namespace vush {
                 Lexer_State const op_state = _lexer.get_current_state();
                 if(_lexer.match(token_multiply)) {
                     if(Owning_Ptr rhs = try_unary_expression()) {
-                        lhs = Owning_Ptr{new Mul_Expr(anton::move(lhs), anton::move(rhs), src_info(op_state))};
+                        lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::mul, anton::move(lhs), anton::move(rhs), src_info(op_state))};
                     } else {
                         _lexer.restore_state(state_backup);
                         return nullptr;
                     }
                 } else if(_lexer.match(token_divide)) {
                     if(Owning_Ptr rhs = try_unary_expression()) {
-                        lhs = Owning_Ptr{new Div_Expr(anton::move(lhs), anton::move(rhs), src_info(op_state))};
+                        lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::div, anton::move(lhs), anton::move(rhs), src_info(op_state))};
                     } else {
                         _lexer.restore_state(state_backup);
                         return nullptr;
                     }
                 } else if(_lexer.match(token_remainder)) {
                     if(Owning_Ptr rhs = try_unary_expression()) {
-                        lhs = Owning_Ptr{new Mod_Expr(anton::move(lhs), anton::move(rhs), src_info(op_state))};
+                        lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::mod, anton::move(lhs), anton::move(rhs), src_info(op_state))};
                     } else {
                         _lexer.restore_state(state_backup);
                         return nullptr;

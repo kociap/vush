@@ -13,7 +13,9 @@ namespace vush {
         i64 value;
     };
 
-    struct Format_Options {};
+    struct Format_Options {
+        bool space_around_operators = true;
+    };
 
     struct Configuration {
         anton::String source_name;

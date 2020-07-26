@@ -27,218 +27,8 @@ namespace vush {
                 return {anton::expected_value, symbol->type == Symbol_Type::constant};
             }
 
-            case AST_Node_Type::logic_or_expr: {
-                Logic_Or_Expr& expr = (Logic_Or_Expr&)expression;
-                anton::Expected<bool, anton::String> lhs_res = is_compiletime_evaluable(ctx, *expr.lhs);
-                if(!lhs_res) {
-                    return lhs_res;
-                }
-
-                anton::Expected<bool, anton::String> rhs_res = is_compiletime_evaluable(ctx, *expr.rhs);
-                if(!rhs_res) {
-                    return rhs_res;
-                }
-
-                return {anton::expected_value, lhs_res.value() && rhs_res.value()};
-            }
-
-            case AST_Node_Type::logic_xor_expr: {
-                Logic_Xor_Expr& expr = (Logic_Xor_Expr&)expression;
-                anton::Expected<bool, anton::String> lhs_res = is_compiletime_evaluable(ctx, *expr.lhs);
-                if(!lhs_res) {
-                    return lhs_res;
-                }
-
-                anton::Expected<bool, anton::String> rhs_res = is_compiletime_evaluable(ctx, *expr.rhs);
-                if(!rhs_res) {
-                    return rhs_res;
-                }
-
-                return {anton::expected_value, lhs_res.value() && rhs_res.value()};
-            }
-
-            case AST_Node_Type::logic_and_expr: {
-                Logic_And_Expr& expr = (Logic_And_Expr&)expression;
-                anton::Expected<bool, anton::String> lhs_res = is_compiletime_evaluable(ctx, *expr.lhs);
-                if(!lhs_res) {
-                    return lhs_res;
-                }
-
-                anton::Expected<bool, anton::String> rhs_res = is_compiletime_evaluable(ctx, *expr.rhs);
-                if(!rhs_res) {
-                    return rhs_res;
-                }
-
-                return {anton::expected_value, lhs_res.value() && rhs_res.value()};
-            }
-
-            case AST_Node_Type::relational_equality_expression: {
-                Relational_Equality_Expression& expr = (Relational_Equality_Expression&)expression;
-                anton::Expected<bool, anton::String> lhs_res = is_compiletime_evaluable(ctx, *expr.lhs);
-                if(!lhs_res) {
-                    return lhs_res;
-                }
-
-                anton::Expected<bool, anton::String> rhs_res = is_compiletime_evaluable(ctx, *expr.rhs);
-                if(!rhs_res) {
-                    return rhs_res;
-                }
-
-                return {anton::expected_value, lhs_res.value() && rhs_res.value()};
-            }
-
-            case AST_Node_Type::relational_expression: {
-                Relational_Expression& expr = (Relational_Expression&)expression;
-                anton::Expected<bool, anton::String> lhs_res = is_compiletime_evaluable(ctx, *expr.lhs);
-                if(!lhs_res) {
-                    return lhs_res;
-                }
-
-                anton::Expected<bool, anton::String> rhs_res = is_compiletime_evaluable(ctx, *expr.rhs);
-                if(!rhs_res) {
-                    return rhs_res;
-                }
-
-                return {anton::expected_value, lhs_res.value() && rhs_res.value()};
-            }
-
-            case AST_Node_Type::bit_or_expr: {
-                Bit_Or_Expr& expr = (Bit_Or_Expr&)expression;
-                anton::Expected<bool, anton::String> lhs_res = is_compiletime_evaluable(ctx, *expr.lhs);
-                if(!lhs_res) {
-                    return lhs_res;
-                }
-
-                anton::Expected<bool, anton::String> rhs_res = is_compiletime_evaluable(ctx, *expr.rhs);
-                if(!rhs_res) {
-                    return rhs_res;
-                }
-
-                return {anton::expected_value, lhs_res.value() && rhs_res.value()};
-            }
-
-            case AST_Node_Type::bit_xor_expr: {
-                Bit_Xor_Expr& expr = (Bit_Xor_Expr&)expression;
-                anton::Expected<bool, anton::String> lhs_res = is_compiletime_evaluable(ctx, *expr.lhs);
-                if(!lhs_res) {
-                    return lhs_res;
-                }
-
-                anton::Expected<bool, anton::String> rhs_res = is_compiletime_evaluable(ctx, *expr.rhs);
-                if(!rhs_res) {
-                    return rhs_res;
-                }
-
-                return {anton::expected_value, lhs_res.value() && rhs_res.value()};
-            }
-
-            case AST_Node_Type::bit_and_expr: {
-                Bit_And_Expr& expr = (Bit_And_Expr&)expression;
-                anton::Expected<bool, anton::String> lhs_res = is_compiletime_evaluable(ctx, *expr.lhs);
-                if(!lhs_res) {
-                    return lhs_res;
-                }
-
-                anton::Expected<bool, anton::String> rhs_res = is_compiletime_evaluable(ctx, *expr.rhs);
-                if(!rhs_res) {
-                    return rhs_res;
-                }
-
-                return {anton::expected_value, lhs_res.value() && rhs_res.value()};
-            }
-
-            case AST_Node_Type::lshift_expr: {
-                LShift_Expr& expr = (LShift_Expr&)expression;
-                anton::Expected<bool, anton::String> lhs_res = is_compiletime_evaluable(ctx, *expr.lhs);
-                if(!lhs_res) {
-                    return lhs_res;
-                }
-
-                anton::Expected<bool, anton::String> rhs_res = is_compiletime_evaluable(ctx, *expr.rhs);
-                if(!rhs_res) {
-                    return rhs_res;
-                }
-
-                return {anton::expected_value, lhs_res.value() && rhs_res.value()};
-            }
-
-            case AST_Node_Type::rshift_expr: {
-                RShift_Expr& expr = (RShift_Expr&)expression;
-                anton::Expected<bool, anton::String> lhs_res = is_compiletime_evaluable(ctx, *expr.lhs);
-                if(!lhs_res) {
-                    return lhs_res;
-                }
-
-                anton::Expected<bool, anton::String> rhs_res = is_compiletime_evaluable(ctx, *expr.rhs);
-                if(!rhs_res) {
-                    return rhs_res;
-                }
-
-                return {anton::expected_value, lhs_res.value() && rhs_res.value()};
-            }
-
-            case AST_Node_Type::add_expr: {
-                Add_Expr& expr = (Add_Expr&)expression;
-                anton::Expected<bool, anton::String> lhs_res = is_compiletime_evaluable(ctx, *expr.lhs);
-                if(!lhs_res) {
-                    return lhs_res;
-                }
-
-                anton::Expected<bool, anton::String> rhs_res = is_compiletime_evaluable(ctx, *expr.rhs);
-                if(!rhs_res) {
-                    return rhs_res;
-                }
-
-                return {anton::expected_value, lhs_res.value() && rhs_res.value()};
-            }
-
-            case AST_Node_Type::sub_expr: {
-                Sub_Expr& expr = (Sub_Expr&)expression;
-                anton::Expected<bool, anton::String> lhs_res = is_compiletime_evaluable(ctx, *expr.lhs);
-                if(!lhs_res) {
-                    return lhs_res;
-                }
-
-                anton::Expected<bool, anton::String> rhs_res = is_compiletime_evaluable(ctx, *expr.rhs);
-                if(!rhs_res) {
-                    return rhs_res;
-                }
-
-                return {anton::expected_value, lhs_res.value() && rhs_res.value()};
-            }
-
-            case AST_Node_Type::mul_expr: {
-                Mul_Expr& expr = (Mul_Expr&)expression;
-                anton::Expected<bool, anton::String> lhs_res = is_compiletime_evaluable(ctx, *expr.lhs);
-                if(!lhs_res) {
-                    return lhs_res;
-                }
-
-                anton::Expected<bool, anton::String> rhs_res = is_compiletime_evaluable(ctx, *expr.rhs);
-                if(!rhs_res) {
-                    return rhs_res;
-                }
-
-                return {anton::expected_value, lhs_res.value() && rhs_res.value()};
-            }
-
-            case AST_Node_Type::div_expr: {
-                Div_Expr& expr = (Div_Expr&)expression;
-                anton::Expected<bool, anton::String> lhs_res = is_compiletime_evaluable(ctx, *expr.lhs);
-                if(!lhs_res) {
-                    return lhs_res;
-                }
-
-                anton::Expected<bool, anton::String> rhs_res = is_compiletime_evaluable(ctx, *expr.rhs);
-                if(!rhs_res) {
-                    return rhs_res;
-                }
-
-                return {anton::expected_value, lhs_res.value() && rhs_res.value()};
-            }
-
-            case AST_Node_Type::mod_expr: {
-                Mod_Expr& expr = (Mod_Expr&)expression;
+            case AST_Node_Type::binary_expr: {
+                Binary_Expr& expr = (Binary_Expr&)expression;
                 anton::Expected<bool, anton::String> lhs_res = is_compiletime_evaluable(ctx, *expr.lhs);
                 if(!lhs_res) {
                     return lhs_res;
@@ -289,654 +79,755 @@ namespace vush {
                 return evaluate_const_expr(ctx, *decl->initializer);
             }
 
-            case AST_Node_Type::logic_or_expr: {
-                Logic_Or_Expr& expr = (Logic_Or_Expr&)expression;
-                anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
-                if(!lhs_res) {
-                    return lhs_res;
-                }
+            case AST_Node_Type::binary_expr: {
+                Binary_Expr& expr = (Binary_Expr&)expression;
+                switch(expr.type) {
+                    case Binary_Expr_Type::logic_or: {
+                        anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
+                        if(!lhs_res) {
+                            return lhs_res;
+                        }
 
-                if(!is_implicitly_convertible_to_boolean(lhs_res.value().type)) {
-                    Source_Info const& src = expr.lhs->source_info;
-                    return {anton::expected_error,
-                            build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
-                }
+                        if(!is_implicitly_convertible_to_boolean(lhs_res.value().type)) {
+                            Source_Info const& src = expr.lhs->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
+                        }
 
-                anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
-                if(!rhs_res) {
-                    return rhs_res;
-                }
+                        anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
+                        if(!rhs_res) {
+                            return rhs_res;
+                        }
 
-                if(!is_implicitly_convertible_to_boolean(rhs_res.value().type)) {
-                    Source_Info const& src = expr.rhs->source_info;
-                    return {anton::expected_error,
-                            build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
-                }
+                        if(!is_implicitly_convertible_to_boolean(rhs_res.value().type)) {
+                            Source_Info const& src = expr.rhs->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
+                        }
 
-                bool lhs_val = lhs_res.value().as_boolean();
-                bool rhs_val = rhs_res.value().as_boolean();
-                Expr_Value e;
-                e.type = Expr_Value_Type::boolean;
-                e.boolean = lhs_val || rhs_val;
-                return {anton::expected_value, e};
-            }
-
-            case AST_Node_Type::logic_xor_expr: {
-                Logic_Or_Expr& expr = (Logic_Or_Expr&)expression;
-                anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
-                if(!lhs_res) {
-                    return lhs_res;
-                }
-
-                if(!is_implicitly_convertible_to_boolean(lhs_res.value().type)) {
-                    Source_Info const& src = expr.lhs->source_info;
-                    return {anton::expected_error,
-                            build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
-                }
-
-                anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
-                if(!rhs_res) {
-                    return rhs_res;
-                }
-
-                if(!is_implicitly_convertible_to_boolean(rhs_res.value().type)) {
-                    Source_Info const& src = expr.rhs->source_info;
-                    return {anton::expected_error,
-                            build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
-                }
-
-                bool lhs_val = lhs_res.value().as_boolean();
-                bool rhs_val = rhs_res.value().as_boolean();
-                Expr_Value e;
-                e.type = Expr_Value_Type::boolean;
-                e.boolean = (lhs_val && !rhs_val) || (!lhs_val && rhs_val);
-                return {anton::expected_value, e};
-            }
-
-            case AST_Node_Type::logic_and_expr: {
-                Logic_Or_Expr& expr = (Logic_Or_Expr&)expression;
-                anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
-                if(!lhs_res) {
-                    return lhs_res;
-                }
-
-                if(!is_implicitly_convertible_to_boolean(lhs_res.value().type)) {
-                    Source_Info const& src = expr.lhs->source_info;
-                    return {anton::expected_error,
-                            build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
-                }
-
-                anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
-                if(!rhs_res) {
-                    return rhs_res;
-                }
-
-                if(!is_implicitly_convertible_to_boolean(rhs_res.value().type)) {
-                    Source_Info const& src = expr.rhs->source_info;
-                    return {anton::expected_error,
-                            build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
-                }
-
-                bool lhs_val = lhs_res.value().as_boolean();
-                bool rhs_val = rhs_res.value().as_boolean();
-                Expr_Value e;
-                e.type = Expr_Value_Type::boolean;
-                e.boolean = lhs_val && rhs_val;
-                return {anton::expected_value, e};
-            }
-
-            case AST_Node_Type::relational_equality_expression: {
-                Relational_Equality_Expression& expr = (Relational_Equality_Expression&)expression;
-                anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
-                if(!lhs_res) {
-                    return lhs_res;
-                }
-
-                anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
-                if(!rhs_res) {
-                    return rhs_res;
-                }
-
-                // TODO: Extend to actual glsl behaviour of == and != operators
-
-                Expr_Value lhs = lhs_res.value();
-                Expr_Value rhs = rhs_res.value();
-                if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
-                   lhs.type != Expr_Value_Type::int32) {
-                    anton::String stringified_relational{expr.is_equality ? u8"==" : u8"!="};
-                    Source_Info const& src = expr.lhs->source_info;
-                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column,
-                                                                       u8"left-hand side of '" + stringified_relational +
-                                                                           "' is not of a scalar integer or a scalar floating-point type")};
-                }
-
-                if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
-                   rhs.type != Expr_Value_Type::int32) {
-                    anton::String stringified_relational{expr.is_equality ? u8"==" : u8"!="};
-                    Source_Info const& src = expr.rhs->source_info;
-                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column,
-                                                                       u8"right-hand side of '" + stringified_relational +
-                                                                           "' is not of a scalar integer or a scalar floating-point type")};
-                }
-
-                Expr_Value e;
-                e.type = Expr_Value_Type::boolean;
-                if(lhs.type == Expr_Value_Type::float64 || rhs.type == Expr_Value_Type::float64) {
-                    if(expr.is_equality) {
-                        e.boolean = lhs.as_float64() == rhs.as_float64();
-                        return {anton::expected_value, e};
-                    } else {
-                        e.boolean = lhs.as_float64() != rhs.as_float64();
+                        bool lhs_val = lhs_res.value().as_boolean();
+                        bool rhs_val = rhs_res.value().as_boolean();
+                        Expr_Value e;
+                        e.type = Expr_Value_Type::boolean;
+                        e.boolean = lhs_val || rhs_val;
                         return {anton::expected_value, e};
                     }
-                } else if(lhs.type == Expr_Value_Type::float32 || rhs.type == Expr_Value_Type::float32) {
-                    if(expr.is_equality) {
-                        e.boolean = lhs.as_float32() == rhs.as_float32();
-                        return {anton::expected_value, e};
-                    } else {
-                        e.boolean = lhs.as_float32() != rhs.as_float32();
+
+                    case Binary_Expr_Type::logic_xor: {
+                        anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
+                        if(!lhs_res) {
+                            return lhs_res;
+                        }
+
+                        if(!is_implicitly_convertible_to_boolean(lhs_res.value().type)) {
+                            Source_Info const& src = expr.lhs->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
+                        }
+
+                        anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
+                        if(!rhs_res) {
+                            return rhs_res;
+                        }
+
+                        if(!is_implicitly_convertible_to_boolean(rhs_res.value().type)) {
+                            Source_Info const& src = expr.rhs->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
+                        }
+
+                        bool lhs_val = lhs_res.value().as_boolean();
+                        bool rhs_val = rhs_res.value().as_boolean();
+                        Expr_Value e;
+                        e.type = Expr_Value_Type::boolean;
+                        e.boolean = (lhs_val && !rhs_val) || (!lhs_val && rhs_val);
                         return {anton::expected_value, e};
                     }
-                } else if(lhs.type == Expr_Value_Type::uint32 || rhs.type == Expr_Value_Type::uint32) {
-                    if(expr.is_equality) {
-                        e.boolean = lhs.as_uint32() == rhs.as_uint32();
-                        return {anton::expected_value, e};
-                    } else {
-                        e.boolean = lhs.as_uint32() != rhs.as_uint32();
+
+                    case Binary_Expr_Type::logic_and: {
+                        anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
+                        if(!lhs_res) {
+                            return lhs_res;
+                        }
+
+                        if(!is_implicitly_convertible_to_boolean(lhs_res.value().type)) {
+                            Source_Info const& src = expr.lhs->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
+                        }
+
+                        anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
+                        if(!rhs_res) {
+                            return rhs_res;
+                        }
+
+                        if(!is_implicitly_convertible_to_boolean(rhs_res.value().type)) {
+                            Source_Info const& src = expr.rhs->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
+                        }
+
+                        bool lhs_val = lhs_res.value().as_boolean();
+                        bool rhs_val = rhs_res.value().as_boolean();
+                        Expr_Value e;
+                        e.type = Expr_Value_Type::boolean;
+                        e.boolean = lhs_val && rhs_val;
                         return {anton::expected_value, e};
                     }
-                } else {
-                    if(expr.is_equality) {
-                        e.boolean = lhs.as_int32() == rhs.as_int32();
-                        return {anton::expected_value, e};
-                    } else {
-                        e.boolean = lhs.as_int32() != rhs.as_int32();
-                        return {anton::expected_value, e};
-                    }
-                }
-            }
 
-            case AST_Node_Type::relational_expression: {
-                Relational_Expression& expr = (Relational_Expression&)expression;
-                anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
-                if(!lhs_res) {
-                    return lhs_res;
-                }
+                    case Binary_Expr_Type::equal: {
+                        anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
+                        if(!lhs_res) {
+                            return lhs_res;
+                        }
 
-                anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
-                if(!rhs_res) {
-                    return rhs_res;
-                }
+                        anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
+                        if(!rhs_res) {
+                            return rhs_res;
+                        }
 
-                Expr_Value lhs = lhs_res.value();
-                Expr_Value rhs = rhs_res.value();
-                if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
-                   lhs.type != Expr_Value_Type::int32) {
-                    anton::String stringified_relational;
-                    switch(expr.type) {
-                        case Relational_Type::greater_than:
-                            stringified_relational = u8">";
-                            break;
-                        case Relational_Type::less_than:
-                            stringified_relational = u8"<";
-                            break;
-                        case Relational_Type::greater_equal:
-                            stringified_relational = u8">=";
-                            break;
-                        case Relational_Type::less_equal:
-                            stringified_relational = u8"<=";
-                            break;
-                    }
+                        // TODO: Extend to actual glsl behaviour of == operator
 
-                    Source_Info const& src = expr.lhs->source_info;
-                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column,
-                                                                       u8"left-hand side of '" + stringified_relational +
-                                                                           "' is not of a scalar integer or a scalar floating-point type")};
-                }
+                        Expr_Value lhs = lhs_res.value();
+                        Expr_Value rhs = rhs_res.value();
+                        if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
+                           lhs.type != Expr_Value_Type::int32) {
+                            Source_Info const& src = expr.lhs->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column,
+                                                        u8"left-hand side of '==' is not of a scalar integer or a scalar floating-point type")};
+                        }
 
-                if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
-                   rhs.type != Expr_Value_Type::int32) {
-                    anton::String stringified_relational;
-                    switch(expr.type) {
-                        case Relational_Type::greater_than:
-                            stringified_relational = u8">";
-                            break;
-                        case Relational_Type::less_than:
-                            stringified_relational = u8"<";
-                            break;
-                        case Relational_Type::greater_equal:
-                            stringified_relational = u8">=";
-                            break;
-                        case Relational_Type::less_equal:
-                            stringified_relational = u8"<=";
-                            break;
+                        if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
+                           rhs.type != Expr_Value_Type::int32) {
+                            Source_Info const& src = expr.rhs->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column,
+                                                        u8"right-hand side of '==' is not of a scalar integer or a scalar floating-point type")};
+                        }
+
+                        Expr_Value e;
+                        e.type = Expr_Value_Type::boolean;
+                        if(lhs.type == Expr_Value_Type::float64 || rhs.type == Expr_Value_Type::float64) {
+                            e.boolean = lhs.as_float64() == rhs.as_float64();
+                            return {anton::expected_value, e};
+                        } else if(lhs.type == Expr_Value_Type::float32 || rhs.type == Expr_Value_Type::float32) {
+                            e.boolean = lhs.as_float32() == rhs.as_float32();
+                            return {anton::expected_value, e};
+                        } else if(lhs.type == Expr_Value_Type::uint32 || rhs.type == Expr_Value_Type::uint32) {
+                            e.boolean = lhs.as_uint32() == rhs.as_uint32();
+                            return {anton::expected_value, e};
+                        } else {
+                            e.boolean = lhs.as_int32() == rhs.as_int32();
+                            return {anton::expected_value, e};
+                        }
                     }
 
-                    Source_Info const& src = expr.rhs->source_info;
-                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column,
-                                                                       u8"right-hand side of '" + stringified_relational +
-                                                                           "' is not of a scalar integer or a scalar floating-point type")};
-                }
+                    case Binary_Expr_Type::unequal: {
+                        anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
+                        if(!lhs_res) {
+                            return lhs_res;
+                        }
 
-                Expr_Value e;
-                e.type = Expr_Value_Type::boolean;
-                if(lhs.type == Expr_Value_Type::float64 || rhs.type == Expr_Value_Type::float64) {
-                    switch(expr.type) {
-                        case Relational_Type::greater_than:
+                        anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
+                        if(!rhs_res) {
+                            return rhs_res;
+                        }
+
+                        // TODO: Extend to actual glsl behaviour of != operator
+
+                        Expr_Value lhs = lhs_res.value();
+                        Expr_Value rhs = rhs_res.value();
+                        if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
+                           lhs.type != Expr_Value_Type::int32) {
+                            Source_Info const& src = expr.lhs->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column,
+                                                        u8"left-hand side of '!=' is not of a scalar integer or a scalar floating-point type")};
+                        }
+
+                        if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
+                           rhs.type != Expr_Value_Type::int32) {
+                            Source_Info const& src = expr.rhs->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column,
+                                                        u8"right-hand side of '!=' is not of a scalar integer or a scalar floating-point type")};
+                        }
+
+                        Expr_Value e;
+                        e.type = Expr_Value_Type::boolean;
+                        if(lhs.type == Expr_Value_Type::float64 || rhs.type == Expr_Value_Type::float64) {
+                            e.boolean = lhs.as_float64() != rhs.as_float64();
+                            return {anton::expected_value, e};
+                        } else if(lhs.type == Expr_Value_Type::float32 || rhs.type == Expr_Value_Type::float32) {
+                            e.boolean = lhs.as_float32() != rhs.as_float32();
+                            return {anton::expected_value, e};
+                        } else if(lhs.type == Expr_Value_Type::uint32 || rhs.type == Expr_Value_Type::uint32) {
+                            e.boolean = lhs.as_uint32() != rhs.as_uint32();
+                            return {anton::expected_value, e};
+                        } else {
+                            e.boolean = lhs.as_int32() != rhs.as_int32();
+                            return {anton::expected_value, e};
+                        }
+                    }
+
+                    case Binary_Expr_Type::greater_than: {
+                        anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
+                        if(!lhs_res) {
+                            return lhs_res;
+                        }
+
+                        anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
+                        if(!rhs_res) {
+                            return rhs_res;
+                        }
+
+                        Expr_Value lhs = lhs_res.value();
+                        Expr_Value rhs = rhs_res.value();
+                        if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
+                           lhs.type != Expr_Value_Type::int32) {
+                            Source_Info const& src = expr.lhs->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column,
+                                                        u8"left-hand side of '>' is not of a scalar integer or a scalar floating-point type")};
+                        }
+
+                        if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
+                           rhs.type != Expr_Value_Type::int32) {
+                            Source_Info const& src = expr.rhs->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column,
+                                                        u8"right-hand side of '>' is not of a scalar integer or a scalar floating-point type")};
+                        }
+
+                        Expr_Value e;
+                        e.type = Expr_Value_Type::boolean;
+                        if(lhs.type == Expr_Value_Type::float64 || rhs.type == Expr_Value_Type::float64) {
                             e.boolean = lhs.as_float64() > rhs.as_float64();
                             return {anton::expected_value, e};
-                        case Relational_Type::less_than:
-                            e.boolean = lhs.as_float64() < rhs.as_float64();
-                            return {anton::expected_value, e};
-                        case Relational_Type::greater_equal:
-                            e.boolean = lhs.as_float64() >= rhs.as_float64();
-                            return {anton::expected_value, e};
-                        case Relational_Type::less_equal:
-                            e.boolean = lhs.as_float64() <= rhs.as_float64();
-                            return {anton::expected_value, e};
-                    }
-                } else if(lhs.type == Expr_Value_Type::float32 || rhs.type == Expr_Value_Type::float32) {
-                    switch(expr.type) {
-                        case Relational_Type::greater_than:
+                        } else if(lhs.type == Expr_Value_Type::float32 || rhs.type == Expr_Value_Type::float32) {
                             e.boolean = lhs.as_float32() > rhs.as_float32();
                             return {anton::expected_value, e};
-                        case Relational_Type::less_than:
-                            e.boolean = lhs.as_float32() < rhs.as_float32();
-                            return {anton::expected_value, e};
-                        case Relational_Type::greater_equal:
-                            e.boolean = lhs.as_float32() >= rhs.as_float32();
-                            return {anton::expected_value, e};
-                        case Relational_Type::less_equal:
-                            e.boolean = lhs.as_float32() <= rhs.as_float32();
-                            return {anton::expected_value, e};
-                    }
-                } else if(lhs.type == Expr_Value_Type::uint32 || rhs.type == Expr_Value_Type::uint32) {
-                    switch(expr.type) {
-                        case Relational_Type::greater_than:
+
+                        } else if(lhs.type == Expr_Value_Type::uint32 || rhs.type == Expr_Value_Type::uint32) {
                             e.boolean = lhs.as_uint32() > rhs.as_uint32();
                             return {anton::expected_value, e};
-                        case Relational_Type::less_than:
-                            e.boolean = lhs.as_uint32() < rhs.as_uint32();
-                            return {anton::expected_value, e};
-                        case Relational_Type::greater_equal:
-                            e.boolean = lhs.as_uint32() >= rhs.as_uint32();
-                            return {anton::expected_value, e};
-                        case Relational_Type::less_equal:
-                            e.boolean = lhs.as_uint32() <= rhs.as_uint32();
-                            return {anton::expected_value, e};
-                    }
-                } else {
-                    switch(expr.type) {
-                        case Relational_Type::greater_than:
+
+                        } else {
                             e.boolean = lhs.as_int32() > rhs.as_int32();
                             return {anton::expected_value, e};
-                        case Relational_Type::less_than:
-                            e.boolean = lhs.as_int32() < rhs.as_int32();
+                        }
+                    }
+
+                    case Binary_Expr_Type::greater_equal: {
+                        anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
+                        if(!lhs_res) {
+                            return lhs_res;
+                        }
+
+                        anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
+                        if(!rhs_res) {
+                            return rhs_res;
+                        }
+
+                        Expr_Value lhs = lhs_res.value();
+                        Expr_Value rhs = rhs_res.value();
+                        if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
+                           lhs.type != Expr_Value_Type::int32) {
+                            Source_Info const& src = expr.lhs->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column,
+                                                        u8"left-hand side of '>=' is not of a scalar integer or a scalar floating-point type")};
+                        }
+
+                        if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
+                           rhs.type != Expr_Value_Type::int32) {
+                            Source_Info const& src = expr.rhs->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column,
+                                                        u8"right-hand side of '>=' is not of a scalar integer or a scalar floating-point type")};
+                        }
+
+                        Expr_Value e;
+                        e.type = Expr_Value_Type::boolean;
+                        if(lhs.type == Expr_Value_Type::float64 || rhs.type == Expr_Value_Type::float64) {
+                            e.boolean = lhs.as_float64() >= rhs.as_float64();
                             return {anton::expected_value, e};
-                        case Relational_Type::greater_equal:
+                        } else if(lhs.type == Expr_Value_Type::float32 || rhs.type == Expr_Value_Type::float32) {
+                            e.boolean = lhs.as_float32() >= rhs.as_float32();
+                            return {anton::expected_value, e};
+
+                        } else if(lhs.type == Expr_Value_Type::uint32 || rhs.type == Expr_Value_Type::uint32) {
+                            e.boolean = lhs.as_uint32() >= rhs.as_uint32();
+                            return {anton::expected_value, e};
+
+                        } else {
                             e.boolean = lhs.as_int32() >= rhs.as_int32();
                             return {anton::expected_value, e};
-                        case Relational_Type::less_equal:
+                        }
+                    }
+
+                    case Binary_Expr_Type::less_than: {
+                        anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
+                        if(!lhs_res) {
+                            return lhs_res;
+                        }
+
+                        anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
+                        if(!rhs_res) {
+                            return rhs_res;
+                        }
+
+                        Expr_Value lhs = lhs_res.value();
+                        Expr_Value rhs = rhs_res.value();
+                        if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
+                           lhs.type != Expr_Value_Type::int32) {
+                            Source_Info const& src = expr.lhs->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column,
+                                                        u8"left-hand side of '<' is not of a scalar integer or a scalar floating-point type")};
+                        }
+
+                        if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
+                           rhs.type != Expr_Value_Type::int32) {
+                            Source_Info const& src = expr.rhs->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column,
+                                                        u8"right-hand side of '<' is not of a scalar integer or a scalar floating-point type")};
+                        }
+
+                        Expr_Value e;
+                        e.type = Expr_Value_Type::boolean;
+                        if(lhs.type == Expr_Value_Type::float64 || rhs.type == Expr_Value_Type::float64) {
+                            e.boolean = lhs.as_float64() < rhs.as_float64();
+                            return {anton::expected_value, e};
+                        } else if(lhs.type == Expr_Value_Type::float32 || rhs.type == Expr_Value_Type::float32) {
+                            e.boolean = lhs.as_float32() < rhs.as_float32();
+                            return {anton::expected_value, e};
+
+                        } else if(lhs.type == Expr_Value_Type::uint32 || rhs.type == Expr_Value_Type::uint32) {
+                            e.boolean = lhs.as_uint32() < rhs.as_uint32();
+                            return {anton::expected_value, e};
+
+                        } else {
+                            e.boolean = lhs.as_int32() < rhs.as_int32();
+                            return {anton::expected_value, e};
+                        }
+                    }
+
+                    case Binary_Expr_Type::less_equal: {
+                        anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
+                        if(!lhs_res) {
+                            return lhs_res;
+                        }
+
+                        anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
+                        if(!rhs_res) {
+                            return rhs_res;
+                        }
+
+                        Expr_Value lhs = lhs_res.value();
+                        Expr_Value rhs = rhs_res.value();
+                        if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
+                           lhs.type != Expr_Value_Type::int32) {
+                            Source_Info const& src = expr.lhs->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column,
+                                                        u8"left-hand side of '<=' is not of a scalar integer or a scalar floating-point type")};
+                        }
+
+                        if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
+                           rhs.type != Expr_Value_Type::int32) {
+                            Source_Info const& src = expr.rhs->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column,
+                                                        u8"right-hand side of '<=' is not of a scalar integer or a scalar floating-point type")};
+                        }
+
+                        Expr_Value e;
+                        e.type = Expr_Value_Type::boolean;
+                        if(lhs.type == Expr_Value_Type::float64 || rhs.type == Expr_Value_Type::float64) {
+                            e.boolean = lhs.as_float64() <= rhs.as_float64();
+                            return {anton::expected_value, e};
+                        } else if(lhs.type == Expr_Value_Type::float32 || rhs.type == Expr_Value_Type::float32) {
+                            e.boolean = lhs.as_float32() <= rhs.as_float32();
+                            return {anton::expected_value, e};
+
+                        } else if(lhs.type == Expr_Value_Type::uint32 || rhs.type == Expr_Value_Type::uint32) {
+                            e.boolean = lhs.as_uint32() <= rhs.as_uint32();
+                            return {anton::expected_value, e};
+
+                        } else {
                             e.boolean = lhs.as_int32() <= rhs.as_int32();
                             return {anton::expected_value, e};
-                    }
-                }
-            }
-
-                // case AST_Node_Type::bit_or_expr: {}
-
-                // case AST_Node_Type::bit_xor_expr: {}
-
-                // case AST_Node_Type::bit_and_expr: {}
-
-            case AST_Node_Type::lshift_expr: {
-                LShift_Expr& expr = (LShift_Expr&)expression;
-                anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
-                if(!lhs_res) {
-                    return {anton::expected_error, anton::move(lhs_res.error())};
-                }
-
-                anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
-                if(!rhs_res) {
-                    return {anton::expected_error, anton::move(rhs_res.error())};
-                }
-
-                Expr_Value lhs = lhs_res.value();
-                Expr_Value rhs = rhs_res.value();
-                if(lhs.type != Expr_Value_Type::uint32 && lhs.type != Expr_Value_Type::int32) {
-                    Source_Info const& src = expr.lhs->source_info;
-                    return {anton::expected_error,
-                            build_error_message(src.file_path, src.line, src.column, u8"left-hand side of '<<' is not of a scalar integer type")};
-                }
-
-                if(rhs.type != Expr_Value_Type::uint32 && rhs.type != Expr_Value_Type::int32) {
-                    Source_Info const& src = expr.rhs->source_info;
-                    return {anton::expected_error,
-                            build_error_message(src.file_path, src.line, src.column, u8"right-hand side of '<<' is not of a scalar integer type")};
-                }
-
-                Expr_Value e;
-                e.type = lhs.type;
-                e.uint32 = lhs.uint32;
-                if(rhs.type == Expr_Value_Type::int32) {
-                    i32 shift = rhs.int32;
-                    if(shift < 0) {
-                        Source_Info const& src = expr.rhs->source_info;
-                        return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"right-hand side of '<<' is negative")};
+                        }
                     }
 
-                    e.uint32 <<= shift;
-                } else {
-                    e.uint32 <<= rhs.uint32;
-                }
+                        // case Binary_Expr_Type::bit_or_expr: {}
 
-                return {anton::expected_value, e};
-            }
+                        // case Binary_Expr_Type::bit_xor_expr: {}
 
-            case AST_Node_Type::rshift_expr: {
-                RShift_Expr& expr = (RShift_Expr&)expression;
-                anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
-                if(!lhs_res) {
-                    return lhs_res;
-                }
+                        // case Binary_Expr_Type::bit_and_expr: {}
 
-                anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
-                if(!rhs_res) {
-                    return rhs_res;
-                }
-
-                Expr_Value lhs = lhs_res.value();
-                Expr_Value rhs = rhs_res.value();
-                if(lhs.type != Expr_Value_Type::uint32 && lhs.type != Expr_Value_Type::int32) {
-                    Source_Info const& src = expr.lhs->source_info;
-                    return {anton::expected_error,
-                            build_error_message(src.file_path, src.line, src.column, u8"left-hand side of '>>' is not of a scalar integer type")};
-                }
-
-                if(rhs.type != Expr_Value_Type::uint32 && rhs.type != Expr_Value_Type::int32) {
-                    Source_Info const& src = expr.rhs->source_info;
-                    return {anton::expected_error,
-                            build_error_message(src.file_path, src.line, src.column, u8"right-hand side of '>>' is not of a scalar integer type")};
-                }
-
-                Expr_Value e;
-                e.type = lhs.type;
-                if(lhs.type == Expr_Value_Type::int32) {
-                    e.int32 = lhs.int32;
-                    if(rhs.type == Expr_Value_Type::int32) {
-                        i32 shift = rhs.int32;
-                        if(shift < 0) {
-                            Source_Info const& src = expr.rhs->source_info;
-                            return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"right-hand side of '>>' is negative")};
+                    case Binary_Expr_Type::lshift: {
+                        anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
+                        if(!lhs_res) {
+                            return {anton::expected_error, anton::move(lhs_res.error())};
                         }
 
-                        e.int32 >>= shift;
-                    } else {
-                        e.int32 >>= rhs.uint32;
-                    }
-                } else {
-                    e.uint32 = lhs.uint32;
-                    if(rhs.type == Expr_Value_Type::int32) {
-                        i32 shift = rhs.int32;
-                        if(shift < 0) {
-                            Source_Info const& src = expr.rhs->source_info;
-                            return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"right-hand side of '>>' is negative")};
+                        anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
+                        if(!rhs_res) {
+                            return {anton::expected_error, anton::move(rhs_res.error())};
                         }
 
-                        e.int32 >>= shift;
-                    } else {
-                        e.int32 >>= rhs.uint32;
+                        Expr_Value lhs = lhs_res.value();
+                        Expr_Value rhs = rhs_res.value();
+                        if(lhs.type != Expr_Value_Type::uint32 && lhs.type != Expr_Value_Type::int32) {
+                            Source_Info const& src = expr.lhs->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column, u8"left-hand side of '<<' is not of a scalar integer type")};
+                        }
+
+                        if(rhs.type != Expr_Value_Type::uint32 && rhs.type != Expr_Value_Type::int32) {
+                            Source_Info const& src = expr.rhs->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column, u8"right-hand side of '<<' is not of a scalar integer type")};
+                        }
+
+                        Expr_Value e;
+                        e.type = lhs.type;
+                        e.uint32 = lhs.uint32;
+                        if(rhs.type == Expr_Value_Type::int32) {
+                            i32 shift = rhs.int32;
+                            if(shift < 0) {
+                                Source_Info const& src = expr.rhs->source_info;
+                                return {anton::expected_error,
+                                        build_error_message(src.file_path, src.line, src.column, u8"right-hand side of '<<' is negative")};
+                            }
+
+                            e.uint32 <<= shift;
+                        } else {
+                            e.uint32 <<= rhs.uint32;
+                        }
+
+                        return {anton::expected_value, e};
                     }
-                }
 
-                return {anton::expected_value, e};
-            }
+                    case Binary_Expr_Type::rshift: {
+                        anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
+                        if(!lhs_res) {
+                            return lhs_res;
+                        }
 
-            case AST_Node_Type::add_expr: {
-                Add_Expr& expr = (Add_Expr&)expression;
-                anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
-                if(!lhs_res) {
-                    return lhs_res;
-                }
+                        anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
+                        if(!rhs_res) {
+                            return rhs_res;
+                        }
 
-                anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
-                if(!rhs_res) {
-                    return rhs_res;
-                }
+                        Expr_Value lhs = lhs_res.value();
+                        Expr_Value rhs = rhs_res.value();
+                        if(lhs.type != Expr_Value_Type::uint32 && lhs.type != Expr_Value_Type::int32) {
+                            Source_Info const& src = expr.lhs->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column, u8"left-hand side of '>>' is not of a scalar integer type")};
+                        }
 
-                // TODO: Expand to include vectors and matrices.
+                        if(rhs.type != Expr_Value_Type::uint32 && rhs.type != Expr_Value_Type::int32) {
+                            Source_Info const& src = expr.rhs->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column, u8"right-hand side of '>>' is not of a scalar integer type")};
+                        }
 
-                Expr_Value lhs = lhs_res.value();
-                Expr_Value rhs = rhs_res.value();
-                if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
-                   lhs.type != Expr_Value_Type::int32) {
-                    Source_Info const& src = expr.lhs->source_info;
-                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column,
-                                                                       u8"left-hand side of '+' is not of a scalar integer or a scalar floating-point type")};
-                }
+                        Expr_Value e;
+                        e.type = lhs.type;
+                        if(lhs.type == Expr_Value_Type::int32) {
+                            e.int32 = lhs.int32;
+                            if(rhs.type == Expr_Value_Type::int32) {
+                                i32 shift = rhs.int32;
+                                if(shift < 0) {
+                                    Source_Info const& src = expr.rhs->source_info;
+                                    return {anton::expected_error,
+                                            build_error_message(src.file_path, src.line, src.column, u8"right-hand side of '>>' is negative")};
+                                }
 
-                if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
-                   rhs.type != Expr_Value_Type::int32) {
-                    Source_Info const& src = expr.rhs->source_info;
-                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column,
-                                                                       u8"right-hand side of '+' is not of a scalar integer or a scalar floating-point type")};
-                }
+                                e.int32 >>= shift;
+                            } else {
+                                e.int32 >>= rhs.uint32;
+                            }
+                        } else {
+                            e.uint32 = lhs.uint32;
+                            if(rhs.type == Expr_Value_Type::int32) {
+                                i32 shift = rhs.int32;
+                                if(shift < 0) {
+                                    Source_Info const& src = expr.rhs->source_info;
+                                    return {anton::expected_error,
+                                            build_error_message(src.file_path, src.line, src.column, u8"right-hand side of '>>' is negative")};
+                                }
 
-                Expr_Value e;
-                if(lhs.type == Expr_Value_Type::float64 || rhs.type == Expr_Value_Type::float64) {
-                    e.type = Expr_Value_Type::float64;
-                    e.float64 = lhs.as_float64() + rhs.as_float64();
-                    return {anton::expected_value, e};
-                } else if(lhs.type == Expr_Value_Type::float32 || rhs.type == Expr_Value_Type::float32) {
-                    e.type = Expr_Value_Type::float32;
-                    e.float32 = lhs.as_float32() + rhs.as_float32();
-                    return {anton::expected_value, e};
-                } else if(lhs.type == Expr_Value_Type::uint32 || rhs.type == Expr_Value_Type::uint32) {
-                    e.type = Expr_Value_Type::uint32;
-                    e.uint32 = lhs.as_uint32() + rhs.as_uint32();
-                    return {anton::expected_value, e};
-                } else {
-                    e.type = Expr_Value_Type::int32;
-                    e.int32 = lhs.as_int32() + rhs.as_int32();
-                    return {anton::expected_value, e};
-                }
-            }
+                                e.int32 >>= shift;
+                            } else {
+                                e.int32 >>= rhs.uint32;
+                            }
+                        }
 
-            case AST_Node_Type::sub_expr: {
-                Sub_Expr& expr = (Sub_Expr&)expression;
-                anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
-                if(!lhs_res) {
-                    return lhs_res;
-                }
+                        return {anton::expected_value, e};
+                    }
 
-                anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
-                if(!rhs_res) {
-                    return rhs_res;
-                }
+                    case Binary_Expr_Type::add: {
+                        anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
+                        if(!lhs_res) {
+                            return lhs_res;
+                        }
 
-                // TODO: Expand to include vectors and matrices.
+                        anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
+                        if(!rhs_res) {
+                            return rhs_res;
+                        }
 
-                Expr_Value lhs = lhs_res.value();
-                Expr_Value rhs = rhs_res.value();
-                if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
-                   lhs.type != Expr_Value_Type::int32) {
-                    Source_Info const& src = expr.lhs->source_info;
-                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column,
-                                                                       u8"left-hand side of '-' is not of a scalar integer or a scalar floating-point type")};
-                }
+                        // TODO: Expand to include vectors and matrices.
 
-                if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
-                   rhs.type != Expr_Value_Type::int32) {
-                    Source_Info const& src = expr.rhs->source_info;
-                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column,
-                                                                       u8"right-hand side of '-' is not of a scalar integer or a scalar floating-point type")};
-                }
+                        Expr_Value lhs = lhs_res.value();
+                        Expr_Value rhs = rhs_res.value();
+                        if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
+                           lhs.type != Expr_Value_Type::int32) {
+                            Source_Info const& src = expr.lhs->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column,
+                                                        u8"left-hand side of '+' is not of a scalar integer or a scalar floating-point type")};
+                        }
 
-                Expr_Value e;
-                if(lhs.type == Expr_Value_Type::float64 || rhs.type == Expr_Value_Type::float64) {
-                    e.type = Expr_Value_Type::float64;
-                    e.float64 = lhs.as_float64() - rhs.as_float64();
-                    return {anton::expected_value, e};
-                } else if(lhs.type == Expr_Value_Type::float32 || rhs.type == Expr_Value_Type::float32) {
-                    e.type = Expr_Value_Type::float32;
-                    e.float32 = lhs.as_float32() - rhs.as_float32();
-                    return {anton::expected_value, e};
-                } else if(lhs.type == Expr_Value_Type::uint32 || rhs.type == Expr_Value_Type::uint32) {
-                    e.type = Expr_Value_Type::uint32;
-                    e.uint32 = lhs.as_uint32() - rhs.as_uint32();
-                    return {anton::expected_value, e};
-                } else {
-                    e.type = Expr_Value_Type::int32;
-                    e.int32 = lhs.as_int32() - rhs.as_int32();
-                    return {anton::expected_value, e};
-                }
-            }
+                        if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
+                           rhs.type != Expr_Value_Type::int32) {
+                            Source_Info const& src = expr.rhs->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column,
+                                                        u8"right-hand side of '+' is not of a scalar integer or a scalar floating-point type")};
+                        }
 
-            case AST_Node_Type::mul_expr: {
-                Mul_Expr& expr = (Mul_Expr&)expression;
-                anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
-                if(!lhs_res) {
-                    return lhs_res;
-                }
+                        Expr_Value e;
+                        if(lhs.type == Expr_Value_Type::float64 || rhs.type == Expr_Value_Type::float64) {
+                            e.type = Expr_Value_Type::float64;
+                            e.float64 = lhs.as_float64() + rhs.as_float64();
+                            return {anton::expected_value, e};
+                        } else if(lhs.type == Expr_Value_Type::float32 || rhs.type == Expr_Value_Type::float32) {
+                            e.type = Expr_Value_Type::float32;
+                            e.float32 = lhs.as_float32() + rhs.as_float32();
+                            return {anton::expected_value, e};
+                        } else if(lhs.type == Expr_Value_Type::uint32 || rhs.type == Expr_Value_Type::uint32) {
+                            e.type = Expr_Value_Type::uint32;
+                            e.uint32 = lhs.as_uint32() + rhs.as_uint32();
+                            return {anton::expected_value, e};
+                        } else {
+                            e.type = Expr_Value_Type::int32;
+                            e.int32 = lhs.as_int32() + rhs.as_int32();
+                            return {anton::expected_value, e};
+                        }
+                    }
 
-                anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
-                if(!rhs_res) {
-                    return rhs_res;
-                }
+                    case Binary_Expr_Type::sub: {
+                        anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
+                        if(!lhs_res) {
+                            return lhs_res;
+                        }
 
-                // TODO: Expand to include vectors and matrices.
+                        anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
+                        if(!rhs_res) {
+                            return rhs_res;
+                        }
 
-                Expr_Value lhs = lhs_res.value();
-                Expr_Value rhs = rhs_res.value();
-                if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
-                   lhs.type != Expr_Value_Type::int32) {
-                    Source_Info const& src = expr.lhs->source_info;
-                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column,
-                                                                       u8"left-hand side of '*' is not of a scalar integer or a scalar floating-point type")};
-                }
+                        // TODO: Expand to include vectors and matrices.
 
-                if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
-                   rhs.type != Expr_Value_Type::int32) {
-                    Source_Info const& src = expr.rhs->source_info;
-                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column,
-                                                                       u8"right-hand side of '*' is not of a scalar integer or a scalar floating-point type")};
-                }
+                        Expr_Value lhs = lhs_res.value();
+                        Expr_Value rhs = rhs_res.value();
+                        if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
+                           lhs.type != Expr_Value_Type::int32) {
+                            Source_Info const& src = expr.lhs->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column,
+                                                        u8"left-hand side of '-' is not of a scalar integer or a scalar floating-point type")};
+                        }
 
-                Expr_Value e;
-                if(lhs.type == Expr_Value_Type::float64 || rhs.type == Expr_Value_Type::float64) {
-                    e.type = Expr_Value_Type::float64;
-                    e.float64 = lhs.as_float64() * rhs.as_float64();
-                    return {anton::expected_value, e};
-                } else if(lhs.type == Expr_Value_Type::float32 || rhs.type == Expr_Value_Type::float32) {
-                    e.type = Expr_Value_Type::float32;
-                    e.float32 = lhs.as_float32() * rhs.as_float32();
-                    return {anton::expected_value, e};
-                } else if(lhs.type == Expr_Value_Type::uint32 || rhs.type == Expr_Value_Type::uint32) {
-                    e.type = Expr_Value_Type::uint32;
-                    e.uint32 = lhs.as_uint32() * rhs.as_uint32();
-                    return {anton::expected_value, e};
-                } else {
-                    e.type = Expr_Value_Type::int32;
-                    e.int32 = lhs.as_int32() * rhs.as_int32();
-                    return {anton::expected_value, e};
-                }
-            }
+                        if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
+                           rhs.type != Expr_Value_Type::int32) {
+                            Source_Info const& src = expr.rhs->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column,
+                                                        u8"right-hand side of '-' is not of a scalar integer or a scalar floating-point type")};
+                        }
 
-            case AST_Node_Type::div_expr: {
-                Div_Expr& expr = (Div_Expr&)expression;
-                anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
-                if(!lhs_res) {
-                    return lhs_res;
-                }
+                        Expr_Value e;
+                        if(lhs.type == Expr_Value_Type::float64 || rhs.type == Expr_Value_Type::float64) {
+                            e.type = Expr_Value_Type::float64;
+                            e.float64 = lhs.as_float64() - rhs.as_float64();
+                            return {anton::expected_value, e};
+                        } else if(lhs.type == Expr_Value_Type::float32 || rhs.type == Expr_Value_Type::float32) {
+                            e.type = Expr_Value_Type::float32;
+                            e.float32 = lhs.as_float32() - rhs.as_float32();
+                            return {anton::expected_value, e};
+                        } else if(lhs.type == Expr_Value_Type::uint32 || rhs.type == Expr_Value_Type::uint32) {
+                            e.type = Expr_Value_Type::uint32;
+                            e.uint32 = lhs.as_uint32() - rhs.as_uint32();
+                            return {anton::expected_value, e};
+                        } else {
+                            e.type = Expr_Value_Type::int32;
+                            e.int32 = lhs.as_int32() - rhs.as_int32();
+                            return {anton::expected_value, e};
+                        }
+                    }
 
-                anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
-                if(!rhs_res) {
-                    return rhs_res;
-                }
+                    case Binary_Expr_Type::mul: {
+                        anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
+                        if(!lhs_res) {
+                            return lhs_res;
+                        }
 
-                // TODO: Expand to include vectors and matrices.
+                        anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
+                        if(!rhs_res) {
+                            return rhs_res;
+                        }
 
-                Expr_Value lhs = lhs_res.value();
-                Expr_Value rhs = rhs_res.value();
-                if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
-                   lhs.type != Expr_Value_Type::int32) {
-                    Source_Info const& src = expr.lhs->source_info;
-                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column,
-                                                                       u8"left-hand side of '/' is not of a scalar integer or a scalar floating-point type")};
-                }
+                        // TODO: Expand to include vectors and matrices.
 
-                if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
-                   rhs.type != Expr_Value_Type::int32) {
-                    Source_Info const& src = expr.rhs->source_info;
-                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column,
-                                                                       u8"right-hand side of '/' is not of a scalar integer or a scalar floating-point type")};
-                }
+                        Expr_Value lhs = lhs_res.value();
+                        Expr_Value rhs = rhs_res.value();
+                        if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
+                           lhs.type != Expr_Value_Type::int32) {
+                            Source_Info const& src = expr.lhs->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column,
+                                                        u8"left-hand side of '*' is not of a scalar integer or a scalar floating-point type")};
+                        }
 
-                Expr_Value e;
-                if(lhs.type == Expr_Value_Type::float64 || rhs.type == Expr_Value_Type::float64) {
-                    e.type = Expr_Value_Type::float64;
-                    e.float64 = lhs.as_float64() / rhs.as_float64();
-                    return {anton::expected_value, e};
-                } else if(lhs.type == Expr_Value_Type::float32 || rhs.type == Expr_Value_Type::float32) {
-                    e.type = Expr_Value_Type::float32;
-                    e.float32 = lhs.as_float32() / rhs.as_float32();
-                    return {anton::expected_value, e};
-                } else if(lhs.type == Expr_Value_Type::uint32 || rhs.type == Expr_Value_Type::uint32) {
-                    e.type = Expr_Value_Type::uint32;
-                    e.uint32 = lhs.as_uint32() / rhs.as_uint32();
-                    return {anton::expected_value, e};
-                } else {
-                    e.type = Expr_Value_Type::int32;
-                    e.int32 = lhs.as_int32() / rhs.as_int32();
-                    return {anton::expected_value, e};
-                }
-            }
+                        if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
+                           rhs.type != Expr_Value_Type::int32) {
+                            Source_Info const& src = expr.rhs->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column,
+                                                        u8"right-hand side of '*' is not of a scalar integer or a scalar floating-point type")};
+                        }
 
-            case AST_Node_Type::mod_expr: {
-                Add_Expr& expr = (Add_Expr&)expression;
-                anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
-                if(!lhs_res) {
-                    return lhs_res;
-                }
+                        Expr_Value e;
+                        if(lhs.type == Expr_Value_Type::float64 || rhs.type == Expr_Value_Type::float64) {
+                            e.type = Expr_Value_Type::float64;
+                            e.float64 = lhs.as_float64() * rhs.as_float64();
+                            return {anton::expected_value, e};
+                        } else if(lhs.type == Expr_Value_Type::float32 || rhs.type == Expr_Value_Type::float32) {
+                            e.type = Expr_Value_Type::float32;
+                            e.float32 = lhs.as_float32() * rhs.as_float32();
+                            return {anton::expected_value, e};
+                        } else if(lhs.type == Expr_Value_Type::uint32 || rhs.type == Expr_Value_Type::uint32) {
+                            e.type = Expr_Value_Type::uint32;
+                            e.uint32 = lhs.as_uint32() * rhs.as_uint32();
+                            return {anton::expected_value, e};
+                        } else {
+                            e.type = Expr_Value_Type::int32;
+                            e.int32 = lhs.as_int32() * rhs.as_int32();
+                            return {anton::expected_value, e};
+                        }
+                    }
 
-                anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
-                if(!rhs_res) {
-                    return rhs_res;
-                }
+                    case Binary_Expr_Type::div: {
+                        anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
+                        if(!lhs_res) {
+                            return lhs_res;
+                        }
 
-                // TODO: Expand to include integer vectors.
+                        anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
+                        if(!rhs_res) {
+                            return rhs_res;
+                        }
 
-                Expr_Value lhs = lhs_res.value();
-                Expr_Value rhs = rhs_res.value();
-                if(lhs.type != Expr_Value_Type::uint32 && lhs.type != Expr_Value_Type::int32) {
-                    Source_Info const& src = expr.lhs->source_info;
-                    return {anton::expected_error,
-                            build_error_message(src.file_path, src.line, src.column, u8"left-hand side of '%' is not of a scalar integer type")};
-                }
+                        // TODO: Expand to include vectors and matrices.
 
-                if(rhs.type != Expr_Value_Type::uint32 && rhs.type != Expr_Value_Type::int32) {
-                    Source_Info const& src = expr.rhs->source_info;
-                    return {anton::expected_error,
-                            build_error_message(src.file_path, src.line, src.column, u8"right-hand side of '%' is not of a scalar integer type")};
-                }
+                        Expr_Value lhs = lhs_res.value();
+                        Expr_Value rhs = rhs_res.value();
+                        if(lhs.type != Expr_Value_Type::float64 && lhs.type != Expr_Value_Type::float32 && lhs.type != Expr_Value_Type::uint32 &&
+                           lhs.type != Expr_Value_Type::int32) {
+                            Source_Info const& src = expr.lhs->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column,
+                                                        u8"left-hand side of '/' is not of a scalar integer or a scalar floating-point type")};
+                        }
 
-                Expr_Value e;
-                if(lhs.type == Expr_Value_Type::float64 || rhs.type == Expr_Value_Type::float64) {
-                    e.type = Expr_Value_Type::float64;
-                    e.float64 = lhs.as_float64() / rhs.as_float64();
-                    return {anton::expected_value, e};
-                } else if(lhs.type == Expr_Value_Type::float32 || rhs.type == Expr_Value_Type::float32) {
-                    e.type = Expr_Value_Type::float32;
-                    e.float32 = lhs.as_float32() / rhs.as_float32();
-                    return {anton::expected_value, e};
-                } else if(lhs.type == Expr_Value_Type::uint32 || rhs.type == Expr_Value_Type::uint32) {
-                    e.type = Expr_Value_Type::uint32;
-                    e.uint32 = lhs.as_uint32() / rhs.as_uint32();
-                    return {anton::expected_value, e};
-                } else {
-                    e.type = Expr_Value_Type::int32;
-                    e.int32 = lhs.as_int32() / rhs.as_int32();
-                    return {anton::expected_value, e};
+                        if(rhs.type != Expr_Value_Type::float64 && rhs.type != Expr_Value_Type::float32 && rhs.type != Expr_Value_Type::uint32 &&
+                           rhs.type != Expr_Value_Type::int32) {
+                            Source_Info const& src = expr.rhs->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column,
+                                                        u8"right-hand side of '/' is not of a scalar integer or a scalar floating-point type")};
+                        }
+
+                        Expr_Value e;
+                        if(lhs.type == Expr_Value_Type::float64 || rhs.type == Expr_Value_Type::float64) {
+                            e.type = Expr_Value_Type::float64;
+                            e.float64 = lhs.as_float64() / rhs.as_float64();
+                            return {anton::expected_value, e};
+                        } else if(lhs.type == Expr_Value_Type::float32 || rhs.type == Expr_Value_Type::float32) {
+                            e.type = Expr_Value_Type::float32;
+                            e.float32 = lhs.as_float32() / rhs.as_float32();
+                            return {anton::expected_value, e};
+                        } else if(lhs.type == Expr_Value_Type::uint32 || rhs.type == Expr_Value_Type::uint32) {
+                            e.type = Expr_Value_Type::uint32;
+                            e.uint32 = lhs.as_uint32() / rhs.as_uint32();
+                            return {anton::expected_value, e};
+                        } else {
+                            e.type = Expr_Value_Type::int32;
+                            e.int32 = lhs.as_int32() / rhs.as_int32();
+                            return {anton::expected_value, e};
+                        }
+                    }
+
+                    case Binary_Expr_Type::mod: {
+                        anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
+                        if(!lhs_res) {
+                            return lhs_res;
+                        }
+
+                        anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
+                        if(!rhs_res) {
+                            return rhs_res;
+                        }
+
+                        // TODO: Expand to include integer vectors.
+
+                        Expr_Value lhs = lhs_res.value();
+                        Expr_Value rhs = rhs_res.value();
+                        if(lhs.type != Expr_Value_Type::uint32 && lhs.type != Expr_Value_Type::int32) {
+                            Source_Info const& src = expr.lhs->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column, u8"left-hand side of '%' is not of a scalar integer type")};
+                        }
+
+                        if(rhs.type != Expr_Value_Type::uint32 && rhs.type != Expr_Value_Type::int32) {
+                            Source_Info const& src = expr.rhs->source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column, u8"right-hand side of '%' is not of a scalar integer type")};
+                        }
+
+                        Expr_Value e;
+                        if(lhs.type == Expr_Value_Type::float64 || rhs.type == Expr_Value_Type::float64) {
+                            e.type = Expr_Value_Type::float64;
+                            e.float64 = lhs.as_float64() / rhs.as_float64();
+                            return {anton::expected_value, e};
+                        } else if(lhs.type == Expr_Value_Type::float32 || rhs.type == Expr_Value_Type::float32) {
+                            e.type = Expr_Value_Type::float32;
+                            e.float32 = lhs.as_float32() / rhs.as_float32();
+                            return {anton::expected_value, e};
+                        } else if(lhs.type == Expr_Value_Type::uint32 || rhs.type == Expr_Value_Type::uint32) {
+                            e.type = Expr_Value_Type::uint32;
+                            e.uint32 = lhs.as_uint32() / rhs.as_uint32();
+                            return {anton::expected_value, e};
+                        } else {
+                            e.type = Expr_Value_Type::int32;
+                            e.int32 = lhs.as_int32() / rhs.as_int32();
+                            return {anton::expected_value, e};
+                        }
+                    }
+
+                    default: {
+                        Source_Info const& src = expression.source_info;
+                        return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"non-constant expression")};
+                    }
                 }
             }
 

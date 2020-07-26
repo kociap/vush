@@ -35,21 +35,7 @@ namespace vush {
         assignment_expression,
         arithmetic_assignment_expression,
         elvis_expr,
-        logic_or_expr,
-        logic_xor_expr,
-        logic_and_expr,
-        relational_equality_expression,
-        relational_expression,
-        bit_or_expr,
-        bit_xor_expr,
-        bit_and_expr,
-        lshift_expr,
-        rshift_expr,
-        add_expr,
-        sub_expr,
-        mul_expr,
-        div_expr,
-        mod_expr,
+        binary_expr,
         unary_expression,
         prefix_inc_expr,
         prefix_dec_expr,
@@ -914,133 +900,35 @@ namespace vush {
               false_expr(anton::move(false_expr)) {}
     };
 
-    struct Logic_Or_Expr: public Expression {
-        Owning_Ptr<Expression> lhs;
-        Owning_Ptr<Expression> rhs;
-
-        Logic_Or_Expr(Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::logic_or_expr), lhs(anton::move(lhs)), rhs(anton::move(rhs)) {}
-    };
-
-    struct Logic_Xor_Expr: public Expression {
-        Owning_Ptr<Expression> lhs;
-        Owning_Ptr<Expression> rhs;
-
-        Logic_Xor_Expr(Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::logic_xor_expr), lhs(anton::move(lhs)), rhs(anton::move(rhs)) {}
-    };
-
-    struct Logic_And_Expr: public Expression {
-        Owning_Ptr<Expression> lhs;
-        Owning_Ptr<Expression> rhs;
-
-        Logic_And_Expr(Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::logic_and_expr), lhs(anton::move(lhs)), rhs(anton::move(rhs)) {}
-    };
-
-    struct Relational_Equality_Expression: public Expression {
-        Owning_Ptr<Expression> lhs;
-        Owning_Ptr<Expression> rhs;
-        bool is_equality;
-
-        Relational_Equality_Expression(bool is_equality, Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::relational_equality_expression), lhs(anton::move(lhs)), rhs(anton::move(rhs)), is_equality(is_equality) {}
-    };
-
-    enum struct Relational_Type {
+    enum struct Binary_Expr_Type {
+        logic_or,
+        logic_xor,
+        logic_and,
+        equal,
+        unequal,
         greater_than,
         less_than,
         greater_equal,
         less_equal,
+        bit_or,
+        bit_xor,
+        bit_and,
+        lshift,
+        rshift,
+        add,
+        sub,
+        mul,
+        div,
+        mod,
     };
 
-    struct Relational_Expression: public Expression {
+    struct Binary_Expr: public Expression {
         Owning_Ptr<Expression> lhs;
         Owning_Ptr<Expression> rhs;
-        Relational_Type type;
+        Binary_Expr_Type type;
 
-        Relational_Expression(Relational_Type type, Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::relational_expression), lhs(anton::move(lhs)), rhs(anton::move(rhs)), type(type) {}
-    };
-
-    struct Bit_Or_Expr: public Expression {
-        Owning_Ptr<Expression> lhs;
-        Owning_Ptr<Expression> rhs;
-
-        Bit_Or_Expr(Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::bit_or_expr), lhs(anton::move(lhs)), rhs(anton::move(rhs)) {}
-    };
-
-    struct Bit_Xor_Expr: public Expression {
-        Owning_Ptr<Expression> lhs;
-        Owning_Ptr<Expression> rhs;
-
-        Bit_Xor_Expr(Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::bit_xor_expr), lhs(anton::move(lhs)), rhs(anton::move(rhs)) {}
-    };
-
-    struct Bit_And_Expr: public Expression {
-        Owning_Ptr<Expression> lhs;
-        Owning_Ptr<Expression> rhs;
-
-        Bit_And_Expr(Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::bit_and_expr), lhs(anton::move(lhs)), rhs(anton::move(rhs)) {}
-    };
-
-    struct LShift_Expr: public Expression {
-        Owning_Ptr<Expression> lhs;
-        Owning_Ptr<Expression> rhs;
-
-        LShift_Expr(Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::lshift_expr), lhs(anton::move(lhs)), rhs(anton::move(rhs)) {}
-    };
-
-    struct RShift_Expr: public Expression {
-        Owning_Ptr<Expression> lhs;
-        Owning_Ptr<Expression> rhs;
-
-        RShift_Expr(Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::rshift_expr), lhs(anton::move(lhs)), rhs(anton::move(rhs)) {}
-    };
-
-    struct Add_Expr: public Expression {
-        Owning_Ptr<Expression> lhs;
-        Owning_Ptr<Expression> rhs;
-
-        Add_Expr(Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::add_expr), lhs(anton::move(lhs)), rhs(anton::move(rhs)) {}
-    };
-
-    struct Sub_Expr: public Expression {
-        Owning_Ptr<Expression> lhs;
-        Owning_Ptr<Expression> rhs;
-
-        Sub_Expr(Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::sub_expr), lhs(anton::move(lhs)), rhs(anton::move(rhs)) {}
-    };
-
-    struct Mul_Expr: public Expression {
-        Owning_Ptr<Expression> lhs;
-        Owning_Ptr<Expression> rhs;
-
-        Mul_Expr(Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::mul_expr), lhs(anton::move(lhs)), rhs(anton::move(rhs)) {}
-    };
-
-    struct Div_Expr: public Expression {
-        Owning_Ptr<Expression> lhs;
-        Owning_Ptr<Expression> rhs;
-
-        Div_Expr(Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::div_expr), lhs(anton::move(lhs)), rhs(anton::move(rhs)) {}
-    };
-
-    struct Mod_Expr: public Expression {
-        Owning_Ptr<Expression> lhs;
-        Owning_Ptr<Expression> rhs;
-
-        Mod_Expr(Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::mod_expr), lhs(anton::move(lhs)), rhs(anton::move(rhs)) {}
+        Binary_Expr(Binary_Expr_Type type, Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info)
+            : Expression(source_info, AST_Node_Type::binary_expr), lhs(anton::move(lhs)), rhs(anton::move(rhs)), type(type) {}
     };
 
     enum struct Unary_Type {

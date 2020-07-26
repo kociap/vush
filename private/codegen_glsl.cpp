@@ -392,138 +392,77 @@ namespace vush {
                 return;
             }
 
-            case AST_Node_Type::logic_or_expr: {
-                Logic_Or_Expr& node = (Logic_Or_Expr&)ast_node;
+            case AST_Node_Type::binary_expr: {
+                Binary_Expr& node = (Binary_Expr&)ast_node;
                 stringify(out, *node.lhs, ctx);
-                out += u8" || ";
-                stringify(out, *node.rhs, ctx);
-                return;
-            }
-
-            case AST_Node_Type::logic_xor_expr: {
-                Logic_Xor_Expr& node = (Logic_Xor_Expr&)ast_node;
-                stringify(out, *node.lhs, ctx);
-                out += u8" ^^ ";
-                stringify(out, *node.rhs, ctx);
-                return;
-            }
-
-            case AST_Node_Type::logic_and_expr: {
-                Logic_And_Expr& node = (Logic_And_Expr&)ast_node;
-                stringify(out, *node.lhs, ctx);
-                out += u8" && ";
-                stringify(out, *node.rhs, ctx);
-                return;
-            }
-
-            case AST_Node_Type::relational_equality_expression: {
-                Relational_Equality_Expression& node = (Relational_Equality_Expression&)ast_node;
-                stringify(out, *node.lhs, ctx);
-                out += (node.is_equality ? u8" == " : u8" != ");
-                stringify(out, *node.rhs, ctx);
-                return;
-            }
-
-            case AST_Node_Type::relational_expression: {
-                Relational_Expression& node = (Relational_Expression&)ast_node;
-                stringify(out, *node.lhs, ctx);
-                switch(node.type) {
-                    case Relational_Type::greater_equal: {
-                        out += u8" >= ";
-                    } break;
-
-                    case Relational_Type::greater_than: {
-                        out += u8" > ";
-                    } break;
-
-                    case Relational_Type::less_equal: {
-                        out += u8" <= ";
-                    } break;
-
-                    case Relational_Type::less_than: {
-                        out += u8" < ";
-                    } break;
+                if(ctx.format.space_around_operators) {
+                    out += u8" ";
                 }
-                stringify(out, *node.rhs, ctx);
-                return;
-            }
 
-            case AST_Node_Type::bit_or_expr: {
-                Bit_Or_Expr& node = (Bit_Or_Expr&)ast_node;
-                stringify(out, *node.lhs, ctx);
-                out += u8" | ";
-                stringify(out, *node.rhs, ctx);
-                return;
-            }
+                switch(node.type) {
+                    case Binary_Expr_Type::logic_or:
+                        out += u8"||";
+                        break;
+                    case Binary_Expr_Type::logic_xor:
+                        out += u8"^^";
+                        break;
+                    case Binary_Expr_Type::logic_and:
+                        out += u8"&&";
+                        break;
+                    case Binary_Expr_Type::equal:
+                        out += u8"==";
+                        break;
+                    case Binary_Expr_Type::unequal:
+                        out += u8"!=";
+                        break;
+                    case Binary_Expr_Type::greater_than:
+                        out += u8">";
+                        break;
+                    case Binary_Expr_Type::less_than:
+                        out += u8"<";
+                        break;
+                    case Binary_Expr_Type::greater_equal:
+                        out += u8">=";
+                        break;
+                    case Binary_Expr_Type::less_equal:
+                        out += u8"<=";
+                        break;
+                    case Binary_Expr_Type::bit_or:
+                        out += u8"|";
+                        break;
+                    case Binary_Expr_Type::bit_xor:
+                        out += u8"^";
+                        break;
+                    case Binary_Expr_Type::bit_and:
+                        out += u8"&";
+                        break;
+                    case Binary_Expr_Type::lshift:
+                        out += u8"<<";
+                        break;
+                    case Binary_Expr_Type::rshift:
+                        out += u8">>";
+                        break;
+                    case Binary_Expr_Type::add:
+                        out += u8"+";
+                        break;
+                    case Binary_Expr_Type::sub:
+                        out += u8"-";
+                        break;
+                    case Binary_Expr_Type::mul:
+                        out += u8"*";
+                        break;
+                    case Binary_Expr_Type::div:
+                        out += u8"/";
+                        break;
+                    case Binary_Expr_Type::mod:
+                        out += u8"%";
+                        break;
+                }
 
-            case AST_Node_Type::bit_xor_expr: {
-                Bit_Xor_Expr& node = (Bit_Xor_Expr&)ast_node;
-                stringify(out, *node.lhs, ctx);
-                out += u8" ^ ";
-                stringify(out, *node.rhs, ctx);
-                return;
-            }
+                if(ctx.format.space_around_operators) {
+                    out += u8" ";
+                }
 
-            case AST_Node_Type::bit_and_expr: {
-                Bit_And_Expr& node = (Bit_And_Expr&)ast_node;
-                stringify(out, *node.lhs, ctx);
-                out += u8" & ";
-                stringify(out, *node.rhs, ctx);
-                return;
-            }
-
-            case AST_Node_Type::lshift_expr: {
-                LShift_Expr& node = (LShift_Expr&)ast_node;
-                stringify(out, *node.lhs, ctx);
-                out += u8" << ";
-                stringify(out, *node.rhs, ctx);
-                return;
-            }
-
-            case AST_Node_Type::rshift_expr: {
-                RShift_Expr& node = (RShift_Expr&)ast_node;
-                stringify(out, *node.lhs, ctx);
-                out += u8" >> ";
-                stringify(out, *node.rhs, ctx);
-                return;
-            }
-
-            case AST_Node_Type::add_expr: {
-                Add_Expr& node = (Add_Expr&)ast_node;
-                stringify(out, *node.lhs, ctx);
-                out += u8" + ";
-                stringify(out, *node.rhs, ctx);
-                return;
-            }
-
-            case AST_Node_Type::sub_expr: {
-                Sub_Expr& node = (Sub_Expr&)ast_node;
-                stringify(out, *node.lhs, ctx);
-                out += u8" - ";
-                stringify(out, *node.rhs, ctx);
-                return;
-            }
-
-            case AST_Node_Type::mul_expr: {
-                Mul_Expr& node = (Mul_Expr&)ast_node;
-                stringify(out, *node.lhs, ctx);
-                out += u8" * ";
-                stringify(out, *node.rhs, ctx);
-                return;
-            }
-
-            case AST_Node_Type::div_expr: {
-                Div_Expr& node = (Div_Expr&)ast_node;
-                stringify(out, *node.lhs, ctx);
-                out += u8" / ";
-                stringify(out, *node.rhs, ctx);
-                return;
-            }
-
-            case AST_Node_Type::mod_expr: {
-                Mod_Expr& node = (Mod_Expr&)ast_node;
-                stringify(out, *node.lhs, ctx);
-                out += u8" % ";
                 stringify(out, *node.rhs, ctx);
                 return;
             }
