@@ -968,11 +968,12 @@ namespace vush {
             }
 
             Owning_Ptr struct_decl{new Struct_Decl(anton::move(struct_name), src_info(state_backup))};
-            while(true) {
+            while(!_lexer.match(token_brace_close)) {
                 if(Owning_Ptr decl = try_variable_declaration()) {
                     struct_decl->append(anton::move(decl));
                 } else {
-                    break;
+                    _lexer.restore_state(state_backup);
+                    return nullptr;
                 }
             }
 
@@ -980,11 +981,6 @@ namespace vush {
                 set_error(u8"empty structs are not allowed", state_backup);
                 _lexer.restore_state(state_backup);
                 return nullptr;
-            }
-
-            if(!_lexer.match(token_brace_close)) {
-                set_error(u8"expected '}'");
-                _lexer.restore_state(state_backup);
             }
 
             return struct_decl;
