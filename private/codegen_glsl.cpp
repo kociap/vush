@@ -1067,7 +1067,7 @@ namespace vush {
             auto end = anton::unique(data.begin(), data.end(), [](Sourced_Data const& lhs, Sourced_Data const& rhs) {
                 anton::String const i_type = stringify_type(*lhs.type);
                 anton::String const j_type = stringify_type(*rhs.type);
-                return i_type == j_type;
+                return i_type == j_type && lhs.name->value == rhs.name->value;
             });
 
             data.erase(end, data.end());
@@ -1105,7 +1105,7 @@ namespace vush {
                 auto iter = sourced_data.find(source_template->name->value);
                 if(iter != sourced_data.end()) {
                     anton::Expected<void, anton::String> result =
-                        instantiate_source_template(common, *source_template, {iter->value.begin(), iter->value.end()}, ctx, format, codegen_ctx, symbols);
+                        instantiate_source_template(common, *source_template, iter->value, ctx, format, codegen_ctx, symbols);
                     if(!result) {
                         return {anton::expected_error, anton::move(result.error())};
                     }
