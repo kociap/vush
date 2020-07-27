@@ -373,6 +373,50 @@ namespace vush {
         for(i64 i = 0; i < statements.size();) {
             bool should_advance = true;
             switch(statements[i]->node_type) {
+                case AST_Node_Type::expression_statement: {
+                    Expression_Statement& node = (Expression_Statement&)*statements[i];
+                    anton::Expected<void, anton::String> res = process_expression(ctx, node.expr);
+                    if(!res) {
+                        return res;
+                    }
+                } break;
+
+                case AST_Node_Type::declaration_statement: {
+                    Declaration_Statement& node = (Declaration_Statement&)*statements[i];
+                    ANTON_ASSERT(node.declaration->node_type == AST_Node_Type::variable_declaration ||
+                                     node.declaration->node_type == AST_Node_Type::constant_declaration,
+                                 u8"invalid ast node type");
+                    if(node.declaration->node_type == AST_Node_Type::variable_declaration) {
+                        Variable_Declaration& decl = (Variable_Declaration&)*node.declaration;
+                        Symbol symbol{Symbol_Type::variable, &decl};
+                        add_symbol(ctx, decl.identifier->value, symbol);
+                        if(decl.initializer) {
+                            anton::Expected<void, anton::String> res = process_expression(ctx, decl.initializer);
+                            if(!res) {
+                                return res;
+                            }
+                        }
+                    } else {
+                        Constant_Declaration& decl = (Constant_Declaration&)*node.declaration;
+                        Symbol symbol{Symbol_Type::variable, &decl};
+                        add_symbol(ctx, decl.identifier->value, symbol);
+                        if(decl.initializer) {
+                            anton::Expected<void, anton::String> res = process_expression(ctx, decl.initializer);
+                            if(!res) {
+                                return res;
+                            }
+                        }
+                    }
+                } break;
+
+                case AST_Node_Type::block_statement: {
+                    Block_Statement& node = (Block_Statement&)*statements[i];
+                    anton::Expected<void, anton::String> res = process_statements(ctx, node.statements->statements);
+                    if(!res) {
+                        return res;
+                    }
+                } break;
+
                 case AST_Node_Type::if_statement: {
                     Owning_Ptr<If_Statement>& node = (Owning_Ptr<If_Statement>&)statements[i];
                     anton::Expected<void, anton::String> expr_res = process_expression(ctx, node->condition);
@@ -443,24 +487,78 @@ namespace vush {
                     }
                 } break;
 
-                case AST_Node_Type::declaration_statement: {
-                    Owning_Ptr<Declaration_Statement>& node = (Owning_Ptr<Declaration_Statement>&)statements[i];
-                    ANTON_ASSERT(node->declaration->node_type == AST_Node_Type::variable_declaration ||
-                                     node->declaration->node_type == AST_Node_Type::constant_declaration,
-                                 u8"invalid ast node type");
-                    if(node->declaration->node_type == AST_Node_Type::variable_declaration) {
-                        Variable_Declaration& decl = (Variable_Declaration&)*node->declaration;
-                        Symbol symbol{Symbol_Type::variable, &decl};
-                        add_symbol(ctx, decl.identifier->value, symbol);
-                        if(decl.initializer) {
-                            process_expression(ctx, decl.initializer);
+                case AST_Node_Type::for_statement: {
+                    For_Statement& node = (For_Statement&)*statements[i];
+                    if(node.declaration) {
+                        anton::Expected<void, anton::String> res = process_expression(ctx, node.declaration->initializer);
+                        if(!res) {
+                            return res;
                         }
-                    } else {
-                        Constant_Declaration& decl = (Constant_Declaration&)*node->declaration;
-                        Symbol symbol{Symbol_Type::variable, &decl};
-                        add_symbol(ctx, decl.identifier->value, symbol);
-                        if(decl.initializer) {
-                            process_expression(ctx, decl.initializer);
+                    }
+
+                    if(node.condition) {
+                        anton::Expected<void, anton::String> res = process_expression(ctx, node.condition);
+                        if(!res) {
+                            return res;
+                        }
+                    }
+
+                    if(node.post_expression) {
+                        anton::Expected<void, anton::String> res = process_expression(ctx, node.post_expression);
+                        if(!res) {
+                            return res;
+                        }
+                    }
+
+                    anton::Expected<void, anton::String> res = process_statements(ctx, node.block->statements->statements);
+                    if(!res) {
+                        return res;
+                    }
+                } break;
+
+                case AST_Node_Type::while_statement: {
+                    While_Statement& node = (While_Statement&)*statements[i];
+                    anton::Expected<void, anton::String> cond_res = process_expression(ctx, node.condition);
+                    if(!cond_res) {
+                        return cond_res;
+                    }
+
+                    anton::Expected<void, anton::String> res = process_statements(ctx, node.block->statements->statements);
+                    if(!res) {
+                        return res;
+                    }
+                } break;
+
+                case AST_Node_Type::do_while_statement: {
+                    Do_While_Statement& node = (Do_While_Statement&)*statements[i];
+                    anton::Expected<void, anton::String> cond_res = process_expression(ctx, node.condition);
+                    if(!cond_res) {
+                        return cond_res;
+                    }
+
+                    anton::Expected<void, anton::String> res = process_statements(ctx, node.block->statements->statements);
+                    if(!res) {
+                        return res;
+                    }
+                } break;
+
+                case AST_Node_Type::switch_statement: {
+                    Switch_Statement& node = (Switch_Statement&)*statements[i];
+                    for(auto& switch_case: node.cases) {
+                        ANTON_ASSERT(switch_case->node_type == AST_Node_Type::case_statement || switch_case->node_type == AST_Node_Type::default_case_statement,
+                                     u8"invalid ast node type");
+                        if(switch_case->node_type == AST_Node_Type::case_statement) {
+                            Case_Statement& s = (Case_Statement&)*switch_case;
+                            anton::Expected<void, anton::String> res = process_statements(ctx, s.statements->statements);
+                            if(!res) {
+                                return res;
+                            }
+                        } else {
+                            Default_Case_Statement& s = (Default_Case_Statement&)*switch_case;
+                            anton::Expected<void, anton::String> res = process_statements(ctx, s.statements->statements);
+                            if(!res) {
+                                return res;
+                            }
                         }
                     }
                 } break;

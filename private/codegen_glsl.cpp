@@ -233,18 +233,26 @@ namespace vush {
                 For_Statement& node = (For_Statement&)ast_node;
                 write_indent(out, ctx.indent);
                 out += u8"for(";
-                // We stringify the variable_decl manually because we need inline declaration;
-                Variable_Declaration& decl = *node.declaration;
-                stringify(out, *decl.type, ctx);
-                out += u8" ";
-                stringify(out, *decl.identifier, ctx);
-                out += u8" = ";
-                stringify(out, *decl.initializer, ctx);
-                out += u8"; ";
-                stringify(out, *node.condition, ctx);
-                out += u8"; ";
-                stringify(out, *node.post_expression, ctx);
-                // We need no-braces block. We add them inline ourselves.
+                if(node.declaration) {
+                    // We stringify the variable_decl manually because we need inline declaration
+                    Variable_Declaration& decl = *node.declaration;
+                    stringify(out, *decl.type, ctx);
+                    out += u8" ";
+                    stringify(out, *decl.identifier, ctx);
+                    out += u8" = ";
+                    stringify(out, *decl.initializer, ctx);
+                }
+                out += u8";";
+                if(node.condition) {
+                    out += u8" ";
+                    stringify(out, *node.condition, ctx);
+                }
+                out += u8";";
+                if(node.post_expression) {
+                    out += u8" ";
+                    stringify(out, *node.post_expression, ctx);
+                }
+                // We stringify the block ourselves to allow custom formatting of the braces
                 out += u8") {\n";
                 ctx.indent += 1;
                 for(auto& statement: node.block->statements->statements) {
