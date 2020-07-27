@@ -366,6 +366,10 @@ namespace vush {
     }
 
     static anton::Expected<void, anton::String> process_statements(Context& ctx, anton::Array<Owning_Ptr<Statement>>& statements) {
+        // We push new scope and pop it only at the end of the function. We do not pop the scope when we fail
+        // because an error always leads to termination.
+        push_scope(ctx);
+
         for(i64 i = 0; i < statements.size();) {
             bool should_advance = true;
             switch(statements[i]->node_type) {
@@ -446,11 +450,15 @@ namespace vush {
                                  u8"invalid ast node type");
                     if(node->declaration->node_type == AST_Node_Type::variable_declaration) {
                         Variable_Declaration& decl = (Variable_Declaration&)*node->declaration;
+                        Symbol symbol{Symbol_Type::variable, &decl};
+                        add_symbol(ctx, decl.identifier->value, symbol);
                         if(decl.initializer) {
                             process_expression(ctx, decl.initializer);
                         }
                     } else {
                         Constant_Declaration& decl = (Constant_Declaration&)*node->declaration;
+                        Symbol symbol{Symbol_Type::variable, &decl};
+                        add_symbol(ctx, decl.identifier->value, symbol);
                         if(decl.initializer) {
                             process_expression(ctx, decl.initializer);
                         }
@@ -464,6 +472,7 @@ namespace vush {
             i += should_advance;
         }
 
+        pop_scope(ctx);
         return {anton::expected_value};
     }
 

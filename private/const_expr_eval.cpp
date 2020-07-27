@@ -9,6 +9,8 @@ namespace vush {
     }
 
     anton::Expected<bool, anton::String> is_compiletime_evaluable(Context& ctx, Expression& expression) {
+        // postfix/prefix increment and decrement, assignment and arithmetic assignment are not compiletime because they don't operate on constants.
+        // function call is not compiletime because functions are not compiletime (with the exception of constructor calls which are TODO).
         switch(expression.node_type) {
             case AST_Node_Type::bool_literal:
             case AST_Node_Type::integer_literal: {
@@ -25,6 +27,12 @@ namespace vush {
                 }
 
                 return {anton::expected_value, symbol->type == Symbol_Type::constant};
+            }
+
+            case AST_Node_Type::paren_expr: {
+                Paren_Expr& expr = (Paren_Expr&)expression;
+                anton::Expected<bool, anton::String> res = is_compiletime_evaluable(ctx, *expr.expr);
+                return res;
             }
 
             case AST_Node_Type::binary_expr: {
@@ -60,6 +68,25 @@ namespace vush {
 
     anton::Expected<Expr_Value, anton::String> evaluate_const_expr(Context& ctx, Expression& expression) {
         switch(expression.node_type) {
+            case AST_Node_Type::bool_literal: {
+                Bool_Literal& expr = (Bool_Literal&)expression;
+                Expr_Value e;
+                e.type = Expr_Value_Type::int32;
+                e.boolean = expr.value;
+                return {anton::expected_value, e};
+            }
+
+            case AST_Node_Type::integer_literal: {
+                Integer_Literal& expr = (Integer_Literal&)expression;
+                i64 value = str_to_i64(expr.value);
+                Expr_Value e;
+                e.type = Expr_Value_Type::int32;
+                e.int32 = value;
+                return {anton::expected_value, e};
+            }
+
+                // case AST_Node_Type::float_literal: {}
+
             case AST_Node_Type::identifier_expression: {
                 Identifier_Expression& expr = (Identifier_Expression&)expression;
                 Symbol* symbol = find_symbol(ctx, expr.identifier->value);
@@ -77,6 +104,11 @@ namespace vush {
 
                 Constant_Declaration* decl = (Constant_Declaration*)symbol->declaration;
                 return evaluate_const_expr(ctx, *decl->initializer);
+            }
+
+            case AST_Node_Type::paren_expr: {
+                Paren_Expr& expr = (Paren_Expr&)expression;
+                return evaluate_const_expr(ctx, *expr.expr);
             }
 
             case AST_Node_Type::binary_expr: {
@@ -926,25 +958,6 @@ namespace vush {
                 // case AST_Node_Type::member_access_expression: {}
 
                 // case AST_Node_Type::array_access_expression: {}
-
-            case AST_Node_Type::bool_literal: {
-                Bool_Literal& expr = (Bool_Literal&)expression;
-                Expr_Value e;
-                e.type = Expr_Value_Type::int32;
-                e.boolean = expr.value;
-                return {anton::expected_value, e};
-            }
-
-            case AST_Node_Type::integer_literal: {
-                Integer_Literal& expr = (Integer_Literal&)expression;
-                i64 value = str_to_i64(expr.value);
-                Expr_Value e;
-                e.type = Expr_Value_Type::int32;
-                e.int32 = value;
-                return {anton::expected_value, e};
-            }
-
-                // case AST_Node_Type::float_literal: {}
 
             default: {
                 Source_Info const& src = expression.source_info;

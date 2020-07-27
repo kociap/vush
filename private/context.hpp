@@ -27,4 +27,22 @@ namespace vush {
     //
     Symbol* find_symbol(Context& ctx, anton::String_View name);
     Symbol const* find_symbol(Context const& ctx, anton::String_View name);
+
+    // add_symbol
+    // Adds a symbol to the current scope.
+    // Adding a symbol might invalidate the pointers previously returned by add_symbol and find_symbol.
+    //
+    // Returns:
+    // Pointer to the newly symbol
+    //
+    Symbol* add_symbol(Context& ctx, anton::String_View name, Symbol const& symbol);
+
+    // push_scope
+    //
+    void push_scope(Context& ctx);
+
+    // pop_scope
+    // Pops the current scope. Does not pop the global scope.
+    //
+    void pop_scope(Context& ctx);
 } // namespace vush

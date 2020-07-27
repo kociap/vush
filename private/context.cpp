@@ -24,4 +24,20 @@ namespace vush {
         }
         return nullptr;
     }
+
+    Symbol* add_symbol(Context& ctx, anton::String_View name, Symbol const& symbol) {
+        auto& symbol_map = ctx.symbols[ctx.symbols.size() - 1];
+        auto iter = symbol_map.emplace(name, symbol);
+        return &iter->value;
+    }
+
+    void push_scope(Context& ctx) {
+        ctx.symbols.emplace_back();
+    }
+
+    void pop_scope(Context& ctx) {
+        if(ctx.symbols.size() > 1) {
+            ctx.symbols.pop_back();
+        }
+    }
 } // namespace vush
