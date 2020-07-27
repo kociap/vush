@@ -403,7 +403,7 @@ namespace vush {
 
                 case AST_Node_Type::block_statement: {
                     Block_Statement& node = (Block_Statement&)*statements[i];
-                    anton::Expected<void, anton::String> res = process_statements(ctx, node.statements->statements);
+                    anton::Expected<void, anton::String> res = process_statements(ctx, node.statements);
                     if(!res) {
                         return res;
                     }
@@ -452,7 +452,7 @@ namespace vush {
                         // We use the loop to process the 'else if' case (we treat 'else if' as a different 'if')
                         If_Statement* s = node.get();
                         while(true) {
-                            anton::Expected<void, anton::String> true_res = process_statements(ctx, s->true_statement->statements->statements);
+                            anton::Expected<void, anton::String> true_res = process_statements(ctx, s->true_statement->statements);
                             if(!true_res) {
                                 return true_res;
                             }
@@ -463,7 +463,7 @@ namespace vush {
                                              u8"invalid ast node type in false branch of an if statement");
                                 if(s->false_statement->node_type == AST_Node_Type::block_statement) {
                                     Block_Statement& b = (Block_Statement&)*s->false_statement;
-                                    anton::Expected<void, anton::String> false_res = process_statements(ctx, b.statements->statements);
+                                    anton::Expected<void, anton::String> false_res = process_statements(ctx, b.statements);
                                     if(!false_res) {
                                         return false_res;
                                     }
@@ -502,7 +502,7 @@ namespace vush {
                         }
                     }
 
-                    anton::Expected<void, anton::String> res = process_statements(ctx, node.block->statements->statements);
+                    anton::Expected<void, anton::String> res = process_statements(ctx, node.statements);
                     if(!res) {
                         return res;
                     }
@@ -515,7 +515,7 @@ namespace vush {
                         return cond_res;
                     }
 
-                    anton::Expected<void, anton::String> res = process_statements(ctx, node.block->statements->statements);
+                    anton::Expected<void, anton::String> res = process_statements(ctx, node.statements);
                     if(!res) {
                         return res;
                     }
@@ -528,7 +528,7 @@ namespace vush {
                         return cond_res;
                     }
 
-                    anton::Expected<void, anton::String> res = process_statements(ctx, node.block->statements->statements);
+                    anton::Expected<void, anton::String> res = process_statements(ctx, node.statements);
                     if(!res) {
                         return res;
                     }
@@ -558,13 +558,13 @@ namespace vush {
                                         build_error_message(src.file_path, src.line, src.column, u8"case label is not an integer literal")};
                             }
 
-                            anton::Expected<void, anton::String> res = process_statements(ctx, s.statements->statements);
+                            anton::Expected<void, anton::String> res = process_statements(ctx, s.statements);
                             if(!res) {
                                 return res;
                             }
                         } else {
                             Default_Case_Statement& s = (Default_Case_Statement&)*switch_case;
-                            anton::Expected<void, anton::String> res = process_statements(ctx, s.statements->statements);
+                            anton::Expected<void, anton::String> res = process_statements(ctx, s.statements);
                             if(!res) {
                                 return res;
                             }
@@ -715,7 +715,7 @@ namespace vush {
                         return {anton::expected_error, anton::move(res.error())};
                     }
 
-                    if(anton::Expected<void, anton::String> res = process_statements(ctx, fn.body->statements); !res) {
+                    if(anton::Expected<void, anton::String> res = process_statements(ctx, fn.body); !res) {
                         return {anton::expected_error, anton::move(res.error())};
                     }
                 } break;
@@ -730,7 +730,7 @@ namespace vush {
                         return {anton::expected_error, anton::move(res.error())};
                     }
 
-                    if(anton::Expected<void, anton::String> res = process_statements(ctx, fn.body->statements); !res) {
+                    if(anton::Expected<void, anton::String> res = process_statements(ctx, fn.body); !res) {
                         return {anton::expected_error, anton::move(res.error())};
                     }
                 } break;

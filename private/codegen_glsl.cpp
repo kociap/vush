@@ -112,8 +112,9 @@ namespace vush {
                 }
                 out += u8") {\n";
                 ctx.indent += 1;
-                Statement_List& body = (Statement_List&)*node.body;
-                stringify(out, body, ctx);
+                for(auto& statement: node.body) {
+                    stringify(out, *statement, ctx);
+                }
                 ctx.indent -= 1;
                 out += u8"}\n";
                 return;
@@ -143,20 +144,14 @@ namespace vush {
                 return;
             }
 
-            case AST_Node_Type::statement_list: {
-                Statement_List& node = (Statement_List&)ast_node;
-                for(auto& statement: node.statements) {
-                    stringify(out, *statement, ctx);
-                }
-                return;
-            }
-
             case AST_Node_Type::block_statement: {
                 Block_Statement& node = (Block_Statement&)ast_node;
                 write_indent(out, ctx.indent);
                 out += u8"{\n";
                 ctx.indent += 1;
-                stringify(out, *node.statements, ctx);
+                for(auto& statement: node.statements) {
+                    stringify(out, *statement, ctx);
+                }
                 ctx.indent -= 1;
                 write_indent(out, ctx.indent);
                 out += u8"}\n";
@@ -172,10 +167,11 @@ namespace vush {
                     out += u8") {\n";
                     ctx.indent += 1;
                     Block_Statement& true_statement = (Block_Statement&)*node->true_statement;
-                    for(auto& statement: true_statement.statements->statements) {
+                    for(auto& statement: true_statement.statements) {
                         stringify(out, *statement, ctx);
                     }
                     ctx.indent -= 1;
+                    // We keep iterating as long as the else branch exists and it's an if statement
                     if(node->false_statement && node->false_statement->node_type == AST_Node_Type::if_statement) {
                         write_indent(out, ctx.indent);
                         out += u8"} else ";
@@ -190,7 +186,7 @@ namespace vush {
                     out += u8"} else {\n";
                     ctx.indent += 1;
                     Block_Statement& false_statement = (Block_Statement&)*node->false_statement;
-                    for(auto& statement: false_statement.statements->statements) {
+                    for(auto& statement: false_statement.statements) {
                         stringify(out, *statement, ctx);
                     }
                     ctx.indent -= 1;
@@ -214,13 +210,17 @@ namespace vush {
                         stringify(out, *switch_case.condition, ctx);
                         out += ":\n";
                         ctx.indent += 2;
-                        stringify(out, *switch_case.statements, ctx);
+                        for(auto& statement: switch_case.statements) {
+                            stringify(out, *statement, ctx);
+                        }
                         ctx.indent -= 2;
                     } else {
                         Default_Case_Statement& switch_case = (Default_Case_Statement&)*switch_node;
                         out += u8"default:\n";
                         ctx.indent += 2;
-                        stringify(out, *switch_case.statements, ctx);
+                        for(auto& statement: switch_case.statements) {
+                            stringify(out, *statement, ctx);
+                        }
                         ctx.indent -= 2;
                     }
                 }
@@ -255,7 +255,7 @@ namespace vush {
                 // We stringify the block ourselves to allow custom formatting of the braces
                 out += u8") {\n";
                 ctx.indent += 1;
-                for(auto& statement: node.block->statements->statements) {
+                for(auto& statement: node.statements) {
                     stringify(out, *statement, ctx);
                 }
                 ctx.indent -= 1;
@@ -272,7 +272,7 @@ namespace vush {
                 // We need no-braces block. We add them inline ourselves.
                 out += u8") {\n";
                 ctx.indent += 1;
-                for(auto& statement: node.block->statements->statements) {
+                for(auto& statement: node.statements) {
                     stringify(out, *statement, ctx);
                 }
                 ctx.indent -= 1;
@@ -287,7 +287,7 @@ namespace vush {
                 // We need no-braces block. We add them inline ourselves.
                 out += u8"do {\n";
                 ctx.indent += 1;
-                for(auto& statement: node.block->statements->statements) {
+                for(auto& statement: node.statements) {
                     stringify(out, *statement, ctx);
                 }
                 ctx.indent -= 1;
@@ -1166,7 +1166,9 @@ namespace vush {
             }
             out += u8") {\n";
             codegen_ctx.indent += 1;
-            stringify(out, *stage.body, codegen_ctx);
+            for(auto& statement: stage.body) {
+                stringify(out, *statement, codegen_ctx);
+            }
             codegen_ctx.indent -= 1;
             out += u8"}\n\n";
 
