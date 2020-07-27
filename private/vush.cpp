@@ -373,14 +373,6 @@ namespace vush {
         for(i64 i = 0; i < statements.size();) {
             bool should_advance = true;
             switch(statements[i]->node_type) {
-                case AST_Node_Type::expression_statement: {
-                    Expression_Statement& node = (Expression_Statement&)*statements[i];
-                    anton::Expected<void, anton::String> res = process_expression(ctx, node.expr);
-                    if(!res) {
-                        return res;
-                    }
-                } break;
-
                 case AST_Node_Type::declaration_statement: {
                     Declaration_Statement& node = (Declaration_Statement&)*statements[i];
                     ANTON_ASSERT(node.declaration->node_type == AST_Node_Type::variable_declaration ||
@@ -544,11 +536,28 @@ namespace vush {
 
                 case AST_Node_Type::switch_statement: {
                     Switch_Statement& node = (Switch_Statement&)*statements[i];
+                    anton::Expected<void, anton::String> switch_expr_res = process_expression(ctx, node.match_expr);
+                    if(!switch_expr_res) {
+                        return switch_expr_res;
+                    }
+
                     for(auto& switch_case: node.cases) {
                         ANTON_ASSERT(switch_case->node_type == AST_Node_Type::case_statement || switch_case->node_type == AST_Node_Type::default_case_statement,
                                      u8"invalid ast node type");
                         if(switch_case->node_type == AST_Node_Type::case_statement) {
                             Case_Statement& s = (Case_Statement&)*switch_case;
+                            // Ensure that the label is an integer literal
+                            anton::Expected<void, anton::String> label_res = process_expression(ctx, s.condition);
+                            if(!label_res) {
+                                return label_res;
+                            }
+
+                            if(s.condition->node_type != AST_Node_Type::integer_literal) {
+                                Source_Info const& src = s.condition->source_info;
+                                return {anton::expected_error,
+                                        build_error_message(src.file_path, src.line, src.column, u8"case label is not an integer literal")};
+                            }
+
                             anton::Expected<void, anton::String> res = process_statements(ctx, s.statements->statements);
                             if(!res) {
                                 return res;
@@ -560,6 +569,23 @@ namespace vush {
                                 return res;
                             }
                         }
+                    }
+
+                } break;
+
+                case AST_Node_Type::return_statement: {
+                    Return_Statement& node = (Return_Statement&)*statements[i];
+                    anton::Expected<void, anton::String> res = process_expression(ctx, node.return_expr);
+                    if(!res) {
+                        return res;
+                    }
+                } break;
+
+                case AST_Node_Type::expression_statement: {
+                    Expression_Statement& node = (Expression_Statement&)*statements[i];
+                    anton::Expected<void, anton::String> res = process_expression(ctx, node.expr);
+                    if(!res) {
+                        return res;
                     }
                 } break;
 
