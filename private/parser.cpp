@@ -815,6 +815,18 @@ namespace vush {
                 return nullptr;
             }
 
+            Owning_Ptr pass_name = try_identifier();
+            if(!pass_name) {
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            if(!_lexer.match(token_scope_resolution)) {
+                set_error(u8"expected '::'");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
             Owning_Ptr type = try_type();
             if(!type) {
                 _lexer.restore_state(state_backup);
@@ -852,7 +864,8 @@ namespace vush {
                 return nullptr;
             }
 
-            return Owning_Ptr{new Sourced_Global_Decl(anton::move(type), anton::move(name), anton::move(source), src_info(state_backup))};
+            return Owning_Ptr{
+                new Sourced_Global_Decl(anton::move(pass_name), anton::move(type), anton::move(name), anton::move(source), src_info(state_backup))};
         }
 
         Owning_Ptr<Variable_Declaration> try_variable_declaration() {

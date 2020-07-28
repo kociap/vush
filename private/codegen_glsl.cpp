@@ -1028,8 +1028,8 @@ namespace vush {
         anton::Array<Pass_Context> passes;
         anton::Array<Source_Definition_Decl*> source_templates;
         {
-            // We push sourced globals to separate map so we can later add them to all passes.
-            anton::Flat_Hash_Map<anton::String, anton::Array<Sourced_Data>> sourced_globals;
+            // We push sourced globals to separate array so we can later add them to all passes.
+            anton::Array<Sourced_Global_Decl*> sourced_globals;
             for(auto& decl: node.declarations) {
                 switch(decl->node_type) {
                     case AST_Node_Type::struct_decl:
@@ -1067,9 +1067,7 @@ namespace vush {
 
                     case AST_Node_Type::sourced_global_decl: {
                         Sourced_Global_Decl* source = (Sourced_Global_Decl*)decl.get();
-                        auto iter = sourced_globals.find_or_emplace(source->source->value);
-                        Sourced_Data data{source->type.get(), source->name.get(), source->source.get()};
-                        iter->value.emplace_back(data);
+                        sourced_globals.emplace_back(source);
                     } break;
 
                     default:
@@ -1078,9 +1076,12 @@ namespace vush {
             }
 
             for(Pass_Context& pass: passes) {
-                for(auto& kv: sourced_globals) {
-                    auto iter = pass.sourced_data.find_or_emplace(kv.key);
-                    iter->value.insert(iter->value.size(), kv.value.begin(), kv.value.end());
+                for(Sourced_Global_Decl* global: sourced_globals) {
+                    if(pass.name == global->pass_name->value) {
+                        auto iter = pass.sourced_data.find_or_emplace(global->source->value);
+                        Sourced_Data data{global->type.get(), global->name.get(), global->source.get()};
+                        iter->value.emplace_back(data);
+                    }
                 }
             }
         }

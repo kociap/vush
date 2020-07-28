@@ -690,12 +690,15 @@ namespace vush {
     };
 
     struct Sourced_Global_Decl: public Declaration {
+        Owning_Ptr<Identifier> pass_name;
         Owning_Ptr<Type> type;
         Owning_Ptr<Identifier> name;
         Owning_Ptr<Identifier> source;
 
-        Sourced_Global_Decl(Owning_Ptr<Type> type, Owning_Ptr<Identifier> name, Owning_Ptr<Identifier> source, Source_Info const& source_info)
-            : Declaration(source_info, AST_Node_Type::sourced_global_decl), type(anton::move(type)), name(anton::move(name)), source(anton::move(source)) {}
+        Sourced_Global_Decl(Owning_Ptr<Identifier> pass_name, Owning_Ptr<Type> type, Owning_Ptr<Identifier> name, Owning_Ptr<Identifier> source,
+                            Source_Info const& source_info)
+            : Declaration(source_info, AST_Node_Type::sourced_global_decl), pass_name(anton::move(pass_name)), type(anton::move(type)), name(anton::move(name)),
+              source(anton::move(source)) {}
     };
 
     struct Variable_Declaration: public Declaration {
