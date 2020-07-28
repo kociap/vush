@@ -1027,52 +1027,61 @@ namespace vush {
         anton::Array<Declaration*> functions;
         anton::Array<Pass_Context> passes;
         anton::Array<Source_Definition_Decl*> source_templates;
-        for(auto& decl: node.declarations) {
-            switch(decl->node_type) {
-                case AST_Node_Type::struct_decl:
-                case AST_Node_Type::constant_declaration: {
-                    structs_and_consts.emplace_back(decl.get());
-                } break;
+        {
+            // We push sourced globals to separate map so we can later add them to all passes.
+            anton::Flat_Hash_Map<anton::String, anton::Array<Sourced_Data>> sourced_globals;
+            for(auto& decl: node.declarations) {
+                switch(decl->node_type) {
+                    case AST_Node_Type::struct_decl:
+                    case AST_Node_Type::constant_declaration: {
+                        structs_and_consts.emplace_back(decl.get());
+                    } break;
 
-                case AST_Node_Type::function_declaration: {
-                    functions.emplace_back(decl.get());
-                } break;
+                    case AST_Node_Type::function_declaration: {
+                        functions.emplace_back(decl.get());
+                    } break;
 
-                case AST_Node_Type::pass_stage_declaration: {
-                    Pass_Stage_Declaration* pass = (Pass_Stage_Declaration*)decl.get();
-                    auto pass_iter = anton::find_if(passes.begin(), passes.end(), [pass](Pass_Context const& v) { return v.name == pass->pass->value; });
-                    if(pass_iter == passes.end()) {
-                        Pass_Context& v = passes.emplace_back(Pass_Context{pass->pass->value, {}, {}});
-                        pass_iter = &v;
-                    }
-
-                    pass_iter->stages.emplace_back(pass);
-                    for(auto& param: pass->params) {
-                        if(param->node_type == AST_Node_Type::sourced_function_param) {
-                            Sourced_Function_Param* sourced_param = (Sourced_Function_Param*)param.get();
-                            auto iter = pass_iter->sourced_data.find_or_emplace(sourced_param->source->value);
-                            Sourced_Data data{sourced_param->type.get(), sourced_param->identifier.get(), sourced_param->source.get()};
-                            iter->value.emplace_back(data);
+                    case AST_Node_Type::pass_stage_declaration: {
+                        Pass_Stage_Declaration* pass = (Pass_Stage_Declaration*)decl.get();
+                        auto pass_iter = anton::find_if(passes.begin(), passes.end(), [pass](Pass_Context const& v) { return v.name == pass->pass->value; });
+                        if(pass_iter == passes.end()) {
+                            Pass_Context& v = passes.emplace_back(Pass_Context{pass->pass->value, {}, {}});
+                            pass_iter = &v;
                         }
-                    }
-                } break;
 
-                case AST_Node_Type::source_definition_decl: {
-                    Source_Definition_Decl* source = (Source_Definition_Decl*)decl.get();
-                    source_templates.emplace_back(source);
-                } break;
+                        pass_iter->stages.emplace_back(pass);
+                        for(auto& param: pass->params) {
+                            if(param->node_type == AST_Node_Type::sourced_function_param) {
+                                Sourced_Function_Param* sourced_param = (Sourced_Function_Param*)param.get();
+                                auto iter = pass_iter->sourced_data.find_or_emplace(sourced_param->source->value);
+                                Sourced_Data data{sourced_param->type.get(), sourced_param->identifier.get(), sourced_param->source.get()};
+                                iter->value.emplace_back(data);
+                            }
+                        }
+                    } break;
 
-                case AST_Node_Type::sourced_global_decl: {
-                    Sourced_Global_Decl* source = (Sourced_Global_Decl*)decl.get();
-                    for(Pass_Context& pass: passes) {
-                        auto iter = pass.sourced_data.find_or_emplace(source->source->value);
+                    case AST_Node_Type::source_definition_decl: {
+                        Source_Definition_Decl* source = (Source_Definition_Decl*)decl.get();
+                        source_templates.emplace_back(source);
+                    } break;
+
+                    case AST_Node_Type::sourced_global_decl: {
+                        Sourced_Global_Decl* source = (Sourced_Global_Decl*)decl.get();
+                        auto iter = sourced_globals.find_or_emplace(source->source->value);
                         Sourced_Data data{source->type.get(), source->name.get(), source->source.get()};
                         iter->value.emplace_back(data);
-                    }
-                } break;
+                    } break;
 
-                default:
-                    break;
+                    default:
+                        break;
+                }
+            }
+
+            for(Pass_Context& pass: passes) {
+                for(auto& kv: sourced_globals) {
+                    auto iter = pass.sourced_data.find_or_emplace(kv.key);
+                    iter->value.insert(iter->value.size(), kv.value.begin(), kv.value.end());
+                }
             }
         }
 
