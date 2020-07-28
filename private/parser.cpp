@@ -289,6 +289,41 @@ namespace vush {
         return c == '_' || is_digit(c) || is_alpha(c);
     }
 
+    static bool is_keyword(anton::String_View string) {
+        static constexpr anton::String_View keywords[] = {
+            kw_if,
+            kw_else,
+            kw_switch,
+            kw_case,
+            kw_default,
+            kw_for,
+            kw_while,
+            kw_do,
+            kw_return,
+            kw_break,
+            kw_continue,
+            kw_true,
+            kw_false,
+            kw_from,
+            kw_struct,
+            kw_import,
+            kw_const,
+            kw_in,
+            kw_source_definition,
+            kw_source,
+            kw_emit,
+            kw_settings,
+        };
+
+        constexpr i64 array_size = sizeof(keywords) / sizeof(anton::String_View);
+        for(anton::String_View const *i = keywords, *end = keywords + array_size; i != end; ++i) {
+            if(*i == string) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     class Lexer_State {
     public:
         i64 stream_offset;
@@ -872,7 +907,6 @@ namespace vush {
             Lexer_State const state_backup = _lexer.get_current_state();
             Owning_Ptr var_type = try_type();
             if(!var_type) {
-                set_error(u8"expected type");
                 _lexer.restore_state(state_backup);
                 return nullptr;
             }
@@ -1823,6 +1857,13 @@ namespace vush {
                 return nullptr;
             }
 
+            if(is_keyword(type_name)) {
+                anton::String msg = u8"expected type name, got '" + type_name + "' instead";
+                set_error(msg, state_backup);
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
             Owning_Ptr<Type> base_type;
             constexpr i64 array_size = sizeof(builtin_types_strings) / sizeof(anton::String_View);
             for(i64 i = 0; i < array_size; ++i) {
@@ -2004,7 +2045,6 @@ namespace vush {
                 Lexer_State const var_decl_state = _lexer.get_current_state();
                 Owning_Ptr var_type = try_type();
                 if(!var_type) {
-                    set_error("expected type");
                     _lexer.restore_state(state_backup);
                     return nullptr;
                 }
@@ -2026,7 +2066,7 @@ namespace vush {
                 }
 
                 if(!_lexer.match(token_semicolon)) {
-                    set_error("expected ';' after variable declaration");
+                    set_error("expected ';' in 'for' statement");
                     _lexer.restore_state(state_backup);
                     return nullptr;
                 }
@@ -2044,7 +2084,7 @@ namespace vush {
                 }
 
                 if(!_lexer.match(token_semicolon)) {
-                    set_error("expected ';' after variable declaration");
+                    set_error("expected ';' in 'for' statement");
                     _lexer.restore_state(state_backup);
                     return nullptr;
                 }
@@ -3065,13 +3105,21 @@ namespace vush {
 
         Owning_Ptr<Identifier> try_identifier() {
             Lexer_State const state_backup = _lexer.get_current_state();
-            if(anton::String _identifier; _lexer.match_identifier(_identifier)) {
-                return Owning_Ptr{new Identifier(anton::move(_identifier), src_info(state_backup))};
-            } else {
+            anton::String identifier;
+            if(!_lexer.match_identifier(identifier)) {
                 set_error(u8"expected an identifier");
                 _lexer.restore_state(state_backup);
                 return nullptr;
             }
+
+            if(is_keyword(identifier)) {
+                anton::String msg = u8"expected identifier, got '" + identifier + "' instead";
+                set_error(msg, state_backup);
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            return Owning_Ptr{new Identifier(anton::move(identifier), src_info(state_backup))};
         }
 
         Owning_Ptr<Identifier_Expression> try_identifier_expression() {
