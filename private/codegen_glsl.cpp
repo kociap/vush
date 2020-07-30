@@ -863,7 +863,7 @@ namespace vush {
             out += u8") in ";
             out += stringify(node.type);
             out += u8" ";
-            anton::String name = anton::String{u8"_pass_"} + codegen_ctx.current_pass + u8"_" + input_name + "_in";
+            anton::String name = anton::String{u8"_pass_"} + codegen_ctx.current_pass + u8"_" + input_name;
             out += name;
             out += u8";\n";
             input_names.emplace_back(anton::move(name));
@@ -1171,7 +1171,7 @@ namespace vush {
                 codegen_ctx.current_pass = stage->pass->value;
                 codegen_ctx.current_stage = stage->stage;
 
-                anton::String out = anton::String("#version 450 core\n#pragma shader_stage(") + stringify(stage->stage) + ")\n\n";
+                anton::String out = anton::String("#version 460 core\n#pragma shader_stage(") + stringify(stage->stage) + ")\n\n";
                 out += stringified_structs_and_consts;
                 out += stringified_sources;
                 out += stringified_functions;
@@ -1217,7 +1217,7 @@ namespace vush {
                             anton::String{u8"_pass_"} + codegen_ctx.current_pass + u8"_stage_" + stringify(codegen_ctx.current_stage) + u8"_out";
                         if(!return_type_is_void) {
                             // Write output
-                            out += u8"out ";
+                            out += u8"layout(location = 0) out ";
                             out += stringify_type(*stage->return_type);
                             out += u8" ";
                             out += shader_return_name;
