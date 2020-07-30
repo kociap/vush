@@ -2205,10 +2205,6 @@ namespace vush {
             }
 
             Owning_Ptr return_expr = try_expression();
-            if(!return_expr) {
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
 
             if(!_lexer.match(token_semicolon)) {
                 set_error("expected ';' after return statement");

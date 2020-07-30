@@ -575,9 +575,11 @@ namespace vush {
 
                 case AST_Node_Type::return_statement: {
                     Return_Statement& node = (Return_Statement&)*statements[i];
-                    anton::Expected<void, anton::String> res = process_expression(ctx, node.return_expr);
-                    if(!res) {
-                        return res;
+                    if(node.return_expr) {
+                        anton::Expected<void, anton::String> res = process_expression(ctx, node.return_expr);
+                        if(!res) {
+                            return res;
+                        }
                     }
                 } break;
 

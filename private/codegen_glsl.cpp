@@ -301,8 +301,11 @@ namespace vush {
             case AST_Node_Type::return_statement: {
                 Return_Statement& node = (Return_Statement&)ast_node;
                 write_indent(out, ctx.indent);
-                out += u8"return ";
-                stringify(out, *node.return_expr, ctx);
+                out += u8"return";
+                if(node.return_expr) {
+                    out += u8" ";
+                    stringify(out, *node.return_expr, ctx);
+                }
                 out += u8";\n";
                 return;
             }

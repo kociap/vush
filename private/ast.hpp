@@ -1130,6 +1130,7 @@ namespace vush {
             : Statement(source_info, AST_Node_Type::do_while_statement), condition(anton::move(condition)), statements(anton::move(statements)) {}
     };
 
+    // return_expr may be nullptr
     struct Return_Statement: public Statement {
         Owning_Ptr<Expression> return_expr;
 
