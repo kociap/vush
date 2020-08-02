@@ -25,7 +25,12 @@ elseif(MSVC)
     )
 endif()
 
-add_subdirectory(ext/anton_core)
+# Add anton_core
+FetchContent_Declare(
+    anton_core
+    GIT_REPOSITORY https://github.com/kociap/anton_core.git
+)
+FetchContent_MakeAvailable(anton_core)
 
 add_library(vush)
 set_target_properties(vush PROPERTIES CXX_STANDARD 17 CXX_EXTENSIONS OFF)
