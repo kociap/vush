@@ -6,10 +6,10 @@
 #include <codegen.hpp>
 #include <const_expr_eval.hpp>
 #include <context.hpp>
+#include <diagnostics.hpp>
 #include <parser.hpp>
 #include <string_stream.hpp>
 #include <symbol.hpp>
-#include <utility.hpp>
 
 namespace vush {
     // process_fn_param_list

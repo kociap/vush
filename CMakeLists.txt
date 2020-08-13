@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.15)
+include(FetchContent)
 
 project(vush)
 
@@ -47,11 +48,14 @@ target_sources(vush
     "${CMAKE_CURRENT_SOURCE_DIR}/private/const_expr_eval.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/context.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/context.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/private/diagnostics.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/private/diagnostics.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/owning_ptr.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/parser.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/parser.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/string_stream.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/string_stream.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/private/symbol.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/vush.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/public/vush/types.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/public/vush/vush.hpp"

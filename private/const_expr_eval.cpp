@@ -1,6 +1,6 @@
 #include <const_expr_eval.hpp>
 
-#include <utility.hpp>
+#include <diagnostics.hpp>
 
 namespace vush {
     bool is_implicitly_convertible_to_boolean(Expr_Value_Type) {

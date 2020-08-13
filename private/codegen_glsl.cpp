@@ -6,7 +6,7 @@
 #include <anton/intrinsics.hpp>
 #include <anton/slice.hpp>
 #include <ast.hpp>
-#include <utility.hpp>
+#include <diagnostics.hpp>
 
 namespace vush {
     struct Codegen_Context {
@@ -1020,9 +1020,11 @@ namespace vush {
 
     struct Pass_Context {
         anton::String name;
-        anton::Array<Pass_Stage_Declaration*> stages;
         // Maps source name to sourced params and globals
         anton::Flat_Hash_Map<anton::String, anton::Array<Sourced_Data>> sourced_data;
+        Pass_Stage_Declaration* vertex_stage = nullptr;
+        Pass_Stage_Declaration* fragment_stage = nullptr;
+        Pass_Stage_Declaration* compute_stage = nullptr;
     };
 
     anton::Expected<anton::Array<Pass_Data>, anton::String> generate_glsl(Context const& ctx, Declaration_List& node, Format_Options const& format) {
@@ -1031,7 +1033,7 @@ namespace vush {
         anton::Array<Pass_Context> passes;
         anton::Array<Source_Definition_Decl*> source_templates;
         {
-            // We push sourced globals to separate array so we can later add them to all passes.
+            // We push sourced globals to separate array so we can later add them to all passes
             anton::Array<Sourced_Global_Decl*> sourced_globals;
             for(auto& decl: node.declarations) {
                 switch(decl->node_type) {
@@ -1045,18 +1047,51 @@ namespace vush {
                     } break;
 
                     case AST_Node_Type::pass_stage_declaration: {
-                        Pass_Stage_Declaration* pass = (Pass_Stage_Declaration*)decl.get();
-                        auto pass_iter = anton::find_if(passes.begin(), passes.end(), [pass](Pass_Context const& v) { return v.name == pass->pass->value; });
-                        if(pass_iter == passes.end()) {
-                            Pass_Context& v = passes.emplace_back(Pass_Context{pass->pass->value, {}, {}});
-                            pass_iter = &v;
+                        Pass_Stage_Declaration* pass_decl = (Pass_Stage_Declaration*)decl.get();
+                        Pass_Context* pass =
+                            anton::find_if(passes.begin(), passes.end(), [pass_decl](Pass_Context const& v) { return v.name == pass_decl->pass->value; });
+                        if(pass == passes.end()) {
+                            Pass_Context& v = passes.emplace_back(Pass_Context{pass_decl->pass->value, {}});
+                            pass = &v;
                         }
 
-                        pass_iter->stages.emplace_back(pass);
-                        for(auto& param: pass->params) {
+                        // Ensure there is only 1 stage of each type
+                        switch(pass_decl->stage) {
+                            case Stage_Type::vertex: {
+                                if(pass->vertex_stage) {
+                                    Source_Info const& src1 = pass_decl->source_info;
+                                    Source_Info const& src2 = pass->vertex_stage->source_info;
+                                    return {anton::expected_error, format_duplicate_pass_stage_error(src1, src2, pass->name, Stage_Type::vertex)};
+                                }
+
+                                pass->vertex_stage = pass_decl;
+                            } break;
+
+                            case Stage_Type::fragment: {
+                                if(pass->fragment_stage) {
+                                    Source_Info const& src1 = pass_decl->source_info;
+                                    Source_Info const& src2 = pass->vertex_stage->source_info;
+                                    return {anton::expected_error, format_duplicate_pass_stage_error(src1, src2, pass->name, Stage_Type::fragment)};
+                                }
+
+                                pass->fragment_stage = pass_decl;
+                            } break;
+
+                            case Stage_Type::compute: {
+                                if(pass->compute_stage) {
+                                    Source_Info const& src1 = pass_decl->source_info;
+                                    Source_Info const& src2 = pass->vertex_stage->source_info;
+                                    return {anton::expected_error, format_duplicate_pass_stage_error(src1, src2, pass->name, Stage_Type::compute)};
+                                }
+
+                                pass->compute_stage = pass_decl;
+                            } break;
+                        }
+
+                        for(auto& param: pass_decl->params) {
                             if(param->node_type == AST_Node_Type::sourced_function_param) {
                                 Sourced_Function_Param* sourced_param = (Sourced_Function_Param*)param.get();
-                                auto iter = pass_iter->sourced_data.find_or_emplace(sourced_param->source->value);
+                                auto iter = pass->sourced_data.find_or_emplace(sourced_param->source->value);
                                 Sourced_Data data{sourced_param->type.get(), sourced_param->identifier.get(), sourced_param->source.get()};
                                 iter->value.emplace_back(data);
                             }
@@ -1090,6 +1125,17 @@ namespace vush {
         }
 
         for(Pass_Context& pass: passes) {
+            // Validate that a pass has a vertex stage and optionally fragment stage or a compute stage
+            if(!pass.compute_stage) {
+                if(!pass.vertex_stage) {
+                    return {anton::expected_error, format_missing_vertex_stage_error(pass.name)};
+                }
+            } else {
+                if(pass.vertex_stage || pass.fragment_stage) {
+                    return {anton::expected_error, format_vertex_and_compute_stages_error(pass.name)};
+                }
+            }
+
             // Validate that a source is available for each sourced data
             for(auto& [source_name, data]: pass.sourced_data) {
                 auto iter = anton::find_if(source_templates.begin(), source_templates.end(),
@@ -1167,7 +1213,19 @@ namespace vush {
             }
 
             anton::String const& stringified_sources = instantiation_res.value();
-            for(Pass_Stage_Declaration* stage: pass.stages) {
+            // I'm too lazy to rewrite this code properly, so I just stuff all the stages into an array and reuse the old code
+            anton::Array<Pass_Stage_Declaration*> stages;
+            if(pass.vertex_stage) {
+                stages.emplace_back(pass.vertex_stage);
+            }
+            if(pass.fragment_stage) {
+                stages.emplace_back(pass.fragment_stage);
+            }
+            if(pass.compute_stage) {
+                stages.emplace_back(pass.compute_stage);
+            }
+
+            for(Pass_Stage_Declaration* stage: stages) {
                 codegen_ctx.current_pass = stage->pass->value;
                 codegen_ctx.current_stage = stage->stage;
 
