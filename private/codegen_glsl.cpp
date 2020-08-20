@@ -4,6 +4,7 @@
 #include <anton/assert.hpp>
 #include <anton/flat_hash_map.hpp>
 #include <anton/intrinsics.hpp>
+#include <anton/math/math.hpp>
 #include <anton/slice.hpp>
 #include <ast.hpp>
 #include <diagnostics.hpp>
@@ -634,6 +635,22 @@ namespace vush {
         Identifier* source;
     };
 
+    struct Sourced_Data_Buffers {
+        anton::Array<Sourced_Data> all;
+        anton::Array<Sourced_Data> variables;
+        anton::Array<Sourced_Data> opaque_variables;
+        anton::Array<Sourced_Data> unsized_variables;
+    };
+
+    struct Pass_Context {
+        anton::String name;
+        // Maps source name to sourced params and globals
+        anton::Flat_Hash_Map<anton::String, Sourced_Data_Buffers> sourced_data;
+        Pass_Stage_Declaration* vertex_stage = nullptr;
+        Pass_Stage_Declaration* fragment_stage = nullptr;
+        Pass_Stage_Declaration* compute_stage = nullptr;
+    };
+
     static anton::Expected<anton::String, anton::String> format_string(String_Literal const& string,
                                                                        anton::Flat_Hash_Map<anton::String, void const*>& symbols) {
         anton::String out;
@@ -721,7 +738,7 @@ namespace vush {
     }
 
     static anton::Expected<void, anton::String> process_source_definition_statement(anton::String& out, Source_Definition_Statement const& statement,
-                                                                                    anton::Slice<Sourced_Data const> const sourced_data, Context const& ctx,
+                                                                                    Sourced_Data_Buffers const& sourced_data, Context const& ctx,
                                                                                     Codegen_Context& codegen_ctx,
                                                                                     anton::Flat_Hash_Map<anton::String, void const*>& symbols) {
         ANTON_ASSERT(statement.node_type == AST_Node_Type::source_definition_emit_statement ||
@@ -745,17 +762,11 @@ namespace vush {
                 Source_Definition_If_Statement const& node = (Source_Definition_If_Statement const&)statement;
                 i64 count = 0;
                 if(node.condition->value == u8"$variables") {
-                    for(Sourced_Data const& data: sourced_data) {
-                        count += !is_opaque_type(*data.type) && !is_unsized_array(*data.type);
-                    }
+                    count = sourced_data.variables.size();
                 } else if(node.condition->value == u8"$opaque_variables") {
-                    for(Sourced_Data const& data: sourced_data) {
-                        count += is_opaque_type(*data.type) && !is_unsized_array(*data.type);
-                    }
+                    count = sourced_data.opaque_variables.size();
                 } else if(node.condition->value == u8"$unsized_variables") {
-                    for(Sourced_Data const& data: sourced_data) {
-                        count += is_unsized_array(*data.type);
-                    }
+                    count = sourced_data.unsized_variables.size();
                 } else {
                     Source_Info const& src = node.condition->source_info;
                     return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"invalid condition expression")};
@@ -775,30 +786,24 @@ namespace vush {
             case AST_Node_Type::source_definition_for_statement: {
                 Source_Definition_For_Statement const& node = (Source_Definition_For_Statement const&)statement;
                 if(node.range_expr->value == u8"$variables") {
-                    for(Sourced_Data const& data: sourced_data) {
-                        if(!is_opaque_type(*data.type) && !is_unsized_array(*data.type)) {
-                            symbols.emplace(node.iterator->value, &data);
-                            for(auto& nested_statement: node.statements) {
-                                process_source_definition_statement(out, *nested_statement, sourced_data, ctx, codegen_ctx, symbols);
-                            }
+                    for(Sourced_Data const& data: sourced_data.variables) {
+                        symbols.emplace(node.iterator->value, &data);
+                        for(auto& nested_statement: node.statements) {
+                            process_source_definition_statement(out, *nested_statement, sourced_data, ctx, codegen_ctx, symbols);
                         }
                     }
                 } else if(node.range_expr->value == u8"$opaque_variables") {
-                    for(Sourced_Data const& data: sourced_data) {
-                        if(is_opaque_type(*data.type) && !is_unsized_array(*data.type)) {
-                            symbols.emplace(node.iterator->value, &data);
-                            for(auto& nested_statement: node.statements) {
-                                process_source_definition_statement(out, *nested_statement, sourced_data, ctx, codegen_ctx, symbols);
-                            }
+                    for(Sourced_Data const& data: sourced_data.opaque_variables) {
+                        symbols.emplace(node.iterator->value, &data);
+                        for(auto& nested_statement: node.statements) {
+                            process_source_definition_statement(out, *nested_statement, sourced_data, ctx, codegen_ctx, symbols);
                         }
                     }
                 } else if(node.range_expr->value == u8"$unsized_variables") {
-                    for(Sourced_Data const& data: sourced_data) {
-                        if(is_unsized_array(*data.type)) {
-                            symbols.emplace(node.iterator->value, &data);
-                            for(auto& nested_statement: node.statements) {
-                                process_source_definition_statement(out, *nested_statement, sourced_data, ctx, codegen_ctx, symbols);
-                            }
+                    for(Sourced_Data const& data: sourced_data.unsized_variables) {
+                        symbols.emplace(node.iterator->value, &data);
+                        for(auto& nested_statement: node.statements) {
+                            process_source_definition_statement(out, *nested_statement, sourced_data, ctx, codegen_ctx, symbols);
                         }
                     }
                 } else {
@@ -816,7 +821,7 @@ namespace vush {
 
     static anton::Expected<anton::String, anton::String>
     instantiate_pass_source_templates(anton::Slice<Source_Definition_Decl const* const> const source_templates,
-                                      anton::Flat_Hash_Map<anton::String, anton::Array<Sourced_Data>> const& sourced_data, Context const& ctx,
+                                      anton::Flat_Hash_Map<anton::String, Sourced_Data_Buffers> const& sourced_data, Context const& ctx,
                                       Codegen_Context& codegen_ctx) {
         anton::Flat_Hash_Map<anton::String, void const*> symbols;
         i64 binding = 0;
@@ -1018,14 +1023,225 @@ namespace vush {
         return {anton::expected_value, anton::move(out)};
     }
 
-    struct Pass_Context {
-        anton::String name;
-        // Maps source name to sourced params and globals
-        anton::Flat_Hash_Map<anton::String, anton::Array<Sourced_Data>> sourced_data;
-        Pass_Stage_Declaration* vertex_stage = nullptr;
-        Pass_Stage_Declaration* fragment_stage = nullptr;
-        Pass_Stage_Declaration* compute_stage = nullptr;
+    struct Layout_Info {
+        i64 alignment;
+        i64 size;
     };
+
+    [[nodiscard]] static Layout_Info calculate_type_layout_info(Context const& ctx, Type const& type) {
+        ANTON_ASSERT(type.node_type == AST_Node_Type::builtin_type || type.node_type == AST_Node_Type::user_defined_type ||
+                         type.node_type == AST_Node_Type::array_type,
+                     u8"unknown ast node type");
+        if(type.node_type == AST_Node_Type::builtin_type) {
+            Builtin_Type const& t = (Builtin_Type const&)type;
+            switch(t.type) {
+                case Builtin_GLSL_Type::glsl_void:
+                    return {0, 0};
+
+                case Builtin_GLSL_Type::glsl_bool:
+                case Builtin_GLSL_Type::glsl_int:
+                case Builtin_GLSL_Type::glsl_uint:
+                case Builtin_GLSL_Type::glsl_float:
+                    return {4, 4};
+
+                case Builtin_GLSL_Type::glsl_double:
+                    return {8, 8};
+
+                case Builtin_GLSL_Type::glsl_vec2:
+                case Builtin_GLSL_Type::glsl_bvec2:
+                case Builtin_GLSL_Type::glsl_ivec2:
+                case Builtin_GLSL_Type::glsl_uvec2:
+                    return {8, 8};
+
+                case Builtin_GLSL_Type::glsl_vec3:
+                case Builtin_GLSL_Type::glsl_vec4:
+                case Builtin_GLSL_Type::glsl_bvec3:
+                case Builtin_GLSL_Type::glsl_bvec4:
+                case Builtin_GLSL_Type::glsl_ivec3:
+                case Builtin_GLSL_Type::glsl_ivec4:
+                case Builtin_GLSL_Type::glsl_uvec3:
+                case Builtin_GLSL_Type::glsl_uvec4:
+                    return {16, 16};
+
+                case Builtin_GLSL_Type::glsl_dvec2:
+                    return {16, 16};
+
+                case Builtin_GLSL_Type::glsl_dvec3:
+                case Builtin_GLSL_Type::glsl_dvec4:
+                    return {32, 32};
+
+                case Builtin_GLSL_Type::glsl_mat2:
+                case Builtin_GLSL_Type::glsl_mat2x3:
+                case Builtin_GLSL_Type::glsl_mat2x4:
+                    return {16, 32};
+
+                case Builtin_GLSL_Type::glsl_mat3x2:
+                case Builtin_GLSL_Type::glsl_mat3:
+                case Builtin_GLSL_Type::glsl_mat3x4:
+                    return {16, 48};
+
+                case Builtin_GLSL_Type::glsl_mat4x2:
+                case Builtin_GLSL_Type::glsl_mat4x3:
+                case Builtin_GLSL_Type::glsl_mat4:
+                    return {16, 64};
+
+                case Builtin_GLSL_Type::glsl_dmat2:
+                    return {16, 32};
+
+                case Builtin_GLSL_Type::glsl_dmat2x3:
+                case Builtin_GLSL_Type::glsl_dmat2x4:
+                    return {32, 64};
+
+                case Builtin_GLSL_Type::glsl_dmat3x2:
+                    return {16, 48};
+
+                case Builtin_GLSL_Type::glsl_dmat3:
+                case Builtin_GLSL_Type::glsl_dmat3x4:
+                    return {32, 96};
+
+                case Builtin_GLSL_Type::glsl_dmat4x2:
+                    return {16, 64};
+
+                case Builtin_GLSL_Type::glsl_dmat4x3:
+                case Builtin_GLSL_Type::glsl_dmat4:
+                    return {32, 128};
+
+                case Builtin_GLSL_Type::glsl_sampler1D:
+                case Builtin_GLSL_Type::glsl_texture1D:
+                case Builtin_GLSL_Type::glsl_image1D:
+                case Builtin_GLSL_Type::glsl_sampler1DShadow:
+                case Builtin_GLSL_Type::glsl_sampler1DArray:
+                case Builtin_GLSL_Type::glsl_texture1DArray:
+                case Builtin_GLSL_Type::glsl_image1DArray:
+                case Builtin_GLSL_Type::glsl_sampler1DArrayShadow:
+                case Builtin_GLSL_Type::glsl_sampler2D:
+                case Builtin_GLSL_Type::glsl_texture2D:
+                case Builtin_GLSL_Type::glsl_image2D:
+                case Builtin_GLSL_Type::glsl_sampler2DShadow:
+                case Builtin_GLSL_Type::glsl_sampler2DArray:
+                case Builtin_GLSL_Type::glsl_texture2DArray:
+                case Builtin_GLSL_Type::glsl_image2DArray:
+                case Builtin_GLSL_Type::glsl_sampler2DArrayShadow:
+                case Builtin_GLSL_Type::glsl_sampler2DMS:
+                case Builtin_GLSL_Type::glsl_texture2DMS:
+                case Builtin_GLSL_Type::glsl_image2DMS:
+                case Builtin_GLSL_Type::glsl_sampler2DMSArray:
+                case Builtin_GLSL_Type::glsl_texture2DMSArray:
+                case Builtin_GLSL_Type::glsl_image2DMSArray:
+                case Builtin_GLSL_Type::glsl_sampler2DRect:
+                case Builtin_GLSL_Type::glsl_texture2DRect:
+                case Builtin_GLSL_Type::glsl_image2DRect:
+                case Builtin_GLSL_Type::glsl_sampler2DRectShadow:
+                case Builtin_GLSL_Type::glsl_sampler3D:
+                case Builtin_GLSL_Type::glsl_texture3D:
+                case Builtin_GLSL_Type::glsl_image3D:
+                case Builtin_GLSL_Type::glsl_samplerCube:
+                case Builtin_GLSL_Type::glsl_textureCube:
+                case Builtin_GLSL_Type::glsl_imageCube:
+                case Builtin_GLSL_Type::glsl_samplerCubeShadow:
+                case Builtin_GLSL_Type::glsl_samplerCubeArray:
+                case Builtin_GLSL_Type::glsl_textureCubeArray:
+                case Builtin_GLSL_Type::glsl_imageCubeArray:
+                case Builtin_GLSL_Type::glsl_samplerCubeArrayShadow:
+                case Builtin_GLSL_Type::glsl_samplerBuffer:
+                case Builtin_GLSL_Type::glsl_textureBuffer:
+                case Builtin_GLSL_Type::glsl_imageBuffer:
+                case Builtin_GLSL_Type::glsl_subpassInput:
+                case Builtin_GLSL_Type::glsl_subpassInputMS:
+                case Builtin_GLSL_Type::glsl_isampler1D:
+                case Builtin_GLSL_Type::glsl_itexture1D:
+                case Builtin_GLSL_Type::glsl_iimage1D:
+                case Builtin_GLSL_Type::glsl_isampler1DArray:
+                case Builtin_GLSL_Type::glsl_itexture1DArray:
+                case Builtin_GLSL_Type::glsl_iimage1DArray:
+                case Builtin_GLSL_Type::glsl_isampler2D:
+                case Builtin_GLSL_Type::glsl_itexture2D:
+                case Builtin_GLSL_Type::glsl_iimage2D:
+                case Builtin_GLSL_Type::glsl_isampler2DArray:
+                case Builtin_GLSL_Type::glsl_itexture2DArray:
+                case Builtin_GLSL_Type::glsl_iimage2DArray:
+                case Builtin_GLSL_Type::glsl_isampler2DMS:
+                case Builtin_GLSL_Type::glsl_itexture2DMS:
+                case Builtin_GLSL_Type::glsl_iimage2DMS:
+                case Builtin_GLSL_Type::glsl_isampler2DMSArray:
+                case Builtin_GLSL_Type::glsl_itexture2DMSArray:
+                case Builtin_GLSL_Type::glsl_iimage2DMSArray:
+                case Builtin_GLSL_Type::glsl_isampler2DRect:
+                case Builtin_GLSL_Type::glsl_itexture2DRect:
+                case Builtin_GLSL_Type::glsl_iimage2DRect:
+                case Builtin_GLSL_Type::glsl_isampler3D:
+                case Builtin_GLSL_Type::glsl_itexture3D:
+                case Builtin_GLSL_Type::glsl_iimage3D:
+                case Builtin_GLSL_Type::glsl_isamplerCube:
+                case Builtin_GLSL_Type::glsl_itextureCube:
+                case Builtin_GLSL_Type::glsl_iimageCube:
+                case Builtin_GLSL_Type::glsl_isamplerCubeArray:
+                case Builtin_GLSL_Type::glsl_itextureCubeArray:
+                case Builtin_GLSL_Type::glsl_iimageCubeArray:
+                case Builtin_GLSL_Type::glsl_isamplerBuffer:
+                case Builtin_GLSL_Type::glsl_itextureBuffer:
+                case Builtin_GLSL_Type::glsl_iimageBuffer:
+                case Builtin_GLSL_Type::glsl_isubpassInput:
+                case Builtin_GLSL_Type::glsl_isubpassInputMS:
+                case Builtin_GLSL_Type::glsl_usampler1D:
+                case Builtin_GLSL_Type::glsl_utexture1D:
+                case Builtin_GLSL_Type::glsl_uimage1D:
+                case Builtin_GLSL_Type::glsl_usampler1DArray:
+                case Builtin_GLSL_Type::glsl_utexture1DArray:
+                case Builtin_GLSL_Type::glsl_uimage1DArray:
+                case Builtin_GLSL_Type::glsl_usampler2D:
+                case Builtin_GLSL_Type::glsl_utexture2D:
+                case Builtin_GLSL_Type::glsl_uimage2D:
+                case Builtin_GLSL_Type::glsl_usampler2DArray:
+                case Builtin_GLSL_Type::glsl_utexture2DArray:
+                case Builtin_GLSL_Type::glsl_uimage2DArray:
+                case Builtin_GLSL_Type::glsl_usampler2DMS:
+                case Builtin_GLSL_Type::glsl_utexture2DMS:
+                case Builtin_GLSL_Type::glsl_uimage2DMS:
+                case Builtin_GLSL_Type::glsl_usampler2DMSArray:
+                case Builtin_GLSL_Type::glsl_utexture2DMSArray:
+                case Builtin_GLSL_Type::glsl_uimage2DMSArray:
+                case Builtin_GLSL_Type::glsl_usampler2DRect:
+                case Builtin_GLSL_Type::glsl_utexture2DRect:
+                case Builtin_GLSL_Type::glsl_uimage2DRect:
+                case Builtin_GLSL_Type::glsl_usampler3D:
+                case Builtin_GLSL_Type::glsl_utexture3D:
+                case Builtin_GLSL_Type::glsl_uimage3D:
+                case Builtin_GLSL_Type::glsl_usamplerCube:
+                case Builtin_GLSL_Type::glsl_utextureCube:
+                case Builtin_GLSL_Type::glsl_uimageCube:
+                case Builtin_GLSL_Type::glsl_usamplerCubeArray:
+                case Builtin_GLSL_Type::glsl_utextureCubeArray:
+                case Builtin_GLSL_Type::glsl_uimageCubeArray:
+                case Builtin_GLSL_Type::glsl_usamplerBuffer:
+                case Builtin_GLSL_Type::glsl_utextureBuffer:
+                case Builtin_GLSL_Type::glsl_uimageBuffer:
+                case Builtin_GLSL_Type::glsl_usubpassInput:
+                case Builtin_GLSL_Type::glsl_usubpassInputMS:
+                case Builtin_GLSL_Type::glsl_sampler:
+                case Builtin_GLSL_Type::glsl_samplerShadow:
+                    return {0, 0};
+            }
+        } else if(type.node_type == AST_Node_Type::user_defined_type) {
+            User_Defined_Type const& t = (User_Defined_Type const&)type;
+            Symbol const* symbol = find_symbol(ctx, t.name);
+            Struct_Decl const* struct_decl = (Struct_Decl const*)symbol->declaration;
+            i64 max_alignment = 0;
+            for(auto& member: struct_decl->members) {
+                Layout_Info const info = calculate_type_layout_info(ctx, *member->type);
+                max_alignment = anton::math::max(max_alignment, info.alignment);
+            }
+            return {max_alignment, 0};
+        } else if(type.node_type == AST_Node_Type::array_type) {
+            Array_Type const& t = (Array_Type const&)type;
+            Layout_Info const info = calculate_type_layout_info(ctx, *t.base);
+            // Round the alignment up to a multiple of vec4's alignment
+            i64 const alignment = ((info.alignment + 15) / 16) * 16;
+            return {alignment, 0};
+        } else {
+            ANTON_UNREACHABLE();
+        }
+    }
 
     anton::Expected<anton::Array<Pass_Data>, anton::String> generate_glsl(Context const& ctx, Declaration_List& node, Format_Options const& format) {
         anton::Array<Declaration*> structs_and_consts;
@@ -1093,7 +1309,7 @@ namespace vush {
                                 Sourced_Function_Param* sourced_param = (Sourced_Function_Param*)param.get();
                                 auto iter = pass->sourced_data.find_or_emplace(sourced_param->source->value);
                                 Sourced_Data data{sourced_param->type.get(), sourced_param->identifier.get(), sourced_param->source.get()};
-                                iter->value.emplace_back(data);
+                                iter->value.all.emplace_back(data);
                             }
                         }
                     } break;
@@ -1118,7 +1334,7 @@ namespace vush {
                     if(pass.name == global->pass_name->value) {
                         auto iter = pass.sourced_data.find_or_emplace(global->source->value);
                         Sourced_Data data{global->type.get(), global->name.get(), global->source.get()};
-                        iter->value.emplace_back(data);
+                        iter->value.all.emplace_back(data);
                     }
                 }
             }
@@ -1141,7 +1357,7 @@ namespace vush {
                 auto iter = anton::find_if(source_templates.begin(), source_templates.end(),
                                            [&n = source_name](Source_Definition_Decl const* const v) { return v->name->value == n; });
                 if(iter == source_templates.end()) {
-                    Source_Info const& src = data[0].source->source_info;
+                    Source_Info const& src = data.all[0].source->source_info;
                     return {anton::expected_error,
                             build_error_message(src.file_path, src.line, src.column, u8"unknown source definition '" + source_name + "'")};
                 }
@@ -1150,14 +1366,14 @@ namespace vush {
             // Remove duplicates, validate there is no different-type-same-name sourced data
             for(auto& [source_name, data]: pass.sourced_data) {
                 // TODO: Use stable sort to preserve the order and report duplicates in the correct order.
-                anton::quick_sort(data.begin(), data.end(), [](Sourced_Data const& lhs, Sourced_Data const& rhs) {
+                anton::quick_sort(data.all.begin(), data.all.end(), [](Sourced_Data const& lhs, Sourced_Data const& rhs) {
                     anton::String const& lhs_str = lhs.name->value;
                     anton::String const& rhs_str = rhs.name->value;
                     return anton::compare(lhs_str, rhs_str) == -1;
                 });
 
                 // Ensure there are no name duplicates with different types
-                for(auto i = data.begin(), j = data.begin() + 1, end = data.end(); j != end; ++i, ++j) {
+                for(auto i = data.all.begin(), j = data.all.begin() + 1, end = data.all.end(); j != end; ++i, ++j) {
                     anton::String const i_type = stringify_type(*i->type);
                     anton::String const j_type = stringify_type(*j->type);
                     if(i->name->value == j->name->value && i_type != j_type) {
@@ -1168,13 +1384,26 @@ namespace vush {
                 }
 
                 // Remove type duplicates
-                auto end = anton::unique(data.begin(), data.end(), [](Sourced_Data const& lhs, Sourced_Data const& rhs) {
+                auto end = anton::unique(data.all.begin(), data.all.end(), [](Sourced_Data const& lhs, Sourced_Data const& rhs) {
                     anton::String const i_type = stringify_type(*lhs.type);
                     anton::String const j_type = stringify_type(*rhs.type);
                     return i_type == j_type && lhs.name->value == rhs.name->value;
                 });
 
-                data.erase(end, data.end());
+                data.all.erase(end, data.all.end());
+
+                // Copy Sourced_Data to specialized buffers
+                for(auto i = data.all.begin(), end = data.all.end(); i != end; ++i) {
+                    bool const opaque = is_opaque_type(*i->type);
+                    bool const unsized = is_unsized_array(*i->type);
+                    if(!opaque && !unsized) {
+                        data.variables.emplace_back(*i);
+                    } else if(opaque && !unsized) {
+                        data.opaque_variables.emplace_back(*i);
+                    } else {
+                        data.unsized_variables.emplace_back(*i);
+                    }
+                }
             }
         }
 
