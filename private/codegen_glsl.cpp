@@ -1231,7 +1231,9 @@ namespace vush {
                 Layout_Info const info = calculate_type_layout_info(ctx, *member->type);
                 max_alignment = anton::math::max(max_alignment, info.alignment);
             }
-            return {max_alignment, 0};
+            // Round the alignment up to a multiple of vec4's alignment
+            i64 const alignment = ((max_alignment + 15) / 16) * 16;
+            return {alignment, 0};
         } else if(type.node_type == AST_Node_Type::array_type) {
             Array_Type const& t = (Array_Type const&)type;
             Layout_Info const info = calculate_type_layout_info(ctx, *t.base);
@@ -1363,7 +1365,7 @@ namespace vush {
                 }
             }
 
-            // Remove duplicates, validate there is no different-type-same-name sourced data
+            // Remove duplicates, validate there is no different-type-same-name sourced data, optimize layout
             for(auto& [source_name, data]: pass.sourced_data) {
                 // TODO: Use stable sort to preserve the order and report duplicates in the correct order.
                 anton::quick_sort(data.all.begin(), data.all.end(), [](Sourced_Data const& lhs, Sourced_Data const& rhs) {
@@ -1403,6 +1405,31 @@ namespace vush {
                     } else {
                         data.unsized_variables.emplace_back(*i);
                     }
+                }
+
+                // Optimize layout of variables
+                i64 const variables_count = data.variables.size();
+                anton::Array<Layout_Info> layout_info{anton::reserve, variables_count};
+                for(Sourced_Data const& d: data.variables) {
+                    Layout_Info info = calculate_type_layout_info(ctx, *d.type);
+                    layout_info.emplace_back(info);
+                }
+                // Create a permutation that will sort by alignment
+                anton::Array<i64> indices{variables_count, 0};
+                anton::fill_with_consecutive(indices.begin(), indices.end(), 0);
+                anton::quick_sort(indices.begin(), indices.end(),
+                                  [&layout_info](i64 const lhs, i64 const rhs) { return layout_info[lhs].alignment > layout_info[rhs].alignment; });
+                // Apply the permutation
+                {
+                    anton::Array<Sourced_Data> perm_data{variables_count};
+                    anton::Array<Layout_Info> perm_layout_info{variables_count};
+                    for(i64 i = 0; i < variables_count; ++i) {
+                        i64 const index = indices[i];
+                        perm_data[i] = data.variables[index];
+                        perm_layout_info[i] = layout_info[index];
+                    }
+                    data.variables = anton::move(perm_data);
+                    layout_info = anton::move(perm_layout_info);
                 }
             }
         }
