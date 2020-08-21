@@ -1227,19 +1227,36 @@ namespace vush {
             Symbol const* symbol = find_symbol(ctx, t.name);
             Struct_Decl const* struct_decl = (Struct_Decl const*)symbol->declaration;
             i64 max_alignment = 0;
+            i64 offset = 0;
             for(auto& member: struct_decl->members) {
                 Layout_Info const info = calculate_type_layout_info(ctx, *member->type);
                 max_alignment = anton::math::max(max_alignment, info.alignment);
+                // Realign offset if necessary
+                i64 const misalignment = offset % info.alignment;
+                if(misalignment != 0) {
+                    offset += info.alignment - misalignment;
+                }
+                offset += info.size;
             }
             // Round the alignment up to a multiple of vec4's alignment
             i64 const alignment = ((max_alignment + 15) / 16) * 16;
-            return {alignment, 0};
+            return {alignment, offset};
         } else if(type.node_type == AST_Node_Type::array_type) {
             Array_Type const& t = (Array_Type const&)type;
+            i64 array_size = 0;
+            if(!is_unsized_array(t)) {
+                array_size = anton::str_to_i64(t.size->value);
+            }
             Layout_Info const info = calculate_type_layout_info(ctx, *t.base);
             // Round the alignment up to a multiple of vec4's alignment
             i64 const alignment = ((info.alignment + 15) / 16) * 16;
-            return {alignment, 0};
+            // If the adjusted alignment forces padding, add
+            i64 const misalignment = info.size % alignment;
+            i64 size = info.size;
+            if(misalignment != 0) {
+                size += alignment - misalignment;
+            }
+            return {alignment, size * array_size};
         } else {
             ANTON_UNREACHABLE();
         }
