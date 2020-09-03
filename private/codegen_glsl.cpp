@@ -603,6 +603,9 @@ namespace vush {
             case AST_Node_Type::float_literal: {
                 Float_Literal& node = (Float_Literal&)ast_node;
                 out += node.value;
+                if(node.type == Float_Literal_Type::f64) {
+                    out += u8"lf";
+                }
                 return;
             }
 

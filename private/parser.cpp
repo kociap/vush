@@ -3027,22 +3027,23 @@ namespace vush {
                 return nullptr;
             }
 
-            if(is_identifier_character(_lexer.peek_next())) {
-                anton::String suffix;
-                while(is_identifier_character(_lexer.peek_next())) {
-                    suffix += _lexer.get_next();
-                }
-
-                if(suffix == "f" || suffix == "F" || suffix == "lf" || suffix == "LF") {
-                    number += suffix;
-                } else {
-                    set_error(u8"invalid suffix '" + suffix + u8"' on floating point literal");
-                    _lexer.restore_state(state_backup);
-                    return nullptr;
-                }
+            Float_Literal_Type type = Float_Literal_Type::f32;
+            Lexer_State const suffix_backup = _lexer.get_current_state();
+            anton::String suffix;
+            for(char32 next = _lexer.peek_next(); is_identifier_character(next); next = _lexer.peek_next()) {
+                suffix += next;
+                _lexer.get_next();
             }
 
-            return Owning_Ptr{new Float_Literal(anton::move(number), src_info(state_backup))};
+            if(suffix == u8"d" || suffix == u8"D") {
+                type = Float_Literal_Type::f64;
+            } else if(suffix != u8"") {
+                set_error(u8"invalid suffix '" + suffix + u8"' on floating point literal", suffix_backup);
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            return Owning_Ptr{new Float_Literal(anton::move(number), type, src_info(state_backup))};
         }
 
         Owning_Ptr<Integer_Literal> try_integer_literal() {

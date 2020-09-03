@@ -1043,10 +1043,14 @@ namespace vush {
             : Expression(source_info, AST_Node_Type::integer_literal), value(anton::move(value)), type(type), base(base) {}
     };
 
+    enum struct Float_Literal_Type { f32, f64 };
+
     struct Float_Literal: public Expression {
         anton::String value;
+        Float_Literal_Type type;
 
-        Float_Literal(anton::String value, Source_Info const& source_info): Expression(source_info, AST_Node_Type::float_literal), value(anton::move(value)) {}
+        Float_Literal(anton::String value, Float_Literal_Type type, Source_Info const& source_info)
+            : Expression(source_info, AST_Node_Type::float_literal), value(anton::move(value)), type(type) {}
     };
 
     struct Statement: public AST_Node {
