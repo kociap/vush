@@ -7,6 +7,12 @@ namespace vush {
         return anton::String{path} + u8":" + anton::to_string(line + 1) + u8":" + anton::to_string(column + 1) + u8": ";
     }
 
+    anton::String format_integer_literal_overflow(Source_Info const& integer) {
+        anton::String message =
+            format_diagnostic_location(integer.file_path, integer.line, integer.column) + u8"error: integer literal requires more than 32 bits";
+        return message;
+    }
+
     anton::String format_duplicate_pass_stage_error(Source_Info const& duplicate, Source_Info const& previous, anton::String const& pass_name,
                                                     Stage_Type const& stage) {
         anton::String message = format_diagnostic_location(duplicate.file_path, duplicate.line, duplicate.column) + u8"error: duplicate " + stringify(stage) +

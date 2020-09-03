@@ -320,7 +320,67 @@ namespace vush {
     }
 
     static anton::Expected<void, anton::String> process_expression(Context& ctx, Owning_Ptr<Expression>& expression) {
+        // TODO: Add other expression types
         switch(expression->node_type) {
+            case AST_Node_Type::integer_literal: {
+                Owning_Ptr<Integer_Literal>& node = (Owning_Ptr<Integer_Literal>&)expression;
+                // Section 4.1.3 of The OpenGL Shading Language 4.60.7 states that integer literals must require at most 32 bits.
+                switch(node->base) {
+                    case Integer_Literal_Base::hex: {
+                        // The max number of digits in a 32 bit hexadecimal number is 8, which corresponds to 0xFFFFFFFF (excluding the prefix)
+                        if(node->value.size_bytes() > 8) {
+                            return {anton::expected_error, format_integer_literal_overflow(node->source_info)};
+                        } else {
+                            return {anton::expected_value};
+                        }
+                    } break;
+
+                    case Integer_Literal_Base::oct: {
+                        // The max number of digits in a 32 bit octal number is 13, which corresponds to 0777777777777
+                        if(node->value.size_bytes() > 13) {
+                            return {anton::expected_error, format_integer_literal_overflow(node->source_info)};
+                        } else {
+                            // The max allowed value is 0377777777777, which corresponds to 4294967295
+                            i64 const v = anton::str_to_i64(node->value, 8);
+                            if(v <= 4294967295) {
+                                return {anton::expected_value};
+                            } else {
+                                return {anton::expected_error, format_integer_literal_overflow(node->source_info)};
+                            }
+                        }
+                    } break;
+
+                    case Integer_Literal_Base::dec: {
+                        // The max number of digits in a 32 bit decimal number is 10, which corresponds to 9999999999
+                        if(node->value.size_bytes() > 13) {
+                            return {anton::expected_error, format_integer_literal_overflow(node->source_info)};
+                        } else {
+                            // The max allowed value is 4294967295
+                            i64 const v = anton::str_to_i64(node->value);
+                            if(v <= 4294967295) {
+                                return {anton::expected_value};
+                            } else {
+                                return {anton::expected_error, format_integer_literal_overflow(node->source_info)};
+                            }
+                        }
+                    } break;
+                }
+                return {anton::expected_value};
+            }
+
+            case AST_Node_Type::binary_expr: {
+                Owning_Ptr<Binary_Expr>& node = (Owning_Ptr<Binary_Expr>&)expression;
+                if(anton::Expected<void, anton::String> lhs = process_expression(ctx, node->lhs); !lhs) {
+                    return lhs;
+                }
+
+                if(anton::Expected<void, anton::String> rhs = process_expression(ctx, node->rhs); !rhs) {
+                    return rhs;
+                }
+
+                return {anton::expected_value};
+            }
+
             case AST_Node_Type::expression_if: {
                 Owning_Ptr<Expression_If>& node = (Owning_Ptr<Expression_If>&)expression;
                 anton::Expected<void, anton::String> expr_res = process_expression(ctx, node->condition);
@@ -328,6 +388,7 @@ namespace vush {
                     return expr_res;
                 }
 
+                // TODO: Why are we not using the result?
                 anton::Expected<bool, anton::String> compiletime_res = is_compiletime_evaluable(ctx, *node->condition);
                 if(!compiletime_res) {
                     return {anton::expected_error, anton::move(compiletime_res.error())};
@@ -356,13 +417,12 @@ namespace vush {
 
                     expression = anton::move(node->false_expr);
                 }
-            } break;
+                return {anton::expected_value};
+            }
 
             default:
-                break;
+                return {anton::expected_value};
         }
-
-        return {anton::expected_value};
     }
 
     static anton::Expected<void, anton::String> process_statements(Context& ctx, anton::Array<Owning_Ptr<Statement>>& statements) {
@@ -780,10 +840,11 @@ namespace vush {
         for(Constant_Define const& define: config.defines) {
             Symbol symbol;
             symbol.type = Symbol_Type::constant;
-            Constant_Declaration* decl = new Constant_Declaration(
-                Owning_Ptr{new Builtin_Type(Builtin_GLSL_Type::glsl_int, {config.source_name, 0, 0, 0})},
-                Owning_Ptr{new Identifier(anton::String(define.name), {config.source_name, 0, 0, 0})},
-                Owning_Ptr{new Integer_Literal(anton::to_string(define.value), {config.source_name, 0, 0, 0})}, {config.source_name, 0, 0, 0});
+            Constant_Declaration* decl = new Constant_Declaration(Owning_Ptr{new Builtin_Type(Builtin_GLSL_Type::glsl_int, {config.source_name, 0, 0, 0})},
+                                                                  Owning_Ptr{new Identifier(anton::String(define.name), {config.source_name, 0, 0, 0})},
+                                                                  Owning_Ptr{new Integer_Literal(anton::to_string(define.value), Integer_Literal_Type::i32,
+                                                                                                 Integer_Literal_Base::dec, {config.source_name, 0, 0, 0})},
+                                                                  {config.source_name, 0, 0, 0});
             constant_decls.emplace_back(decl);
             symbol.declaration = decl;
             ctx.symbols[0].emplace(define.name, symbol);

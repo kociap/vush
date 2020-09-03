@@ -18,6 +18,7 @@ namespace vush {
 
     [[nodiscard]] anton::String format_diagnostic_location(anton::String_View path, i64 line, i64 column);
 
+    [[nodiscard]] anton::String format_integer_literal_overflow(Source_Info const& integer);
     [[nodiscard]] anton::String format_duplicate_pass_stage_error(Source_Info const& duplicate, Source_Info const& previous, anton::String const& pass_name,
                                                                   Stage_Type const& stage);
     [[nodiscard]] anton::String format_missing_vertex_stage_error(anton::String const& pass_name);

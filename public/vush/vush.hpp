@@ -10,7 +10,7 @@
 namespace vush {
     struct Constant_Define {
         anton::String name;
-        i64 value;
+        i32 value;
     };
 
     struct Format_Options {

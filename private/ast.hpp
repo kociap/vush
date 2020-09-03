@@ -1031,11 +1031,16 @@ namespace vush {
         Bool_Literal(bool value, Source_Info const& source_info): Expression(source_info, AST_Node_Type::bool_literal), value(value) {}
     };
 
+    enum struct Integer_Literal_Type { i32, u32 };
+    enum struct Integer_Literal_Base { hex = 16, oct = 8, dec = 10 };
+
     struct Integer_Literal: public Expression {
         anton::String value;
+        Integer_Literal_Type type;
+        Integer_Literal_Base base;
 
-        Integer_Literal(anton::String value, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::integer_literal), value(anton::move(value)) {}
+        Integer_Literal(anton::String value, Integer_Literal_Type type, Integer_Literal_Base base, Source_Info const& source_info)
+            : Expression(source_info, AST_Node_Type::integer_literal), value(anton::move(value)), type(type), base(base) {}
     };
 
     struct Float_Literal: public Expression {

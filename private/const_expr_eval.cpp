@@ -78,10 +78,17 @@ namespace vush {
 
             case AST_Node_Type::integer_literal: {
                 Integer_Literal& expr = (Integer_Literal&)expression;
-                i64 value = str_to_i64(expr.value);
+                i64 const value = str_to_i64(expr.value, (u64)expr.base);
                 Expr_Value e;
-                e.type = Expr_Value_Type::int32;
-                e.int32 = value;
+                if(expr.type == Integer_Literal_Type::i32) {
+                    e.type = Expr_Value_Type::int32;
+                    e.int32 = value;
+                } else if(expr.type == Integer_Literal_Type::u32) {
+                    e.type = Expr_Value_Type::uint32;
+                    e.uint32 = value;
+                } else {
+                    ANTON_UNREACHABLE();
+                }
                 return {anton::expected_value, e};
             }
 

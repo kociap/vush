@@ -269,27 +269,35 @@ namespace vush {
     static constexpr anton::String_View token_compound_bit_lshift = u8"<<=";
     static constexpr anton::String_View token_compound_bit_rshift = u8">>=";
 
-    static bool is_whitespace(char32 c) {
+    [[nodiscard]] static bool is_whitespace(char32 c) {
         return (c <= 32) | (c == 127);
     }
 
-    static bool is_digit(char32 c) {
-        return c >= 48 && c < 58;
+    [[nodiscard]] static bool is_hexadecimal_digit(char32 c) {
+        return (c >= 48 && c <= 57) || (c >= 65 && c <= 70) || (c >= 97 && c <= 102);
     }
 
-    static bool is_alpha(char32 c) {
+    [[nodiscard]] static bool is_octal_digit(char32 c) {
+        return c >= 48 && c <= 55;
+    }
+
+    [[nodiscard]] static bool is_digit(char32 c) {
+        return c >= 48 && c <= 57;
+    }
+
+    [[nodiscard]] static bool is_alpha(char32 c) {
         return (c >= 97 && c < 123) || (c >= 65 && c < 91);
     }
 
-    static bool is_first_identifier_character(char32 c) {
+    [[nodiscard]] static bool is_first_identifier_character(char32 c) {
         return c == '_' || is_alpha(c);
     }
 
-    static bool is_identifier_character(char32 c) {
+    [[nodiscard]] static bool is_identifier_character(char32 c) {
         return c == '_' || is_digit(c) || is_alpha(c);
     }
 
-    static bool is_keyword(anton::String_View string) {
+    [[nodiscard]] static bool is_keyword(anton::String_View string) {
         static constexpr anton::String_View keywords[] = {
             kw_if,
             kw_else,
@@ -2956,6 +2964,12 @@ namespace vush {
                 next_char = _lexer.peek_next();
             }
 
+            // A decimal number must not have leading 0 except when the number is 0
+            if(number.size_bytes() > 1 && number.data()[0] == '0') {
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
             if(pre_point_digits == 0) {
                 number += U'0';
             }
@@ -2978,7 +2992,7 @@ namespace vush {
             }
 
             if(pre_point_digits == 0 && post_point_digits == 0) {
-                set_error("not a floating point constant");
+                set_error(u8"not a floating point constant", state_backup);
                 _lexer.restore_state(state_backup);
                 return nullptr;
             }
@@ -3008,7 +3022,7 @@ namespace vush {
             }
 
             if(!has_e && !has_period) {
-                set_error(u8"not a floating point constant");
+                set_error(u8"not a floating point constant", state_backup);
                 _lexer.restore_state(state_backup);
                 return nullptr;
             }
@@ -3022,8 +3036,7 @@ namespace vush {
                 if(suffix == "f" || suffix == "F" || suffix == "lf" || suffix == "LF") {
                     number += suffix;
                 } else {
-                    anton::String error = "invalid suffix '" + suffix + "' on floating point constant";
-                    set_error(error);
+                    set_error(u8"invalid suffix '" + suffix + u8"' on floating point literal");
                     _lexer.restore_state(state_backup);
                     return nullptr;
                 }
@@ -3033,29 +3046,122 @@ namespace vush {
         }
 
         Owning_Ptr<Integer_Literal> try_integer_literal() {
-            Lexer_State const state_backup = _lexer.get_current_state();
+            // Section 4.1.3 of The OpenGL Shading Language 4.60.7 states that integer literals are never negative.
+            // Instead the leading '-' is always interpreted as a unary minus operator. We follow the same convention.
 
-            anton::String out;
-            char32 next = _lexer.peek_next();
-            if(next == '-' || next == '+') {
-                out += next;
-                _lexer.get_next();
-            }
+            auto try_hexadecimal = [this]() -> anton::Optional<Owning_Ptr<Integer_Literal>> {
+                Lexer_State const state_backup = _lexer.get_current_state();
+                if(!_lexer.match(u8"0x") && !_lexer.match(u8"0X")) {
+                    return anton::null_optional;
+                }
 
-            // TODO: Add handling for leading zeros.
-            // TODO: Add hexadecimal and binary literals.
+                anton::String out;
+                while(is_hexadecimal_digit(_lexer.peek_next())) {
+                    char32 const digit = _lexer.get_next();
+                    out += digit;
+                }
 
-            i64 length = 0;
-            while(is_digit(_lexer.peek_next())) {
-                out += _lexer.get_next();
-                length += 1;
-            }
+                Integer_Literal_Type type = Integer_Literal_Type::i32;
+                Lexer_State const suffix_backup = _lexer.get_current_state();
+                anton::String suffix;
+                for(char32 next = _lexer.peek_next(); is_identifier_character(next); next = _lexer.peek_next()) {
+                    suffix += next;
+                    _lexer.get_next();
+                }
 
-            if(length != 0) {
-                return Owning_Ptr{new Integer_Literal(anton::move(out), src_info(state_backup))};
+                if(suffix == u8"u" || suffix == u8"U") {
+                    type = Integer_Literal_Type::u32;
+                } else if(suffix != u8"") {
+                    set_error(u8"invalid suffix '" + suffix + u8"' on integer literal", suffix_backup);
+                    _lexer.restore_state(state_backup);
+                    return anton::null_optional;
+                }
+
+                return Owning_Ptr{new Integer_Literal{anton::move(out), type, Integer_Literal_Base::hex, src_info(state_backup)}};
+            };
+
+            auto try_octal = [this]() -> anton::Optional<Owning_Ptr<Integer_Literal>> {
+                Lexer_State const state_backup = _lexer.get_current_state();
+                anton::String out;
+                if(_lexer.peek_next() == U'0') {
+                    out += U'0';
+                    _lexer.get_next();
+                } else {
+                    return anton::null_optional;
+                }
+
+                while(is_octal_digit(_lexer.peek_next())) {
+                    char32 const digit = _lexer.get_next();
+                    out += digit;
+                }
+
+                if(char32 const next = _lexer.peek_next(); is_digit(next)) {
+                    set_error(u8"invalid digit '" + anton::String::from_utf32(&next, 4) + u8"' in octal integer literal");
+                    _lexer.restore_state(state_backup);
+                    return anton::null_optional;
+                }
+
+                Integer_Literal_Type type = Integer_Literal_Type::i32;
+                Lexer_State const suffix_backup = _lexer.get_current_state();
+                anton::String suffix;
+                for(char32 next = _lexer.peek_next(); is_identifier_character(next); next = _lexer.peek_next()) {
+                    suffix += next;
+                    _lexer.get_next();
+                }
+
+                if(suffix == u8"u" || suffix == u8"U") {
+                    type = Integer_Literal_Type::u32;
+                } else if(suffix != u8"") {
+                    set_error(u8"invalid suffix '" + suffix + u8"' on integer literal", suffix_backup);
+                    _lexer.restore_state(state_backup);
+                    return anton::null_optional;
+                }
+
+                return Owning_Ptr{new Integer_Literal{anton::move(out), type, Integer_Literal_Base::oct, src_info(state_backup)}};
+            };
+
+            auto try_decimal = [this]() -> anton::Optional<Owning_Ptr<Integer_Literal>> {
+                Lexer_State const state_backup = _lexer.get_current_state();
+                anton::String out;
+                if(char32 const next = _lexer.peek_next(); is_digit(next) && next != U'0') {
+                    out += next;
+                    _lexer.get_next();
+                } else {
+                    return anton::null_optional;
+                }
+
+                while(is_digit(_lexer.peek_next())) {
+                    char32 const digit = _lexer.get_next();
+                    out += digit;
+                }
+
+                Integer_Literal_Type type = Integer_Literal_Type::i32;
+                Lexer_State const suffix_backup = _lexer.get_current_state();
+                anton::String suffix;
+                for(char32 next = _lexer.peek_next(); is_identifier_character(next); next = _lexer.peek_next()) {
+                    suffix += next;
+                    _lexer.get_next();
+                }
+
+                if(suffix == u8"u" || suffix == u8"U") {
+                    type = Integer_Literal_Type::u32;
+                } else if(suffix != u8"") {
+                    set_error(u8"invalid suffix '" + suffix + "' on integer literal", suffix_backup);
+                    _lexer.restore_state(state_backup);
+                    return anton::null_optional;
+                }
+
+                return Owning_Ptr{new Integer_Literal{anton::move(out), type, Integer_Literal_Base::dec, src_info(state_backup)}};
+            };
+
+            if(auto hex_res = try_hexadecimal()) {
+                return anton::move(hex_res.value());
+            } else if(auto oct_res = try_octal()) {
+                return anton::move(oct_res.value());
+            } else if(auto dec_res = try_decimal()) {
+                return anton::move(dec_res.value());
             } else {
-                set_error("expected more than 0 digits");
-                _lexer.restore_state(state_backup);
+                set_error(u8"expected integer literal");
                 return nullptr;
             }
         }

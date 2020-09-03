@@ -590,7 +590,13 @@ namespace vush {
 
             case AST_Node_Type::integer_literal: {
                 Integer_Literal& node = (Integer_Literal&)ast_node;
+                if(node.base == Integer_Literal_Base::hex) {
+                    out += u8"0x";
+                }
                 out += node.value;
+                if(node.type == Integer_Literal_Type::u32) {
+                    out += u8"u";
+                }
                 return;
             }
 
