@@ -660,6 +660,12 @@ namespace vush {
         Pass_Stage_Declaration* compute_stage = nullptr;
     };
 
+    template<typename T>
+    T get_symbol_as(anton::Flat_Hash_Map<anton::String, void const*>& symbols, anton::String_View name) {
+        auto iter = symbols.find(name);
+        return (T)iter->value;
+    }
+
     static anton::Expected<anton::String, anton::String> format_string(String_Literal const& string,
                                                                        anton::Flat_Hash_Map<anton::String, void const*>& symbols) {
         anton::String out;
@@ -699,12 +705,18 @@ namespace vush {
             }
 
             anton::String_View const symbol_name = {iter1, iter2};
+            // Casting the const away in calls to get_symbol_as below is legal because the pointed to variables are not const
             if(symbol_name == u8"$binding") {
-                auto iter = symbols.find(u8"$binding");
-                // Casting the const away is legal because the pointed to variable is not const.
-                i64* binding = (i64*)iter->value;
+                i64* const binding = get_symbol_as<i64*>(symbols, u8"$binding");
                 out += anton::to_string(*binding);
                 *binding += 1;
+            } else if(symbol_name == u8"$base_binding") {
+                i64* const base_binding = get_symbol_as<i64*>(symbols, u8"$base_binding");
+                out += anton::to_string(*base_binding);
+                i64* const binding = get_symbol_as<i64*>(symbols, u8"$binding");
+                if(*binding == *base_binding) {
+                    *binding += 1;
+                }
             } else {
                 i64 const dot_pos = anton::find_substring(symbol_name, u8".");
                 if(dot_pos == anton::npos) {
@@ -794,6 +806,10 @@ namespace vush {
 
             case AST_Node_Type::source_definition_for_statement: {
                 Source_Definition_For_Statement const& node = (Source_Definition_For_Statement const&)statement;
+                // Casting the const away in calls to get_symbol_as below is legal because the pointed to variables are not const
+                i64* const binding = get_symbol_as<i64*>(symbols, u8"$binding");
+                i64* const base_binding = get_symbol_as<i64*>(symbols, u8"$base_binding");
+                *base_binding = *binding;
                 if(node.range_expr->value == u8"$variables") {
                     for(Sourced_Data const& data: sourced_data.variables) {
                         symbols.emplace(node.iterator->value, &data);
@@ -819,6 +835,8 @@ namespace vush {
                     Source_Info const& src = node.range_expr->source_info;
                     return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"invalid range expression")};
                 }
+                // Sync base_binding with binding again for the statements following the loop
+                *base_binding = *binding;
             } break;
 
             default:
@@ -834,7 +852,9 @@ namespace vush {
                                       Codegen_Context& codegen_ctx) {
         anton::Flat_Hash_Map<anton::String, void const*> symbols;
         i64 binding = 0;
+        i64 base_binding = 0;
         symbols.emplace(u8"$binding", &binding);
+        symbols.emplace(u8"$base_binding", &base_binding);
         anton::String out;
         for(Source_Definition_Decl const* source_template: source_templates) {
             auto iter = sourced_data.find(source_template->name->value);
