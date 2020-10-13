@@ -3,12 +3,12 @@
 #include <anton/algorithm.hpp>
 #include <anton/filesystem.hpp>
 #include <anton/iterators.hpp>
+#include <anton/string_stream.hpp>
 #include <codegen.hpp>
 #include <const_expr_eval.hpp>
 #include <context.hpp>
 #include <diagnostics.hpp>
 #include <parser.hpp>
-#include <string_stream.hpp>
 #include <symbol.hpp>
 
 namespace vush {
@@ -676,7 +676,7 @@ namespace vush {
             }
 
             Source_Request_Result& request_res = source_request_res.value();
-            Input_String_Stream stream{anton::move(request_res.data)};
+            anton::Input_String_Stream stream{anton::move(request_res.data)};
             Owning_Ptr<anton::String> const& current_source_name =
                 ctx.imported_sources.emplace_back(Owning_Ptr{new anton::String{anton::move(request_res.source_name)}});
             anton::Expected<Owning_Ptr<Declaration_List>, Parse_Error> parse_result = parse_source(stream, *current_source_name);
@@ -708,7 +708,7 @@ namespace vush {
                     auto iter = anton::find_if(ctx.imported_sources.begin(), ctx.imported_sources.end(),
                                                [&source_name = request_res.source_name](Owning_Ptr<anton::String> const& v) { return *v == source_name; });
                     if(iter == ctx.imported_sources.end()) {
-                        Input_String_Stream stream{anton::move(request_res.data)};
+                        anton::Input_String_Stream stream{anton::move(request_res.data)};
                         Owning_Ptr<anton::String> const& current_source_name =
                             ctx.imported_sources.emplace_back(Owning_Ptr{new anton::String{anton::move(request_res.source_name)}});
                         anton::Expected<Owning_Ptr<Declaration_List>, Parse_Error> parse_result = parse_source(stream, *current_source_name);
