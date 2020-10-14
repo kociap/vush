@@ -34,6 +34,7 @@ namespace vush {
     static constexpr anton::String_View kw_source = u8"source";
     static constexpr anton::String_View kw_emit = u8"emit";
     static constexpr anton::String_View kw_settings = u8"settings";
+    static constexpr anton::String_View kw_reinterpret = u8"reinterpret";
 
     // attributes
     static constexpr anton::String_View attrib_workgroup = u8"workgroup";
@@ -226,6 +227,8 @@ namespace vush {
     static constexpr anton::String_View token_bracket_close = u8"]";
     static constexpr anton::String_View token_paren_open = u8"(";
     static constexpr anton::String_View token_paren_close = u8")";
+    static constexpr anton::String_View token_angle_open = u8"<";
+    static constexpr anton::String_View token_angle_close = u8">";
     static constexpr anton::String_View token_semicolon = u8";";
     static constexpr anton::String_View token_colon = u8":";
     static constexpr anton::String_View token_scope_resolution = u8"::";
@@ -321,6 +324,7 @@ namespace vush {
             kw_source,
             kw_emit,
             kw_settings,
+            kw_reinterpret,
         };
 
         constexpr i64 array_size = sizeof(keywords) / sizeof(anton::String_View);
@@ -2784,6 +2788,10 @@ namespace vush {
                 return paren_expr;
             }
 
+            if(Owning_Ptr expr = try_reinterpret_expr()) {
+                return expr;
+            }
+
             if(Owning_Ptr expression_if = try_expression_if()) {
                 return expression_if;
             }
@@ -2832,6 +2840,65 @@ namespace vush {
             } else {
                 return Owning_Ptr{new Paren_Expr(anton::move(paren_expression), src_info(state_backup))};
             }
+        }
+
+        Owning_Ptr<Reinterpret_Expr> try_reinterpret_expr() {
+            Lexer_State const state_backup = _lexer.get_current_state();
+            if(!_lexer.match(kw_reinterpret, true)) {
+                set_error(u8"expected 'reinterpret'");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            if(!_lexer.match(token_angle_open)) {
+                set_error(u8"expected '<'");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            Owning_Ptr target_type = try_type();
+            if(!target_type) {
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            if(!_lexer.match(token_angle_close)) {
+                set_error(u8"expected '>'");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            if(!_lexer.match(token_paren_open)) {
+                set_error(u8"expected '('");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            Owning_Ptr source = try_expression();
+            if(!source) {
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            if(!_lexer.match(token_comma)) {
+                set_error(u8"expected ','");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            Owning_Ptr index = try_expression();
+            if(!index) {
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            if(!_lexer.match(token_paren_close)) {
+                set_error(u8"expected ')'");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            return Owning_Ptr{new Reinterpret_Expr{ANTON_MOV(target_type), ANTON_MOV(source), ANTON_MOV(index), src_info(state_backup)}};
         }
 
         Owning_Ptr<Expression_If> try_expression_if() {

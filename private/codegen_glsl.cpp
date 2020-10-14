@@ -11,6 +11,7 @@
 
 namespace vush {
     struct Codegen_Context {
+        Context const& ctx;
         Format_Options format;
         anton::String_View current_pass;
         Stage_Type current_stage;
@@ -20,6 +21,159 @@ namespace vush {
     static void write_indent(anton::String& out, i64 indent) {
         for(i64 i = 0; i < indent; ++i) {
             out += u8"    ";
+        }
+    }
+
+    struct Reinterpret_Context {
+        anton::String source_expr;
+        anton::String index_expr;
+        i64 offset = 0;
+    };
+
+    static void stringify_type_reinterpret(anton::String& out, Type& type, Codegen_Context& codegen_ctx, Reinterpret_Context& reinterpret_ctx) {
+        switch(type.node_type) {
+            case AST_Node_Type::user_defined_type: {
+                User_Defined_Type& t = (User_Defined_Type&)type;
+                out += t.name;
+                out += u8"(";
+                // We made sure that the symbol exists during validation stage
+                Symbol const* symbol = find_symbol(codegen_ctx.ctx, t.name);
+                Struct_Decl& struct_decl = (Struct_Decl&)*symbol->declaration;
+                for(i64 i = 0; i < struct_decl.members.size(); ++i) {
+                    if(i != 0) {
+                        out += u8", ";
+                    }
+
+                    auto& member = struct_decl.members[i];
+                    stringify_type_reinterpret(out, *member->type, codegen_ctx, reinterpret_ctx);
+                }
+                out += u8")";
+            } break;
+
+            case AST_Node_Type::builtin_type: {
+                Builtin_Type& t = (Builtin_Type&)type;
+                out += stringify(t.type);
+                out += u8"(";
+                switch(t.type) {
+                    case Builtin_GLSL_Type::glsl_bool:
+                    case Builtin_GLSL_Type::glsl_int: {
+                        out += u8"floatBitsToInt(";
+                        out += reinterpret_ctx.source_expr;
+                        out += u8"[";
+                        out += reinterpret_ctx.index_expr;
+                        out += u8" + ";
+                        out += anton::to_string(reinterpret_ctx.offset);
+                        out += u8"]";
+                        out += u8")";
+                        reinterpret_ctx.offset += 1;
+                    } break;
+
+                    case Builtin_GLSL_Type::glsl_uint: {
+                        out += u8"floatBitsToUint(";
+                        out += reinterpret_ctx.source_expr;
+                        out += u8"[";
+                        out += reinterpret_ctx.index_expr;
+                        out += u8" + ";
+                        out += anton::to_string(reinterpret_ctx.offset);
+                        out += u8"]";
+                        out += u8")";
+                        reinterpret_ctx.offset += 1;
+                    } break;
+
+                    case Builtin_GLSL_Type::glsl_float: {
+                        out += reinterpret_ctx.source_expr;
+                        out += u8"[";
+                        out += reinterpret_ctx.index_expr;
+                        out += u8" + ";
+                        out += anton::to_string(reinterpret_ctx.offset);
+                        out += u8"]";
+                        reinterpret_ctx.offset += 1;
+                    } break;
+
+                    case Builtin_GLSL_Type::glsl_double: {
+                        // Output
+                        // packDouble2x32(uvec2(floatBitsToUint(data[index + offset]), floatBitsToUint(data[index + offset + 1])))
+                        out += u8"packDouble2x32(uvec2(";
+                        out += u8"floatBitsToUint(";
+                        out += reinterpret_ctx.source_expr;
+                        out += u8"[";
+                        out += reinterpret_ctx.index_expr;
+                        out += u8" + ";
+                        out += anton::to_string(reinterpret_ctx.offset);
+                        out += u8"]";
+                        out += u8"), ";
+                        out += u8"floatBitsToUint(";
+                        out += reinterpret_ctx.source_expr;
+                        out += u8"[";
+                        out += reinterpret_ctx.index_expr;
+                        out += u8" + ";
+                        out += anton::to_string(reinterpret_ctx.offset + 1);
+                        out += u8"]";
+                        out += u8")";
+                        out += u8"))";
+                        reinterpret_ctx.offset += 2;
+                    } break;
+
+                    case Builtin_GLSL_Type::glsl_vec2: {
+                        out += reinterpret_ctx.source_expr;
+                        out += u8"[";
+                        out += reinterpret_ctx.index_expr;
+                        out += u8" + ";
+                        out += anton::to_string(reinterpret_ctx.offset);
+                        out += u8"], ";
+                        out += reinterpret_ctx.source_expr;
+                        out += u8"[";
+                        out += reinterpret_ctx.index_expr;
+                        out += u8" + ";
+                        out += anton::to_string(reinterpret_ctx.offset);
+                        out += u8"]";
+                        reinterpret_ctx.offset += 1;
+                    } break;
+
+                    case Builtin_GLSL_Type::glsl_vec3: {
+                        for(i64 i = 0; i < 3; ++i) {
+                            if(i != 0) {
+                                out += u8", ";
+                            }
+
+                            out += reinterpret_ctx.source_expr;
+                            out += u8"[";
+                            out += reinterpret_ctx.index_expr;
+                            out += u8" + ";
+                            out += anton::to_string(reinterpret_ctx.offset + i);
+                            out += u8"]";
+                        }
+                        reinterpret_ctx.offset += 3;
+                    } break;
+
+                    case Builtin_GLSL_Type::glsl_vec4: {
+                        for(i64 i = 0; i < 4; ++i) {
+                            if(i != 0) {
+                                out += u8", ";
+                            }
+
+                            out += reinterpret_ctx.source_expr;
+                            out += u8"[";
+                            out += reinterpret_ctx.index_expr;
+                            out += u8" + ";
+                            out += anton::to_string(reinterpret_ctx.offset + i);
+                            out += u8"]";
+                        }
+                        reinterpret_ctx.offset += 4;
+                    } break;
+
+                    default:
+                        ANTON_UNREACHABLE();
+                }
+                out += u8")";
+            } break;
+
+            case AST_Node_Type::array_type: {
+                Array_Type& t = (Array_Type&)type;
+            } break;
+
+            default:
+                ANTON_UNREACHABLE();
         }
     }
 
@@ -579,6 +733,17 @@ namespace vush {
                 out += u8"(";
                 stringify(out, *node.expr, ctx);
                 out += u8")";
+                return;
+            }
+
+            case AST_Node_Type::reinterpret_expr: {
+                Reinterpret_Expr& node = (Reinterpret_Expr&)ast_node;
+                // TODO: Validate source is a float array
+                // TODO: Validate target type
+                Reinterpret_Context reinterpret_ctx;
+                stringify(reinterpret_ctx.source_expr, *node.source, ctx);
+                stringify(reinterpret_ctx.index_expr, *node.index, ctx);
+                stringify_type_reinterpret(out, *node.target_type, ctx, reinterpret_ctx);
                 return;
             }
 
@@ -1480,7 +1645,7 @@ namespace vush {
             }
         }
 
-        Codegen_Context codegen_ctx;
+        Codegen_Context codegen_ctx{ctx};
         codegen_ctx.format = format;
         codegen_ctx.indent = 0;
 

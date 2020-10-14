@@ -46,6 +46,7 @@ namespace vush {
         postfix_inc_expr,
         postfix_dec_expr,
         paren_expr,
+        reinterpret_expr,
         string_literal,
         bool_literal,
         integer_literal,
@@ -1016,6 +1017,16 @@ namespace vush {
         Owning_Ptr<Expression> expr;
 
         Paren_Expr(Owning_Ptr<Expression> expr, Source_Info const& source_info): Expression(source_info, AST_Node_Type::paren_expr), expr(anton::move(expr)) {}
+    };
+
+    struct Reinterpret_Expr: public Expression {
+        Owning_Ptr<Type> target_type;
+        Owning_Ptr<Expression> source;
+        Owning_Ptr<Expression> index;
+
+        Reinterpret_Expr(Owning_Ptr<Type> target_type, Owning_Ptr<Expression> source, Owning_Ptr<Expression> index, Source_Info const& source_info)
+            : Expression(source_info, AST_Node_Type::reinterpret_expr), target_type(ANTON_MOV(target_type)), source(ANTON_MOV(source)),
+              index(ANTON_MOV(index)) {}
     };
 
     struct String_Literal: public Expression {
