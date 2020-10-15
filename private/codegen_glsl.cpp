@@ -162,6 +162,62 @@ namespace vush {
                         reinterpret_ctx.offset += 4;
                     } break;
 
+                    case Builtin_GLSL_Type::glsl_mat2:
+                    case Builtin_GLSL_Type::glsl_mat2x3:
+                    case Builtin_GLSL_Type::glsl_mat2x4:
+                    case Builtin_GLSL_Type::glsl_mat3:
+                    case Builtin_GLSL_Type::glsl_mat3x2:
+                    case Builtin_GLSL_Type::glsl_mat3x4:
+                    case Builtin_GLSL_Type::glsl_mat4:
+                    case Builtin_GLSL_Type::glsl_mat4x2:
+                    case Builtin_GLSL_Type::glsl_mat4x3: {
+                        i64 component_count = 0;
+                        switch(t.type) {
+                            case Builtin_GLSL_Type::glsl_mat2: {
+                                component_count = 4;
+                            } break;
+
+                            case Builtin_GLSL_Type::glsl_mat2x3:
+                            case Builtin_GLSL_Type::glsl_mat3x2: {
+                                component_count = 6;
+                            } break;
+
+                            case Builtin_GLSL_Type::glsl_mat2x4:
+                            case Builtin_GLSL_Type::glsl_mat4x2: {
+                                component_count = 8;
+                            } break;
+
+                            case Builtin_GLSL_Type::glsl_mat3: {
+                                component_count = 9;
+                            } break;
+
+                            case Builtin_GLSL_Type::glsl_mat3x4: {
+                                component_count = 12;
+                            } break;
+
+                            case Builtin_GLSL_Type::glsl_mat4: {
+                                component_count = 16;
+                            } break;
+
+                            default:
+                                ANTON_UNREACHABLE();
+                        }
+
+                        for(i64 i = 0; i < component_count; ++i) {
+                            if(i != 0) {
+                                out += u8", ";
+                            }
+
+                            out += reinterpret_ctx.source_expr;
+                            out += u8"[";
+                            out += reinterpret_ctx.index_expr;
+                            out += u8" + ";
+                            out += anton::to_string(reinterpret_ctx.offset + i);
+                            out += u8"]";
+                        }
+                        reinterpret_ctx.offset += component_count;
+                    } break;
+
                     default:
                         ANTON_UNREACHABLE();
                 }
@@ -170,6 +226,11 @@ namespace vush {
 
             case AST_Node_Type::array_type: {
                 Array_Type& t = (Array_Type&)type;
+                // We made sure that the array is sized during validation stage
+                out += stringify_type(t);
+                out += u8"(";
+                stringify_type_reinterpret(out, *t.base, codegen_ctx, reinterpret_ctx);
+                out += u8")";
             } break;
 
             default:
