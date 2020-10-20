@@ -1103,106 +1103,44 @@ namespace vush {
 
     // TODO: Arrays in vertex inputs/fragment outputs are illegal (for now). Add error handling.
 
-    static void write_vertex_inputs(Context const& ctx, Codegen_Context& codegen_ctx, anton::String& out, Type const& type, anton::String const& input_name,
-                                    i64& input_location, anton::Array<anton::String>& input_names) {
-        // TODO: fix location increment for types that require more than 1 slot
-        ANTON_ASSERT(type.node_type == AST_Node_Type::builtin_type || type.node_type == AST_Node_Type::user_defined_type, "unknown ast node type");
-        if(type.node_type == AST_Node_Type::user_defined_type) {
-            User_Defined_Type const& node = (User_Defined_Type const&)type;
-            Symbol const* symbol = find_symbol(ctx, node.name);
-            ANTON_ASSERT(symbol, "undefined symbol");
-            Struct_Decl const* struct_decl = (Struct_Decl const*)symbol->declaration;
-            for(auto& member: struct_decl->members) {
-                anton::String nested_name = input_name + u8"_" + member->identifier->value;
-                write_vertex_inputs(ctx, codegen_ctx, out, *member->type, nested_name, input_location, input_names);
-            }
-        } else {
-            Builtin_Type const& node = (Builtin_Type const&)type;
-            out += u8"layout(location = ";
-            out += anton::to_string(input_location);
-            out += u8") in ";
-            out += stringify(node.type);
-            out += u8" ";
-            anton::String name = anton::String{u8"_pass_"} + codegen_ctx.current_pass + u8"_" + input_name;
-            out += name;
-            out += u8";\n";
-            input_names.emplace_back(anton::move(name));
-            input_location += 1;
-        }
-    }
+    struct Member_Info {
+        anton::String name;
+        anton::String accessor;
+        Builtin_GLSL_Type type;
+        i64 location_slots;
+    };
 
-    static void write_vertex_input_assignments(Context const& ctx, Codegen_Context& codegen_ctx, anton::String& out, Type const& type,
-                                               anton::String const& name, anton::String const*& input_names) {
-        ANTON_ASSERT(type.node_type == AST_Node_Type::builtin_type || type.node_type == AST_Node_Type::user_defined_type, "unknown ast node type");
-        if(type.node_type == AST_Node_Type::user_defined_type) {
-            User_Defined_Type const& node = (User_Defined_Type const&)type;
-            Symbol const* symbol = find_symbol(ctx, node.name);
-            ANTON_ASSERT(symbol, "undefined symbol");
-            Struct_Decl const* struct_decl = (Struct_Decl const*)symbol->declaration;
-            for(auto& member: struct_decl->members) {
-                anton::String nested_name = name + u8"." + member->identifier->value;
-                write_vertex_input_assignments(ctx, codegen_ctx, out, *member->type, nested_name, input_names);
+    // explode_type
+    //
+    static void explode_type(Context const& ctx, Type const& type, anton::Array<Member_Info>& member_info) {
+        auto _explode_type = [](auto& _explode_type, Context const& ctx, Type const& type, anton::Array<anton::String>& name_components,
+                                anton::Array<Member_Info>& member_info) -> void {
+            ANTON_ASSERT(type.node_type == AST_Node_Type::builtin_type || type.node_type == AST_Node_Type::user_defined_type, "unknown ast node type");
+            if(type.node_type == AST_Node_Type::user_defined_type) {
+                User_Defined_Type const& node = (User_Defined_Type const&)type;
+                Symbol const* symbol = find_symbol(ctx, node.name);
+                ANTON_ASSERT(symbol, "undefined symbol");
+                Struct_Decl const* struct_decl = (Struct_Decl const*)symbol->declaration;
+                for(auto& member: struct_decl->members) {
+                    name_components.emplace_back(member->identifier->value);
+                    _explode_type(_explode_type, ctx, *member->type, name_components, member_info);
+                    name_components.pop_back();
+                }
+            } else {
+                Builtin_Type const& t = (Builtin_Type const&)type;
+                anton::String name;
+                anton::String accessor;
+                for(anton::String const& component: name_components) {
+                    name += u8"_" + component;
+                    accessor += u8"." + component;
+                }
+                // TODO: fix location increment for types that require more than 1 slot
+                member_info.emplace_back(ANTON_MOV(name), ANTON_MOV(accessor), t.type, 1);
             }
-        } else {
-            // Builtin_Type
-            write_indent(out, codegen_ctx.indent);
-            out += name;
-            out += u8" = ";
-            out += *input_names;
-            out += u8";\n";
-            input_names += 1;
-        }
-    }
+        };
 
-    static void write_fragment_outputs(Context const& ctx, Codegen_Context& codegen_ctx, anton::String& out, Type const& type, anton::String const& output_name,
-                                       i64& output_location, anton::Array<anton::String>& output_names) {
-        // TODO: fix location increment for types that require more than 1 slot
-        ANTON_ASSERT(type.node_type == AST_Node_Type::builtin_type || type.node_type == AST_Node_Type::user_defined_type, "unknown ast node type");
-        if(type.node_type == AST_Node_Type::user_defined_type) {
-            User_Defined_Type const& node = (User_Defined_Type const&)type;
-            Symbol const* symbol = find_symbol(ctx, node.name);
-            ANTON_ASSERT(symbol, "undefined symbol");
-            Struct_Decl const* struct_decl = (Struct_Decl const*)symbol->declaration;
-            for(auto& member: struct_decl->members) {
-                anton::String nested_name = output_name + u8"_" + member->identifier->value;
-                write_fragment_outputs(ctx, codegen_ctx, out, *member->type, nested_name, output_location, output_names);
-            }
-        } else {
-            Builtin_Type const& node = (Builtin_Type const&)type;
-            out += u8"layout(location = ";
-            out += anton::to_string(output_location);
-            out += u8") out ";
-            out += stringify(node.type);
-            out += u8" ";
-            anton::String name = anton::String{u8"_pass_"} + codegen_ctx.current_pass + u8"_" + output_name + "_out";
-            out += name;
-            out += u8";\n";
-            output_names.emplace_back(anton::move(name));
-            output_location += 1;
-        }
-    }
-
-    static void write_fragment_output_assignments(Context const& ctx, Codegen_Context& codegen_ctx, anton::String& out, Type const& type,
-                                                  anton::String const& name, anton::String const*& output_names) {
-        ANTON_ASSERT(type.node_type == AST_Node_Type::builtin_type || type.node_type == AST_Node_Type::user_defined_type, "unknown ast node type");
-        if(type.node_type == AST_Node_Type::user_defined_type) {
-            User_Defined_Type const& node = (User_Defined_Type const&)type;
-            Symbol const* symbol = find_symbol(ctx, node.name);
-            ANTON_ASSERT(symbol, "undefined symbol");
-            Struct_Decl const* struct_decl = (Struct_Decl const*)symbol->declaration;
-            for(auto& member: struct_decl->members) {
-                anton::String nested_name = name + u8"." + member->identifier->value;
-                write_fragment_output_assignments(ctx, codegen_ctx, out, *member->type, nested_name, output_names);
-            }
-        } else {
-            // Builtin_Type
-            write_indent(out, codegen_ctx.indent);
-            out += *output_names;
-            out += u8" = ";
-            out += name;
-            out += u8";\n";
-            output_names += 1;
-        }
+        anton::Array<anton::String> name_components;
+        _explode_type(_explode_type, ctx, type, name_components, member_info);
     }
 
     static anton::Expected<anton::String, anton::String> format_bind_string(String_Literal const& string, Sourced_Data const& symbol) {
@@ -1789,15 +1727,33 @@ namespace vush {
 
                 switch(stage->stage) {
                     case Stage_Type::vertex: {
-                        i64 in_location = 0;
-                        anton::Array<anton::String> input_names;
-                        for(auto& param: stage->params) {
-                            if(param->node_type == AST_Node_Type::vertex_input_param) {
-                                Owning_Ptr<Vertex_Input_Param>& node = (Owning_Ptr<Vertex_Input_Param>&)param;
-                                write_vertex_inputs(ctx, codegen_ctx, out, *node->type, node->identifier->value, in_location, input_names);
+                        // write vertex inputs
+                        {
+                            anton::Array<Member_Info> members_info;
+                            for(auto& param: stage->params) {
+                                if(param->node_type == AST_Node_Type::vertex_input_param) {
+                                    Owning_Ptr<Vertex_Input_Param>& node = (Owning_Ptr<Vertex_Input_Param>&)param;
+                                    explode_type(ctx, *node->type, members_info);
+                                    // prepend variable name to all names and accessors
+                                    i64 location = 0;
+                                    for(Member_Info const& m: members_info) {
+                                        out += u8"layout(location = ";
+                                        out += anton::to_string(location);
+                                        out += u8") in ";
+                                        out += stringify(m.type);
+                                        out += u8" _pass_";
+                                        out += stage->pass->value;
+                                        out += u8"_";
+                                        out += node->identifier->value;
+                                        out += m.name;
+                                        out += u8";\n";
+                                        location += m.location_slots;
+                                    }
+                                    members_info.clear();
+                                }
                             }
+                            out += u8"\n";
                         }
-                        out += u8"\n";
 
                         anton::String const shader_return_name =
                             anton::String{u8"_pass_"} + codegen_ctx.current_pass + u8"_stage_" + stringify(codegen_ctx.current_stage) + u8"_out";
@@ -1817,8 +1773,8 @@ namespace vush {
                         // Generate sourced parameters
                         anton::Array<anton::String> arguments;
                         {
-                            anton::String const* input_names_iter = input_names.begin();
                             i64 param_index = 0;
+                            anton::Array<Member_Info> members_info;
                             for(auto& param: stage->params) {
                                 ANTON_ASSERT(param->node_type == AST_Node_Type::vertex_input_param || param->node_type == AST_Node_Type::sourced_function_param,
                                              u8"invalid parameter type");
@@ -1827,12 +1783,26 @@ namespace vush {
                                         Vertex_Input_Param* const node = (Vertex_Input_Param*)param.get();
                                         write_indent(out, codegen_ctx.indent);
                                         stringify(out, *node->type, codegen_ctx);
+                                        anton::String arg_name = "arg" + anton::to_string(param_index);
                                         out += u8" ";
-                                        anton::String argument_name = "_arg" + anton::to_string(param_index);
-                                        out += argument_name;
+                                        out += arg_name;
                                         out += u8";\n";
-                                        write_vertex_input_assignments(ctx, codegen_ctx, out, *node->type, argument_name, input_names_iter);
-                                        arguments.emplace_back(anton::move(argument_name));
+
+                                        explode_type(ctx, *node->type, members_info);
+                                        // write vertex input assignments
+                                        for(Member_Info const& m: members_info) {
+                                            write_indent(out, codegen_ctx.indent);
+                                            out += arg_name;
+                                            out += m.accessor;
+                                            out += u8" = _pass_";
+                                            out += stage->pass->value;
+                                            out += u8"_";
+                                            out += node->identifier->value;
+                                            out += m.name;
+                                            out += u8";\n";
+                                        }
+                                        members_info.clear();
+                                        arguments.emplace_back(ANTON_MOV(arg_name));
                                         param_index += 1;
                                     } break;
 
@@ -1879,16 +1849,6 @@ namespace vush {
                     } break;
 
                     case Stage_Type::fragment: {
-                        // Decompose return type to individual outputs
-                        anton::Array<anton::String> output_names;
-                        if(!return_type_is_void) {
-                            i64 out_location = 0;
-                            // write_fragment_outputs will append underscore to the name we supply and then prepend pass name ending with underscore.
-                            // We use a dummy name ("frag") to avoid the double underscore.
-                            write_fragment_outputs(ctx, codegen_ctx, out, *stage->return_type, anton::String{u8"frag"}, out_location, output_names);
-                            out += u8"\n";
-                        }
-
                         // Generate parameters
                         anton::Array<anton::String> arguments;
                         {
@@ -1923,6 +1883,26 @@ namespace vush {
                             }
                         }
 
+                        // Decompose return type to individual outputs
+                        if(!return_type_is_void) {
+                            anton::Array<Member_Info> members_info;
+                            explode_type(ctx, *stage->return_type, members_info);
+                            i64 location = 0;
+                            for(Member_Info const& m: members_info) {
+                                out += u8"layout(location = ";
+                                out += anton::to_string(location);
+                                out += u8") out ";
+                                out += stringify(m.type);
+                                out += u8" _pass_";
+                                out += stage->pass->value;
+                                out += u8"_out";
+                                out += m.name;
+                                out += u8";\n";
+                                location += m.location_slots;
+                            }
+                            out += u8"\n";
+                        }
+
                         // Output main
                         out += u8"void main() {\n";
                         codegen_ctx.indent += 1;
@@ -1949,8 +1929,19 @@ namespace vush {
                         out += u8");\n";
 
                         if(!return_type_is_void) {
-                            anton::String const* output_names_iter = output_names.begin();
-                            write_fragment_output_assignments(ctx, codegen_ctx, out, *stage->return_type, shader_return_name, output_names_iter);
+                            anton::Array<Member_Info> members_info;
+                            explode_type(ctx, *stage->return_type, members_info);
+                            for(Member_Info const& m: members_info) {
+                                write_indent(out, codegen_ctx.indent);
+                                out += u8"_pass_";
+                                out += stage->pass->value;
+                                out += u8"_out";
+                                out += m.name;
+                                out += u8" = ";
+                                out += shader_return_name;
+                                out += m.accessor;
+                                out += u8";\n";
+                            }
                         }
 
                         codegen_ctx.indent -= 1;
