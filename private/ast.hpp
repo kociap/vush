@@ -21,6 +21,7 @@ namespace vush {
         sourced_global_decl,
         variable_declaration,
         constant_declaration,
+        struct_member,
         struct_decl,
         settings_decl,
         workgroup_attribute,
@@ -690,6 +691,12 @@ namespace vush {
         }
     };
 
+    enum struct Interpolation {
+        smooth,
+        flat,
+        noperspective,
+    };
+
     struct Sourced_Global_Decl: public Declaration {
         Owning_Ptr<Identifier> pass_name;
         Owning_Ptr<Type> type;
@@ -722,19 +729,28 @@ namespace vush {
               initializer(anton::move(initializer)) {}
     };
 
+    struct Struct_Member: public AST_Node {
+        Owning_Ptr<Type> type;
+        Owning_Ptr<Identifier> identifier;
+        Owning_Ptr<Expression> initializer;
+        Interpolation interpolation_qualifier;
+        // whether the member is qualifier with 'invariant'
+        bool invariant_qualifier;
+
+        Struct_Member(Owning_Ptr<Type> type, Owning_Ptr<Identifier> identifier, Owning_Ptr<Expression> initializer, Interpolation interpolation, bool invariant,
+                      Source_Info const& source_info)
+            : AST_Node(source_info, AST_Node_Type::struct_member), type(ANTON_MOV(type)), identifier(ANTON_MOV(identifier)),
+              initializer(ANTON_MOV(initializer)), interpolation_qualifier(interpolation), invariant_qualifier(invariant) {}
+    };
+
     struct Struct_Decl: public Declaration {
         Owning_Ptr<Identifier> name;
-        anton::Array<Owning_Ptr<Variable_Declaration>> members;
+        anton::Array<Owning_Ptr<Struct_Member>> members;
 
-        Struct_Decl(Owning_Ptr<Identifier> name, Source_Info const& source_info)
-            : Declaration(source_info, AST_Node_Type::struct_decl), name(anton::move(name)) {}
+        Struct_Decl(Owning_Ptr<Identifier> name, Source_Info const& source_info): Declaration(source_info, AST_Node_Type::struct_decl), name(ANTON_MOV(name)) {}
 
-        void append(Owning_Ptr<Variable_Declaration> decl) {
-            members.emplace_back(anton::move(decl));
-        }
-
-        i64 size() const {
-            return members.size();
+        void append(Owning_Ptr<Struct_Member> decl) {
+            members.emplace_back(ANTON_MOV(decl));
         }
     };
 

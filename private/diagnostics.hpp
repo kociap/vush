@@ -23,4 +23,5 @@ namespace vush {
                                                                   Stage_Type const& stage);
     [[nodiscard]] anton::String format_missing_vertex_stage_error(anton::String const& pass_name);
     [[nodiscard]] anton::String format_vertex_and_compute_stages_error(anton::String const& pass_name);
+    [[nodiscard]] anton::String format_empty_struct(Source_Info const& struct_info);
 } // namespace vush

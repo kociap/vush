@@ -35,6 +35,10 @@ namespace vush {
     static constexpr anton::String_View kw_emit = u8"emit";
     static constexpr anton::String_View kw_settings = u8"settings";
     static constexpr anton::String_View kw_reinterpret = u8"reinterpret";
+    static constexpr anton::String_View kw_invariant = u8"invariant";
+    static constexpr anton::String_View kw_smooth = u8"smooth";
+    static constexpr anton::String_View kw_flat = u8"flat";
+    static constexpr anton::String_View kw_noperspective = u8"noperspective";
 
     // attributes
     static constexpr anton::String_View attrib_workgroup = u8"workgroup";
@@ -988,6 +992,94 @@ namespace vush {
             return Owning_Ptr{new Constant_Declaration(anton::move(var_type), anton::move(var_name), anton::move(initializer), src_info(state_backup))};
         }
 
+        Owning_Ptr<Struct_Member> try_struct_member() {
+            Lexer_State const state_backup = _lexer.get_current_state();
+            bool has_invariant = false;
+            bool has_interpolation = false;
+            Interpolation interpolation = Interpolation::smooth;
+            while(true) {
+                if(_lexer.match(kw_invariant, true)) {
+                    if(has_invariant) {
+                        set_error(u8"multiple invariance qualifiers are not allowed");
+                        _lexer.restore_state(state_backup);
+                        return nullptr;
+                    }
+
+                    has_invariant = true;
+                    continue;
+                }
+
+                if(_lexer.match(kw_smooth, true)) {
+                    if(has_interpolation) {
+                        set_error(u8"multiple interpolation qualifiers are not allowed");
+                        _lexer.restore_state(state_backup);
+                        return nullptr;
+                    }
+
+                    interpolation = Interpolation::smooth;
+                    has_interpolation = true;
+                    continue;
+                }
+
+                if(_lexer.match(kw_flat, true)) {
+                    if(has_interpolation) {
+                        set_error(u8"multiple interpolation qualifiers are not allowed");
+                        _lexer.restore_state(state_backup);
+                        return nullptr;
+                    }
+
+                    interpolation = Interpolation::flat;
+                    has_interpolation = true;
+                    continue;
+                }
+
+                if(_lexer.match(kw_noperspective, true)) {
+                    if(has_interpolation) {
+                        set_error(u8"multiple interpolation qualifiers are not allowed");
+                        _lexer.restore_state(state_backup);
+                        return nullptr;
+                    }
+
+                    interpolation = Interpolation::noperspective;
+                    has_interpolation = true;
+                    continue;
+                }
+
+                break;
+            }
+
+            Owning_Ptr var_type = try_type();
+            if(!var_type) {
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            Owning_Ptr var_name = try_identifier();
+            if(!var_name) {
+                set_error(u8"expected member name");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            Owning_Ptr<Expression> initializer = nullptr;
+            if(_lexer.match(token_assign)) {
+                initializer = try_expression();
+                if(!initializer) {
+                    _lexer.restore_state(state_backup);
+                    return nullptr;
+                }
+            }
+
+            if(!_lexer.match(token_semicolon)) {
+                set_error(u8"expected ';'");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            return Owning_Ptr{
+                new Struct_Member(ANTON_MOV(var_type), ANTON_MOV(var_name), ANTON_MOV(initializer), interpolation, has_invariant, src_info(state_backup))};
+        }
+
         Owning_Ptr<Struct_Decl> try_struct_decl() {
             Lexer_State const state_backup = _lexer.get_current_state();
             if(!_lexer.match(kw_struct, true)) {
@@ -1015,20 +1107,14 @@ namespace vush {
                 return nullptr;
             }
 
-            Owning_Ptr struct_decl{new Struct_Decl(anton::move(struct_name), src_info(state_backup))};
+            Owning_Ptr struct_decl{new Struct_Decl(ANTON_MOV(struct_name), src_info(state_backup))};
             while(!_lexer.match(token_brace_close)) {
-                if(Owning_Ptr decl = try_variable_declaration()) {
-                    struct_decl->append(anton::move(decl));
+                if(Owning_Ptr decl = try_struct_member()) {
+                    struct_decl->append(ANTON_MOV(decl));
                 } else {
                     _lexer.restore_state(state_backup);
                     return nullptr;
                 }
-            }
-
-            if(struct_decl->size() == 0) {
-                set_error(u8"empty structs are not allowed", state_backup);
-                _lexer.restore_state(state_backup);
-                return nullptr;
             }
 
             return struct_decl;
