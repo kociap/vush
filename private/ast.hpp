@@ -692,10 +692,24 @@ namespace vush {
     };
 
     enum struct Interpolation {
+        none,
         smooth,
         flat,
         noperspective,
     };
+
+    [[nodiscard]] constexpr anton::String_View stringify(Interpolation const interpolation) {
+        switch(interpolation) {
+            case Interpolation::none:
+                return u8"";
+            case Interpolation::smooth:
+                return u8"smooth";
+            case Interpolation::flat:
+                return u8"flat";
+            case Interpolation::noperspective:
+                return u8"noperspective";
+        }
+    }
 
     struct Sourced_Global_Decl: public Declaration {
         Owning_Ptr<Identifier> pass_name;
@@ -733,14 +747,14 @@ namespace vush {
         Owning_Ptr<Type> type;
         Owning_Ptr<Identifier> identifier;
         Owning_Ptr<Expression> initializer;
-        Interpolation interpolation_qualifier;
+        Interpolation interpolation;
         // whether the member is qualifier with 'invariant'
-        bool invariant_qualifier;
+        bool invariant;
 
         Struct_Member(Owning_Ptr<Type> type, Owning_Ptr<Identifier> identifier, Owning_Ptr<Expression> initializer, Interpolation interpolation, bool invariant,
                       Source_Info const& source_info)
             : AST_Node(source_info, AST_Node_Type::struct_member), type(ANTON_MOV(type)), identifier(ANTON_MOV(identifier)),
-              initializer(ANTON_MOV(initializer)), interpolation_qualifier(interpolation), invariant_qualifier(invariant) {}
+              initializer(ANTON_MOV(initializer)), interpolation(interpolation), invariant(invariant) {}
     };
 
     struct Struct_Decl: public Declaration {

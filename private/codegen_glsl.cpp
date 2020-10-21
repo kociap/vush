@@ -1109,13 +1109,15 @@ namespace vush {
         anton::String accessor;
         Builtin_GLSL_Type type;
         i64 location_slots;
+        Interpolation interpolation;
+        bool invariant;
     };
 
     // explode_type
     //
     static void explode_type(Context const& ctx, Type const& type, anton::Array<Member_Info>& member_info) {
         auto _explode_type = [](auto& _explode_type, Context const& ctx, Type const& type, anton::Array<anton::String>& name_components,
-                                anton::Array<Member_Info>& member_info) -> void {
+                                Interpolation parent_interpolation, bool parent_invariant, anton::Array<Member_Info>& member_info) -> void {
             ANTON_ASSERT(type.node_type == AST_Node_Type::builtin_type || type.node_type == AST_Node_Type::user_defined_type, "unknown ast node type");
             if(type.node_type == AST_Node_Type::user_defined_type) {
                 User_Defined_Type const& node = (User_Defined_Type const&)type;
@@ -1124,7 +1126,9 @@ namespace vush {
                 Struct_Decl const* struct_decl = (Struct_Decl const*)symbol->declaration;
                 for(auto& member: struct_decl->members) {
                     name_components.emplace_back(member->identifier->value);
-                    _explode_type(_explode_type, ctx, *member->type, name_components, member_info);
+                    Interpolation const interpolation = (member->interpolation != Interpolation::none ? member->interpolation : parent_interpolation);
+                    bool const invariant = (parent_invariant ? parent_invariant : member->invariant);
+                    _explode_type(_explode_type, ctx, *member->type, name_components, interpolation, invariant, member_info);
                     name_components.pop_back();
                 }
             } else {
@@ -1136,12 +1140,12 @@ namespace vush {
                     accessor += u8"." + component;
                 }
                 // TODO: fix location increment for types that require more than 1 slot
-                member_info.emplace_back(ANTON_MOV(name), ANTON_MOV(accessor), t.type, 1);
+                member_info.emplace_back(ANTON_MOV(name), ANTON_MOV(accessor), t.type, 1, parent_interpolation, parent_invariant);
             }
         };
 
         anton::Array<anton::String> name_components;
-        _explode_type(_explode_type, ctx, type, name_components, member_info);
+        _explode_type(_explode_type, ctx, type, name_components, Interpolation::none, false, member_info);
     }
 
     static anton::Expected<anton::String, anton::String> format_bind_string(String_Literal const& string, Sourced_Data const& symbol) {
@@ -1875,8 +1879,9 @@ namespace vush {
                             for(Member_Info const& m: members_info) {
                                 anton::String location_str = anton::to_string(location);
                                 anton::String_View type_str = stringify(m.type);
-                                out += anton::format(u8"layout(location = {}) in {} _pass_{}_in_{}{};\n", location_str, type_str, stage->pass->value,
-                                                     param.identifier->value, m.name);
+                                anton::String_View interpolation_str = stringify(m.interpolation);
+                                out += anton::format(u8"layout(location = {}) {} in {} _pass_{}_in_{}{};\n", location_str, interpolation_str, type_str,
+                                                     stage->pass->value, param.identifier->value, m.name);
                                 location += m.location_slots;
                             }
                             out += u8"\n";

@@ -996,7 +996,7 @@ namespace vush {
             Lexer_State const state_backup = _lexer.get_current_state();
             bool has_invariant = false;
             bool has_interpolation = false;
-            Interpolation interpolation = Interpolation::smooth;
+            Interpolation interpolation = Interpolation::none;
             while(true) {
                 if(_lexer.match(kw_invariant, true)) {
                     if(has_invariant) {
