@@ -126,7 +126,7 @@ namespace vush {
                         out += u8"[";
                         out += reinterpret_ctx.index_expr;
                         out += u8" + ";
-                        out += anton::to_string(reinterpret_ctx.offset);
+                        out += anton::to_string(reinterpret_ctx.offset + 1);
                         out += u8"]";
                         reinterpret_ctx.offset += 1;
                     } break;
