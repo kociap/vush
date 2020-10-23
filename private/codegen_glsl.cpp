@@ -1089,10 +1089,13 @@ namespace vush {
                 continue;
             }
 
-            for(auto& statement: source_template->decl_prop->statements) {
-                anton::Expected<void, anton::String> res = process_source_definition_statement(out, *statement, iter->value, ctx, codegen_ctx, symbols);
-                if(!res) {
-                    return {anton::expected_error, anton::move(res.error())};
+            // decl_prop is optional
+            if(source_template->decl_prop) {
+                for(auto& statement: source_template->decl_prop->statements) {
+                    anton::Expected<void, anton::String> res = process_source_definition_statement(out, *statement, iter->value, ctx, codegen_ctx, symbols);
+                    if(!res) {
+                        return {anton::expected_error, anton::move(res.error())};
+                    }
                 }
             }
 
