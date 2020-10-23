@@ -1206,6 +1206,8 @@ namespace vush {
 
             if(property_name == u8"name") {
                 out += symbol.name->value;
+            } else if(property_name == u8"type") {
+                out += stringify_type(*symbol.type);
             } else {
                 Source_Info const& src = string.source_info;
                 // We add 1 to account for the opening double quote ( " )
