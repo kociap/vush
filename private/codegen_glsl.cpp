@@ -115,54 +115,9 @@ namespace vush {
                         reinterpret_ctx.offset += 2;
                     } break;
 
-                    case Builtin_GLSL_Type::glsl_vec2: {
-                        out += reinterpret_ctx.source_expr;
-                        out += u8"[";
-                        out += reinterpret_ctx.index_expr;
-                        out += u8" + ";
-                        out += anton::to_string(reinterpret_ctx.offset);
-                        out += u8"], ";
-                        out += reinterpret_ctx.source_expr;
-                        out += u8"[";
-                        out += reinterpret_ctx.index_expr;
-                        out += u8" + ";
-                        out += anton::to_string(reinterpret_ctx.offset + 1);
-                        out += u8"]";
-                        reinterpret_ctx.offset += 1;
-                    } break;
-
-                    case Builtin_GLSL_Type::glsl_vec3: {
-                        for(i64 i = 0; i < 3; ++i) {
-                            if(i != 0) {
-                                out += u8", ";
-                            }
-
-                            out += reinterpret_ctx.source_expr;
-                            out += u8"[";
-                            out += reinterpret_ctx.index_expr;
-                            out += u8" + ";
-                            out += anton::to_string(reinterpret_ctx.offset + i);
-                            out += u8"]";
-                        }
-                        reinterpret_ctx.offset += 3;
-                    } break;
-
-                    case Builtin_GLSL_Type::glsl_vec4: {
-                        for(i64 i = 0; i < 4; ++i) {
-                            if(i != 0) {
-                                out += u8", ";
-                            }
-
-                            out += reinterpret_ctx.source_expr;
-                            out += u8"[";
-                            out += reinterpret_ctx.index_expr;
-                            out += u8" + ";
-                            out += anton::to_string(reinterpret_ctx.offset + i);
-                            out += u8"]";
-                        }
-                        reinterpret_ctx.offset += 4;
-                    } break;
-
+                    case Builtin_GLSL_Type::glsl_vec2:
+                    case Builtin_GLSL_Type::glsl_vec3:
+                    case Builtin_GLSL_Type::glsl_vec4:
                     case Builtin_GLSL_Type::glsl_mat2:
                     case Builtin_GLSL_Type::glsl_mat2x3:
                     case Builtin_GLSL_Type::glsl_mat2x4:
@@ -174,31 +129,43 @@ namespace vush {
                     case Builtin_GLSL_Type::glsl_mat4x3: {
                         i64 component_count = 0;
                         switch(t.type) {
-                            case Builtin_GLSL_Type::glsl_mat2: {
+                            case Builtin_GLSL_Type::glsl_vec2:
+                                component_count = 2;
+                                break;
+
+                            case Builtin_GLSL_Type::glsl_vec3:
+                                component_count = 3;
+                                break;
+
+                            case Builtin_GLSL_Type::glsl_vec4:
                                 component_count = 4;
-                            } break;
+                                break;
+
+                            case Builtin_GLSL_Type::glsl_mat2:
+                                component_count = 4;
+                                break;
 
                             case Builtin_GLSL_Type::glsl_mat2x3:
-                            case Builtin_GLSL_Type::glsl_mat3x2: {
+                            case Builtin_GLSL_Type::glsl_mat3x2:
                                 component_count = 6;
-                            } break;
+                                break;
 
                             case Builtin_GLSL_Type::glsl_mat2x4:
-                            case Builtin_GLSL_Type::glsl_mat4x2: {
+                            case Builtin_GLSL_Type::glsl_mat4x2:
                                 component_count = 8;
-                            } break;
+                                break;
 
-                            case Builtin_GLSL_Type::glsl_mat3: {
+                            case Builtin_GLSL_Type::glsl_mat3:
                                 component_count = 9;
-                            } break;
+                                break;
 
-                            case Builtin_GLSL_Type::glsl_mat3x4: {
+                            case Builtin_GLSL_Type::glsl_mat3x4:
                                 component_count = 12;
-                            } break;
+                                break;
 
-                            case Builtin_GLSL_Type::glsl_mat4: {
+                            case Builtin_GLSL_Type::glsl_mat4:
                                 component_count = 16;
-                            } break;
+                                break;
 
                             default:
                                 ANTON_UNREACHABLE();
