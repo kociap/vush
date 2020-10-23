@@ -4,14 +4,17 @@
 #include <iostream>
 
 int main() {
-    anton::Array<anton::String> import_directories{anton::variadic_construct, anton::String{u8"C:/Users/an0nu/Documents/vush2/build/shaders"}};
+    anton::Array<anton::String> import_directories{anton::variadic_construct, anton::String{u8"C:/Users/An0num0us/Documents/vush2/build/shaders"}};
     anton::Array<vush::Constant_Define> constant_defines{anton::variadic_construct, vush::Constant_Define{anton::String{u8"_HAS_TEXTURE"}, 0},
                                                          vush::Constant_Define{anton::String{u8"_CASTS_SHADOWS"}, 1},
                                                          vush::Constant_Define{anton::String{u8"_EMISSIVE"}, 0}};
+    anton::Array<vush::Extension> extensions{anton::variadic_construct,
+                                             vush::Extension{anton::String{u8"GL_EXT_nonuniform_qualifier"}, vush::Extension_Behaviour::require}};
     vush::Configuration config;
-    config.defines = anton::move(constant_defines);
-    config.import_directories = anton::move(import_directories);
-    config.source_name = u8"C:/Users/an0nu/Documents/vush2/build/shaders/test.vush";
+    config.defines = ANTON_MOV(constant_defines);
+    config.import_directories = ANTON_MOV(import_directories);
+    config.extensions = ANTON_MOV(extensions);
+    config.source_name = u8"C:/Users/An0num0us/Documents/vush2/build/shaders/diffuse.vush";
     auto t1 = std::chrono::high_resolution_clock::now();
     anton::Expected<vush::Build_Result, anton::String> result = vush ::compile_to_glsl(config);
     auto t2 = std::chrono::high_resolution_clock::now();

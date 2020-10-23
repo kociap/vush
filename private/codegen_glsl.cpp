@@ -1465,7 +1465,8 @@ namespace vush {
         }
     }
 
-    anton::Expected<anton::Array<Pass_Data>, anton::String> generate_glsl(Context const& ctx, Declaration_List& node, Format_Options const& format) {
+    anton::Expected<anton::Array<Pass_Data>, anton::String> generate_glsl(Context const& ctx, Declaration_List& node, Format_Options const& format,
+                                                                          anton::Array<Extension> const& extensions) {
         anton::Array<Declaration*> structs_and_consts;
         anton::Array<Declaration*> functions;
         anton::Array<Pass_Context> passes;
@@ -1706,6 +1707,28 @@ namespace vush {
                 codegen_ctx.current_stage = stage->stage;
 
                 anton::String out = anton::String("#version 460 core\n#pragma shader_stage(") + stringify(stage->stage) + ")\n\n";
+                // write extensions
+                for(Extension const& extension: extensions) {
+                    out += u8"#extension ";
+                    out += extension.name;
+                    out += u8": ";
+                    switch(extension.behaviour) {
+                        case Extension_Behaviour::require:
+                            out += u8"require";
+                            break;
+                        case Extension_Behaviour::enable:
+                            out += u8"enable";
+                            break;
+                        case Extension_Behaviour::warn:
+                            out += u8"warn";
+                            break;
+                        case Extension_Behaviour::disable:
+                            out += u8"disable";
+                            break;
+                    }
+                    out += u8"\n\n";
+                }
+                // write the common part
                 out += stringified_structs_and_consts;
                 out += stringified_sources;
                 out += stringified_functions;

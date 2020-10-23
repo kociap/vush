@@ -17,10 +17,18 @@ namespace vush {
         bool space_around_operators = true;
     };
 
+    enum struct Extension_Behaviour { require, enable, warn, disable };
+
+    struct Extension {
+        anton::String name;
+        Extension_Behaviour behaviour;
+    };
+
     struct Configuration {
         anton::String source_name;
         anton::Array<anton::String> import_directories;
         anton::Array<Constant_Define> defines;
+        anton::Array<Extension> extensions;
         Format_Options format;
     };
 
