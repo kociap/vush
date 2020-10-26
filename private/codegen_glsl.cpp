@@ -1925,7 +1925,7 @@ namespace vush {
                         codegen_ctx.indent += 1;
 
                         // Build _arg0 from fragment inputs
-                        {
+                        if(has_prev_stage_input) {
                             Ordinary_Function_Param const& param = (Ordinary_Function_Param const&)*stage->params[0];
                             write_indent(out, codegen_ctx.indent);
                             out += stringify_type(*param.type);
