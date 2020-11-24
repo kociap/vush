@@ -1981,13 +1981,6 @@ namespace vush {
                     } break;
 
                     case Stage_Type::compute: {
-                        // TODO: Move return type validation to vush.cpp
-                        if(!return_type_is_void) {
-                            Source_Info const& src = stage->return_type->source_info;
-                            return {anton::expected_error,
-                                    build_error_message(src.file_path, src.line, src.column, u8"the return type of compute stage must be void")};
-                        }
-
                         for(auto& attribute: stage->attributes) {
                             switch(attribute->node_type) {
                                 case AST_Node_Type::workgroup_attribute: {

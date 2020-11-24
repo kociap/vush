@@ -36,4 +36,10 @@ namespace vush {
         message += u8"error: empty structs are not allowed";
         return message;
     }
+
+    anton::String format_compute_return_type_must_be_void(Source_Info const& return_type_info) {
+        anton::String message = format_diagnostic_location(return_type_info);
+        message += u8"the return type of compute stage must be void";
+        return message;
+    }
 } // namespace vush

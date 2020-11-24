@@ -788,6 +788,24 @@ namespace vush {
 
                 case AST_Node_Type::pass_stage_declaration: {
                     Pass_Stage_Declaration& fn = static_cast<Pass_Stage_Declaration&>(*ast->declarations[i]);
+                    // Validate the return types
+                    switch(fn.stage) {
+                        case Stage_Type::compute: {
+                            // Return type of a compute stage must always be void
+                            Type& return_type = *fn.return_type;
+                            bool const return_type_is_void =
+                                return_type.node_type == AST_Node_Type::builtin_type && ((Builtin_Type&)return_type).type == Builtin_GLSL_Type::glsl_void;
+                            if(!return_type_is_void) {
+                                Source_Info const& src = return_type.source_info;
+                                return {anton::expected_error, format_compute_return_type_must_be_void(src)};
+                            }
+                        } break;
+
+                        default:
+                            // TODO: Add symbol lookup to ensure the types actually exist
+                            break;
+                    }
+
                     if(anton::Expected<void, anton::String> res = process_fn_param_list(ctx, fn); !res) {
                         return {anton::expected_error, anton::move(res.error())};
                     }
