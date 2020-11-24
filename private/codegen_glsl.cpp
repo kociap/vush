@@ -949,7 +949,7 @@ namespace vush {
             iter1 = iter2;
         }
 
-        return {anton::expected_value, anton::move(out)};
+        return {anton::expected_value, ANTON_MOV(out)};
     }
 
     static anton::Expected<void, anton::String> process_source_definition_statement(anton::String& out, Source_Definition_Statement const& statement,
@@ -966,7 +966,7 @@ namespace vush {
                 write_indent(out, codegen_ctx.indent);
                 anton::Expected<anton::String, anton::String> result = format_string(*node.string, symbols);
                 if(!result) {
-                    return {anton::expected_error, anton::move(result.error())};
+                    return {anton::expected_error, ANTON_MOV(result.error())};
                 }
 
                 out += result.value();
@@ -1061,7 +1061,7 @@ namespace vush {
                 for(auto& statement: source_template->decl_prop->statements) {
                     anton::Expected<void, anton::String> res = process_source_definition_statement(out, *statement, iter->value, ctx, codegen_ctx, symbols);
                     if(!res) {
-                        return {anton::expected_error, anton::move(res.error())};
+                        return {anton::expected_error, ANTON_MOV(res.error())};
                     }
                 }
             }
@@ -1069,7 +1069,7 @@ namespace vush {
             out += U'\n';
         }
 
-        return {anton::expected_value, anton::move(out)};
+        return {anton::expected_value, ANTON_MOV(out)};
     }
 
     // TODO: Arrays in vertex inputs/fragment outputs are illegal (for now). Add error handling.
@@ -1190,7 +1190,7 @@ namespace vush {
             iter1 = iter2;
         }
 
-        return {anton::expected_value, anton::move(out)};
+        return {anton::expected_value, ANTON_MOV(out)};
     }
 
     struct Layout_Info {
@@ -1616,8 +1616,8 @@ namespace vush {
                         perm_data[i] = data.variables[index];
                         perm_layout_info[i] = layout_info[index];
                     }
-                    data.variables = anton::move(perm_data);
-                    layout_info = anton::move(perm_layout_info);
+                    data.variables = ANTON_MOV(perm_data);
+                    layout_info = ANTON_MOV(perm_layout_info);
                 }
             }
         }
@@ -1653,7 +1653,7 @@ namespace vush {
         for(Pass_Context& pass: passes) {
             auto instantiation_res = instantiate_pass_source_templates(source_templates, pass.sourced_data, ctx, codegen_ctx);
             if(!instantiation_res) {
-                return {anton::expected_error, anton::move(instantiation_res.error())};
+                return {anton::expected_error, ANTON_MOV(instantiation_res.error())};
             }
 
             anton::String const& stringified_sources = instantiation_res.value();
@@ -1819,9 +1819,9 @@ namespace vush {
                                         String_Literal const& string = *(*iter)->bind_prop->string;
                                         anton::Expected<anton::String, anton::String> res = format_bind_string(string, data);
                                         if(res) {
-                                            arguments.emplace_back(anton::move(res.value()));
+                                            arguments.emplace_back(ANTON_MOV(res.value()));
                                         } else {
-                                            return {anton::expected_error, anton::move(res.error())};
+                                            return {anton::expected_error, ANTON_MOV(res.error())};
                                         }
                                     } break;
 
@@ -1894,9 +1894,9 @@ namespace vush {
                             String_Literal const& string = *(*iter)->bind_prop->string;
                             anton::Expected<anton::String, anton::String> res = format_bind_string(string, data);
                             if(res) {
-                                arguments.emplace_back(anton::move(res.value()));
+                                arguments.emplace_back(ANTON_MOV(res.value()));
                             } else {
-                                return {anton::expected_error, anton::move(res.error())};
+                                return {anton::expected_error, ANTON_MOV(res.error())};
                             }
                         }
 
@@ -2025,7 +2025,7 @@ namespace vush {
                             if(res) {
                                 out += res.value();
                             } else {
-                                return {anton::expected_error, anton::move(res.error())};
+                                return {anton::expected_error, ANTON_MOV(res.error())};
                             }
                         }
 
@@ -2043,10 +2043,10 @@ namespace vush {
                     i = &v;
                 }
 
-                i->files.emplace_back(GLSL_File{anton::move(out), codegen_ctx.current_stage});
+                i->files.emplace_back(GLSL_File{ANTON_MOV(out), codegen_ctx.current_stage});
             }
         }
 
-        return {anton::expected_value, anton::move(pass_data)};
+        return {anton::expected_value, ANTON_MOV(pass_data)};
     }
 } // namespace vush

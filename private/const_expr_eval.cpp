@@ -511,12 +511,12 @@ namespace vush {
                     case Binary_Expr_Type::lshift: {
                         anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                         if(!lhs_res) {
-                            return {anton::expected_error, anton::move(lhs_res.error())};
+                            return {anton::expected_error, ANTON_MOV(lhs_res.error())};
                         }
 
                         anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
                         if(!rhs_res) {
-                            return {anton::expected_error, anton::move(rhs_res.error())};
+                            return {anton::expected_error, ANTON_MOV(rhs_res.error())};
                         }
 
                         Expr_Value lhs = lhs_res.value();
@@ -937,7 +937,7 @@ namespace vush {
                     case Unary_Type::bit_not: {
                         anton::Expected<Expr_Value, anton::String> base_res = evaluate_const_expr(ctx, *expr.expression);
                         if(!base_res) {
-                            return {anton::expected_error, anton::move(base_res.error())};
+                            return {anton::expected_error, ANTON_MOV(base_res.error())};
                         }
 
                         // TODO: Extend to work on integer vectors.

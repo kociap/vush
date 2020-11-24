@@ -376,7 +376,6 @@ namespace vush {
             }
         }
 
-        // TODO: String interning if it becomes too slow/memory heavy.
         bool match_identifier(anton::String& out) {
             ignore_whitespace_and_comments();
 
@@ -477,7 +476,7 @@ namespace vush {
             Owning_Ptr declarations{new Declaration_List};
             while(!_lexer.match_eof()) {
                 if(Owning_Ptr declaration = try_declaration()) {
-                    declarations->append(anton::move(declaration));
+                    declarations->append(ANTON_MOV(declaration));
                 } else {
                     return nullptr;
                 }
@@ -591,7 +590,7 @@ namespace vush {
                 }
 
                 if(Owning_Ptr declaration = try_declaration()) {
-                    true_declarations->append(anton::move(declaration));
+                    true_declarations->append(ANTON_MOV(declaration));
                 } else {
                     return nullptr;
                 }
@@ -600,9 +599,9 @@ namespace vush {
             if(_lexer.match(kw_else, true)) {
                 if(Owning_Ptr if_declaration = try_declaration_if()) {
                     Owning_Ptr false_declarations{new Declaration_List};
-                    false_declarations->append(anton::move(if_declaration));
+                    false_declarations->append(ANTON_MOV(if_declaration));
                     return Owning_Ptr{
-                        new Declaration_If(anton::move(condition), anton::move(true_declarations), anton::move(false_declarations), src_info(state_backup))};
+                        new Declaration_If(ANTON_MOV(condition), ANTON_MOV(true_declarations), ANTON_MOV(false_declarations), src_info(state_backup))};
                 } else {
                     if(!_lexer.match(token_brace_open)) {
                         set_error(u8"expected '{'");
@@ -613,7 +612,7 @@ namespace vush {
                     Owning_Ptr false_declarations{new Declaration_List};
                     while(!_lexer.match(token_brace_close)) {
                         if(Owning_Ptr declaration = try_declaration()) {
-                            false_declarations->append(anton::move(declaration));
+                            false_declarations->append(ANTON_MOV(declaration));
                         } else {
                             _lexer.restore_state(state_backup);
                             return nullptr;
@@ -621,10 +620,10 @@ namespace vush {
                     }
 
                     return Owning_Ptr{
-                        new Declaration_If(anton::move(condition), anton::move(true_declarations), anton::move(false_declarations), src_info(state_backup))};
+                        new Declaration_If(ANTON_MOV(condition), ANTON_MOV(true_declarations), ANTON_MOV(false_declarations), src_info(state_backup))};
                 }
             } else {
-                return Owning_Ptr{new Declaration_If(anton::move(condition), anton::move(true_declarations), nullptr, src_info(state_backup))};
+                return Owning_Ptr{new Declaration_If(ANTON_MOV(condition), ANTON_MOV(true_declarations), nullptr, src_info(state_backup))};
             }
         }
 
@@ -659,7 +658,7 @@ namespace vush {
                     return nullptr;
                 }
 
-                return Owning_Ptr{new Source_Definition_Emit_Statement(anton::move(str), src_info(state_backup))};
+                return Owning_Ptr{new Source_Definition_Emit_Statement(ANTON_MOV(str), src_info(state_backup))};
             }
 
             if(_lexer.match(kw_for, true)) {
@@ -683,7 +682,7 @@ namespace vush {
                     Lexer_State const _range_expr_state = _lexer.get_current_state();
                     if(_lexer.match(u8"$") && _lexer.match_identifier(_range_expr)) {
                         _range_expr = u8"$" + _range_expr;
-                        range_expr = Owning_Ptr{new Identifier(anton::move(_range_expr), src_info(_range_expr_state))};
+                        range_expr = Owning_Ptr{new Identifier(ANTON_MOV(_range_expr), src_info(_range_expr_state))};
                     } else {
                         set_error(u8"expected builtin variable");
                         _lexer.restore_state(state_backup);
@@ -697,9 +696,9 @@ namespace vush {
                     return nullptr;
                 }
 
-                Owning_Ptr for_statement{new Source_Definition_For_Statement(anton::move(lhs), anton::move(range_expr), src_info(state_backup))};
+                Owning_Ptr for_statement{new Source_Definition_For_Statement(ANTON_MOV(lhs), ANTON_MOV(range_expr), src_info(state_backup))};
                 while(Owning_Ptr statement = try_source_definition_statement()) {
-                    for_statement->append(anton::move(statement));
+                    for_statement->append(ANTON_MOV(statement));
                 }
 
                 if(!_lexer.match(token_brace_close)) {
@@ -720,7 +719,7 @@ namespace vush {
                     Lexer_State const _condition_state = _lexer.get_current_state();
                     if(_lexer.match(u8"$") && _lexer.match_identifier(_condition)) {
                         _condition = u8"$" + _condition;
-                        condition = Owning_Ptr{new Identifier(anton::move(_condition), src_info(_condition_state))};
+                        condition = Owning_Ptr{new Identifier(ANTON_MOV(_condition), src_info(_condition_state))};
                     } else {
                         set_error(u8"expected builtin variable");
                         _lexer.restore_state(state_backup);
@@ -728,7 +727,7 @@ namespace vush {
                     }
                 }
 
-                Owning_Ptr if_statement{new Source_Definition_If_Statement(anton::move(condition), src_info(state_backup))};
+                Owning_Ptr if_statement{new Source_Definition_If_Statement(ANTON_MOV(condition), src_info(state_backup))};
 
                 if(!_lexer.match(token_brace_open)) {
                     set_error(u8"expected '{'");
@@ -737,7 +736,7 @@ namespace vush {
                 }
 
                 while(Owning_Ptr statement = try_source_definition_statement()) {
-                    if_statement->true_branch.emplace_back(anton::move(statement));
+                    if_statement->true_branch.emplace_back(ANTON_MOV(statement));
                 }
 
                 if(!_lexer.match(token_brace_close)) {
@@ -754,7 +753,7 @@ namespace vush {
                     }
 
                     while(Owning_Ptr statement = try_source_definition_statement()) {
-                        if_statement->false_branch.emplace_back(anton::move(statement));
+                        if_statement->false_branch.emplace_back(ANTON_MOV(statement));
                     }
 
                     if(!_lexer.match(token_brace_close)) {
@@ -789,7 +788,7 @@ namespace vush {
                 return nullptr;
             }
 
-            Owning_Ptr source_definition{new Source_Definition_Decl(anton::move(source_name), src_info(state_backup))};
+            Owning_Ptr source_definition{new Source_Definition_Decl(ANTON_MOV(source_name), src_info(state_backup))};
             while(true) {
                 Lexer_State const property_state = _lexer.get_current_state();
                 Owning_Ptr property_name = try_identifier();
@@ -819,7 +818,7 @@ namespace vush {
                     }
 
                     while(Owning_Ptr statement = try_source_definition_statement()) {
-                        source_definition->decl_prop->append(anton::move(statement));
+                        source_definition->decl_prop->append(ANTON_MOV(statement));
                     }
 
                     if(!_lexer.match(token_brace_close)) {
@@ -840,7 +839,7 @@ namespace vush {
                         return nullptr;
                     }
 
-                    source_definition->bind_prop = Owning_Ptr{new Source_Definition_Bind_Property(anton::move(string), src_info(property_state))};
+                    source_definition->bind_prop = Owning_Ptr{new Source_Definition_Bind_Property(ANTON_MOV(string), src_info(property_state))};
                 } else {
                     set_error(u8"unknown property '" + property_name->value + "'", property_state);
                     _lexer.restore_state(state_backup);
@@ -915,8 +914,7 @@ namespace vush {
                 return nullptr;
             }
 
-            return Owning_Ptr{
-                new Sourced_Global_Decl(anton::move(pass_name), anton::move(type), anton::move(name), anton::move(source), src_info(state_backup))};
+            return Owning_Ptr{new Sourced_Global_Decl(ANTON_MOV(pass_name), ANTON_MOV(type), ANTON_MOV(name), ANTON_MOV(source), src_info(state_backup))};
         }
 
         Owning_Ptr<Variable_Declaration> try_variable_declaration() {
@@ -949,7 +947,7 @@ namespace vush {
                 return nullptr;
             }
 
-            return Owning_Ptr{new Variable_Declaration(anton::move(var_type), anton::move(var_name), anton::move(initializer), src_info(state_backup))};
+            return Owning_Ptr{new Variable_Declaration(ANTON_MOV(var_type), ANTON_MOV(var_name), ANTON_MOV(initializer), src_info(state_backup))};
         }
 
         Owning_Ptr<Constant_Declaration> try_constant_declaration() {
@@ -989,7 +987,7 @@ namespace vush {
                 return nullptr;
             }
 
-            return Owning_Ptr{new Constant_Declaration(anton::move(var_type), anton::move(var_name), anton::move(initializer), src_info(state_backup))};
+            return Owning_Ptr{new Constant_Declaration(ANTON_MOV(var_type), ANTON_MOV(var_name), ANTON_MOV(initializer), src_info(state_backup))};
         }
 
         Owning_Ptr<Struct_Member> try_struct_member() {
@@ -1133,7 +1131,7 @@ namespace vush {
                         _lexer.restore_state(state_backup);
                         return anton::null_optional;
                     } else if(is_whitespace(next_char) || next_char == U':' || next_char == U'}' || next_char == U'{') {
-                        return {anton::move(string)};
+                        return {ANTON_MOV(string)};
                     } else {
                         string += next_char;
                         _lexer.get_next();
@@ -1190,7 +1188,7 @@ namespace vush {
                             return false;
                         }
 
-                        settings.emplace_back(Setting_Key_Value{anton::move(setting_key), anton::move(value.value())});
+                        settings.emplace_back(Setting_Key_Value{ANTON_MOV(setting_key), ANTON_MOV(value.value())});
                     }
                 }
             };
@@ -1207,7 +1205,7 @@ namespace vush {
                 return nullptr;
             }
 
-            Owning_Ptr settings_decl{new Settings_Decl(anton::move(pass_name), src_info(state_backup))};
+            Owning_Ptr settings_decl{new Settings_Decl(ANTON_MOV(pass_name), src_info(state_backup))};
             if(!_lexer.match(token_brace_open)) {
                 set_error(u8"expected '{'");
                 _lexer.restore_state(state_backup);
@@ -1278,7 +1276,7 @@ namespace vush {
                 return nullptr;
             }
 
-            return Owning_Ptr{new Workgroup_Attribute(anton::move(x), anton::move(y), anton::move(z), src_info(state_backup))};
+            return Owning_Ptr{new Workgroup_Attribute(ANTON_MOV(x), ANTON_MOV(y), ANTON_MOV(z), src_info(state_backup))};
         }
 
         Owning_Ptr<Function_Attribute> try_function_attribute() {
@@ -1293,7 +1291,7 @@ namespace vush {
             Lexer_State const state_backup = _lexer.get_current_state();
             anton::Array<Owning_Ptr<Function_Attribute>> attributes;
             while(Owning_Ptr attrib = try_function_attribute()) {
-                attributes.emplace_back(anton::move(attrib));
+                attributes.emplace_back(ANTON_MOV(attrib));
             }
 
             Owning_Ptr return_type = try_type();
@@ -1363,15 +1361,15 @@ namespace vush {
                 return nullptr;
             }
 
-            return Owning_Ptr{new Pass_Stage_Declaration(anton::move(attributes), anton::move(return_type), anton::move(pass), stage_type,
-                                                         anton::move(param_list.value()), anton::move(body.value()), src_info(state_backup))};
+            return Owning_Ptr{new Pass_Stage_Declaration(ANTON_MOV(attributes), ANTON_MOV(return_type), ANTON_MOV(pass), stage_type,
+                                                         ANTON_MOV(param_list.value()), ANTON_MOV(body.value()), src_info(state_backup))};
         }
 
         Owning_Ptr<Function_Declaration> try_function_declaration() {
             Lexer_State const state_backup = _lexer.get_current_state();
             anton::Array<Owning_Ptr<Function_Attribute>> attributes;
             while(Owning_Ptr attrib = try_function_attribute()) {
-                attributes.emplace_back(anton::move(attrib));
+                attributes.emplace_back(ANTON_MOV(attrib));
             }
 
             Owning_Ptr return_type = try_type();
@@ -1414,8 +1412,8 @@ namespace vush {
                 return nullptr;
             }
 
-            return Owning_Ptr{new Function_Declaration(anton::move(attributes), anton::move(return_type), anton::move(name), anton::move(param_list.value()),
-                                                       anton::move(body.value()), src_info(state_backup))};
+            return Owning_Ptr{new Function_Declaration(ANTON_MOV(attributes), ANTON_MOV(return_type), ANTON_MOV(name), ANTON_MOV(param_list.value()),
+                                                       ANTON_MOV(body.value()), src_info(state_backup))};
         }
 
         anton::Optional<anton::Array<Owning_Ptr<Function_Param>>> try_function_param_list(bool const allow_sourced_params) {
@@ -1434,7 +1432,7 @@ namespace vush {
             // Match parameters
             do {
                 if(Owning_Ptr param = try_function_param(allow_sourced_params)) {
-                    param_list.emplace_back(anton::move(param));
+                    param_list.emplace_back(ANTON_MOV(param));
                 } else {
                     _lexer.restore_state(state_backup);
                     return anton::null_optional;
@@ -1447,7 +1445,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            return anton::move(param_list);
+            return ANTON_MOV(param_list);
         }
 
         Owning_Ptr<Function_Param> try_function_param(bool const allow_sourced_params) {
@@ -1478,17 +1476,16 @@ namespace vush {
                 }
 
                 if(_lexer.match(kw_in, true)) {
-                    return Owning_Ptr{new Vertex_Input_Param(anton::move(identifier), anton::move(parameter_type), src_info(state_backup))};
+                    return Owning_Ptr{new Vertex_Input_Param(ANTON_MOV(identifier), ANTON_MOV(parameter_type), src_info(state_backup))};
                 } else if(Owning_Ptr source = try_identifier()) {
-                    return Owning_Ptr{
-                        new Sourced_Function_Param(anton::move(identifier), anton::move(parameter_type), anton::move(source), src_info(state_backup))};
+                    return Owning_Ptr{new Sourced_Function_Param(ANTON_MOV(identifier), ANTON_MOV(parameter_type), ANTON_MOV(source), src_info(state_backup))};
                 } else {
                     set_error(u8"expected parameter source after 'from'");
                     _lexer.restore_state(state_backup);
                     return nullptr;
                 }
             } else {
-                return Owning_Ptr{new Ordinary_Function_Param(anton::move(identifier), anton::move(parameter_type), src_info(state_backup))};
+                return Owning_Ptr{new Ordinary_Function_Param(ANTON_MOV(identifier), ANTON_MOV(parameter_type), src_info(state_backup))};
             }
         }
 
@@ -1526,7 +1523,7 @@ namespace vush {
 
             if(_lexer.match(kw_else, true)) {
                 if(Owning_Ptr param_if = try_function_param_if(allow_sourced_params)) {
-                    return Owning_Ptr{new Function_Param_If(anton::move(condition), anton::move(true_param), anton::move(param_if), src_info(state_backup))};
+                    return Owning_Ptr{new Function_Param_If(ANTON_MOV(condition), ANTON_MOV(true_param), ANTON_MOV(param_if), src_info(state_backup))};
                 } else {
                     if(!_lexer.match(token_brace_open)) {
                         set_error(u8"expected '{'");
@@ -1546,10 +1543,10 @@ namespace vush {
                         return nullptr;
                     }
 
-                    return Owning_Ptr{new Function_Param_If(anton::move(condition), anton::move(true_param), anton::move(false_param), src_info(state_backup))};
+                    return Owning_Ptr{new Function_Param_If(ANTON_MOV(condition), ANTON_MOV(true_param), ANTON_MOV(false_param), src_info(state_backup))};
                 }
             } else {
-                return Owning_Ptr{new Function_Param_If(anton::move(condition), anton::move(true_param), nullptr, src_info(state_backup))};
+                return Owning_Ptr{new Function_Param_If(ANTON_MOV(condition), ANTON_MOV(true_param), nullptr, src_info(state_backup))};
             }
         }
 
@@ -1558,68 +1555,68 @@ namespace vush {
             while(true) {
                 Lexer_State const statement_state = _lexer.get_current_state();
                 if(Owning_Ptr block_statement = try_block_statement()) {
-                    statements.emplace_back(anton::move(block_statement));
+                    statements.emplace_back(ANTON_MOV(block_statement));
                     continue;
                 }
 
                 if(Owning_Ptr if_statement = try_if_statement()) {
-                    statements.emplace_back(anton::move(if_statement));
+                    statements.emplace_back(ANTON_MOV(if_statement));
                     continue;
                 }
 
                 if(Owning_Ptr switch_statement = try_switch_statement()) {
-                    statements.emplace_back(anton::move(switch_statement));
+                    statements.emplace_back(ANTON_MOV(switch_statement));
                     continue;
                 }
 
                 if(Owning_Ptr for_statement = try_for_statement()) {
-                    statements.emplace_back(anton::move(for_statement));
+                    statements.emplace_back(ANTON_MOV(for_statement));
                     continue;
                 }
 
                 if(Owning_Ptr while_statement = try_while_statement()) {
-                    statements.emplace_back(anton::move(while_statement));
+                    statements.emplace_back(ANTON_MOV(while_statement));
                     continue;
                 }
 
                 if(Owning_Ptr do_while_statement = try_do_while_statement()) {
-                    statements.emplace_back(anton::move(do_while_statement));
+                    statements.emplace_back(ANTON_MOV(do_while_statement));
                     continue;
                 }
 
                 if(Owning_Ptr return_statement = try_return_statement()) {
-                    statements.emplace_back(anton::move(return_statement));
+                    statements.emplace_back(ANTON_MOV(return_statement));
                     continue;
                 }
 
                 if(Owning_Ptr break_statement = try_break_statement()) {
-                    statements.emplace_back(anton::move(break_statement));
+                    statements.emplace_back(ANTON_MOV(break_statement));
                     continue;
                 }
 
                 if(Owning_Ptr continue_statement = try_continue_statement()) {
-                    statements.emplace_back(anton::move(continue_statement));
+                    statements.emplace_back(ANTON_MOV(continue_statement));
                     continue;
                 }
 
                 if(Owning_Ptr decl = try_variable_declaration()) {
-                    Owning_Ptr decl_stmt{new Declaration_Statement(anton::move(decl), src_info(statement_state))};
-                    statements.emplace_back(anton::move(decl_stmt));
+                    Owning_Ptr decl_stmt{new Declaration_Statement(ANTON_MOV(decl), src_info(statement_state))};
+                    statements.emplace_back(ANTON_MOV(decl_stmt));
                     continue;
                 }
 
                 if(Owning_Ptr decl = try_constant_declaration()) {
-                    Owning_Ptr decl_stmt{new Declaration_Statement(anton::move(decl), src_info(statement_state))};
-                    statements.emplace_back(anton::move(decl_stmt));
+                    Owning_Ptr decl_stmt{new Declaration_Statement(ANTON_MOV(decl), src_info(statement_state))};
+                    statements.emplace_back(ANTON_MOV(decl_stmt));
                     continue;
                 }
 
                 if(Owning_Ptr expr_stmt = try_expression_statement()) {
-                    statements.emplace_back(anton::move(expr_stmt));
+                    statements.emplace_back(ANTON_MOV(expr_stmt));
                     continue;
                 }
 
-                return anton::move(statements);
+                return ANTON_MOV(statements);
             }
         }
 
@@ -1972,7 +1969,7 @@ namespace vush {
             }
 
             if(!base_type) {
-                base_type = Owning_Ptr{new User_Defined_Type(anton::move(type_name), src_info(state_backup))};
+                base_type = Owning_Ptr{new User_Defined_Type(ANTON_MOV(type_name), src_info(state_backup))};
             }
 
             if(!_lexer.match(token_bracket_open)) {
@@ -1986,7 +1983,7 @@ namespace vush {
                 }
 
                 // We don't support nested array types (yet), so we don't continue checking for brackets.
-                return Owning_Ptr{new Array_Type(anton::move(base_type), anton::move(array_size), src_info(state_backup))};
+                return Owning_Ptr{new Array_Type(ANTON_MOV(base_type), ANTON_MOV(array_size), src_info(state_backup))};
             }
         }
 
@@ -2014,7 +2011,7 @@ namespace vush {
                 return nullptr;
             }
 
-            return Owning_Ptr{new Block_Statement(anton::move(statements.value()), src_info(state_backup))};
+            return Owning_Ptr{new Block_Statement(ANTON_MOV(statements.value()), src_info(state_backup))};
         }
 
         Owning_Ptr<If_Statement> try_if_statement() {
@@ -2039,18 +2036,18 @@ namespace vush {
 
             if(_lexer.match(kw_else, true)) {
                 if(Owning_Ptr if_statement = try_if_statement()) {
-                    return Owning_Ptr{new If_Statement(anton::move(condition), anton::move(true_statement), anton::move(if_statement), src_info(state_backup))};
+                    return Owning_Ptr{new If_Statement(ANTON_MOV(condition), ANTON_MOV(true_statement), ANTON_MOV(if_statement), src_info(state_backup))};
                 } else {
                     if(Owning_Ptr false_statement = try_block_statement()) {
                         return Owning_Ptr{
-                            new If_Statement(anton::move(condition), anton::move(true_statement), anton::move(false_statement), src_info(state_backup))};
+                            new If_Statement(ANTON_MOV(condition), ANTON_MOV(true_statement), ANTON_MOV(false_statement), src_info(state_backup))};
                     } else {
                         _lexer.restore_state(state_backup);
                         return nullptr;
                     }
                 }
             } else {
-                return Owning_Ptr{new If_Statement(anton::move(condition), anton::move(true_statement), nullptr, src_info(state_backup))};
+                return Owning_Ptr{new If_Statement(ANTON_MOV(condition), ANTON_MOV(true_statement), nullptr, src_info(state_backup))};
             }
         }
 
@@ -2074,7 +2071,7 @@ namespace vush {
                 return nullptr;
             }
 
-            Owning_Ptr switch_statement = Owning_Ptr{new Switch_Statement(anton::move(match_expression), src_info(state_backup))};
+            Owning_Ptr switch_statement = Owning_Ptr{new Switch_Statement(ANTON_MOV(match_expression), src_info(state_backup))};
             while(true) {
                 Lexer_State const case_state = _lexer.get_current_state();
                 if(_lexer.match(kw_case, true)) {
@@ -2092,9 +2089,8 @@ namespace vush {
 
                     auto statements = try_statement_list();
                     if(statements) {
-                        Owning_Ptr case_statement =
-                            Owning_Ptr{new Case_Statement(anton::move(condition), anton::move(statements.value()), src_info(case_state))};
-                        switch_statement->append(anton::move(case_statement));
+                        Owning_Ptr case_statement = Owning_Ptr{new Case_Statement(ANTON_MOV(condition), ANTON_MOV(statements.value()), src_info(case_state))};
+                        switch_statement->append(ANTON_MOV(case_statement));
                     } else {
                         _lexer.restore_state(state_backup);
                         return nullptr;
@@ -2108,8 +2104,8 @@ namespace vush {
 
                     auto statements = try_statement_list();
                     if(statements) {
-                        Owning_Ptr default_statement = Owning_Ptr{new Default_Case_Statement(anton::move(statements.value()), src_info(case_state))};
-                        switch_statement->append(anton::move(default_statement));
+                        Owning_Ptr default_statement = Owning_Ptr{new Default_Case_Statement(ANTON_MOV(statements.value()), src_info(case_state))};
+                        switch_statement->append(ANTON_MOV(default_statement));
                     } else {
                         _lexer.restore_state(state_backup);
                         return nullptr;
@@ -2170,7 +2166,7 @@ namespace vush {
                 }
 
                 variable_declaration =
-                    Owning_Ptr{new Variable_Declaration(anton::move(var_type), anton::move(var_name), anton::move(initializer), src_info(var_decl_state))};
+                    Owning_Ptr{new Variable_Declaration(ANTON_MOV(var_type), ANTON_MOV(var_name), ANTON_MOV(initializer), src_info(var_decl_state))};
             }
 
             Owning_Ptr<Expression> condition;
@@ -2208,8 +2204,8 @@ namespace vush {
                 return nullptr;
             }
 
-            return Owning_Ptr{new For_Statement(anton::move(variable_declaration), anton::move(condition), anton::move(post_expression),
-                                                anton::move(statements.value()), src_info(state_backup))};
+            return Owning_Ptr{new For_Statement(ANTON_MOV(variable_declaration), ANTON_MOV(condition), ANTON_MOV(post_expression),
+                                                ANTON_MOV(statements.value()), src_info(state_backup))};
         }
 
         Owning_Ptr<While_Statement> try_while_statement() {
@@ -2244,7 +2240,7 @@ namespace vush {
                 return nullptr;
             }
 
-            return Owning_Ptr{new While_Statement(anton::move(condition), anton::move(statements.value()), src_info(state_backup))};
+            return Owning_Ptr{new While_Statement(ANTON_MOV(condition), ANTON_MOV(statements.value()), src_info(state_backup))};
         }
 
         Owning_Ptr<Do_While_Statement> try_do_while_statement() {
@@ -2291,7 +2287,7 @@ namespace vush {
                 return nullptr;
             }
 
-            return Owning_Ptr{new Do_While_Statement(anton::move(condition), anton::move(statements.value()), src_info(state_backup))};
+            return Owning_Ptr{new Do_While_Statement(ANTON_MOV(condition), ANTON_MOV(statements.value()), src_info(state_backup))};
         }
 
         Owning_Ptr<Return_Statement> try_return_statement() {
@@ -2310,7 +2306,7 @@ namespace vush {
                 return nullptr;
             }
 
-            return Owning_Ptr{new Return_Statement(anton::move(return_expr), src_info(state_backup))};
+            return Owning_Ptr{new Return_Statement(ANTON_MOV(return_expr), src_info(state_backup))};
         }
 
         Owning_Ptr<Break_Statement> try_break_statement() {
@@ -2361,7 +2357,7 @@ namespace vush {
                 return nullptr;
             }
 
-            return Owning_Ptr{new Expression_Statement(anton::move(expression), src_info(state_backup))};
+            return Owning_Ptr{new Expression_Statement(ANTON_MOV(expression), src_info(state_backup))};
         }
 
         Owning_Ptr<Expression> try_expression() {
@@ -2411,9 +2407,9 @@ namespace vush {
             }
 
             if(is_direct) {
-                return Owning_Ptr{new Assignment_Expression(anton::move(lhs), anton::move(rhs), src_info(state_backup))};
+                return Owning_Ptr{new Assignment_Expression(ANTON_MOV(lhs), ANTON_MOV(rhs), src_info(state_backup))};
             } else {
-                return Owning_Ptr{new Arithmetic_Assignment_Expression(type, anton::move(lhs), anton::move(rhs), src_info(state_backup))};
+                return Owning_Ptr{new Arithmetic_Assignment_Expression(type, ANTON_MOV(lhs), ANTON_MOV(rhs), src_info(state_backup))};
             }
         }
 
@@ -2449,7 +2445,7 @@ namespace vush {
                 return nullptr;
             }
 
-            return Owning_Ptr{new Elvis_Expr(anton::move(cond), anton::move(true_expr), anton::move(false_expr), src_info(state_backup))};
+            return Owning_Ptr{new Elvis_Expr(ANTON_MOV(cond), ANTON_MOV(true_expr), ANTON_MOV(false_expr), src_info(state_backup))};
         }
 
         Owning_Ptr<Expression> try_logic_or_expr() {
@@ -2463,7 +2459,7 @@ namespace vush {
             Lexer_State op_state = _lexer.get_current_state();
             while(_lexer.match(token_logic_or)) {
                 if(Owning_Ptr rhs = try_logic_xor_expr()) {
-                    lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::logic_or, anton::move(lhs), anton::move(rhs), src_info(op_state))};
+                    lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::logic_or, ANTON_MOV(lhs), ANTON_MOV(rhs), src_info(op_state))};
                 } else {
                     _lexer.restore_state(state_backup);
                     return nullptr;
@@ -2485,7 +2481,7 @@ namespace vush {
             Lexer_State op_state = _lexer.get_current_state();
             while(_lexer.match(token_logic_xor)) {
                 if(Owning_Ptr rhs = try_logic_and_expr()) {
-                    lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::logic_xor, anton::move(lhs), anton::move(rhs), src_info(op_state))};
+                    lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::logic_xor, ANTON_MOV(lhs), ANTON_MOV(rhs), src_info(op_state))};
                 } else {
                     _lexer.restore_state(state_backup);
                     return nullptr;
@@ -2507,7 +2503,7 @@ namespace vush {
             Lexer_State op_state = _lexer.get_current_state();
             while(_lexer.match(token_logic_and)) {
                 if(Owning_Ptr rhs = try_bit_or_expr()) {
-                    lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::logic_and, anton::move(lhs), anton::move(rhs), src_info(op_state))};
+                    lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::logic_and, ANTON_MOV(lhs), ANTON_MOV(rhs), src_info(op_state))};
                 } else {
                     _lexer.restore_state(state_backup);
                     return nullptr;
@@ -2534,7 +2530,7 @@ namespace vush {
             Lexer_State op_state = _lexer.get_current_state();
             while(_lexer.match(token_bit_or)) {
                 if(Owning_Ptr rhs = try_bit_xor_expr()) {
-                    lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::bit_or, anton::move(lhs), anton::move(rhs), src_info(op_state))};
+                    lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::bit_or, ANTON_MOV(lhs), ANTON_MOV(rhs), src_info(op_state))};
                 } else {
                     _lexer.restore_state(state_backup);
                     return nullptr;
@@ -2561,7 +2557,7 @@ namespace vush {
             Lexer_State op_state = _lexer.get_current_state();
             while(_lexer.match(token_bit_xor)) {
                 if(Owning_Ptr rhs = try_bit_and_expr()) {
-                    lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::bit_xor, anton::move(lhs), anton::move(rhs), src_info(op_state))};
+                    lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::bit_xor, ANTON_MOV(lhs), ANTON_MOV(rhs), src_info(op_state))};
                 } else {
                     _lexer.restore_state(state_backup);
                     return nullptr;
@@ -2588,7 +2584,7 @@ namespace vush {
             Lexer_State op_state = _lexer.get_current_state();
             while(_lexer.match(token_bit_and)) {
                 if(Owning_Ptr rhs = try_relational_equality_expression()) {
-                    lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::bit_and, anton::move(lhs), anton::move(rhs), src_info(op_state))};
+                    lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::bit_and, ANTON_MOV(lhs), ANTON_MOV(rhs), src_info(op_state))};
                 } else {
                     _lexer.restore_state(state_backup);
                     return nullptr;
@@ -2611,14 +2607,14 @@ namespace vush {
                 Lexer_State const op_state = _lexer.get_current_state();
                 if(_lexer.match(token_equal)) {
                     if(Owning_Ptr rhs = try_relational_expression()) {
-                        lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::equal, anton::move(lhs), anton::move(rhs), src_info(op_state))};
+                        lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::equal, ANTON_MOV(lhs), ANTON_MOV(rhs), src_info(op_state))};
                     } else {
                         _lexer.restore_state(state_backup);
                         return nullptr;
                     }
                 } else if(_lexer.match(token_not_equal)) {
                     if(Owning_Ptr rhs = try_relational_expression()) {
-                        lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::unequal, anton::move(lhs), anton::move(rhs), src_info(op_state))};
+                        lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::unequal, ANTON_MOV(lhs), ANTON_MOV(rhs), src_info(op_state))};
                     } else {
                         _lexer.restore_state(state_backup);
                         return nullptr;
@@ -2653,7 +2649,7 @@ namespace vush {
                 }
 
                 if(Owning_Ptr rhs = try_lshift_rshift_expr()) {
-                    lhs = Owning_Ptr{new Binary_Expr(type, anton::move(lhs), anton::move(rhs), src_info(op_state))};
+                    lhs = Owning_Ptr{new Binary_Expr(type, ANTON_MOV(lhs), ANTON_MOV(rhs), src_info(op_state))};
                 } else {
                     _lexer.restore_state(state_backup);
                     return nullptr;
@@ -2679,14 +2675,14 @@ namespace vush {
                 Lexer_State const op_state = _lexer.get_current_state();
                 if(_lexer.match(token_bit_lshift)) {
                     if(Owning_Ptr rhs = try_add_sub_expr()) {
-                        lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::lshift, anton::move(lhs), anton::move(rhs), src_info(op_state))};
+                        lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::lshift, ANTON_MOV(lhs), ANTON_MOV(rhs), src_info(op_state))};
                     } else {
                         _lexer.restore_state(state_backup);
                         return nullptr;
                     }
                 } else if(_lexer.match(token_bit_rshift)) {
                     if(Owning_Ptr rhs = try_add_sub_expr()) {
-                        lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::rshift, anton::move(lhs), anton::move(rhs), src_info(op_state))};
+                        lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::rshift, ANTON_MOV(lhs), ANTON_MOV(rhs), src_info(op_state))};
                     } else {
                         _lexer.restore_state(state_backup);
                         return nullptr;
@@ -2714,14 +2710,14 @@ namespace vush {
                 Lexer_State const op_state = _lexer.get_current_state();
                 if(_lexer.match(token_plus)) {
                     if(Owning_Ptr rhs = try_mul_div_mod_expr()) {
-                        lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::add, anton::move(lhs), anton::move(rhs), src_info(op_state))};
+                        lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::add, ANTON_MOV(lhs), ANTON_MOV(rhs), src_info(op_state))};
                     } else {
                         _lexer.restore_state(state_backup);
                         return nullptr;
                     }
                 } else if(_lexer.match(token_minus)) {
                     if(Owning_Ptr rhs = try_mul_div_mod_expr()) {
-                        lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::sub, anton::move(lhs), anton::move(rhs), src_info(op_state))};
+                        lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::sub, ANTON_MOV(lhs), ANTON_MOV(rhs), src_info(op_state))};
                     } else {
                         _lexer.restore_state(state_backup);
                         return nullptr;
@@ -2750,21 +2746,21 @@ namespace vush {
                 Lexer_State const op_state = _lexer.get_current_state();
                 if(_lexer.match(token_multiply)) {
                     if(Owning_Ptr rhs = try_unary_expression()) {
-                        lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::mul, anton::move(lhs), anton::move(rhs), src_info(op_state))};
+                        lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::mul, ANTON_MOV(lhs), ANTON_MOV(rhs), src_info(op_state))};
                     } else {
                         _lexer.restore_state(state_backup);
                         return nullptr;
                     }
                 } else if(_lexer.match(token_divide)) {
                     if(Owning_Ptr rhs = try_unary_expression()) {
-                        lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::div, anton::move(lhs), anton::move(rhs), src_info(op_state))};
+                        lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::div, ANTON_MOV(lhs), ANTON_MOV(rhs), src_info(op_state))};
                     } else {
                         _lexer.restore_state(state_backup);
                         return nullptr;
                     }
                 } else if(_lexer.match(token_remainder)) {
                     if(Owning_Ptr rhs = try_unary_expression()) {
-                        lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::mod, anton::move(lhs), anton::move(rhs), src_info(op_state))};
+                        lhs = Owning_Ptr{new Binary_Expr(Binary_Expr_Type::mod, ANTON_MOV(lhs), ANTON_MOV(rhs), src_info(op_state))};
                     } else {
                         _lexer.restore_state(state_backup);
                         return nullptr;
@@ -2779,42 +2775,42 @@ namespace vush {
             Lexer_State const state_backup = _lexer.get_current_state();
             if(_lexer.match(token_increment)) {
                 if(Owning_Ptr expr = try_unary_expression()) {
-                    return Owning_Ptr{new Prefix_Inc_Expr(anton::move(expr), src_info(state_backup))};
+                    return Owning_Ptr{new Prefix_Inc_Expr(ANTON_MOV(expr), src_info(state_backup))};
                 } else {
                     _lexer.restore_state(state_backup);
                     return nullptr;
                 }
             } else if(_lexer.match(token_decrement)) {
                 if(Owning_Ptr expr = try_unary_expression()) {
-                    return Owning_Ptr{new Prefix_Dec_Expr(anton::move(expr), src_info(state_backup))};
+                    return Owning_Ptr{new Prefix_Dec_Expr(ANTON_MOV(expr), src_info(state_backup))};
                 } else {
                     _lexer.restore_state(state_backup);
                     return nullptr;
                 }
             } else if(_lexer.match(token_plus)) {
                 if(Owning_Ptr expr = try_unary_expression()) {
-                    return Owning_Ptr{new Unary_Expression(Unary_Type::plus, anton::move(expr), src_info(state_backup))};
+                    return Owning_Ptr{new Unary_Expression(Unary_Type::plus, ANTON_MOV(expr), src_info(state_backup))};
                 } else {
                     _lexer.restore_state(state_backup);
                     return nullptr;
                 }
             } else if(_lexer.match(token_minus)) {
                 if(Owning_Ptr expr = try_unary_expression()) {
-                    return Owning_Ptr{new Unary_Expression(Unary_Type::minus, anton::move(expr), src_info(state_backup))};
+                    return Owning_Ptr{new Unary_Expression(Unary_Type::minus, ANTON_MOV(expr), src_info(state_backup))};
                 } else {
                     _lexer.restore_state(state_backup);
                     return nullptr;
                 }
             } else if(_lexer.match(token_logic_not)) {
                 if(Owning_Ptr expr = try_unary_expression()) {
-                    return Owning_Ptr{new Unary_Expression(Unary_Type::logic_not, anton::move(expr), src_info(state_backup))};
+                    return Owning_Ptr{new Unary_Expression(Unary_Type::logic_not, ANTON_MOV(expr), src_info(state_backup))};
                 } else {
                     _lexer.restore_state(state_backup);
                     return nullptr;
                 }
             } else if(_lexer.match(token_bit_not)) {
                 if(Owning_Ptr expr = try_unary_expression()) {
-                    return Owning_Ptr{new Unary_Expression(Unary_Type::bit_not, anton::move(expr), src_info(state_backup))};
+                    return Owning_Ptr{new Unary_Expression(Unary_Type::bit_not, ANTON_MOV(expr), src_info(state_backup))};
                 } else {
                     _lexer.restore_state(state_backup);
                     return nullptr;
@@ -2832,12 +2828,12 @@ namespace vush {
                 return nullptr;
             }
 
-            Owning_Ptr<Expression> expr = anton::move(primary_expr);
+            Owning_Ptr<Expression> expr = ANTON_MOV(primary_expr);
             while(true) {
                 Lexer_State const op_state = _lexer.get_current_state();
                 if(_lexer.match(token_dot)) {
                     if(Owning_Ptr member_name = try_identifier()) {
-                        expr = Owning_Ptr{new Member_Access_Expression(anton::move(expr), anton::move(member_name), src_info(op_state))};
+                        expr = Owning_Ptr{new Member_Access_Expression(ANTON_MOV(expr), ANTON_MOV(member_name), src_info(op_state))};
                     } else {
                         set_error(u8"expected member name");
                         _lexer.restore_state(state_backup);
@@ -2856,11 +2852,11 @@ namespace vush {
                         return nullptr;
                     }
 
-                    expr = Owning_Ptr{new Array_Access_Expression(anton::move(expr), anton::move(index), src_info(op_state))};
+                    expr = Owning_Ptr{new Array_Access_Expression(ANTON_MOV(expr), ANTON_MOV(index), src_info(op_state))};
                 } else if(_lexer.match(token_increment)) {
-                    expr = Owning_Ptr{new Postfix_Inc_Expr(anton::move(expr), src_info(op_state))};
+                    expr = Owning_Ptr{new Postfix_Inc_Expr(ANTON_MOV(expr), src_info(op_state))};
                 } else if(_lexer.match(token_decrement)) {
-                    expr = Owning_Ptr{new Postfix_Dec_Expr(anton::move(expr), src_info(op_state))};
+                    expr = Owning_Ptr{new Postfix_Dec_Expr(ANTON_MOV(expr), src_info(op_state))};
                 } else {
                     break;
                 }
@@ -2924,7 +2920,7 @@ namespace vush {
                 _lexer.restore_state(state_backup);
                 return nullptr;
             } else {
-                return Owning_Ptr{new Paren_Expr(anton::move(paren_expression), src_info(state_backup))};
+                return Owning_Ptr{new Paren_Expr(ANTON_MOV(paren_expression), src_info(state_backup))};
             }
         }
 
@@ -3032,7 +3028,7 @@ namespace vush {
             }
 
             if(Owning_Ptr expression_if = try_expression_if()) {
-                return Owning_Ptr{new Expression_If(anton::move(condition), anton::move(true_expression), anton::move(expression_if), src_info(state_backup))};
+                return Owning_Ptr{new Expression_If(ANTON_MOV(condition), ANTON_MOV(true_expression), ANTON_MOV(expression_if), src_info(state_backup))};
             } else {
                 if(!_lexer.match(token_brace_open)) {
                     set_error(u8"expected '{'");
@@ -3058,8 +3054,7 @@ namespace vush {
                     return nullptr;
                 }
 
-                return Owning_Ptr{
-                    new Expression_If(anton::move(condition), anton::move(true_expression), anton::move(false_expression), src_info(state_backup))};
+                return Owning_Ptr{new Expression_If(ANTON_MOV(condition), ANTON_MOV(true_expression), ANTON_MOV(false_expression), src_info(state_backup))};
             }
         }
 
@@ -3080,12 +3075,12 @@ namespace vush {
 
             Owning_Ptr arg_list{new Argument_List};
             if(_lexer.match(token_paren_close)) {
-                return Owning_Ptr{new Function_Call_Expression(anton::move(identifier), anton::move(arg_list), src_info(state_backup))};
+                return Owning_Ptr{new Function_Call_Expression(ANTON_MOV(identifier), ANTON_MOV(arg_list), src_info(state_backup))};
             }
 
             do {
                 if(Owning_Ptr expression = try_expression()) {
-                    arg_list->append(anton::move(expression));
+                    arg_list->append(ANTON_MOV(expression));
                 } else {
                     _lexer.restore_state(state_backup);
                     return nullptr;
@@ -3098,7 +3093,7 @@ namespace vush {
                 return nullptr;
             }
 
-            return Owning_Ptr{new Function_Call_Expression(anton::move(identifier), anton::move(arg_list), src_info(state_backup))};
+            return Owning_Ptr{new Function_Call_Expression(ANTON_MOV(identifier), ANTON_MOV(arg_list), src_info(state_backup))};
         }
 
         Owning_Ptr<Float_Literal> try_float_literal() {
@@ -3196,7 +3191,7 @@ namespace vush {
                 return nullptr;
             }
 
-            return Owning_Ptr{new Float_Literal(anton::move(number), type, src_info(state_backup))};
+            return Owning_Ptr{new Float_Literal(ANTON_MOV(number), type, src_info(state_backup))};
         }
 
         Owning_Ptr<Integer_Literal> try_integer_literal() {
@@ -3231,7 +3226,7 @@ namespace vush {
                     return anton::null_optional;
                 }
 
-                return Owning_Ptr{new Integer_Literal{anton::move(out), type, Integer_Literal_Base::hex, src_info(state_backup)}};
+                return Owning_Ptr{new Integer_Literal{ANTON_MOV(out), type, Integer_Literal_Base::hex, src_info(state_backup)}};
             };
 
             auto try_octal = [this]() -> anton::Optional<Owning_Ptr<Integer_Literal>> {
@@ -3271,7 +3266,7 @@ namespace vush {
                     return anton::null_optional;
                 }
 
-                return Owning_Ptr{new Integer_Literal{anton::move(out), type, Integer_Literal_Base::oct, src_info(state_backup)}};
+                return Owning_Ptr{new Integer_Literal{ANTON_MOV(out), type, Integer_Literal_Base::oct, src_info(state_backup)}};
             };
 
             auto try_decimal = [this]() -> anton::Optional<Owning_Ptr<Integer_Literal>> {
@@ -3305,15 +3300,15 @@ namespace vush {
                     return anton::null_optional;
                 }
 
-                return Owning_Ptr{new Integer_Literal{anton::move(out), type, Integer_Literal_Base::dec, src_info(state_backup)}};
+                return Owning_Ptr{new Integer_Literal{ANTON_MOV(out), type, Integer_Literal_Base::dec, src_info(state_backup)}};
             };
 
             if(auto hex_res = try_hexadecimal()) {
-                return anton::move(hex_res.value());
+                return ANTON_MOV(hex_res.value());
             } else if(auto oct_res = try_octal()) {
-                return anton::move(oct_res.value());
+                return ANTON_MOV(oct_res.value());
             } else if(auto dec_res = try_decimal()) {
-                return anton::move(dec_res.value());
+                return ANTON_MOV(dec_res.value());
             } else {
                 set_error(u8"expected integer literal");
                 return nullptr;
@@ -3351,7 +3346,7 @@ namespace vush {
                     return nullptr;
                 } else if(next_char == U'\"') {
                     _lexer.get_next();
-                    return Owning_Ptr{new String_Literal(anton::move(string), src_info(state_backup))};
+                    return Owning_Ptr{new String_Literal(ANTON_MOV(string), src_info(state_backup))};
                 } else {
                     string += next_char;
                     _lexer.get_next();
@@ -3375,13 +3370,13 @@ namespace vush {
                 return nullptr;
             }
 
-            return Owning_Ptr{new Identifier(anton::move(identifier), src_info(state_backup))};
+            return Owning_Ptr{new Identifier(ANTON_MOV(identifier), src_info(state_backup))};
         }
 
         Owning_Ptr<Identifier_Expression> try_identifier_expression() {
             Lexer_State const state = _lexer.get_current_state();
             if(Owning_Ptr identifier = try_identifier()) {
-                return Owning_Ptr{new Identifier_Expression(anton::move(identifier), src_info(state))};
+                return Owning_Ptr{new Identifier_Expression(ANTON_MOV(identifier), src_info(state))};
             } else {
                 return nullptr;
             }
@@ -3392,10 +3387,10 @@ namespace vush {
         Parser parser(stream, source_name);
         Owning_Ptr ast = parser.build_ast();
         if(ast) {
-            return {anton::expected_value, anton::move(ast)};
+            return {anton::expected_value, ANTON_MOV(ast)};
         } else {
             Parse_Error error = parser.get_last_error();
-            return {anton::expected_error, anton::move(error)};
+            return {anton::expected_error, ANTON_MOV(error)};
         }
     }
 } // namespace vush

@@ -91,7 +91,7 @@ namespace vush {
     struct Identifier: public AST_Node {
         anton::String value;
 
-        Identifier(anton::String value, Source_Info const& source_info): AST_Node(source_info, AST_Node_Type::identifier), value(anton::move(value)) {}
+        Identifier(anton::String value, Source_Info const& source_info): AST_Node(source_info, AST_Node_Type::identifier), value(ANTON_MOV(value)) {}
     };
 
     struct Type: public AST_Node {
@@ -578,7 +578,7 @@ namespace vush {
     struct User_Defined_Type: public Type {
         anton::String name;
 
-        User_Defined_Type(anton::String name, Source_Info const& source_info): Type(source_info, AST_Node_Type::user_defined_type), name(anton::move(name)) {}
+        User_Defined_Type(anton::String name, Source_Info const& source_info): Type(source_info, AST_Node_Type::user_defined_type), name(ANTON_MOV(name)) {}
     };
 
     struct Array_Type: public Type {
@@ -586,7 +586,7 @@ namespace vush {
         Owning_Ptr<Integer_Literal> size;
 
         Array_Type(Owning_Ptr<Type> base, Owning_Ptr<Integer_Literal> size, Source_Info const& source_info)
-            : Type(source_info, AST_Node_Type::array_type), base(anton::move(base)), size(anton::move(size)) {}
+            : Type(source_info, AST_Node_Type::array_type), base(ANTON_MOV(base)), size(ANTON_MOV(size)) {}
     };
 
     [[nodiscard]] bool is_opaque_type(Type const& type);
@@ -604,7 +604,7 @@ namespace vush {
         Declaration_List(): AST_Node({}, AST_Node_Type::declaration_list) {}
 
         void append(Owning_Ptr<Declaration> declaration) {
-            declarations.emplace_back(anton::move(declaration));
+            declarations.emplace_back(ANTON_MOV(declaration));
         }
 
         [[nodiscard]] i64 size() const {
@@ -619,14 +619,14 @@ namespace vush {
 
         Declaration_If(Owning_Ptr<Expression> condition, Owning_Ptr<Declaration_List> true_declarations, Owning_Ptr<Declaration_List> false_declarations,
                        Source_Info const& source_info)
-            : Declaration(source_info, AST_Node_Type::declaration_if), condition(anton::move(condition)), true_declarations(anton::move(true_declarations)),
-              false_declarations(anton::move(false_declarations)) {}
+            : Declaration(source_info, AST_Node_Type::declaration_if), condition(ANTON_MOV(condition)), true_declarations(ANTON_MOV(true_declarations)),
+              false_declarations(ANTON_MOV(false_declarations)) {}
     };
 
     struct Import_Decl: public Declaration {
         anton::String path;
 
-        Import_Decl(anton::String path, Source_Info const& source_info): Declaration(source_info, AST_Node_Type::import_decl), path(anton::move(path)) {}
+        Import_Decl(anton::String path, Source_Info const& source_info): Declaration(source_info, AST_Node_Type::import_decl), path(ANTON_MOV(path)) {}
     };
 
     struct Source_Definition_Statement;
@@ -637,7 +637,7 @@ namespace vush {
         Source_Definition_Declaration_Property(Source_Info const& source_info): AST_Node(source_info, AST_Node_Type::source_definition_declaration_property) {}
 
         void append(Owning_Ptr<Source_Definition_Statement> statement) {
-            statements.emplace_back(anton::move(statement));
+            statements.emplace_back(ANTON_MOV(statement));
         }
     };
 
@@ -645,7 +645,7 @@ namespace vush {
         Owning_Ptr<String_Literal> string;
 
         Source_Definition_Bind_Property(Owning_Ptr<String_Literal> string, Source_Info const& source_info)
-            : AST_Node(source_info, AST_Node_Type::source_definition_bind_property), string(anton::move(string)) {}
+            : AST_Node(source_info, AST_Node_Type::source_definition_bind_property), string(ANTON_MOV(string)) {}
     };
 
     struct Source_Definition_Decl: public Declaration {
@@ -654,7 +654,7 @@ namespace vush {
         Owning_Ptr<Source_Definition_Bind_Property> bind_prop;
 
         Source_Definition_Decl(Owning_Ptr<Identifier> name, Source_Info const& source_info)
-            : Declaration(source_info, AST_Node_Type::source_definition_decl), name(anton::move(name)) {}
+            : Declaration(source_info, AST_Node_Type::source_definition_decl), name(ANTON_MOV(name)) {}
     };
 
     struct Source_Definition_Statement: public AST_Node {
@@ -665,7 +665,7 @@ namespace vush {
         Owning_Ptr<String_Literal> string;
 
         Source_Definition_Emit_Statement(Owning_Ptr<String_Literal> string, Source_Info const& source_info)
-            : Source_Definition_Statement(source_info, AST_Node_Type::source_definition_emit_statement), string(anton::move(string)) {}
+            : Source_Definition_Statement(source_info, AST_Node_Type::source_definition_emit_statement), string(ANTON_MOV(string)) {}
     };
 
     struct Source_Definition_If_Statement: public Source_Definition_Statement {
@@ -674,7 +674,7 @@ namespace vush {
         anton::Array<Owning_Ptr<Source_Definition_Statement>> false_branch;
 
         Source_Definition_If_Statement(Owning_Ptr<Identifier> condition, Source_Info const& source_info)
-            : Source_Definition_Statement(source_info, AST_Node_Type::source_definition_if_statement), condition(anton::move(condition)) {}
+            : Source_Definition_Statement(source_info, AST_Node_Type::source_definition_if_statement), condition(ANTON_MOV(condition)) {}
     };
 
     struct Source_Definition_For_Statement: public Source_Definition_Statement {
@@ -683,11 +683,11 @@ namespace vush {
         anton::Array<Owning_Ptr<Source_Definition_Statement>> statements;
 
         Source_Definition_For_Statement(Owning_Ptr<Identifier> iterator, Owning_Ptr<Identifier> range_expr, Source_Info const& source_info)
-            : Source_Definition_Statement(source_info, AST_Node_Type::source_definition_for_statement), iterator(anton::move(iterator)),
-              range_expr(anton::move(range_expr)) {}
+            : Source_Definition_Statement(source_info, AST_Node_Type::source_definition_for_statement), iterator(ANTON_MOV(iterator)),
+              range_expr(ANTON_MOV(range_expr)) {}
 
         void append(Owning_Ptr<Source_Definition_Statement> statement) {
-            statements.emplace_back(anton::move(statement));
+            statements.emplace_back(ANTON_MOV(statement));
         }
     };
 
@@ -719,8 +719,8 @@ namespace vush {
 
         Sourced_Global_Decl(Owning_Ptr<Identifier> pass_name, Owning_Ptr<Type> type, Owning_Ptr<Identifier> name, Owning_Ptr<Identifier> source,
                             Source_Info const& source_info)
-            : Declaration(source_info, AST_Node_Type::sourced_global_decl), pass_name(anton::move(pass_name)), type(anton::move(type)), name(anton::move(name)),
-              source(anton::move(source)) {}
+            : Declaration(source_info, AST_Node_Type::sourced_global_decl), pass_name(ANTON_MOV(pass_name)), type(ANTON_MOV(type)), name(ANTON_MOV(name)),
+              source(ANTON_MOV(source)) {}
     };
 
     struct Variable_Declaration: public Declaration {
@@ -729,8 +729,8 @@ namespace vush {
         Owning_Ptr<Expression> initializer;
 
         Variable_Declaration(Owning_Ptr<Type> type, Owning_Ptr<Identifier> identifier, Owning_Ptr<Expression> initializer, Source_Info const& source_info)
-            : Declaration(source_info, AST_Node_Type::variable_declaration), type(anton::move(type)), identifier(anton::move(identifier)),
-              initializer(anton::move(initializer)) {}
+            : Declaration(source_info, AST_Node_Type::variable_declaration), type(ANTON_MOV(type)), identifier(ANTON_MOV(identifier)),
+              initializer(ANTON_MOV(initializer)) {}
     };
 
     struct Constant_Declaration: public Declaration {
@@ -739,8 +739,8 @@ namespace vush {
         Owning_Ptr<Expression> initializer;
 
         Constant_Declaration(Owning_Ptr<Type> type, Owning_Ptr<Identifier> identifier, Owning_Ptr<Expression> initializer, Source_Info const& source_info)
-            : Declaration(source_info, AST_Node_Type::constant_declaration), type(anton::move(type)), identifier(anton::move(identifier)),
-              initializer(anton::move(initializer)) {}
+            : Declaration(source_info, AST_Node_Type::constant_declaration), type(ANTON_MOV(type)), identifier(ANTON_MOV(identifier)),
+              initializer(ANTON_MOV(initializer)) {}
     };
 
     struct Struct_Member: public AST_Node {
@@ -773,7 +773,7 @@ namespace vush {
         anton::Array<Setting_Key_Value> settings;
 
         Settings_Decl(Owning_Ptr<Identifier> pass_name, Source_Info const& source_info)
-            : Declaration(source_info, AST_Node_Type::settings_decl), pass_name(anton::move(pass_name)) {}
+            : Declaration(source_info, AST_Node_Type::settings_decl), pass_name(ANTON_MOV(pass_name)) {}
     };
 
     struct Function_Attribute: public AST_Node {
@@ -786,7 +786,7 @@ namespace vush {
         Owning_Ptr<Integer_Literal> z;
 
         Workgroup_Attribute(Owning_Ptr<Integer_Literal> x, Owning_Ptr<Integer_Literal> y, Owning_Ptr<Integer_Literal> z, Source_Info const& source_info)
-            : Function_Attribute(source_info, AST_Node_Type::workgroup_attribute), x(anton::move(x)), y(anton::move(y)), z(anton::move(z)) {}
+            : Function_Attribute(source_info, AST_Node_Type::workgroup_attribute), x(ANTON_MOV(x)), y(ANTON_MOV(y)), z(ANTON_MOV(z)) {}
     };
 
     struct Function_Param: public AST_Node {
@@ -800,8 +800,8 @@ namespace vush {
 
         Function_Param_If(Owning_Ptr<Expression> condition, Owning_Ptr<Function_Param> true_param, Owning_Ptr<Function_Param> false_param,
                           Source_Info const& source_info)
-            : Function_Param(source_info, AST_Node_Type::function_param_if), condition(anton::move(condition)), true_param(anton::move(true_param)),
-              false_param(anton::move(false_param)) {}
+            : Function_Param(source_info, AST_Node_Type::function_param_if), condition(ANTON_MOV(condition)), true_param(ANTON_MOV(true_param)),
+              false_param(ANTON_MOV(false_param)) {}
     };
 
     struct Ordinary_Function_Param: public Function_Param {
@@ -809,7 +809,7 @@ namespace vush {
         Owning_Ptr<Type> type;
 
         Ordinary_Function_Param(Owning_Ptr<Identifier> identifier, Owning_Ptr<Type> type, Source_Info const& source_info)
-            : Function_Param(source_info, AST_Node_Type::ordinary_function_param), identifier(anton::move(identifier)), type(anton::move(type)) {}
+            : Function_Param(source_info, AST_Node_Type::ordinary_function_param), identifier(ANTON_MOV(identifier)), type(ANTON_MOV(type)) {}
     };
 
     struct Sourced_Function_Param: public Function_Param {
@@ -818,8 +818,8 @@ namespace vush {
         Owning_Ptr<Identifier> source;
 
         Sourced_Function_Param(Owning_Ptr<Identifier> identifier, Owning_Ptr<Type> type, Owning_Ptr<Identifier> source, Source_Info const& source_info)
-            : Function_Param(source_info, AST_Node_Type::sourced_function_param), identifier(anton::move(identifier)), type(anton::move(type)),
-              source(anton::move(source)) {}
+            : Function_Param(source_info, AST_Node_Type::sourced_function_param), identifier(ANTON_MOV(identifier)), type(ANTON_MOV(type)),
+              source(ANTON_MOV(source)) {}
     };
 
     struct Vertex_Input_Param: public Function_Param {
@@ -827,7 +827,7 @@ namespace vush {
         Owning_Ptr<Type> type;
 
         Vertex_Input_Param(Owning_Ptr<Identifier> identifier, Owning_Ptr<Type> type, Source_Info const& source_info)
-            : Function_Param(source_info, AST_Node_Type::vertex_input_param), identifier(anton::move(identifier)), type(anton::move(type)) {}
+            : Function_Param(source_info, AST_Node_Type::vertex_input_param), identifier(ANTON_MOV(identifier)), type(ANTON_MOV(type)) {}
     };
 
     struct Function_Declaration: public Declaration {
@@ -839,8 +839,8 @@ namespace vush {
 
         Function_Declaration(anton::Array<Owning_Ptr<Function_Attribute>>&& attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> name,
                              anton::Array<Owning_Ptr<Function_Param>>&& params, anton::Array<Owning_Ptr<Statement>> body, Source_Info const& source_info)
-            : Declaration(source_info, AST_Node_Type::function_declaration), params(anton::move(params)), attributes(anton::move(attributes)),
-              name(anton::move(name)), return_type(anton::move(return_type)), body(anton::move(body)) {}
+            : Declaration(source_info, AST_Node_Type::function_declaration), params(ANTON_MOV(params)), attributes(ANTON_MOV(attributes)),
+              name(ANTON_MOV(name)), return_type(ANTON_MOV(return_type)), body(ANTON_MOV(body)) {}
     };
 
     constexpr anton::String_View stringify(Stage_Type type) {
@@ -865,8 +865,8 @@ namespace vush {
         Pass_Stage_Declaration(anton::Array<Owning_Ptr<Function_Attribute>>&& attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> pass,
                                Stage_Type stage, anton::Array<Owning_Ptr<Function_Param>>&& params, anton::Array<Owning_Ptr<Statement>> body,
                                Source_Info const& source_info)
-            : Declaration(source_info, AST_Node_Type::pass_stage_declaration), params(anton::move(params)), attributes(anton::move(attributes)),
-              pass(anton::move(pass)), return_type(anton::move(return_type)), body(anton::move(body)), stage(anton::move(stage)) {}
+            : Declaration(source_info, AST_Node_Type::pass_stage_declaration), params(ANTON_MOV(params)), attributes(ANTON_MOV(attributes)),
+              pass(ANTON_MOV(pass)), return_type(ANTON_MOV(return_type)), body(ANTON_MOV(body)), stage(ANTON_MOV(stage)) {}
     };
 
     struct Expression: public AST_Node {
@@ -879,15 +879,15 @@ namespace vush {
         Owning_Ptr<Expression> false_expr;
 
         Expression_If(Owning_Ptr<Expression> condition, Owning_Ptr<Expression> true_expr, Owning_Ptr<Expression> false_expr, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::expression_if), condition(anton::move(condition)), true_expr(anton::move(true_expr)),
-              false_expr(anton::move(false_expr)) {}
+            : Expression(source_info, AST_Node_Type::expression_if), condition(ANTON_MOV(condition)), true_expr(ANTON_MOV(true_expr)),
+              false_expr(ANTON_MOV(false_expr)) {}
     };
 
     struct Identifier_Expression: public Expression {
         Owning_Ptr<Identifier> identifier;
 
         Identifier_Expression(Owning_Ptr<Identifier> identifier, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::identifier_expression), identifier(anton::move(identifier)) {}
+            : Expression(source_info, AST_Node_Type::identifier_expression), identifier(ANTON_MOV(identifier)) {}
     };
 
     struct Assignment_Expression: public Expression {
@@ -895,7 +895,7 @@ namespace vush {
         Owning_Ptr<Expression> rhs;
 
         Assignment_Expression(Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::assignment_expression), lhs(anton::move(lhs)), rhs(anton::move(rhs)) {}
+            : Expression(source_info, AST_Node_Type::assignment_expression), lhs(ANTON_MOV(lhs)), rhs(ANTON_MOV(rhs)) {}
     };
 
     enum struct Arithmetic_Assignment_Type {
@@ -918,7 +918,7 @@ namespace vush {
 
         Arithmetic_Assignment_Expression(Arithmetic_Assignment_Type type, Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs,
                                          Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::arithmetic_assignment_expression), lhs(anton::move(lhs)), rhs(anton::move(rhs)), type(anton::move(type)) {}
+            : Expression(source_info, AST_Node_Type::arithmetic_assignment_expression), lhs(ANTON_MOV(lhs)), rhs(ANTON_MOV(rhs)), type(ANTON_MOV(type)) {}
     };
 
     struct Elvis_Expr: public Expression {
@@ -927,8 +927,8 @@ namespace vush {
         Owning_Ptr<Expression> false_expr;
 
         Elvis_Expr(Owning_Ptr<Expression> condition, Owning_Ptr<Expression> true_expr, Owning_Ptr<Expression> false_expr, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::elvis_expr), condition(anton::move(condition)), true_expr(anton::move(true_expr)),
-              false_expr(anton::move(false_expr)) {}
+            : Expression(source_info, AST_Node_Type::elvis_expr), condition(ANTON_MOV(condition)), true_expr(ANTON_MOV(true_expr)),
+              false_expr(ANTON_MOV(false_expr)) {}
     };
 
     enum struct Binary_Expr_Type {
@@ -959,7 +959,7 @@ namespace vush {
         Binary_Expr_Type type;
 
         Binary_Expr(Binary_Expr_Type type, Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::binary_expr), lhs(anton::move(lhs)), rhs(anton::move(rhs)), type(type) {}
+            : Expression(source_info, AST_Node_Type::binary_expr), lhs(ANTON_MOV(lhs)), rhs(ANTON_MOV(rhs)), type(type) {}
     };
 
     enum struct Unary_Type {
@@ -974,21 +974,21 @@ namespace vush {
         Unary_Type type;
 
         Unary_Expression(Unary_Type type, Owning_Ptr<Expression> expression, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::unary_expression), expression(anton::move(expression)), type(type) {}
+            : Expression(source_info, AST_Node_Type::unary_expression), expression(ANTON_MOV(expression)), type(type) {}
     };
 
     struct Prefix_Inc_Expr: public Expression {
         Owning_Ptr<Expression> expression;
 
         Prefix_Inc_Expr(Owning_Ptr<Expression> expression, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::prefix_inc_expr), expression(anton::move(expression)) {}
+            : Expression(source_info, AST_Node_Type::prefix_inc_expr), expression(ANTON_MOV(expression)) {}
     };
 
     struct Prefix_Dec_Expr: public Expression {
         Owning_Ptr<Expression> expression;
 
         Prefix_Dec_Expr(Owning_Ptr<Expression> expression, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::prefix_dec_expr), expression(anton::move(expression)) {}
+            : Expression(source_info, AST_Node_Type::prefix_dec_expr), expression(ANTON_MOV(expression)) {}
     };
 
     struct Argument_List: public AST_Node {
@@ -997,7 +997,7 @@ namespace vush {
         Argument_List(): AST_Node({}, AST_Node_Type::argument_list) {}
 
         void append(Owning_Ptr<Expression> argument) {
-            arguments.emplace_back(anton::move(argument));
+            arguments.emplace_back(ANTON_MOV(argument));
         }
 
         i64 size() const {
@@ -1010,7 +1010,7 @@ namespace vush {
         Owning_Ptr<Argument_List> arg_list;
 
         Function_Call_Expression(Owning_Ptr<Identifier> identifier, Owning_Ptr<Argument_List> arg_list, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::function_call_expression), identifier(anton::move(identifier)), arg_list(anton::move(arg_list)) {}
+            : Expression(source_info, AST_Node_Type::function_call_expression), identifier(ANTON_MOV(identifier)), arg_list(ANTON_MOV(arg_list)) {}
     };
 
     struct Member_Access_Expression: public Expression {
@@ -1018,7 +1018,7 @@ namespace vush {
         Owning_Ptr<Identifier> member;
 
         Member_Access_Expression(Owning_Ptr<Expression> base, Owning_Ptr<Identifier> member, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::member_access_expression), base(anton::move(base)), member(anton::move(member)) {}
+            : Expression(source_info, AST_Node_Type::member_access_expression), base(ANTON_MOV(base)), member(ANTON_MOV(member)) {}
     };
 
     struct Array_Access_Expression: public Expression {
@@ -1026,27 +1026,27 @@ namespace vush {
         Owning_Ptr<Expression> index;
 
         Array_Access_Expression(Owning_Ptr<Expression> base, Owning_Ptr<Expression> index, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::array_access_expression), base(anton::move(base)), index(anton::move(index)) {}
+            : Expression(source_info, AST_Node_Type::array_access_expression), base(ANTON_MOV(base)), index(ANTON_MOV(index)) {}
     };
 
     struct Postfix_Inc_Expr: public Expression {
         Owning_Ptr<Expression> base;
 
         Postfix_Inc_Expr(Owning_Ptr<Expression> base, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::postfix_inc_expr), base(anton::move(base)) {}
+            : Expression(source_info, AST_Node_Type::postfix_inc_expr), base(ANTON_MOV(base)) {}
     };
 
     struct Postfix_Dec_Expr: public Expression {
         Owning_Ptr<Expression> base;
 
         Postfix_Dec_Expr(Owning_Ptr<Expression> base, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::postfix_dec_expr), base(anton::move(base)) {}
+            : Expression(source_info, AST_Node_Type::postfix_dec_expr), base(ANTON_MOV(base)) {}
     };
 
     struct Paren_Expr: public Expression {
         Owning_Ptr<Expression> expr;
 
-        Paren_Expr(Owning_Ptr<Expression> expr, Source_Info const& source_info): Expression(source_info, AST_Node_Type::paren_expr), expr(anton::move(expr)) {}
+        Paren_Expr(Owning_Ptr<Expression> expr, Source_Info const& source_info): Expression(source_info, AST_Node_Type::paren_expr), expr(ANTON_MOV(expr)) {}
     };
 
     struct Reinterpret_Expr: public Expression {
@@ -1062,8 +1062,7 @@ namespace vush {
     struct String_Literal: public Expression {
         anton::String value;
 
-        String_Literal(anton::String value, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::string_literal), value(anton::move(value)) {}
+        String_Literal(anton::String value, Source_Info const& source_info): Expression(source_info, AST_Node_Type::string_literal), value(ANTON_MOV(value)) {}
     };
 
     struct Bool_Literal: public Expression {
@@ -1081,7 +1080,7 @@ namespace vush {
         Integer_Literal_Base base;
 
         Integer_Literal(anton::String value, Integer_Literal_Type type, Integer_Literal_Base base, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::integer_literal), value(anton::move(value)), type(type), base(base) {}
+            : Expression(source_info, AST_Node_Type::integer_literal), value(ANTON_MOV(value)), type(type), base(base) {}
     };
 
     enum struct Float_Literal_Type { f32, f64 };
@@ -1091,7 +1090,7 @@ namespace vush {
         Float_Literal_Type type;
 
         Float_Literal(anton::String value, Float_Literal_Type type, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::float_literal), value(anton::move(value)), type(type) {}
+            : Expression(source_info, AST_Node_Type::float_literal), value(ANTON_MOV(value)), type(type) {}
     };
 
     struct Statement: public AST_Node {
@@ -1102,7 +1101,7 @@ namespace vush {
         anton::Array<Owning_Ptr<Statement>> statements;
 
         Block_Statement(anton::Array<Owning_Ptr<Statement>> statements, Source_Info const& source_info)
-            : Statement(source_info, AST_Node_Type::block_statement), statements(anton::move(statements)) {}
+            : Statement(source_info, AST_Node_Type::block_statement), statements(ANTON_MOV(statements)) {}
     };
 
     // false_statement might be If_Statement ('else if' case), Block_Statement or nullptr (else branch missing)
@@ -1113,8 +1112,8 @@ namespace vush {
 
         If_Statement(Owning_Ptr<Expression> condition, Owning_Ptr<Block_Statement> true_statement, Owning_Ptr<Statement> false_statement,
                      Source_Info const& source_info)
-            : Statement(source_info, AST_Node_Type::if_statement), condition(anton::move(condition)), true_statement(anton::move(true_statement)),
-              false_statement(anton::move(false_statement)) {}
+            : Statement(source_info, AST_Node_Type::if_statement), condition(ANTON_MOV(condition)), true_statement(ANTON_MOV(true_statement)),
+              false_statement(ANTON_MOV(false_statement)) {}
     };
 
     struct Case_Statement: public Statement {
@@ -1122,14 +1121,14 @@ namespace vush {
         anton::Array<Owning_Ptr<Statement>> statements;
 
         Case_Statement(Owning_Ptr<Expression> condition, anton::Array<Owning_Ptr<Statement>> statements, Source_Info const& source_info)
-            : Statement(source_info, AST_Node_Type::case_statement), condition(anton::move(condition)), statements(anton::move(statements)) {}
+            : Statement(source_info, AST_Node_Type::case_statement), condition(ANTON_MOV(condition)), statements(ANTON_MOV(statements)) {}
     };
 
     struct Default_Case_Statement: public Statement {
         anton::Array<Owning_Ptr<Statement>> statements;
 
         Default_Case_Statement(anton::Array<Owning_Ptr<Statement>> statements, Source_Info const& source_info)
-            : Statement(source_info, AST_Node_Type::default_case_statement), statements(anton::move(statements)) {}
+            : Statement(source_info, AST_Node_Type::default_case_statement), statements(ANTON_MOV(statements)) {}
     };
 
     struct Switch_Statement: public Statement {
@@ -1137,14 +1136,14 @@ namespace vush {
         Owning_Ptr<Expression> match_expr;
 
         Switch_Statement(Owning_Ptr<Expression> match_expr, Source_Info const& source_info)
-            : Statement(source_info, AST_Node_Type::switch_statement), match_expr(anton::move(match_expr)) {}
+            : Statement(source_info, AST_Node_Type::switch_statement), match_expr(ANTON_MOV(match_expr)) {}
 
         void append(Owning_Ptr<Case_Statement> case_stmt) {
-            cases.emplace_back(anton::move(case_stmt));
+            cases.emplace_back(ANTON_MOV(case_stmt));
         }
 
         void append(Owning_Ptr<Default_Case_Statement> case_stmt) {
-            cases.emplace_back(anton::move(case_stmt));
+            cases.emplace_back(ANTON_MOV(case_stmt));
         }
 
         i64 case_count() const {
@@ -1160,8 +1159,8 @@ namespace vush {
 
         For_Statement(Owning_Ptr<Variable_Declaration> declaration, Owning_Ptr<Expression> condition, Owning_Ptr<Expression> post_expression,
                       anton::Array<Owning_Ptr<Statement>> statements, Source_Info const& source_info)
-            : Statement(source_info, AST_Node_Type::for_statement), declaration(anton::move(declaration)), condition(anton::move(condition)),
-              post_expression(anton::move(post_expression)), statements(anton::move(statements)) {}
+            : Statement(source_info, AST_Node_Type::for_statement), declaration(ANTON_MOV(declaration)), condition(ANTON_MOV(condition)),
+              post_expression(ANTON_MOV(post_expression)), statements(ANTON_MOV(statements)) {}
     };
 
     struct While_Statement: public Statement {
@@ -1169,7 +1168,7 @@ namespace vush {
         anton::Array<Owning_Ptr<Statement>> statements;
 
         While_Statement(Owning_Ptr<Expression> condition, anton::Array<Owning_Ptr<Statement>> statements, Source_Info const& source_info)
-            : Statement(source_info, AST_Node_Type::while_statement), condition(anton::move(condition)), statements(anton::move(statements)) {}
+            : Statement(source_info, AST_Node_Type::while_statement), condition(ANTON_MOV(condition)), statements(ANTON_MOV(statements)) {}
     };
 
     struct Do_While_Statement: public Statement {
@@ -1177,7 +1176,7 @@ namespace vush {
         anton::Array<Owning_Ptr<Statement>> statements;
 
         Do_While_Statement(Owning_Ptr<Expression> condition, anton::Array<Owning_Ptr<Statement>> statements, Source_Info const& source_info)
-            : Statement(source_info, AST_Node_Type::do_while_statement), condition(anton::move(condition)), statements(anton::move(statements)) {}
+            : Statement(source_info, AST_Node_Type::do_while_statement), condition(ANTON_MOV(condition)), statements(ANTON_MOV(statements)) {}
     };
 
     // return_expr may be nullptr
@@ -1185,7 +1184,7 @@ namespace vush {
         Owning_Ptr<Expression> return_expr;
 
         Return_Statement(Owning_Ptr<Expression> return_expr, Source_Info const& source_info)
-            : Statement(source_info, AST_Node_Type::return_statement), return_expr(anton::move(return_expr)) {}
+            : Statement(source_info, AST_Node_Type::return_statement), return_expr(ANTON_MOV(return_expr)) {}
     };
 
     struct Break_Statement: public Statement {
@@ -1200,13 +1199,13 @@ namespace vush {
         Owning_Ptr<Declaration> declaration;
 
         Declaration_Statement(Owning_Ptr<Declaration> declaration, Source_Info const& source_info)
-            : Statement(source_info, AST_Node_Type::declaration_statement), declaration(anton::move(declaration)) {}
+            : Statement(source_info, AST_Node_Type::declaration_statement), declaration(ANTON_MOV(declaration)) {}
     };
 
     struct Expression_Statement: public Statement {
         Owning_Ptr<Expression> expr;
 
         Expression_Statement(Owning_Ptr<Expression> expression, Source_Info const& source_info)
-            : Statement(source_info, AST_Node_Type::expression_statement), expr(anton::move(expression)) {}
+            : Statement(source_info, AST_Node_Type::expression_statement), expr(ANTON_MOV(expression)) {}
     };
 } // namespace vush
