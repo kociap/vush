@@ -854,224 +854,6 @@ namespace vush {
         Pass_Stage_Declaration* compute_stage = nullptr;
     };
 
-    template<typename T>
-    T get_symbol_as(anton::Flat_Hash_Map<anton::String, void const*>& symbols, anton::String_View name) {
-        auto iter = symbols.find(name);
-        return (T)iter->value;
-    }
-
-    static anton::Expected<anton::String, anton::String> format_string(String_Literal const& string,
-                                                                       anton::Flat_Hash_Map<anton::String, void const*>& symbols) {
-        anton::String out;
-        auto iter1 = string.value.bytes_begin();
-        auto iter2 = string.value.bytes_begin();
-        auto const end = string.value.bytes_end();
-        while(true) {
-            while(iter2 != end && *iter2 != U'{') {
-                ++iter2;
-            }
-
-            if(iter2 == end) {
-                out.append({iter1, iter2});
-                break;
-            }
-
-            ++iter2;
-            if(iter2 == end || *iter2 != U'{') {
-                // Single brace or end
-                continue;
-            }
-
-            out.append({iter1, iter2 - 1});
-
-            ++iter2;
-            iter1 = iter2;
-            while(iter2 != end && *iter2 != '}') {
-                ++iter2;
-            }
-
-            // Check for unterminated placeholder
-            if(iter2 == end || iter2 + 1 == end || *(iter2 + 1) != U'}') {
-                Source_Info const& src = string.source_info;
-                // We add 1 to account for the opening double quote ( " )
-                i64 const string_offset = 1 + (iter2 - string.value.bytes_begin());
-                return {anton::expected_error, build_error_message(src.file_path, src.line, src.column + string_offset, u8"unterminated placeholder")};
-            }
-
-            anton::String_View const symbol_name = {iter1, iter2};
-            // Casting the const away in calls to get_symbol_as below is legal because the pointed to variables are not const
-            if(symbol_name == u8"$binding") {
-                i64* const binding = get_symbol_as<i64*>(symbols, u8"$binding");
-                out += anton::to_string(*binding);
-                *binding += 1;
-            } else if(symbol_name == u8"$base_binding") {
-                i64* const base_binding = get_symbol_as<i64*>(symbols, u8"$base_binding");
-                out += anton::to_string(*base_binding);
-                i64* const binding = get_symbol_as<i64*>(symbols, u8"$binding");
-                if(*binding == *base_binding) {
-                    *binding += 1;
-                }
-            } else {
-                i64 const dot_pos = anton::find_substring(symbol_name, u8".");
-                if(dot_pos == anton::npos) {
-                    // If it's not a builtin and doesn't have a dot, what is it?
-                    Source_Info const& src = string.source_info;
-                    // We add 1 to account for the opening double quote ( " )
-                    i64 const string_offset = 1 + (iter1 - string.value.bytes_begin());
-                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column + string_offset, u8"invalid placeholder")};
-                }
-
-                anton::String_View const iterator_name = {symbol_name.data(), dot_pos};
-                anton::String_View const property_name = {symbol_name.data() + dot_pos + 1, symbol_name.bytes_end()};
-                auto iter = symbols.find(iterator_name);
-                if(iter == symbols.end()) {
-                    Source_Info const& src = string.source_info;
-                    // We add 1 to account for the opening double quote ( " )
-                    i64 const string_offset = 1 + (iter1 - string.value.bytes_begin());
-                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column + string_offset, u8"unknown placeholder")};
-                }
-
-                Sourced_Data const* const data = static_cast<Sourced_Data const*>(iter->value);
-                if(property_name == u8"type") {
-                    out += stringify_type(*data->type);
-                } else if(property_name == u8"name") {
-                    out += data->name->value;
-                } else {
-                    Source_Info const& src = string.source_info;
-                    // We add 1 to account for the opening double quote ( " )
-                    i64 const string_offset = 1 + (iter1 - string.value.bytes_begin()) + dot_pos + 1;
-                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column + string_offset, u8"unknown property name")};
-                }
-            }
-
-            // Skip the terminating }}
-            iter2 = iter2 + 2;
-            iter1 = iter2;
-        }
-
-        return {anton::expected_value, ANTON_MOV(out)};
-    }
-
-    static anton::Expected<void, anton::String> process_source_definition_statement(anton::String& out, Source_Definition_Statement const& statement,
-                                                                                    Sourced_Data_Buffers const& sourced_data, Context const& ctx,
-                                                                                    Codegen_Context& codegen_ctx,
-                                                                                    anton::Flat_Hash_Map<anton::String, void const*>& symbols) {
-        ANTON_ASSERT(statement.node_type == AST_Node_Type::source_definition_emit_statement ||
-                         statement.node_type == AST_Node_Type::source_definition_for_statement ||
-                         statement.node_type == AST_Node_Type::source_definition_if_statement,
-                     u8"unknown node type");
-        switch(statement.node_type) {
-            case AST_Node_Type::source_definition_emit_statement: {
-                Source_Definition_Emit_Statement const& node = (Source_Definition_Emit_Statement const&)statement;
-                write_indent(out, codegen_ctx.indent);
-                anton::Expected<anton::String, anton::String> result = format_string(*node.string, symbols);
-                if(!result) {
-                    return {anton::expected_error, ANTON_MOV(result.error())};
-                }
-
-                out += result.value();
-                out += U'\n';
-            } break;
-
-            case AST_Node_Type::source_definition_if_statement: {
-                Source_Definition_If_Statement const& node = (Source_Definition_If_Statement const&)statement;
-                i64 count = 0;
-                if(node.condition->value == u8"$variables") {
-                    count = sourced_data.variables.size();
-                } else if(node.condition->value == u8"$opaque_variables") {
-                    count = sourced_data.opaque_variables.size();
-                } else if(node.condition->value == u8"$unsized_variables") {
-                    count = sourced_data.unsized_variables.size();
-                } else {
-                    Source_Info const& src = node.condition->source_info;
-                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"invalid condition expression")};
-                }
-
-                if(count) {
-                    for(auto& nested_statement: node.true_branch) {
-                        process_source_definition_statement(out, *nested_statement, sourced_data, ctx, codegen_ctx, symbols);
-                    }
-                } else {
-                    for(auto& nested_statement: node.false_branch) {
-                        process_source_definition_statement(out, *nested_statement, sourced_data, ctx, codegen_ctx, symbols);
-                    }
-                }
-            } break;
-
-            case AST_Node_Type::source_definition_for_statement: {
-                Source_Definition_For_Statement const& node = (Source_Definition_For_Statement const&)statement;
-                // Casting the const away in calls to get_symbol_as below is legal because the pointed to variables are not const
-                i64* const binding = get_symbol_as<i64*>(symbols, u8"$binding");
-                i64* const base_binding = get_symbol_as<i64*>(symbols, u8"$base_binding");
-                *base_binding = *binding;
-                if(node.range_expr->value == u8"$variables") {
-                    for(Sourced_Data const& data: sourced_data.variables) {
-                        symbols.emplace(node.iterator->value, &data);
-                        for(auto& nested_statement: node.statements) {
-                            process_source_definition_statement(out, *nested_statement, sourced_data, ctx, codegen_ctx, symbols);
-                        }
-                    }
-                } else if(node.range_expr->value == u8"$opaque_variables") {
-                    for(Sourced_Data const& data: sourced_data.opaque_variables) {
-                        symbols.emplace(node.iterator->value, &data);
-                        for(auto& nested_statement: node.statements) {
-                            process_source_definition_statement(out, *nested_statement, sourced_data, ctx, codegen_ctx, symbols);
-                        }
-                    }
-                } else if(node.range_expr->value == u8"$unsized_variables") {
-                    for(Sourced_Data const& data: sourced_data.unsized_variables) {
-                        symbols.emplace(node.iterator->value, &data);
-                        for(auto& nested_statement: node.statements) {
-                            process_source_definition_statement(out, *nested_statement, sourced_data, ctx, codegen_ctx, symbols);
-                        }
-                    }
-                } else {
-                    Source_Info const& src = node.range_expr->source_info;
-                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"invalid range expression")};
-                }
-                // Sync base_binding with binding again for the statements following the loop
-                *base_binding = *binding;
-            } break;
-
-            default:
-                ANTON_UNREACHABLE();
-        }
-
-        return {anton::expected_value};
-    }
-
-    static anton::Expected<anton::String, anton::String>
-    instantiate_pass_source_templates(anton::Slice<Source_Definition_Decl const* const> const source_templates,
-                                      anton::Flat_Hash_Map<anton::String, Sourced_Data_Buffers> const& sourced_data, Context const& ctx,
-                                      Codegen_Context& codegen_ctx) {
-        anton::Flat_Hash_Map<anton::String, void const*> symbols;
-        i64 binding = 0;
-        i64 base_binding = 0;
-        symbols.emplace(u8"$binding", &binding);
-        symbols.emplace(u8"$base_binding", &base_binding);
-        anton::String out;
-        for(Source_Definition_Decl const* source_template: source_templates) {
-            auto iter = sourced_data.find(source_template->name->value);
-            if(iter == sourced_data.end()) {
-                continue;
-            }
-
-            // decl_prop is optional
-            if(source_template->decl_prop) {
-                for(auto& statement: source_template->decl_prop->statements) {
-                    anton::Expected<void, anton::String> res = process_source_definition_statement(out, *statement, iter->value, ctx, codegen_ctx, symbols);
-                    if(!res) {
-                        return {anton::expected_error, ANTON_MOV(res.error())};
-                    }
-                }
-            }
-
-            out += U'\n';
-        }
-
-        return {anton::expected_value, ANTON_MOV(out)};
-    }
-
     // TODO: Arrays in vertex inputs/fragment outputs are illegal (for now). Add error handling.
 
     struct Member_Info {
@@ -1118,11 +900,11 @@ namespace vush {
         _explode_type(_explode_type, ctx, type, name_components, Interpolation::none, false, member_info);
     }
 
-    static anton::Expected<anton::String, anton::String> format_bind_string(String_Literal const& string, Sourced_Data const& symbol) {
+    static anton::Expected<anton::String, anton::String> format_bind_string(anton::String_View string, Sourced_Data const& symbol) {
         anton::String out;
-        auto iter1 = string.value.bytes_begin();
-        auto iter2 = string.value.bytes_begin();
-        auto const end = string.value.bytes_end();
+        auto iter1 = string.bytes_begin();
+        auto iter2 = string.bytes_begin();
+        auto const end = string.bytes_end();
         while(true) {
             while(iter2 != end && *iter2 != U'{') {
                 ++iter2;
@@ -1147,31 +929,24 @@ namespace vush {
                 ++iter2;
             }
 
+            // TODO: Better error messages
+
             // Check for unterminated placeholder
             if(iter2 == end || iter2 + 1 == end || *(iter2 + 1) != U'}') {
-                Source_Info const& src = string.source_info;
-                // We add 1 to account for the opening double quote ( " )
-                i64 const string_offset = 1 + (iter2 - string.value.bytes_begin());
-                return {anton::expected_error, build_error_message(src.file_path, src.line, src.column + string_offset, u8"unterminated placeholder")};
+                return {anton::expected_error, anton::String(u8"error: unterminated placeholder in bind string")};
             }
 
             anton::String_View const symbol_name = {iter1, iter2};
             i64 const dot_pos = anton::find_substring(symbol_name, u8".");
             if(dot_pos == anton::npos) {
                 // If it's not a builtin and doesn't have a dot, what is it?
-                Source_Info const& src = string.source_info;
-                // We add 1 to account for the opening double quote ( " )
-                i64 const string_offset = 1 + (iter1 - string.value.bytes_begin());
-                return {anton::expected_error, build_error_message(src.file_path, src.line, src.column + string_offset, u8"invalid placeholder")};
+                return {anton::expected_error, anton::String(u8"error: invalid placeholder in bind string")};
             }
 
             anton::String_View const iterator_name = {symbol_name.data(), dot_pos};
             anton::String_View const property_name = {symbol_name.data() + dot_pos + 1, symbol_name.bytes_end()};
             if(iterator_name != u8"$variable") {
-                Source_Info const& src = string.source_info;
-                // We add 1 to account for the opening double quote ( " )
-                i64 const string_offset = 1 + (iter1 - string.value.bytes_begin());
-                return {anton::expected_error, build_error_message(src.file_path, src.line, src.column + string_offset, u8"unknown placeholder")};
+                return {anton::expected_error, anton::String(u8"error: unknown placeholder in bind string")};
             }
 
             if(property_name == u8"name") {
@@ -1179,10 +954,7 @@ namespace vush {
             } else if(property_name == u8"type") {
                 out += stringify_type(*symbol.type);
             } else {
-                Source_Info const& src = string.source_info;
-                // We add 1 to account for the opening double quote ( " )
-                i64 const string_offset = 1 + (iter1 - string.value.bytes_begin()) + dot_pos + 1;
-                return {anton::expected_error, build_error_message(src.file_path, src.line, src.column + string_offset, u8"unknown property name")};
+                return {anton::expected_error, anton::String(u8"error: unknown property name in bind string")};
             }
 
             // Skip the terminating }}
@@ -1434,99 +1206,90 @@ namespace vush {
 
     anton::Expected<anton::Array<Pass_Data>, anton::String> generate_glsl(Context const& ctx, Declaration_List& node, Format_Options const& format,
                                                                           anton::Array<Extension> const& extensions) {
+        // TODO: Move all validation, transformations and aggregation into vush.cpp
+
         anton::Array<Declaration*> structs_and_consts;
         anton::Array<Declaration*> functions;
         anton::Array<Pass_Context> passes;
-        anton::Array<Source_Definition_Decl*> source_templates;
-        {
-            // We push sourced globals to separate array so we can later add them to all passes
-            anton::Array<Sourced_Global_Decl*> sourced_globals;
-            for(auto& decl: node.declarations) {
-                switch(decl->node_type) {
-                    case AST_Node_Type::struct_decl:
-                    case AST_Node_Type::constant_declaration: {
-                        structs_and_consts.emplace_back(decl.get());
-                    } break;
 
-                    case AST_Node_Type::function_declaration: {
-                        functions.emplace_back(decl.get());
-                    } break;
+        for(auto& decl: node.declarations) {
+            switch(decl->node_type) {
+                case AST_Node_Type::struct_decl:
+                case AST_Node_Type::constant_declaration: {
+                    structs_and_consts.emplace_back(decl.get());
+                } break;
 
-                    case AST_Node_Type::pass_stage_declaration: {
-                        Pass_Stage_Declaration* pass_decl = (Pass_Stage_Declaration*)decl.get();
-                        Pass_Context* pass =
-                            anton::find_if(passes.begin(), passes.end(), [pass_decl](Pass_Context const& v) { return v.name == pass_decl->pass->value; });
-                        if(pass == passes.end()) {
-                            Pass_Context& v = passes.emplace_back(Pass_Context{pass_decl->pass->value, {}});
-                            pass = &v;
-                        }
+                case AST_Node_Type::function_declaration: {
+                    functions.emplace_back(decl.get());
+                } break;
 
-                        // Ensure there is only 1 stage of each type
-                        switch(pass_decl->stage) {
-                            case Stage_Type::vertex: {
-                                if(pass->vertex_stage) {
-                                    Source_Info const& src1 = pass_decl->source_info;
-                                    Source_Info const& src2 = pass->vertex_stage->source_info;
-                                    return {anton::expected_error, format_duplicate_pass_stage_error(src1, src2, pass->name, Stage_Type::vertex)};
-                                }
+                case AST_Node_Type::pass_stage_declaration: {
+                    Pass_Stage_Declaration* pass_decl = (Pass_Stage_Declaration*)decl.get();
+                    Pass_Context* pass =
+                        anton::find_if(passes.begin(), passes.end(), [pass_decl](Pass_Context const& v) { return v.name == pass_decl->pass->value; });
+                    if(pass == passes.end()) {
+                        Pass_Context& v = passes.emplace_back(Pass_Context{pass_decl->pass->value, {}});
+                        pass = &v;
+                    }
 
-                                pass->vertex_stage = pass_decl;
-                            } break;
-
-                            case Stage_Type::fragment: {
-                                if(pass->fragment_stage) {
-                                    Source_Info const& src1 = pass_decl->source_info;
-                                    Source_Info const& src2 = pass->vertex_stage->source_info;
-                                    return {anton::expected_error, format_duplicate_pass_stage_error(src1, src2, pass->name, Stage_Type::fragment)};
-                                }
-
-                                pass->fragment_stage = pass_decl;
-                            } break;
-
-                            case Stage_Type::compute: {
-                                if(pass->compute_stage) {
-                                    Source_Info const& src1 = pass_decl->source_info;
-                                    Source_Info const& src2 = pass->vertex_stage->source_info;
-                                    return {anton::expected_error, format_duplicate_pass_stage_error(src1, src2, pass->name, Stage_Type::compute)};
-                                }
-
-                                pass->compute_stage = pass_decl;
-                            } break;
-                        }
-
-                        for(auto& param: pass_decl->params) {
-                            if(param->node_type == AST_Node_Type::sourced_function_param) {
-                                Sourced_Function_Param* sourced_param = (Sourced_Function_Param*)param.get();
-                                auto iter = pass->sourced_data.find_or_emplace(sourced_param->source->value);
-                                Sourced_Data data{sourced_param->type.get(), sourced_param->identifier.get(), sourced_param->source.get()};
-                                iter->value.all.emplace_back(data);
+                    // Ensure there is only 1 stage of each type
+                    switch(pass_decl->stage) {
+                        case Stage_Type::vertex: {
+                            if(pass->vertex_stage) {
+                                Source_Info const& src1 = pass_decl->source_info;
+                                Source_Info const& src2 = pass->vertex_stage->source_info;
+                                return {anton::expected_error, format_duplicate_pass_stage_error(src1, src2, pass->name, Stage_Type::vertex)};
                             }
+
+                            pass->vertex_stage = pass_decl;
+                        } break;
+
+                        case Stage_Type::fragment: {
+                            if(pass->fragment_stage) {
+                                Source_Info const& src1 = pass_decl->source_info;
+                                Source_Info const& src2 = pass->vertex_stage->source_info;
+                                return {anton::expected_error, format_duplicate_pass_stage_error(src1, src2, pass->name, Stage_Type::fragment)};
+                            }
+
+                            pass->fragment_stage = pass_decl;
+                        } break;
+
+                        case Stage_Type::compute: {
+                            if(pass->compute_stage) {
+                                Source_Info const& src1 = pass_decl->source_info;
+                                Source_Info const& src2 = pass->vertex_stage->source_info;
+                                return {anton::expected_error, format_duplicate_pass_stage_error(src1, src2, pass->name, Stage_Type::compute)};
+                            }
+
+                            pass->compute_stage = pass_decl;
+                        } break;
+                    }
+
+                    for(auto& param: pass_decl->params) {
+                        if(param->node_type == AST_Node_Type::sourced_function_param) {
+                            Sourced_Function_Param* sourced_param = (Sourced_Function_Param*)param.get();
+                            auto iter = pass->sourced_data.find_or_emplace(sourced_param->source->value);
+                            Sourced_Data data{sourced_param->type.get(), sourced_param->identifier.get(), sourced_param->source.get()};
+                            iter->value.all.emplace_back(data);
                         }
-                    } break;
+                    }
+                } break;
 
-                    case AST_Node_Type::source_definition_decl: {
-                        Source_Definition_Decl* source = (Source_Definition_Decl*)decl.get();
-                        source_templates.emplace_back(source);
-                    } break;
-
-                    case AST_Node_Type::sourced_global_decl: {
-                        Sourced_Global_Decl* source = (Sourced_Global_Decl*)decl.get();
-                        sourced_globals.emplace_back(source);
-                    } break;
-
-                    default:
-                        break;
-                }
-            }
-
-            for(Pass_Context& pass: passes) {
-                for(Sourced_Global_Decl* global: sourced_globals) {
-                    if(pass.name == global->pass_name->value) {
-                        auto iter = pass.sourced_data.find_or_emplace(global->source->value);
+                case AST_Node_Type::sourced_global_decl: {
+                    Sourced_Global_Decl* global = (Sourced_Global_Decl*)decl.get();
+                    Pass_Context* const pass = anton::find_if(passes.begin(), passes.end(),
+                                                              [&pass_name = global->pass_name->value](Pass_Context& pass) { return pass.name == pass_name; });
+                    if(pass != passes.end()) {
+                        auto iter = pass->sourced_data.find_or_emplace(global->source->value);
                         Sourced_Data data{global->type.get(), global->name.get(), global->source.get()};
                         iter->value.all.emplace_back(data);
+                    } else {
+                        return {anton::expected_error, format_sourced_global_pass_does_not_exist(*global)};
                     }
-                }
+                } break;
+
+                default:
+                    break;
             }
         }
 
@@ -1539,17 +1302,6 @@ namespace vush {
             } else {
                 if(pass.vertex_stage || pass.fragment_stage) {
                     return {anton::expected_error, format_vertex_and_compute_stages_error(pass.name)};
-                }
-            }
-
-            // Validate that a source is available for each sourced data
-            for(auto& [source_name, data]: pass.sourced_data) {
-                auto iter = anton::find_if(source_templates.begin(), source_templates.end(),
-                                           [&n = source_name](Source_Definition_Decl const* const v) { return v->name->value == n; });
-                if(iter == source_templates.end()) {
-                    Source_Info const& src = data.all[0].source->source_info;
-                    return {anton::expected_error,
-                            build_error_message(src.file_path, src.line, src.column, u8"unknown source definition '" + source_name + "'")};
                 }
             }
 
@@ -1676,12 +1428,43 @@ namespace vush {
 
         anton::Array<Pass_Data> pass_data;
         for(Pass_Context& pass: passes) {
-            auto instantiation_res = instantiate_pass_source_templates(source_templates, pass.sourced_data, ctx, codegen_ctx);
-            if(!instantiation_res) {
-                return {anton::expected_error, ANTON_MOV(instantiation_res.error())};
+            anton::Flat_Hash_Map<anton::String, Source_Definition> source_definitions;
+            for(auto [key, value]: pass.sourced_data) {
+                // We have to make a lot of string copies so that we can expose the variables in the public api
+
+                anton::Array<Sourced_Variable> variables{anton::reserve, value.variables.size()};
+                for(Sourced_Data const& data: value.variables) {
+                    anton::String type = stringify_type(*data.type);
+                    variables.emplace_back(data.name->value, ANTON_MOV(type));
+                }
+
+                anton::Array<Sourced_Variable> opaque_variables{anton::reserve, value.opaque_variables.size()};
+                for(Sourced_Data const& data: value.opaque_variables) {
+                    anton::String type = stringify_type(*data.type);
+                    variables.emplace_back(data.name->value, ANTON_MOV(type));
+                }
+
+                anton::Array<Sourced_Variable> unsized_variables{anton::reserve, value.unsized_variables.size()};
+                for(Sourced_Data const& data: value.unsized_variables) {
+                    anton::String type = stringify_type(*data.type);
+                    variables.emplace_back(data.name->value, ANTON_MOV(type));
+                }
+
+                anton::Expected<Source_Definition, anton::String> result =
+                    ctx.source_definition_cb(key, variables, opaque_variables, unsized_variables, ctx.source_definition_user_data);
+                if(result) {
+                    source_definitions.emplace(key, ANTON_MOV(result.value()));
+                } else {
+                    return {anton::expected_error, ANTON_MOV(result.error())};
+                }
             }
 
-            anton::String const& stringified_sources = instantiation_res.value();
+            anton::String stringified_sources;
+            for(auto [source, def]: source_definitions) {
+                stringified_sources += def.declaration;
+                stringified_sources += U'\n';
+            }
+
             // I'm too lazy to rewrite this code properly, so I just stuff all the stages into an array and reuse the old code
             anton::Array<Pass_Stage_Declaration*> stages;
             if(pass.vertex_stage) {
@@ -1816,13 +1599,11 @@ namespace vush {
 
                                     case AST_Node_Type::sourced_function_param: {
                                         Sourced_Function_Param* const node = (Sourced_Function_Param*)param.get();
-                                        auto iter =
-                                            anton::find_if(source_templates.cbegin(), source_templates.cend(),
-                                                           [node](Source_Definition_Decl const* const v) { return v->name->value == node->source->value; });
-                                        ANTON_ASSERT(iter != source_templates.cend(), u8"sourced parameter doesn't have an existing source");
+                                        auto iter = source_definitions.find(node->source->value);
+                                        ANTON_ASSERT(iter != source_definitions.end(), u8"sourced parameter doesn't have an existing source");
                                         Sourced_Data data{node->type.get(), node->identifier.get(), node->source.get()};
-                                        String_Literal const& string = *(*iter)->bind_prop->string;
-                                        anton::Expected<anton::String, anton::String> res = format_bind_string(string, data);
+                                        anton::String_View bind_string = iter->value.bind;
+                                        anton::Expected<anton::String, anton::String> res = format_bind_string(bind_string, data);
                                         if(res) {
                                             arguments.emplace_back(ANTON_MOV(res.value()));
                                         } else {
@@ -1891,13 +1672,12 @@ namespace vush {
                         // Generate parameters
                         for(i64 i = has_prev_stage_input; i < stage->params.size(); ++i) {
                             ANTON_ASSERT(stage->params[i]->node_type == AST_Node_Type::sourced_function_param, u8"invalid parameter type");
-                            Sourced_Function_Param const& param = (Sourced_Function_Param const&)*stage->params[i];
-                            auto iter = anton::find_if(source_templates.cbegin(), source_templates.cend(),
-                                                       [&param](Source_Definition_Decl const* const v) { return v->name->value == param.source->value; });
-                            ANTON_ASSERT(iter != source_templates.cend(), u8"sourced parameter doesn't have an existing source");
-                            Sourced_Data data{param.type.get(), param.identifier.get(), param.source.get()};
-                            String_Literal const& string = *(*iter)->bind_prop->string;
-                            anton::Expected<anton::String, anton::String> res = format_bind_string(string, data);
+                            Sourced_Function_Param const* param = (Sourced_Function_Param const*)stage->params[i].get();
+                            auto iter = source_definitions.find(param->source->value);
+                            ANTON_ASSERT(iter != source_definitions.end(), u8"sourced parameter doesn't have an existing source");
+                            Sourced_Data data{param->type.get(), param->identifier.get(), param->source.get()};
+                            anton::String_View bind_string = iter->value.bind;
+                            anton::Expected<anton::String, anton::String> res = format_bind_string(bind_string, data);
                             if(res) {
                                 arguments.emplace_back(ANTON_MOV(res.value()));
                             } else {
@@ -2021,12 +1801,11 @@ namespace vush {
                         for(auto& param: stage->params) {
                             ANTON_ASSERT(param->node_type == AST_Node_Type::sourced_function_param, u8"invalid parameter type");
                             Sourced_Function_Param* const node = (Sourced_Function_Param*)param.get();
-                            auto iter = anton::find_if(source_templates.cbegin(), source_templates.cend(),
-                                                       [node](Source_Definition_Decl const* const v) { return v->name->value == node->source->value; });
-                            ANTON_ASSERT(iter != source_templates.cend(), u8"sourced parameter doesn't have an existing source");
+                            auto iter = source_definitions.find(node->source->value);
+                            ANTON_ASSERT(iter != source_definitions.end(), u8"sourced parameter doesn't have an existing source");
                             Sourced_Data data{node->type.get(), node->identifier.get(), node->source.get()};
-                            String_Literal const& string = *(*iter)->bind_prop->string;
-                            anton::Expected<anton::String, anton::String> res = format_bind_string(string, data);
+                            anton::String_View bind_string = iter->value.bind;
+                            anton::Expected<anton::String, anton::String> res = format_bind_string(bind_string, data);
                             if(res) {
                                 out += res.value();
                             } else {

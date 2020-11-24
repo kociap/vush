@@ -24,12 +24,29 @@ namespace vush {
         Extension_Behaviour behaviour;
     };
 
+    struct Sourced_Variable {
+        anton::String name;
+        anton::String type;
+    };
+
+    struct Source_Definition {
+        anton::String declaration;
+        anton::String bind;
+    };
+
+    using source_definition_callback = anton::Expected<Source_Definition, anton::String> (*)(anton::String_View source_name,
+                                                                                             anton::Slice<Sourced_Variable> variables,
+                                                                                             anton::Slice<Sourced_Variable> opaque_variables,
+                                                                                             anton::Slice<Sourced_Variable> unsized_variables, void* user_data);
+
     struct Configuration {
         anton::String source_name;
         anton::Array<anton::String> import_directories;
         anton::Array<Constant_Define> defines;
         anton::Array<Extension> extensions;
         Format_Options format;
+        source_definition_callback source_definition_cb = nullptr;
+        void* source_definition_user_data = nullptr;
     };
 
     enum struct Stage_Type {
@@ -72,7 +89,7 @@ namespace vush {
 
     // compile_to_glsl
     // Compiles given vush shader to glsl shader.
-    // Uses the callback to request source.
+    // Uses the callback to request sources.
     // Does not use import_directories.
     //
     // Returns compiled glsl files or error message.

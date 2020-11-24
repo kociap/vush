@@ -12,12 +12,6 @@ namespace vush {
         declaration_list,
         declaration_if,
         import_decl,
-        source_definition_declaration_property,
-        source_definition_bind_property,
-        source_definition_decl,
-        source_definition_emit_statement,
-        source_definition_if_statement,
-        source_definition_for_statement,
         sourced_global_decl,
         variable_declaration,
         constant_declaration,
@@ -627,68 +621,6 @@ namespace vush {
         anton::String path;
 
         Import_Decl(anton::String path, Source_Info const& source_info): Declaration(source_info, AST_Node_Type::import_decl), path(ANTON_MOV(path)) {}
-    };
-
-    struct Source_Definition_Statement;
-
-    struct Source_Definition_Declaration_Property: public AST_Node {
-        anton::Array<Owning_Ptr<Source_Definition_Statement>> statements;
-
-        Source_Definition_Declaration_Property(Source_Info const& source_info): AST_Node(source_info, AST_Node_Type::source_definition_declaration_property) {}
-
-        void append(Owning_Ptr<Source_Definition_Statement> statement) {
-            statements.emplace_back(ANTON_MOV(statement));
-        }
-    };
-
-    struct Source_Definition_Bind_Property: AST_Node {
-        Owning_Ptr<String_Literal> string;
-
-        Source_Definition_Bind_Property(Owning_Ptr<String_Literal> string, Source_Info const& source_info)
-            : AST_Node(source_info, AST_Node_Type::source_definition_bind_property), string(ANTON_MOV(string)) {}
-    };
-
-    struct Source_Definition_Decl: public Declaration {
-        Owning_Ptr<Identifier> name;
-        Owning_Ptr<Source_Definition_Declaration_Property> decl_prop;
-        Owning_Ptr<Source_Definition_Bind_Property> bind_prop;
-
-        Source_Definition_Decl(Owning_Ptr<Identifier> name, Source_Info const& source_info)
-            : Declaration(source_info, AST_Node_Type::source_definition_decl), name(ANTON_MOV(name)) {}
-    };
-
-    struct Source_Definition_Statement: public AST_Node {
-        using AST_Node::AST_Node;
-    };
-
-    struct Source_Definition_Emit_Statement: public Source_Definition_Statement {
-        Owning_Ptr<String_Literal> string;
-
-        Source_Definition_Emit_Statement(Owning_Ptr<String_Literal> string, Source_Info const& source_info)
-            : Source_Definition_Statement(source_info, AST_Node_Type::source_definition_emit_statement), string(ANTON_MOV(string)) {}
-    };
-
-    struct Source_Definition_If_Statement: public Source_Definition_Statement {
-        Owning_Ptr<Identifier> condition;
-        anton::Array<Owning_Ptr<Source_Definition_Statement>> true_branch;
-        anton::Array<Owning_Ptr<Source_Definition_Statement>> false_branch;
-
-        Source_Definition_If_Statement(Owning_Ptr<Identifier> condition, Source_Info const& source_info)
-            : Source_Definition_Statement(source_info, AST_Node_Type::source_definition_if_statement), condition(ANTON_MOV(condition)) {}
-    };
-
-    struct Source_Definition_For_Statement: public Source_Definition_Statement {
-        Owning_Ptr<Identifier> iterator;
-        Owning_Ptr<Identifier> range_expr;
-        anton::Array<Owning_Ptr<Source_Definition_Statement>> statements;
-
-        Source_Definition_For_Statement(Owning_Ptr<Identifier> iterator, Owning_Ptr<Identifier> range_expr, Source_Info const& source_info)
-            : Source_Definition_Statement(source_info, AST_Node_Type::source_definition_for_statement), iterator(ANTON_MOV(iterator)),
-              range_expr(ANTON_MOV(range_expr)) {}
-
-        void append(Owning_Ptr<Source_Definition_Statement> statement) {
-            statements.emplace_back(ANTON_MOV(statement));
-        }
     };
 
     enum struct Interpolation {

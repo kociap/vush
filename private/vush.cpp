@@ -854,6 +854,8 @@ namespace vush {
         Context ctx = {};
         ctx.source_request_cb = callback;
         ctx.source_request_user_data = user_data;
+        ctx.source_definition_cb = config.source_definition_cb;
+        ctx.source_definition_user_data = config.source_definition_user_data;
         // Add global scope
         ctx.symbols.emplace_back();
         // Create symbols for the constant defines passed via config

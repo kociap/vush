@@ -42,4 +42,10 @@ namespace vush {
         message += u8"the return type of compute stage must be void";
         return message;
     }
+
+    anton::String format_sourced_global_pass_does_not_exist(Sourced_Global_Decl const& global) {
+        anton::String message = format_diagnostic_location(global.source_info);
+        message += u8"pass named '" + global.pass_name->value + "' does not exist";
+        return message;
+    }
 } // namespace vush

@@ -13,6 +13,8 @@ namespace vush {
     struct Context {
         anton::Array<Owning_Ptr<anton::String>> imported_sources;
         anton::Array<anton::Flat_Hash_Map<anton::String, Symbol>> symbols;
+        source_definition_callback source_definition_cb;
+        void* source_definition_user_data;
         source_request_callback source_request_cb;
         void* source_request_user_data;
     };
