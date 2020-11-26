@@ -34,10 +34,19 @@ namespace vush {
         anton::String bind;
     };
 
-    using source_definition_callback = anton::Expected<Source_Definition, anton::String> (*)(anton::String_View source_name,
-                                                                                             anton::Slice<Sourced_Variable> variables,
-                                                                                             anton::Slice<Sourced_Variable> opaque_variables,
-                                                                                             anton::Slice<Sourced_Variable> unsized_variables, void* user_data);
+    struct Setting_Key_Value {
+        anton::String key;
+        anton::String value;
+    };
+
+    struct Pass_Settings {
+        anton::String pass_name;
+        anton::Array<Setting_Key_Value> settings;
+    };
+
+    using source_definition_callback = anton::Expected<Source_Definition, anton::String> (*)(
+        anton::String_View source_name, anton::Slice<Pass_Settings const> settings, anton::Slice<Sourced_Variable const> variables,
+        anton::Slice<Sourced_Variable const> opaque_variables, anton::Slice<Sourced_Variable const> unsized_variables, void* user_data);
 
     struct Configuration {
         anton::String source_name;
@@ -53,16 +62,6 @@ namespace vush {
         vertex,
         fragment,
         compute,
-    };
-
-    struct Setting_Key_Value {
-        anton::String key;
-        anton::String value;
-    };
-
-    struct Pass_Settings {
-        anton::String pass_name;
-        anton::Array<Setting_Key_Value> settings;
     };
 
     struct GLSL_File {

@@ -8,5 +8,5 @@ namespace vush {
     struct Declaration_List;
 
     anton::Expected<anton::Array<Pass_Data>, anton::String> generate_glsl(Context const& ctx, Declaration_List& node, Format_Options const& format,
-                                                                          anton::Array<Extension> const& extensions);
+                                                                          anton::Slice<Extension const> extensions, anton::Slice<Pass_Settings const> settings);
 } // namespace vush

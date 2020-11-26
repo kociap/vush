@@ -880,7 +880,7 @@ namespace vush {
         }
 
         Owning_Ptr<Declaration_List> ast = ANTON_MOV(parse_res.value());
-        anton::Expected<anton::Array<Pass_Data>, anton::String> codegen_res = generate_glsl(ctx, *ast, config.format, config.extensions);
+        anton::Expected<anton::Array<Pass_Data>, anton::String> codegen_res = generate_glsl(ctx, *ast, config.format, config.extensions, settings);
         if(!codegen_res) {
             return {anton::expected_error, ANTON_MOV(codegen_res.error())};
         }

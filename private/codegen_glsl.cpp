@@ -1205,7 +1205,8 @@ namespace vush {
     }
 
     anton::Expected<anton::Array<Pass_Data>, anton::String> generate_glsl(Context const& ctx, Declaration_List& node, Format_Options const& format,
-                                                                          anton::Array<Extension> const& extensions) {
+                                                                          anton::Slice<Extension const> const extensions,
+                                                                          anton::Slice<Pass_Settings const> const settings) {
         // TODO: Move all validation, transformations and aggregation into vush.cpp
 
         anton::Array<Declaration*> structs_and_consts;
@@ -1451,7 +1452,7 @@ namespace vush {
                 }
 
                 anton::Expected<Source_Definition, anton::String> result =
-                    ctx.source_definition_cb(key, variables, opaque_variables, unsized_variables, ctx.source_definition_user_data);
+                    ctx.source_definition_cb(key, settings, variables, opaque_variables, unsized_variables, ctx.source_definition_user_data);
                 if(result) {
                     source_definitions.emplace(key, ANTON_MOV(result.value()));
                 } else {
