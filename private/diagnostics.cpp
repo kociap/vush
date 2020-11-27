@@ -39,13 +39,21 @@ namespace vush {
 
     anton::String format_compute_return_type_must_be_void(Source_Info const& return_type_info) {
         anton::String message = format_diagnostic_location(return_type_info);
-        message += u8"the return type of compute stage must be void";
+        message += u8"error: the return type of compute stage must be void";
         return message;
     }
 
     anton::String format_sourced_global_pass_does_not_exist(Sourced_Global_Decl const& global) {
         anton::String message = format_diagnostic_location(global.source_info);
-        message += u8"pass named '" + global.pass_name->value + "' does not exist";
+        message += u8"error: pass named '" + global.pass_name->value + "' does not exist";
+        return message;
+    }
+
+    anton::String format_source_import_failed(Import_Decl const& import_decl, anton::String_View const source_callback_message) {
+        Source_Info const& src = import_decl.path->source_info;
+        anton::String message = format_diagnostic_location(src);
+        message += u8"error: source import failed with the following error:\n";
+        message += source_callback_message;
         return message;
     }
 } // namespace vush

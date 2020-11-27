@@ -8,6 +8,7 @@ namespace vush {
     struct Source_Info;
     enum struct Stage_Type;
     struct Sourced_Global_Decl;
+    struct Import_Decl;
 
     [[nodiscard]] inline anton::String build_error_message(anton::String_View const message) {
         return anton::String{u8"error: "} + message;
@@ -27,4 +28,5 @@ namespace vush {
     [[nodiscard]] anton::String format_empty_struct(Source_Info const& struct_info);
     [[nodiscard]] anton::String format_compute_return_type_must_be_void(Source_Info const& return_type_info);
     [[nodiscard]] anton::String format_sourced_global_pass_does_not_exist(Sourced_Global_Decl const& global);
+    [[nodiscard]] anton::String format_source_import_failed(Import_Decl const& import_decl, anton::String_View source_callback_message);
 } // namespace vush

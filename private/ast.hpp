@@ -63,9 +63,14 @@ namespace vush {
 
     struct Source_Info {
         anton::String_View file_path;
-        i64 line;
-        i64 column;
-        i64 file_offset;
+        i64 line = 0;
+        i64 column = 0;
+        // The offset into the source at which the matched node starts
+        i64 start_offset = 0;
+        i64 end_line = 0;
+        i64 end_column = 0;
+        // The offset into the source at which the matched node ends
+        i64 end_offset = 0;
     };
 
     struct AST_Node {
@@ -618,9 +623,10 @@ namespace vush {
     };
 
     struct Import_Decl: public Declaration {
-        anton::String path;
+        Owning_Ptr<String_Literal> path;
 
-        Import_Decl(anton::String path, Source_Info const& source_info): Declaration(source_info, AST_Node_Type::import_decl), path(ANTON_MOV(path)) {}
+        Import_Decl(Owning_Ptr<String_Literal> path, Source_Info const& source_info)
+            : Declaration(source_info, AST_Node_Type::import_decl), path(ANTON_MOV(path)) {}
     };
 
     enum struct Interpolation {
@@ -690,14 +696,11 @@ namespace vush {
     };
 
     struct Struct_Decl: public Declaration {
-        Owning_Ptr<Identifier> name;
         anton::Array<Owning_Ptr<Struct_Member>> members;
+        Owning_Ptr<Identifier> name;
 
-        Struct_Decl(Owning_Ptr<Identifier> name, Source_Info const& source_info): Declaration(source_info, AST_Node_Type::struct_decl), name(ANTON_MOV(name)) {}
-
-        void append(Owning_Ptr<Struct_Member> decl) {
-            members.emplace_back(ANTON_MOV(decl));
-        }
+        Struct_Decl(Owning_Ptr<Identifier> name, anton::Array<Owning_Ptr<Struct_Member>> members, Source_Info const& source_info)
+            : Declaration(source_info, AST_Node_Type::struct_decl), members(ANTON_MOV(members)), name(ANTON_MOV(name)) {}
     };
 
     struct Settings_Decl: public Declaration {
@@ -1067,20 +1070,8 @@ namespace vush {
         anton::Array<Owning_Ptr<Statement>> cases;
         Owning_Ptr<Expression> match_expr;
 
-        Switch_Statement(Owning_Ptr<Expression> match_expr, Source_Info const& source_info)
-            : Statement(source_info, AST_Node_Type::switch_statement), match_expr(ANTON_MOV(match_expr)) {}
-
-        void append(Owning_Ptr<Case_Statement> case_stmt) {
-            cases.emplace_back(ANTON_MOV(case_stmt));
-        }
-
-        void append(Owning_Ptr<Default_Case_Statement> case_stmt) {
-            cases.emplace_back(ANTON_MOV(case_stmt));
-        }
-
-        i64 case_count() const {
-            return cases.size();
-        }
+        Switch_Statement(Owning_Ptr<Expression> match_expr, anton::Array<Owning_Ptr<Statement>> cases, Source_Info const& source_info)
+            : Statement(source_info, AST_Node_Type::switch_statement), cases(ANTON_MOV(cases)), match_expr(ANTON_MOV(match_expr)) {}
     };
 
     struct For_Statement: public Statement {

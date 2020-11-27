@@ -3,6 +3,13 @@
 #include <chrono>
 #include <iostream>
 
+static anton::Expected<vush::Source_Definition, anton::String> source_definition_cb(anton::String_View, anton::Slice<vush::Pass_Settings const>,
+                                                                                    anton::Slice<vush::Sourced_Variable const>,
+                                                                                    anton::Slice<vush::Sourced_Variable const>,
+                                                                                    anton::Slice<vush::Sourced_Variable const>, void*) {
+    return {anton::expected_value, anton::String{}, anton::String{}};
+}
+
 int main() {
     anton::Array<anton::String> import_directories{anton::variadic_construct, anton::String{u8"C:/Users/An0num0us/Documents/vush2/build/shaders"}};
     anton::Array<vush::Constant_Define> constant_defines{anton::variadic_construct, vush::Constant_Define{anton::String{u8"_HAS_TEXTURE"}, 0},
@@ -15,8 +22,9 @@ int main() {
     config.import_directories = ANTON_MOV(import_directories);
     config.extensions = ANTON_MOV(extensions);
     config.source_name = u8"C:/Users/An0num0us/Documents/vush2/build/shaders/diffuse.vush";
+    config.source_definition_cb = source_definition_cb;
     auto t1 = std::chrono::high_resolution_clock::now();
-    anton::Expected<vush::Build_Result, anton::String> result = vush ::compile_to_glsl(config);
+    anton::Expected<vush::Build_Result, anton::String> result = vush::compile_to_glsl(config);
     auto t2 = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count();
     std::cout << "execution time " << duration << "ns\n";

@@ -694,10 +694,10 @@ namespace vush {
             switch(ast->declarations[i]->node_type) {
                 case AST_Node_Type::import_decl: {
                     Owning_Ptr<Import_Decl> node{static_cast<Import_Decl*>(ast->declarations[i].release())};
-                    anton::Expected<Source_Request_Result, anton::String> source_request_res = ctx.source_request_cb(node->path, ctx.source_request_user_data);
+                    anton::Expected<Source_Request_Result, anton::String> source_request_res =
+                        ctx.source_request_cb(node->path->value, ctx.source_request_user_data);
                     if(!source_request_res) {
-                        Source_Info const& src = node->source_info;
-                        return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, source_request_res.error())};
+                        return {anton::expected_error, format_source_import_failed(*node, source_request_res.error())};
                     }
 
                     ast->declarations.erase(ast->declarations.begin() + i, ast->declarations.begin() + i + 1);
@@ -921,7 +921,7 @@ namespace vush {
 
         anton::fs::Input_File_Stream file;
         if(!file.open(res.value())) {
-            return {anton::expected_error, u8"could not open " + res.value() + u8" for reading"};
+            return {anton::expected_error, u8"could not open \"" + res.value() + u8"\" for reading"};
         }
 
         file.seek(anton::Seek_Dir::end, 0);
