@@ -675,6 +675,7 @@ namespace vush {
             }
 
             Source_Request_Result& request_res = source_request_res.value();
+            ctx.source_registry.emplace(request_res.source_name, request_res.data);
             anton::Input_String_Stream stream{ANTON_MOV(request_res.data)};
             Owning_Ptr<anton::String> const& current_source_name =
                 ctx.imported_sources.emplace_back(Owning_Ptr{new anton::String{ANTON_MOV(request_res.source_name)}});
@@ -697,16 +698,16 @@ namespace vush {
                     anton::Expected<Source_Request_Result, anton::String> source_request_res =
                         ctx.source_request_cb(node->path->value, ctx.source_request_user_data);
                     if(!source_request_res) {
-                        return {anton::expected_error, format_source_import_failed(*node, source_request_res.error())};
+                        return {anton::expected_error, format_source_import_failed(ctx, *node, source_request_res.error())};
                     }
 
                     ast->declarations.erase(ast->declarations.begin() + i, ast->declarations.begin() + i + 1);
                     Source_Request_Result& request_res = source_request_res.value();
-
                     // Ensure we're not importing the same source multiple times
                     auto iter = anton::find_if(ctx.imported_sources.begin(), ctx.imported_sources.end(),
                                                [&source_name = request_res.source_name](Owning_Ptr<anton::String> const& v) { return *v == source_name; });
                     if(iter == ctx.imported_sources.end()) {
+                        ctx.source_registry.emplace(request_res.source_name, request_res.data);
                         anton::Input_String_Stream stream{ANTON_MOV(request_res.data)};
                         Owning_Ptr<anton::String> const& current_source_name =
                             ctx.imported_sources.emplace_back(Owning_Ptr{new anton::String{ANTON_MOV(request_res.source_name)}});
@@ -795,8 +796,7 @@ namespace vush {
                             bool const return_type_is_void =
                                 return_type.node_type == AST_Node_Type::builtin_type && ((Builtin_Type&)return_type).type == Builtin_GLSL_Type::glsl_void;
                             if(!return_type_is_void) {
-                                Source_Info const& src = return_type.source_info;
-                                return {anton::expected_error, format_compute_return_type_must_be_void(src)};
+                                return {anton::expected_error, format_compute_return_type_must_be_void(ctx, fn)};
                             }
                         } break;
 

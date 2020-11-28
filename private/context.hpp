@@ -11,6 +11,9 @@
 
 namespace vush {
     struct Context {
+        // Maps source's name to source's contents
+        anton::Flat_Hash_Map<anton::String, anton::String> source_registry;
+        // Array of address-stable names of the imported sources
         anton::Array<Owning_Ptr<anton::String>> imported_sources;
         anton::Array<anton::Flat_Hash_Map<anton::String, Symbol>> symbols;
         source_definition_callback source_definition_cb;

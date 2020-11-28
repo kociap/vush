@@ -3,6 +3,45 @@
 #include <ast.hpp>
 
 namespace vush {
+    static void print_underline(anton::String& out, i64 const padding, i64 const underline_length) {
+        for(i64 i = 0; i < padding; ++i) {
+            out += U' ';
+        }
+
+        for(i64 i = 0; i < underline_length; ++i) {
+            out += U'~';
+        }
+    }
+
+    struct Line_Limits {
+        i64 start;
+        i64 end;
+    };
+
+    [[nodiscard]] static Line_Limits find_line_limits(anton::String_View const source, i64 const start_pos) {
+        Line_Limits limits{start_pos, start_pos};
+        char8 const* const begin = source.bytes_begin() - 1;
+        char8 const* const end = source.bytes_end();
+        // Search backwards
+        for(char8 const* data = source.data() + start_pos - 1; data != begin; --data) {
+            if(*data == '\n') {
+                break;
+            }
+
+            limits.start -= 1;
+        }
+        // Search forward
+        for(char8 const* data = source.data() + start_pos + 1; data != end; ++data) {
+            if(*data == '\n') {
+                break;
+            }
+
+            limits.end += 1;
+        }
+
+        return limits;
+    }
+
     [[nodiscard]] static anton::String format_diagnostic_location(Source_Info const& info) {
         return anton::String{info.file_path} + u8":" + anton::to_string(info.line + 1) + u8":" + anton::to_string(info.column + 1) + u8": ";
     }
@@ -37,23 +76,45 @@ namespace vush {
         return message;
     }
 
-    anton::String format_compute_return_type_must_be_void(Source_Info const& return_type_info) {
-        anton::String message = format_diagnostic_location(return_type_info);
-        message += u8"error: the return type of compute stage must be void";
+    anton::String format_compute_return_type_must_be_void(Context const& ctx, Pass_Stage_Declaration const& compute_decl) {
+        Source_Info const& return_src_info = compute_decl.return_type->source_info;
+        anton::String message = format_diagnostic_location(return_src_info);
+        message += u8"error: the return type of compute stage must be void\n";
+
+        auto iter = ctx.source_registry.find(return_src_info.file_path);
+        anton::String const& source = iter->value;
+        Line_Limits const line = find_line_limits(source, return_src_info.start_offset);
+        anton::String_View const source_bit{source.data() + line.start, source.data() + line.end};
+        message += source_bit;
+        message += U'\n';
+        i64 const padding = return_src_info.start_offset - line.start;
+        i64 const underline = return_src_info.end_offset - return_src_info.start_offset;
+        print_underline(message, padding, underline);
         return message;
     }
 
     anton::String format_sourced_global_pass_does_not_exist(Sourced_Global_Decl const& global) {
         anton::String message = format_diagnostic_location(global.source_info);
-        message += u8"error: pass named '" + global.pass_name->value + "' does not exist";
+        message += u8"error: global sourced from pass named '" + global.pass_name->value + "' that does not exist";
         return message;
     }
 
-    anton::String format_source_import_failed(Import_Decl const& import_decl, anton::String_View const source_callback_message) {
-        Source_Info const& src = import_decl.path->source_info;
-        anton::String message = format_diagnostic_location(src);
-        message += u8"error: source import failed with the following error:\n";
+    anton::String format_source_import_failed(Context const& ctx, Import_Decl const& import_decl, anton::String_View const source_callback_message) {
+        Source_Info const& string_src_info = import_decl.path->source_info;
+        anton::String message = format_diagnostic_location(string_src_info);
+        message += u8"error: source import failed with the following error: ";
         message += source_callback_message;
+
+        auto iter = ctx.source_registry.find(string_src_info.file_path);
+        anton::String const& source = iter->value;
+        Line_Limits const line = find_line_limits(source, string_src_info.start_offset);
+        anton::String_View const source_bit{source.data() + line.start, source.data() + line.end};
+        message += U'\n';
+        message += source_bit;
+        message += U'\n';
+        i64 const padding = string_src_info.start_offset - line.start;
+        i64 const underline = string_src_info.end_offset - string_src_info.start_offset;
+        print_underline(message, padding, underline);
         return message;
     }
 } // namespace vush
