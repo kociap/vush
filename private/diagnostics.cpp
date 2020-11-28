@@ -50,8 +50,19 @@ namespace vush {
         return anton::String{path} + u8":" + anton::to_string(line + 1) + u8":" + anton::to_string(column + 1) + u8": ";
     }
 
-    anton::String format_integer_literal_overflow(Source_Info const& integer) {
-        anton::String message = format_diagnostic_location(integer) + u8"error: integer literal requires more than 32 bits";
+    anton::String format_integer_literal_overflow(Context const& ctx, Source_Info const& integer) {
+        anton::String message = format_diagnostic_location(integer);
+        message += u8"error: integer literal requires more than 32 bits\n";
+
+        auto iter = ctx.source_registry.find(integer.file_path);
+        anton::String const& source = iter->value;
+        Line_Limits const line = find_line_limits(source, integer.start_offset);
+        anton::String_View const source_bit{source.data() + line.start, source.data() + line.end};
+        message += source_bit;
+        message += U'\n';
+        i64 const padding = integer.start_offset - line.start;
+        i64 const underline = integer.end_offset - integer.start_offset;
+        print_underline(message, padding, underline);
         return message;
     }
 
@@ -76,19 +87,18 @@ namespace vush {
         return message;
     }
 
-    anton::String format_compute_return_type_must_be_void(Context const& ctx, Pass_Stage_Declaration const& compute_decl) {
-        Source_Info const& return_src_info = compute_decl.return_type->source_info;
-        anton::String message = format_diagnostic_location(return_src_info);
+    anton::String format_compute_return_type_must_be_void(Context const& ctx, Source_Info const& return_type) {
+        anton::String message = format_diagnostic_location(return_type);
         message += u8"error: the return type of compute stage must be void\n";
 
-        auto iter = ctx.source_registry.find(return_src_info.file_path);
+        auto iter = ctx.source_registry.find(return_type.file_path);
         anton::String const& source = iter->value;
-        Line_Limits const line = find_line_limits(source, return_src_info.start_offset);
+        Line_Limits const line = find_line_limits(source, return_type.start_offset);
         anton::String_View const source_bit{source.data() + line.start, source.data() + line.end};
         message += source_bit;
         message += U'\n';
-        i64 const padding = return_src_info.start_offset - line.start;
-        i64 const underline = return_src_info.end_offset - return_src_info.start_offset;
+        i64 const padding = return_type.start_offset - line.start;
+        i64 const underline = return_type.end_offset - return_type.start_offset;
         print_underline(message, padding, underline);
         return message;
     }

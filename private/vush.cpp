@@ -329,7 +329,7 @@ namespace vush {
                     case Integer_Literal_Base::hex: {
                         // The max number of digits in a 32 bit hexadecimal number is 8, which corresponds to 0xFFFFFFFF (excluding the prefix)
                         if(node->value.size_bytes() > 8) {
-                            return {anton::expected_error, format_integer_literal_overflow(node->source_info)};
+                            return {anton::expected_error, format_integer_literal_overflow(ctx, node->source_info)};
                         } else {
                             return {anton::expected_value};
                         }
@@ -338,14 +338,14 @@ namespace vush {
                     case Integer_Literal_Base::oct: {
                         // The max number of digits in a 32 bit octal number is 13, which corresponds to 0777777777777
                         if(node->value.size_bytes() > 13) {
-                            return {anton::expected_error, format_integer_literal_overflow(node->source_info)};
+                            return {anton::expected_error, format_integer_literal_overflow(ctx, node->source_info)};
                         } else {
                             // The max allowed value is 0377777777777, which corresponds to 4294967295
                             i64 const v = anton::str_to_i64(node->value, 8);
                             if(v <= 4294967295) {
                                 return {anton::expected_value};
                             } else {
-                                return {anton::expected_error, format_integer_literal_overflow(node->source_info)};
+                                return {anton::expected_error, format_integer_literal_overflow(ctx, node->source_info)};
                             }
                         }
                     } break;
@@ -353,14 +353,14 @@ namespace vush {
                     case Integer_Literal_Base::dec: {
                         // The max number of digits in a 32 bit decimal number is 10, which corresponds to 9999999999
                         if(node->value.size_bytes() > 13) {
-                            return {anton::expected_error, format_integer_literal_overflow(node->source_info)};
+                            return {anton::expected_error, format_integer_literal_overflow(ctx, node->source_info)};
                         } else {
                             // The max allowed value is 4294967295
                             i64 const v = anton::str_to_i64(node->value);
                             if(v <= 4294967295) {
                                 return {anton::expected_value};
                             } else {
-                                return {anton::expected_error, format_integer_literal_overflow(node->source_info)};
+                                return {anton::expected_error, format_integer_literal_overflow(ctx, node->source_info)};
                             }
                         }
                     } break;
@@ -796,7 +796,8 @@ namespace vush {
                             bool const return_type_is_void =
                                 return_type.node_type == AST_Node_Type::builtin_type && ((Builtin_Type&)return_type).type == Builtin_GLSL_Type::glsl_void;
                             if(!return_type_is_void) {
-                                return {anton::expected_error, format_compute_return_type_must_be_void(ctx, fn)};
+                                Source_Info const& src = return_type.source_info;
+                                return {anton::expected_error, format_compute_return_type_must_be_void(ctx, src)};
                             }
                         } break;
 
