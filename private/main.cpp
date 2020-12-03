@@ -3,10 +3,7 @@
 #include <chrono>
 #include <iostream>
 
-static anton::Expected<vush::Source_Definition, anton::String> source_definition_cb(anton::String_View, anton::Slice<vush::Pass_Settings const>,
-                                                                                    anton::Slice<vush::Sourced_Variable const>,
-                                                                                    anton::Slice<vush::Sourced_Variable const>,
-                                                                                    anton::Slice<vush::Sourced_Variable const>, void*) {
+static anton::Expected<vush::Source_Definition, anton::String> source_definition_cb(vush::Source_Definition_Context const&) {
     return {anton::expected_value, anton::String{}, anton::String{}};
 }
 

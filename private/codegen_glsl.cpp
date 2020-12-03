@@ -1450,9 +1450,8 @@ namespace vush {
                     anton::String type = stringify_type(*data.type);
                     variables.emplace_back(data.name->value, ANTON_MOV(type));
                 }
-
-                anton::Expected<Source_Definition, anton::String> result =
-                    ctx.source_definition_cb(key, settings, variables, opaque_variables, unsized_variables, ctx.source_definition_user_data);
+                Source_Definition_Context src_def_ctx{key, settings, variables, opaque_variables, unsized_variables, ctx.source_definition_user_data};
+                anton::Expected<Source_Definition, anton::String> result = ctx.source_definition_cb(src_def_ctx);
                 if(result) {
                     source_definitions.emplace(key, ANTON_MOV(result.value()));
                 } else {

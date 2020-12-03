@@ -44,9 +44,16 @@ namespace vush {
         anton::Array<Setting_Key_Value> settings;
     };
 
-    using source_definition_callback = anton::Expected<Source_Definition, anton::String> (*)(
-        anton::String_View source_name, anton::Slice<Pass_Settings const> settings, anton::Slice<Sourced_Variable const> variables,
-        anton::Slice<Sourced_Variable const> opaque_variables, anton::Slice<Sourced_Variable const> unsized_variables, void* user_data);
+    struct Source_Definition_Context {
+        anton::String_View source_name;
+        anton::Slice<Pass_Settings const> settings;
+        anton::Slice<Sourced_Variable const> variables;
+        anton::Slice<Sourced_Variable const> opaque_variables;
+        anton::Slice<Sourced_Variable const> unsized_variables;
+        void* user_data;
+    };
+
+    using source_definition_callback = anton::Expected<Source_Definition, anton::String> (*)(Source_Definition_Context const& params);
 
     struct Configuration {
         anton::String source_name;
