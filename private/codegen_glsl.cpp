@@ -14,103 +14,171 @@ namespace vush {
     using namespace anton::literals;
 
     struct Codegen_Context {
+    public:
         Context const& ctx;
-        i64 indent;
+
+    private:
+        anton::String out;
+        i64 indent_level = 0;
+        i64 line = 0;
+        i64 column = 0;
+
+    public:
+        Codegen_Context(Context const& ctx): ctx(ctx) {}
+        Codegen_Context(Context const& ctx, i64 line): ctx(ctx), line(line) {}
+        Codegen_Context(Codegen_Context const& other)
+            : ctx(other.ctx), out(other.out), indent_level(other.indent_level), line(other.line), column(other.column) {}
+        ~Codegen_Context() = default;
+
+        void operator+=(char8 const c) {
+            if(c == '\n') {
+                line += 1;
+                column = 0;
+            }
+
+            out += c;
+        }
+
+        void operator+=(char32 const c) {
+            if(c == U'\n') {
+                line += 1;
+                column = 0;
+            }
+
+            out += c;
+        }
+
+        void operator+=(anton::String_View const sv) {
+            for(auto c: sv.bytes()) {
+                if(c != '\n') {
+                    column += 1;
+                } else {
+                    line += 1;
+                    column = 0;
+                }
+            }
+
+            out += sv;
+        }
+
+        void indent(i64 const indent_count = 1) {
+            indent_level += indent_count;
+        }
+
+        void unindent(i64 const indent_count = 1) {
+            indent_level -= indent_count;
+        }
+
+        void write_indent() {
+            for(i64 i = 0; i < indent_level; ++i) {
+                out += u8"    ";
+            }
+
+            column += 4 * indent_level;
+        }
+
+        anton::String& get_output() {
+            return out;
+        }
+
+        i64 get_line() const {
+            return line;
+        }
+
+        i64 get_column() const {
+            return column;
+        }
     };
 
-    static void write_indent(anton::String& out, i64 indent) {
-        for(i64 i = 0; i < indent; ++i) {
-            out += u8"    ";
-        }
-    }
+    static void stringify(Codegen_Context& ctx, AST_Node const& ast_node);
 
     struct Reinterpret_Context {
-        anton::String source_expr;
-        anton::String index_expr;
+        Expression const* source_expr;
+        Expression const* index_expr;
         i64 offset = 0;
     };
 
-    static void stringify_type_reinterpret(anton::String& out, Type& type, Codegen_Context& codegen_ctx, Reinterpret_Context& reinterpret_ctx) {
+    static void stringify_type_reinterpret(Codegen_Context& ctx, Reinterpret_Context& reinterpret_ctx, Type& type) {
         switch(type.node_type) {
             case AST_Node_Type::user_defined_type: {
                 User_Defined_Type& t = (User_Defined_Type&)type;
-                out += t.identifier;
-                out += u8"(";
+                ctx += t.identifier;
+                ctx += u8"(";
                 // We made sure that the symbol exists during validation stage
-                Symbol const* symbol = find_symbol(codegen_ctx.ctx, t.identifier);
+                Symbol const* symbol = find_symbol(ctx.ctx, t.identifier);
                 Struct_Declaration const& struct_declaration = (Struct_Declaration const&)*symbol;
                 for(i64 i = 0; i < struct_declaration.members.size(); ++i) {
                     if(i != 0) {
-                        out += u8", ";
+                        ctx += u8", ";
                     }
 
                     auto& member = struct_declaration.members[i];
-                    stringify_type_reinterpret(out, *member->type, codegen_ctx, reinterpret_ctx);
+                    stringify_type_reinterpret(ctx, reinterpret_ctx, *member->type);
                 }
-                out += u8")";
+                ctx += u8")";
             } break;
 
             case AST_Node_Type::builtin_type: {
                 Builtin_Type& t = (Builtin_Type&)type;
-                out += stringify(t.type);
-                out += u8"(";
+                ctx += stringify(t.type);
+                ctx += u8"(";
                 switch(t.type) {
                     case Builtin_GLSL_Type::glsl_bool:
                     case Builtin_GLSL_Type::glsl_int: {
-                        out += u8"floatBitsToInt(";
-                        out += reinterpret_ctx.source_expr;
-                        out += u8"[";
-                        out += reinterpret_ctx.index_expr;
-                        out += u8" + ";
-                        out += anton::to_string(reinterpret_ctx.offset);
-                        out += u8"]";
-                        out += u8")";
+                        ctx += u8"floatBitsToInt(";
+                        stringify(ctx, *reinterpret_ctx.source_expr);
+                        ctx += u8"[";
+                        stringify(ctx, *reinterpret_ctx.index_expr);
+                        ctx += u8" + ";
+                        ctx += anton::to_string(reinterpret_ctx.offset);
+                        ctx += u8"]";
+                        ctx += u8")";
                         reinterpret_ctx.offset += 1;
                     } break;
 
                     case Builtin_GLSL_Type::glsl_uint: {
-                        out += u8"floatBitsToUint(";
-                        out += reinterpret_ctx.source_expr;
-                        out += u8"[";
-                        out += reinterpret_ctx.index_expr;
-                        out += u8" + ";
-                        out += anton::to_string(reinterpret_ctx.offset);
-                        out += u8"]";
-                        out += u8")";
+                        ctx += u8"floatBitsToUint(";
+                        stringify(ctx, *reinterpret_ctx.source_expr);
+                        ctx += u8"[";
+                        stringify(ctx, *reinterpret_ctx.index_expr);
+                        ctx += u8" + ";
+                        ctx += anton::to_string(reinterpret_ctx.offset);
+                        ctx += u8"]";
+                        ctx += u8")";
                         reinterpret_ctx.offset += 1;
                     } break;
 
                     case Builtin_GLSL_Type::glsl_float: {
-                        out += reinterpret_ctx.source_expr;
-                        out += u8"[";
-                        out += reinterpret_ctx.index_expr;
-                        out += u8" + ";
-                        out += anton::to_string(reinterpret_ctx.offset);
-                        out += u8"]";
+                        stringify(ctx, *reinterpret_ctx.source_expr);
+                        ctx += u8"[";
+                        stringify(ctx, *reinterpret_ctx.index_expr);
+                        ctx += u8" + ";
+                        ctx += anton::to_string(reinterpret_ctx.offset);
+                        ctx += u8"]";
                         reinterpret_ctx.offset += 1;
                     } break;
 
                     case Builtin_GLSL_Type::glsl_double: {
-                        // Output
+                        // output
                         // packDouble2x32(uvec2(floatBitsToUint(data[index + offset]), floatBitsToUint(data[index + offset + 1])))
-                        out += u8"packDouble2x32(uvec2(";
-                        out += u8"floatBitsToUint(";
-                        out += reinterpret_ctx.source_expr;
-                        out += u8"[";
-                        out += reinterpret_ctx.index_expr;
-                        out += u8" + ";
-                        out += anton::to_string(reinterpret_ctx.offset);
-                        out += u8"]";
-                        out += u8"), ";
-                        out += u8"floatBitsToUint(";
-                        out += reinterpret_ctx.source_expr;
-                        out += u8"[";
-                        out += reinterpret_ctx.index_expr;
-                        out += u8" + ";
-                        out += anton::to_string(reinterpret_ctx.offset + 1);
-                        out += u8"]";
-                        out += u8")";
-                        out += u8"))";
+                        ctx += u8"packDouble2x32(uvec2(";
+                        ctx += u8"floatBitsToUint(";
+                        stringify(ctx, *reinterpret_ctx.source_expr);
+                        ctx += u8"[";
+                        stringify(ctx, *reinterpret_ctx.index_expr);
+                        ctx += u8" + ";
+                        ctx += anton::to_string(reinterpret_ctx.offset);
+                        ctx += u8"]";
+                        ctx += u8"), ";
+                        ctx += u8"floatBitsToUint(";
+                        stringify(ctx, *reinterpret_ctx.source_expr);
+                        ctx += u8"[";
+                        stringify(ctx, *reinterpret_ctx.index_expr);
+                        ctx += u8" + ";
+                        ctx += anton::to_string(reinterpret_ctx.offset + 1);
+                        ctx += u8"]";
+                        ctx += u8")";
+                        ctx += u8"))";
                         reinterpret_ctx.offset += 2;
                     } break;
 
@@ -172,15 +240,15 @@ namespace vush {
 
                         for(i64 i = 0; i < component_count; ++i) {
                             if(i != 0) {
-                                out += u8", ";
+                                ctx += u8", ";
                             }
 
-                            out += reinterpret_ctx.source_expr;
-                            out += u8"[";
-                            out += reinterpret_ctx.index_expr;
-                            out += u8" + ";
-                            out += anton::to_string(reinterpret_ctx.offset + i);
-                            out += u8"]";
+                            stringify(ctx, *reinterpret_ctx.source_expr);
+                            ctx += u8"[";
+                            stringify(ctx, *reinterpret_ctx.index_expr);
+                            ctx += u8" + ";
+                            ctx += anton::to_string(reinterpret_ctx.offset + i);
+                            ctx += u8"]";
                         }
                         reinterpret_ctx.offset += component_count;
                     } break;
@@ -188,16 +256,16 @@ namespace vush {
                     default:
                         ANTON_UNREACHABLE();
                 }
-                out += u8")";
+                ctx += u8")";
             } break;
 
             case AST_Node_Type::array_type: {
                 Array_Type& t = (Array_Type&)type;
                 // We made sure that the array is sized during validation stage
-                out += stringify_type(t);
-                out += u8"(";
-                stringify_type_reinterpret(out, *t.base, codegen_ctx, reinterpret_ctx);
-                out += u8")";
+                ctx += stringify_type(t);
+                ctx += u8"(";
+                stringify_type_reinterpret(ctx, reinterpret_ctx, *t.base);
+                ctx += u8")";
             } break;
 
             default:
@@ -205,434 +273,434 @@ namespace vush {
         }
     }
 
-    static void stringify(anton::String& out, AST_Node const& ast_node, Codegen_Context& ctx) {
+    static void stringify(Codegen_Context& ctx, AST_Node const& ast_node) {
         switch(ast_node.node_type) {
             case AST_Node_Type::identifier: {
                 Identifier& node = (Identifier&)ast_node;
-                out += node.value;
+                ctx += node.value;
                 return;
             }
 
             case AST_Node_Type::builtin_type: {
                 Builtin_Type& node = (Builtin_Type&)ast_node;
-                out += stringify(node.type);
+                ctx += stringify(node.type);
                 return;
             }
 
             case AST_Node_Type::user_defined_type: {
                 User_Defined_Type& node = (User_Defined_Type&)ast_node;
-                out += node.identifier;
+                ctx += node.identifier;
                 return;
             }
 
             case AST_Node_Type::array_type: {
                 Array_Type& node = (Array_Type&)ast_node;
-                stringify(out, *node.base, ctx);
-                out += u8"[";
+                stringify(ctx, *node.base);
+                ctx += u8"[";
                 if(node.size) {
-                    stringify(out, *node.size, ctx);
+                    stringify(ctx, *node.size);
                 }
-                out += u8"]";
+                ctx += u8"]";
                 return;
             }
 
             case AST_Node_Type::constant_declaration: {
                 Constant_Declaration& node = (Constant_Declaration&)ast_node;
-                out += u8"const ";
-                stringify(out, *node.type, ctx);
-                out += u8" ";
-                stringify(out, *node.identifier, ctx);
-                out += u8" = ";
-                stringify(out, *node.initializer, ctx);
-                out += u8";\n";
+                ctx += u8"const ";
+                stringify(ctx, *node.type);
+                ctx += u8" ";
+                stringify(ctx, *node.identifier);
+                ctx += u8" = ";
+                stringify(ctx, *node.initializer);
+                ctx += u8";\n";
                 return;
             }
 
             case AST_Node_Type::variable_declaration: {
                 Variable_Declaration& node = (Variable_Declaration&)ast_node;
-                stringify(out, *node.type, ctx);
-                out += u8" ";
-                stringify(out, *node.identifier, ctx);
+                stringify(ctx, *node.type);
+                ctx += u8" ";
+                stringify(ctx, *node.identifier);
                 if(node.initializer) {
-                    out += u8" = ";
-                    stringify(out, *node.initializer, ctx);
+                    ctx += u8" = ";
+                    stringify(ctx, *node.initializer);
                 }
-                out += u8";\n";
+                ctx += u8";\n";
                 return;
             }
 
             case AST_Node_Type::struct_declaration: {
                 Struct_Declaration& node = (Struct_Declaration&)ast_node;
-                out += u8"struct ";
-                stringify(out, *node.identifier, ctx);
-                out += u8" {\n";
-                ctx.indent += 1;
+                ctx += u8"struct ";
+                stringify(ctx, *node.identifier);
+                ctx += u8" {\n";
+                ctx.indent();
                 for(auto& member: node.members) {
-                    write_indent(out, ctx.indent);
-                    stringify(out, *member->type, ctx);
-                    out += u8" ";
-                    stringify(out, *member->identifier, ctx);
-                    out += u8";\n";
+                    ctx.write_indent();
+                    stringify(ctx, *member->type);
+                    ctx += u8" ";
+                    stringify(ctx, *member->identifier);
+                    ctx += u8";\n";
                 }
-                ctx.indent -= 1;
-                out += u8"};\n";
+                ctx.unindent();
+                ctx += u8"};\n";
                 return;
             }
 
             case AST_Node_Type::function_declaration: {
                 Function_Declaration& node = (Function_Declaration&)ast_node;
-                stringify(out, *node.return_type, ctx);
-                out += u8" ";
-                stringify(out, *node.identifier, ctx);
+                stringify(ctx, *node.return_type);
+                ctx += u8" ";
+                stringify(ctx, *node.identifier);
                 // param list
-                out += u8"(";
+                ctx += u8"(";
                 if(node.params.size() > 0) {
-                    stringify(out, *node.params[0], ctx);
+                    stringify(ctx, *node.params[0]);
                     for(i64 i = 1; i != node.params.size(); ++i) {
-                        out += u8", ";
-                        stringify(out, *node.params[i], ctx);
+                        ctx += u8", ";
+                        stringify(ctx, *node.params[i]);
                     }
                 }
-                out += u8") {\n";
-                ctx.indent += 1;
+                ctx += u8") {\n";
+                ctx.indent();
                 for(auto& statement: node.body) {
-                    stringify(out, *statement, ctx);
+                    stringify(ctx, *statement);
                 }
-                ctx.indent -= 1;
-                out += u8"}\n";
+                ctx.unindent();
+                ctx += u8"}\n";
                 return;
             }
 
             case AST_Node_Type::function_parameter: {
                 Function_Parameter& node = (Function_Parameter&)ast_node;
-                stringify(out, *node.type, ctx);
-                out += u8" ";
-                stringify(out, *node.identifier, ctx);
+                stringify(ctx, *node.type);
+                ctx += u8" ";
+                stringify(ctx, *node.identifier);
                 return;
             }
 
             case AST_Node_Type::block_statement: {
                 Block_Statement& node = (Block_Statement&)ast_node;
-                write_indent(out, ctx.indent);
-                out += u8"{\n";
-                ctx.indent += 1;
+                ctx.write_indent();
+                ctx += u8"{\n";
+                ctx.indent();
                 for(auto& statement: node.statements) {
-                    stringify(out, *statement, ctx);
+                    stringify(ctx, *statement);
                 }
-                ctx.indent -= 1;
-                write_indent(out, ctx.indent);
-                out += u8"}\n";
+                ctx.unindent();
+                ctx.write_indent();
+                ctx += u8"}\n";
                 return;
             }
 
             case AST_Node_Type::if_statement: {
                 If_Statement& node = (If_Statement&)ast_node;
-                write_indent(out, ctx.indent);
-                out += u8"if(";
-                stringify(out, *node.condition, ctx);
-                out += u8") {\n";
-                ctx.indent += 1;
+                ctx.write_indent();
+                ctx += u8"if(";
+                stringify(ctx, *node.condition);
+                ctx += u8") {\n";
+                ctx.indent();
                 for(auto& statement: node.true_statements) {
-                    stringify(out, *statement, ctx);
+                    stringify(ctx, *statement);
                 }
-                ctx.indent -= 1;
+                ctx.unindent();
                 if(node.false_statements.size() == 0) {
-                    write_indent(out, ctx.indent);
-                    out += u8"}\n";
+                    ctx.write_indent();
+                    ctx += u8"}\n";
                 } else {
-                    write_indent(out, ctx.indent);
-                    out += u8"} else {\n";
-                    ctx.indent += 1;
+                    ctx.write_indent();
+                    ctx += u8"} else {\n";
+                    ctx.indent();
                     for(auto& statement: node.false_statements) {
-                        stringify(out, *statement, ctx);
+                        stringify(ctx, *statement);
                     }
-                    ctx.indent -= 1;
-                    write_indent(out, ctx.indent);
-                    out += u8"}\n";
+                    ctx.unindent();
+                    ctx.write_indent();
+                    ctx += u8"}\n";
                 }
                 return;
             }
 
             case AST_Node_Type::switch_statement: {
                 Switch_Statement& node = (Switch_Statement&)ast_node;
-                write_indent(out, ctx.indent);
-                out += u8"switch(";
-                stringify(out, *node.match_expression, ctx);
-                out += u8") {\n";
-                ctx.indent += 1;
+                ctx.write_indent();
+                ctx += u8"switch(";
+                stringify(ctx, *node.match_expression);
+                ctx += u8") {\n";
+                ctx.indent();
                 for(auto& s: node.cases) {
                     for(auto& label: s->labels) {
-                        write_indent(out, ctx.indent);
+                        ctx.write_indent();
                         if(label->node_type == AST_Node_Type::default_expression) {
-                            out += u8"default:\n"_sv;
+                            ctx += u8"default:\n"_sv;
                         } else {
-                            out += u8"case "_sv;
-                            stringify(out, *label, ctx);
-                            out += u8":\n";
+                            ctx += u8"case "_sv;
+                            stringify(ctx, *label);
+                            ctx += u8":\n";
                         }
                     }
 
-                    write_indent(out, ctx.indent);
-                    out += u8"{\n"_sv;
-                    ctx.indent += 1;
+                    ctx.write_indent();
+                    ctx += u8"{\n"_sv;
+                    ctx.indent();
                     for(auto& statement: s->statements) {
-                        stringify(out, *statement, ctx);
+                        stringify(ctx, *statement);
                     }
-                    write_indent(out, ctx.indent);
-                    out += u8"break;\n"_sv;
-                    ctx.indent -= 1;
-                    write_indent(out, ctx.indent);
-                    out += u8"}\n"_sv;
+                    ctx.write_indent();
+                    ctx += u8"break;\n"_sv;
+                    ctx.unindent();
+                    ctx.write_indent();
+                    ctx += u8"}\n"_sv;
                 }
-                ctx.indent -= 1;
-                write_indent(out, ctx.indent);
-                out += u8"}\n";
+                ctx.unindent();
+                ctx.write_indent();
+                ctx += u8"}\n";
                 return;
             }
 
             case AST_Node_Type::for_statement: {
                 For_Statement& node = (For_Statement&)ast_node;
-                write_indent(out, ctx.indent);
-                out += u8"for(";
+                ctx.write_indent();
+                ctx += u8"for(";
                 if(node.declaration) {
                     // We stringify the variable_decl manually because we need inline declaration
                     Variable_Declaration& decl = *node.declaration;
-                    stringify(out, *decl.type, ctx);
-                    out += u8" ";
-                    stringify(out, *decl.identifier, ctx);
-                    out += u8" = ";
-                    stringify(out, *decl.initializer, ctx);
+                    stringify(ctx, *decl.type);
+                    ctx += u8" ";
+                    stringify(ctx, *decl.identifier);
+                    ctx += u8" = ";
+                    stringify(ctx, *decl.initializer);
                 }
-                out += u8";";
+                ctx += u8";";
                 if(node.condition) {
-                    out += u8" ";
-                    stringify(out, *node.condition, ctx);
+                    ctx += u8" ";
+                    stringify(ctx, *node.condition);
                 }
-                out += u8";";
+                ctx += u8";";
                 if(node.post_expression) {
-                    out += u8" ";
-                    stringify(out, *node.post_expression, ctx);
+                    ctx += u8" ";
+                    stringify(ctx, *node.post_expression);
                 }
                 // We stringify the block ourselves to allow custom formatting of the braces
-                out += u8") {\n";
-                ctx.indent += 1;
+                ctx += u8") {\n";
+                ctx.indent();
                 for(auto& statement: node.statements) {
-                    stringify(out, *statement, ctx);
+                    stringify(ctx, *statement);
                 }
-                ctx.indent -= 1;
-                write_indent(out, ctx.indent);
-                out += u8"}\n";
+                ctx.unindent();
+                ctx.write_indent();
+                ctx += u8"}\n";
                 return;
             }
 
             case AST_Node_Type::while_statement: {
                 While_Statement& node = (While_Statement&)ast_node;
-                write_indent(out, ctx.indent);
-                out += u8"while(";
-                stringify(out, *node.condition, ctx);
+                ctx.write_indent();
+                ctx += u8"while(";
+                stringify(ctx, *node.condition);
                 // We need no-braces block. We add them inline ourselves.
-                out += u8") {\n";
-                ctx.indent += 1;
+                ctx += u8") {\n";
+                ctx.indent();
                 for(auto& statement: node.statements) {
-                    stringify(out, *statement, ctx);
+                    stringify(ctx, *statement);
                 }
-                ctx.indent -= 1;
-                write_indent(out, ctx.indent);
-                out += u8"}\n";
+                ctx.unindent();
+                ctx.write_indent();
+                ctx += u8"}\n";
                 return;
             }
 
             case AST_Node_Type::do_while_statement: {
                 Do_While_Statement& node = (Do_While_Statement&)ast_node;
-                write_indent(out, ctx.indent);
+                ctx.write_indent();
                 // We need no-braces block. We add them inline ourselves.
-                out += u8"do {\n";
-                ctx.indent += 1;
+                ctx += u8"do {\n";
+                ctx.indent();
                 for(auto& statement: node.statements) {
-                    stringify(out, *statement, ctx);
+                    stringify(ctx, *statement);
                 }
-                ctx.indent -= 1;
-                write_indent(out, ctx.indent);
-                out += u8"} while(";
-                stringify(out, *node.condition, ctx);
-                out += u8");\n";
+                ctx.unindent();
+                ctx.write_indent();
+                ctx += u8"} while(";
+                stringify(ctx, *node.condition);
+                ctx += u8");\n";
                 return;
             }
 
             case AST_Node_Type::return_statement: {
                 Return_Statement& node = (Return_Statement&)ast_node;
-                write_indent(out, ctx.indent);
-                out += u8"return";
+                ctx.write_indent();
+                ctx += u8"return";
                 if(node.return_expression) {
-                    out += u8" ";
-                    stringify(out, *node.return_expression, ctx);
+                    ctx += u8" ";
+                    stringify(ctx, *node.return_expression);
                 }
-                out += u8";\n";
+                ctx += u8";\n";
                 return;
             }
 
             case AST_Node_Type::break_statement: {
-                write_indent(out, ctx.indent);
-                out += u8"break;\n";
+                ctx.write_indent();
+                ctx += u8"break;\n";
                 return;
             }
 
             case AST_Node_Type::continue_statement: {
-                write_indent(out, ctx.indent);
-                out += u8"continue;\n";
+                ctx.write_indent();
+                ctx += u8"continue;\n";
                 return;
             }
 
             case AST_Node_Type::discard_statement: {
-                write_indent(out, ctx.indent);
-                out += u8"discard;\n";
+                ctx.write_indent();
+                ctx += u8"discard;\n";
                 return;
             }
 
             case AST_Node_Type::declaration_statement: {
                 Declaration_Statement& node = (Declaration_Statement&)ast_node;
-                write_indent(out, ctx.indent);
-                stringify(out, *node.declaration, ctx);
+                ctx.write_indent();
+                stringify(ctx, *node.declaration);
                 return;
             }
 
             case AST_Node_Type::expression_statement: {
                 Expression_Statement& node = (Expression_Statement&)ast_node;
-                write_indent(out, ctx.indent);
-                stringify(out, *node.expression, ctx);
-                out += u8";\n";
+                ctx.write_indent();
+                stringify(ctx, *node.expression);
+                ctx += u8";\n";
                 return;
             }
 
             case AST_Node_Type::assignment_expression: {
                 Assignment_Expression& node = (Assignment_Expression&)ast_node;
-                stringify(out, *node.lhs, ctx);
-                out += u8" = ";
-                stringify(out, *node.rhs, ctx);
+                stringify(ctx, *node.lhs);
+                ctx += u8" = ";
+                stringify(ctx, *node.rhs);
                 return;
             }
 
             case AST_Node_Type::arithmetic_assignment_expression: {
                 Arithmetic_Assignment_Expression& node = (Arithmetic_Assignment_Expression&)ast_node;
-                stringify(out, *node.lhs, ctx);
+                stringify(ctx, *node.lhs);
                 switch(node.type) {
                     case Arithmetic_Assignment_Type::plus: {
-                        out += u8" += ";
+                        ctx += u8" += ";
                     } break;
 
                     case Arithmetic_Assignment_Type::minus: {
-                        out += u8" -= ";
+                        ctx += u8" -= ";
                     } break;
 
                     case Arithmetic_Assignment_Type::multiply: {
-                        out += u8" *= ";
+                        ctx += u8" *= ";
                     } break;
 
                     case Arithmetic_Assignment_Type::divide: {
-                        out += u8" /= ";
+                        ctx += u8" /= ";
                     } break;
 
                     case Arithmetic_Assignment_Type::remainder: {
-                        out += u8" %= ";
+                        ctx += u8" %= ";
                     } break;
 
                     case Arithmetic_Assignment_Type::lshift: {
-                        out += u8" <<= ";
+                        ctx += u8" <<= ";
                     } break;
 
                     case Arithmetic_Assignment_Type::rshift: {
-                        out += u8" >>= ";
+                        ctx += u8" >>= ";
                     } break;
 
                     case Arithmetic_Assignment_Type::bit_and: {
-                        out += u8" &= ";
+                        ctx += u8" &= ";
                     } break;
 
                     case Arithmetic_Assignment_Type::bit_xor: {
-                        out += u8" ^= ";
+                        ctx += u8" ^= ";
                     } break;
 
                     case Arithmetic_Assignment_Type::bit_or: {
-                        out += u8" |= ";
+                        ctx += u8" |= ";
                     } break;
                 }
-                stringify(out, *node.rhs, ctx);
+                stringify(ctx, *node.rhs);
                 return;
             }
 
             case AST_Node_Type::elvis_expression: {
                 Elvis_Expression& node = (Elvis_Expression&)ast_node;
-                stringify(out, *node.condition, ctx);
-                out += u8" ? ";
-                stringify(out, *node.true_expression, ctx);
-                out += u8" : ";
-                stringify(out, *node.false_expression, ctx);
+                stringify(ctx, *node.condition);
+                ctx += u8" ? ";
+                stringify(ctx, *node.true_expression);
+                ctx += u8" : ";
+                stringify(ctx, *node.false_expression);
                 return;
             }
 
             case AST_Node_Type::binary_expression: {
                 Binary_Expression& node = (Binary_Expression&)ast_node;
-                stringify(out, *node.lhs, ctx);
+                stringify(ctx, *node.lhs);
                 switch(node.type) {
                     case Binary_Expression_Type::logic_or:
-                        out += u8" || ";
+                        ctx += u8" || ";
                         break;
                     case Binary_Expression_Type::logic_xor:
-                        out += u8" ^^ ";
+                        ctx += u8" ^^ ";
                         break;
                     case Binary_Expression_Type::logic_and:
-                        out += u8" && ";
+                        ctx += u8" && ";
                         break;
                     case Binary_Expression_Type::equal:
-                        out += u8" == ";
+                        ctx += u8" == ";
                         break;
                     case Binary_Expression_Type::unequal:
-                        out += u8" != ";
+                        ctx += u8" != ";
                         break;
                     case Binary_Expression_Type::greater_than:
-                        out += u8" > ";
+                        ctx += u8" > ";
                         break;
                     case Binary_Expression_Type::less_than:
-                        out += u8" < ";
+                        ctx += u8" < ";
                         break;
                     case Binary_Expression_Type::greater_equal:
-                        out += u8" >= ";
+                        ctx += u8" >= ";
                         break;
                     case Binary_Expression_Type::less_equal:
-                        out += u8" <= ";
+                        ctx += u8" <= ";
                         break;
                     case Binary_Expression_Type::bit_or:
-                        out += u8" | ";
+                        ctx += u8" | ";
                         break;
                     case Binary_Expression_Type::bit_xor:
-                        out += u8" ^ ";
+                        ctx += u8" ^ ";
                         break;
                     case Binary_Expression_Type::bit_and:
-                        out += u8" & ";
+                        ctx += u8" & ";
                         break;
                     case Binary_Expression_Type::lshift:
-                        out += u8" << ";
+                        ctx += u8" << ";
                         break;
                     case Binary_Expression_Type::rshift:
-                        out += u8" >> ";
+                        ctx += u8" >> ";
                         break;
                     case Binary_Expression_Type::add:
-                        out += u8" + ";
+                        ctx += u8" + ";
                         break;
                     case Binary_Expression_Type::sub:
-                        out += u8" - ";
+                        ctx += u8" - ";
                         break;
                     case Binary_Expression_Type::mul:
-                        out += u8" * ";
+                        ctx += u8" * ";
                         break;
                     case Binary_Expression_Type::div:
-                        out += u8" / ";
+                        ctx += u8" / ";
                         break;
                     case Binary_Expression_Type::mod:
-                        out += u8" % ";
+                        ctx += u8" % ";
                         break;
                 }
-                stringify(out, *node.rhs, ctx);
+                stringify(ctx, *node.rhs);
                 return;
             }
 
@@ -643,93 +711,92 @@ namespace vush {
                         break;
 
                     case Unary_Type::minus: {
-                        out += u8"-";
+                        ctx += u8"-";
                     } break;
 
                     case Unary_Type::logic_not: {
-                        out += u8"!";
+                        ctx += u8"!";
                     } break;
 
                     case Unary_Type::bit_not: {
-                        out += u8"~";
+                        ctx += u8"~";
                     } break;
                 }
-                stringify(out, *node.expression, ctx);
+                stringify(ctx, *node.expression);
                 return;
             }
 
             case AST_Node_Type::prefix_increment_expression: {
                 Prefix_Increment_Expression& node = (Prefix_Increment_Expression&)ast_node;
-                out += u8"++";
-                stringify(out, *node.expression, ctx);
+                ctx += u8"++";
+                stringify(ctx, *node.expression);
                 return;
             }
 
             case AST_Node_Type::prefix_decrement_expression: {
                 Prefix_Decrement_Expression& node = (Prefix_Decrement_Expression&)ast_node;
-                out += u8"--";
-                stringify(out, *node.expression, ctx);
+                ctx += u8"--";
+                stringify(ctx, *node.expression);
                 return;
             }
 
             case AST_Node_Type::function_call_expression: {
                 Function_Call_Expression& node = (Function_Call_Expression&)ast_node;
-                stringify(out, *node.identifier, ctx);
-                out += u8"(";
+                stringify(ctx, *node.identifier);
+                ctx += u8"(";
                 if(node.arguments.size() > 0) {
-                    stringify(out, *node.arguments[0], ctx);
-
+                    stringify(ctx, *node.arguments[0]);
                     for(i64 i = 1; i < node.arguments.size(); ++i) {
-                        out += u8", ";
-                        stringify(out, *node.arguments[i], ctx);
+                        ctx += u8", ";
+                        stringify(ctx, *node.arguments[i]);
                     }
                 }
-                out += u8")";
+                ctx += u8")";
                 return;
             }
 
             case AST_Node_Type::member_access_expression: {
                 Member_Access_Expression& node = (Member_Access_Expression&)ast_node;
-                stringify(out, *node.base, ctx);
-                out += u8".";
-                stringify(out, *node.member, ctx);
+                stringify(ctx, *node.base);
+                ctx += u8".";
+                stringify(ctx, *node.member);
                 return;
             }
 
             case AST_Node_Type::array_access_expression: {
                 Array_Access_Expression& node = (Array_Access_Expression&)ast_node;
-                stringify(out, *node.base, ctx);
-                out += u8"[";
-                stringify(out, *node.index, ctx);
-                out += u8"]";
+                stringify(ctx, *node.base);
+                ctx += u8"[";
+                stringify(ctx, *node.index);
+                ctx += u8"]";
                 return;
             }
 
             case AST_Node_Type::postfix_increment_expression: {
                 Postfix_Increment_Expression& node = (Postfix_Increment_Expression&)ast_node;
-                stringify(out, *node.expression, ctx);
-                out += u8"++";
+                stringify(ctx, *node.expression);
+                ctx += u8"++";
                 return;
             }
 
             case AST_Node_Type::postfix_decrement_expression: {
                 Postfix_Decrement_Expression& node = (Postfix_Decrement_Expression&)ast_node;
-                stringify(out, *node.expression, ctx);
-                out += u8"--";
+                stringify(ctx, *node.expression);
+                ctx += u8"--";
                 return;
             }
 
             case AST_Node_Type::identifier_expression: {
                 Identifier_Expression& node = (Identifier_Expression&)ast_node;
-                stringify(out, *node.identifier, ctx);
+                stringify(ctx, *node.identifier);
                 return;
             }
 
             case AST_Node_Type::parenthesised_expression: {
                 Parenthesised_Expression& node = (Parenthesised_Expression&)ast_node;
-                out += u8"(";
-                stringify(out, *node.expression, ctx);
-                out += u8")";
+                ctx += u8"(";
+                stringify(ctx, *node.expression);
+                ctx += u8")";
                 return;
             }
 
@@ -737,16 +804,14 @@ namespace vush {
                 Reinterpret_Expression& node = (Reinterpret_Expression&)ast_node;
                 // TODO: Validate source is a float array
                 // TODO: Validate target type
-                Reinterpret_Context reinterpret_ctx;
-                stringify(reinterpret_ctx.source_expr, *node.source, ctx);
-                stringify(reinterpret_ctx.index_expr, *node.index, ctx);
-                stringify_type_reinterpret(out, *node.target_type, ctx, reinterpret_ctx);
+                Reinterpret_Context reinterpret_ctx{node.source.get(), node.index.get()};
+                stringify_type_reinterpret(ctx, reinterpret_ctx, *node.target_type);
                 return;
             }
 
             case AST_Node_Type::bool_literal: {
                 Bool_Literal& node = (Bool_Literal&)ast_node;
-                out += node.value ? u8"true" : u8"false";
+                ctx += node.value ? u8"true" : u8"false";
                 return;
             }
 
@@ -754,7 +819,7 @@ namespace vush {
                 Integer_Literal& node = (Integer_Literal&)ast_node;
                 switch(node.base) {
                     case Integer_Literal_Base::dec: {
-                        out += node.value;
+                        ctx += node.value;
                     } break;
 
                     case Integer_Literal_Base::bin: {
@@ -767,7 +832,7 @@ namespace vush {
                             }
                         };
 
-                        out += u8"0x";
+                        ctx += u8"0x";
 
                         i64 const length = node.value.size_bytes();
                         char8 const* string = node.value.data();
@@ -781,7 +846,7 @@ namespace vush {
                                 value += string[i] == '1';
                             }
                             char32 const digit = to_hex_digit(value);
-                            out += digit;
+                            ctx += digit;
                         }
 
                         for(i64 i = superfluous; i < length; i += 4) {
@@ -791,32 +856,32 @@ namespace vush {
                             value |= (string[i + 2] == '1') << 1;
                             value |= (string[i + 3] == '1');
                             char32 const digit = to_hex_digit(value);
-                            out += digit;
+                            ctx += digit;
                         }
                     } break;
 
                     case Integer_Literal_Base::oct: {
-                        out += u8"0"_sv;
-                        out += node.value;
+                        ctx += u8"0"_sv;
+                        ctx += node.value;
                     } break;
 
                     case Integer_Literal_Base::hex: {
-                        out += u8"0x"_sv;
-                        out += node.value;
+                        ctx += u8"0x"_sv;
+                        ctx += node.value;
                     } break;
                 }
 
                 if(node.type == Integer_Literal_Type::u32) {
-                    out += u8"u";
+                    ctx += u8"u";
                 }
                 return;
             }
 
             case AST_Node_Type::float_literal: {
                 Float_Literal& node = (Float_Literal&)ast_node;
-                out += node.value;
+                ctx += node.value;
                 if(node.type == Float_Literal_Type::f64) {
-                    out += u8"lf";
+                    ctx += u8"lf";
                 }
                 return;
             }
@@ -824,22 +889,6 @@ namespace vush {
             default:
                 break;
         }
-    }
-
-    static void stringify_function_forward_decl(anton::String& out, Function_Declaration const& node, Codegen_Context& ctx) {
-        stringify(out, *node.return_type, ctx);
-        out += u8" ";
-        stringify(out, *node.identifier, ctx);
-        // param list
-        out += u8"(";
-        if(node.params.size() > 0) {
-            stringify(out, *node.params[0], ctx);
-            for(i64 i = 1; i != node.params.size(); ++i) {
-                out += u8", ";
-                stringify(out, *node.params[i], ctx);
-            }
-        }
-        out += u8");\n";
     }
 
     struct Member_Info {
@@ -953,32 +1002,30 @@ namespace vush {
         return {anton::expected_value, ANTON_MOV(out)};
     }
 
-    static anton::Expected<anton::String, anton::String>
-    generate_vertex_stage(Context const& ctx, Codegen_Context& codegen_ctx, Pass_Stage_Declaration const& stage,
-                          anton::Flat_Hash_Map<anton::String, Source_Definition> const& source_definitions) {
+    static anton::Expected<void, anton::String> generate_vertex_stage(Codegen_Context& ctx, Pass_Stage_Declaration const& stage,
+                                                                      anton::Flat_Hash_Map<anton::String, Source_Definition> const& source_definitions) {
         anton::String const& pass_name = stage.pass_name->value;
-        anton::String out;
         // Stringify the stage function
-        stringify(out, *stage.return_type, codegen_ctx);
-        out += u8" ";
+        stringify(ctx, *stage.return_type);
+        ctx += u8" ";
         anton::String const stage_function_name = u8"_pass_" + pass_name + u8"_stage_vertex";
-        out += stage_function_name;
+        ctx += stage_function_name;
         // param list
-        out += u8"(";
+        ctx += u8"(";
         if(stage.params.size() > 0) {
-            stringify(out, *stage.params[0], codegen_ctx);
-            for(i64 i = 1; i != stage.params.size(); ++i) {
-                out += u8", ";
-                stringify(out, *stage.params[i], codegen_ctx);
+            stringify(ctx, *stage.params[0]);
+            for(i64 i = 1; i < stage.params.size(); ++i) {
+                ctx += u8", ";
+                stringify(ctx, *stage.params[i]);
             }
         }
-        out += u8") {\n";
-        codegen_ctx.indent += 1;
+        ctx += u8") {\n";
+        ctx.indent();
         for(auto& statement: stage.body) {
-            stringify(out, *statement, codegen_ctx);
+            stringify(ctx, *statement);
         }
-        codegen_ctx.indent -= 1;
-        out += u8"}\n\n";
+        ctx.unindent();
+        ctx += u8"}\n\n";
 
         // Write vertex inputs
         // Vertex input variable names are of the form '_pass_<pass name>_<parameter name><exploded member name>'.
@@ -987,20 +1034,20 @@ namespace vush {
             for(auto& param: stage.params) {
                 Function_Parameter& p = (Function_Parameter&)*param;
                 if(is_vertex_input_parameter(p)) {
-                    explode_type(ctx, *p.type, members_info);
+                    explode_type(ctx.ctx, *p.type, members_info);
                     i64 location = 0;
                     for(Member_Info const& m: members_info) {
                         anton::String location_str = anton::to_string(location);
                         anton::String_View type_str = stringify(m.type);
                         // We attach parameter names to the vertex inputs
                         anton::String const& param_name = p.identifier->value;
-                        out += anton::format(u8"layout(location = {}) in {} _pass_{}_{}{};\n", location_str, type_str, pass_name, param_name, m.name);
+                        ctx += anton::format(u8"layout(location = {}) in {} _pass_{}_{}{};\n", location_str, type_str, pass_name, param_name, m.name);
                         location += m.location_slots;
                     }
                     members_info.clear();
                 }
             }
-            out += u8"\n";
+            ctx += u8"\n";
         }
 
         bool const return_type_is_void =
@@ -1008,20 +1055,20 @@ namespace vush {
         if(!return_type_is_void) {
             // Write vertex outputs
             anton::Array<Member_Info> members_info;
-            explode_type(ctx, *stage.return_type, members_info);
+            explode_type(ctx.ctx, *stage.return_type, members_info);
             i64 location = 0;
             for(Member_Info const& m: members_info) {
                 anton::String location_str = anton::to_string(location);
                 anton::String_View type_str = stringify(m.type);
-                out += anton::format(u8"layout(location = {}) out {} _pass_{}_out{};\n", location_str, type_str, pass_name, m.name);
+                ctx += anton::format(u8"layout(location = {}) out {} _pass_{}_out{};\n", location_str, type_str, pass_name, m.name);
                 location += m.location_slots;
             }
-            out += u8"\n";
+            ctx += u8"\n";
         }
 
         // Output main
-        out += u8"void main() {\n";
-        codegen_ctx.indent += 1;
+        ctx += u8"void main() {\n";
+        ctx.indent();
 
         // Generate sourced parameters
         anton::Array<anton::String> arguments;
@@ -1032,19 +1079,19 @@ namespace vush {
                 Function_Parameter& p = (Function_Parameter&)*param;
                 ANTON_ASSERT(is_sourced_parameter(p), u8"all parameters must be sourced");
                 if(is_vertex_input_parameter(p)) {
-                    write_indent(out, codegen_ctx.indent);
-                    stringify(out, *p.type, codegen_ctx);
+                    ctx.write_indent();
+                    stringify(ctx, *p.type);
                     anton::String arg_name = "arg" + anton::to_string(param_index);
-                    out += u8" ";
-                    out += arg_name;
-                    out += u8";\n";
+                    ctx += u8" ";
+                    ctx += arg_name;
+                    ctx += u8";\n";
 
-                    explode_type(ctx, *p.type, members_info);
-                    // write vertex input assignments
+                    explode_type(ctx.ctx, *p.type, members_info);
+                    // Write vertex input assignments
                     for(Member_Info const& m: members_info) {
-                        write_indent(out, codegen_ctx.indent);
+                        ctx.write_indent();
                         anton::String const& param_name = p.identifier->value;
-                        out += anton::format(u8"{}{} = _pass_{}_{}{};\n", arg_name, m.accessor, pass_name, param_name, m.name);
+                        ctx += anton::format(u8"{}{} = _pass_{}_{}{};\n", arg_name, m.accessor, pass_name, param_name, m.name);
                     }
                     members_info.clear();
                     arguments.emplace_back(ANTON_MOV(arg_name));
@@ -1063,64 +1110,62 @@ namespace vush {
             }
         }
 
-        write_indent(out, codegen_ctx.indent);
+        ctx.write_indent();
         if(!return_type_is_void) {
-            out += stringify_type(*stage.return_type);
-            out += u8" _res = ";
+            ctx += stringify_type(*stage.return_type);
+            ctx += u8" _res = ";
         }
 
-        out += stage_function_name;
-        out += u8"(";
+        ctx += stage_function_name;
+        ctx += u8"(";
         if(arguments.size() > 0) {
-            out += arguments[0];
+            ctx += arguments[0];
             for(i64 i = 1; i < arguments.size(); ++i) {
-                out += u8", ";
-                out += arguments[i];
+                ctx += u8", ";
+                ctx += arguments[i];
             }
         }
-        out += u8");\n";
+        ctx += u8");\n";
 
         if(!return_type_is_void) {
             // Write vertex output assignments
             anton::Array<Member_Info> members_info;
-            explode_type(ctx, *stage.return_type, members_info);
+            explode_type(ctx.ctx, *stage.return_type, members_info);
             for(Member_Info const& m: members_info) {
-                write_indent(out, codegen_ctx.indent);
-                out += anton::format(u8"_pass_{}_out{} = _res{};\n", pass_name, m.name, m.accessor);
+                ctx.write_indent();
+                ctx += anton::format(u8"_pass_{}_out{} = _res{};\n", pass_name, m.name, m.accessor);
             }
         }
 
-        codegen_ctx.indent -= 1;
-        out += u8"}\n";
-        return {anton::expected_value, ANTON_MOV(out)};
+        ctx.unindent();
+        ctx += u8"}\n";
+        return {anton::expected_value};
     }
 
-    static anton::Expected<anton::String, anton::String>
-    generate_fragment_stage(Context const& ctx, Codegen_Context& codegen_ctx, Pass_Stage_Declaration const& stage,
-                            anton::Flat_Hash_Map<anton::String, Source_Definition> const& source_definitions) {
+    static anton::Expected<void, anton::String> generate_fragment_stage(Codegen_Context& ctx, Pass_Stage_Declaration const& stage,
+                                                                        anton::Flat_Hash_Map<anton::String, Source_Definition> const& source_definitions) {
         anton::String const& pass_name = stage.pass_name->value;
-        anton::String out;
         // Stringify the stage function
-        stringify(out, *stage.return_type, codegen_ctx);
-        out += u8" ";
+        stringify(ctx, *stage.return_type);
+        ctx += u8" ";
         anton::String const stage_function_name = u8"_pass_" + pass_name + u8"_stage_fragment";
-        out += stage_function_name;
+        ctx += stage_function_name;
         // param list
-        out += u8"(";
+        ctx += u8"(";
         if(stage.params.size() > 0) {
-            stringify(out, *stage.params[0], codegen_ctx);
+            stringify(ctx, *stage.params[0]);
             for(i64 i = 1; i != stage.params.size(); ++i) {
-                out += u8", ";
-                stringify(out, *stage.params[i], codegen_ctx);
+                ctx += u8", ";
+                stringify(ctx, *stage.params[i]);
             }
         }
-        out += u8") {\n";
-        codegen_ctx.indent += 1;
+        ctx += u8") {\n";
+        ctx.indent();
         for(auto& statement: stage.body) {
-            stringify(out, *statement, codegen_ctx);
+            stringify(ctx, *statement);
         }
-        codegen_ctx.indent -= 1;
-        out += u8"}\n\n";
+        ctx.unindent();
+        ctx += u8"}\n\n";
 
         anton::Array<anton::String> arguments;
         bool const has_prev_stage_input = stage.params.size() > 0 && !is_sourced_parameter((Function_Parameter const&)*stage.params[0]);
@@ -1128,17 +1173,17 @@ namespace vush {
         if(has_prev_stage_input) {
             Function_Parameter const& p = (Function_Parameter const&)*stage.params[0];
             anton::Array<Member_Info> members_info;
-            explode_type(ctx, *p.type, members_info);
+            explode_type(ctx.ctx, *p.type, members_info);
             i64 location = 0;
             for(Member_Info const& m: members_info) {
                 anton::String location_str = anton::to_string(location);
                 anton::String_View type_str = stringify(m.type);
                 anton::String_View interpolation_str = stringify(m.interpolation);
-                out += anton::format(u8"layout(location = {}) {} in {} _pass_{}_in_{}{};\n", location_str, interpolation_str, type_str, pass_name,
+                ctx += anton::format(u8"layout(location = {}) {} in {} _pass_{}_in_{}{};\n", location_str, interpolation_str, type_str, pass_name,
                                      p.identifier->value, m.name);
                 location += m.location_slots;
             }
-            out += u8"\n";
+            ctx += u8"\n";
             arguments.emplace_back(u8"_arg0");
         }
 
@@ -1161,113 +1206,111 @@ namespace vush {
         // Decompose return type to individual outputs
         if(!return_type_is_void) {
             anton::Array<Member_Info> members_info;
-            explode_type(ctx, *stage.return_type, members_info);
+            explode_type(ctx.ctx, *stage.return_type, members_info);
             i64 location = 0;
             for(Member_Info const& m: members_info) {
                 anton::String location_str = anton::to_string(location);
                 anton::String_View type_str = stringify(m.type);
-                out += anton::format(u8"layout(location = {}) out {} _pass_{}_out{};\n", location_str, type_str, pass_name, m.name);
+                ctx += anton::format(u8"layout(location = {}) out {} _pass_{}_out{};\n", location_str, type_str, pass_name, m.name);
                 location += m.location_slots;
             }
-            out += u8"\n";
+            ctx += u8"\n";
         }
 
         // Output main
-        out += u8"void main() {\n";
-        codegen_ctx.indent += 1;
+        ctx += u8"void main() {\n";
+        ctx.indent();
 
         // Build _arg0 (input from the previous stage aggregated into a struct) from fragment inputs
         if(has_prev_stage_input) {
             Function_Parameter const& p = (Function_Parameter const&)*stage.params[0];
-            write_indent(out, codegen_ctx.indent);
-            out += stringify_type(*p.type);
-            out += u8" _arg0;\n";
+            ctx.write_indent();
+            ctx += stringify_type(*p.type);
+            ctx += u8" _arg0;\n";
             anton::Array<Member_Info> members_info;
-            explode_type(ctx, *p.type, members_info);
+            explode_type(ctx.ctx, *p.type, members_info);
             for(Member_Info const& m: members_info) {
-                write_indent(out, codegen_ctx.indent);
-                out += anton::format(u8"_arg0{} = _pass_{}_in_{}{};\n", m.accessor, pass_name, p.identifier->value, m.name);
+                ctx.write_indent();
+                ctx += anton::format(u8"_arg0{} = _pass_{}_in_{}{};\n", m.accessor, pass_name, p.identifier->value, m.name);
             }
         }
 
         // Write stage function call
         anton::String const shader_return_name{u8"_res"};
-        write_indent(out, codegen_ctx.indent);
+        ctx.write_indent();
         if(!return_type_is_void) {
-            stringify(out, *stage.return_type, codegen_ctx);
-            out += u8" ";
+            stringify(ctx, *stage.return_type);
+            ctx += u8" ";
             // Write result name
-            out += shader_return_name;
-            out += u8" = ";
+            ctx += shader_return_name;
+            ctx += u8" = ";
         }
 
-        out += stage_function_name;
-        out += u8"(";
+        ctx += stage_function_name;
+        ctx += u8"(";
         if(arguments.size() > 0) {
-            out += arguments[0];
+            ctx += arguments[0];
             for(i64 i = 1; i < arguments.size(); ++i) {
-                out += u8", ";
-                out += arguments[i];
+                ctx += u8", ";
+                ctx += arguments[i];
             }
         }
-        out += u8");\n";
+        ctx += u8");\n";
 
         if(!return_type_is_void) {
             anton::Array<Member_Info> members_info;
-            explode_type(ctx, *stage.return_type, members_info);
+            explode_type(ctx.ctx, *stage.return_type, members_info);
             for(Member_Info const& m: members_info) {
-                write_indent(out, codegen_ctx.indent);
-                out += anton::format(u8"_pass_{}_out{} = {}{};\n", pass_name, m.name, shader_return_name, m.accessor);
+                ctx.write_indent();
+                ctx += anton::format(u8"_pass_{}_out{} = {}{};\n", pass_name, m.name, shader_return_name, m.accessor);
             }
         }
 
-        codegen_ctx.indent -= 1;
-        out += u8"}\n";
-        return {anton::expected_value, ANTON_MOV(out)};
+        ctx.unindent();
+        ctx += u8"}\n";
+        return {anton::expected_value};
     }
 
-    static anton::Expected<anton::String, anton::String>
-    generate_compute_stage(Codegen_Context& codegen_ctx, Pass_Stage_Declaration const& stage,
-                           anton::Flat_Hash_Map<anton::String, Source_Definition> const& source_definitions) {
+    static anton::Expected<void, anton::String> generate_compute_stage(Codegen_Context& ctx, Pass_Stage_Declaration const& stage,
+                                                                       anton::Flat_Hash_Map<anton::String, Source_Definition> const& source_definitions) {
         anton::String const& pass_name = stage.pass_name->value;
-        anton::String out;
         // Stringify the stage function
-        stringify(out, *stage.return_type, codegen_ctx);
-        out += u8" ";
+        stringify(ctx, *stage.return_type);
+        ctx += u8" ";
         anton::String const stage_function_name = u8"_pass_" + pass_name + u8"_stage_compute";
-        out += stage_function_name;
+        ctx += stage_function_name;
         // param list
-        out += u8"(";
+        ctx += u8"(";
         if(stage.params.size() > 0) {
-            stringify(out, *stage.params[0], codegen_ctx);
+            stringify(ctx, *stage.params[0]);
             for(i64 i = 1; i != stage.params.size(); ++i) {
-                out += u8", ";
-                stringify(out, *stage.params[i], codegen_ctx);
+                ctx += u8", ";
+                stringify(ctx, *stage.params[i]);
             }
         }
-        out += u8") {\n";
-        codegen_ctx.indent += 1;
+        ctx += u8") {\n";
+        ctx.indent();
         for(auto& statement: stage.body) {
-            stringify(out, *statement, codegen_ctx);
+            stringify(ctx, *statement);
         }
-        codegen_ctx.indent -= 1;
-        out += u8"}\n\n";
+        ctx.unindent();
+        ctx += u8"}\n\n";
 
         for(auto& attribute: stage.attributes) {
             switch(attribute->node_type) {
                 case AST_Node_Type::workgroup_attribute: {
                     Workgroup_Attribute& attrib = (Workgroup_Attribute&)*attribute;
-                    out += u8"layout(local_size_x = ";
-                    stringify(out, *attrib.x, codegen_ctx);
+                    ctx += u8"layout(local_size_x = ";
+                    stringify(ctx, *attrib.x);
                     if(attrib.y) {
-                        out += u8", local_size_y = ";
-                        stringify(out, *attrib.y, codegen_ctx);
+                        ctx += u8", local_size_y = ";
+                        stringify(ctx, *attrib.y);
                         if(attrib.z) {
-                            out += u8", local_size_z = ";
-                            stringify(out, *attrib.z, codegen_ctx);
+                            ctx += u8", local_size_z = ";
+                            stringify(ctx, *attrib.z);
                         }
                     }
-                    out += u8") in;\n\n";
+                    ctx += u8") in;\n\n";
                 } break;
 
                 default:
@@ -1276,13 +1319,13 @@ namespace vush {
         }
 
         // Output main
-        out += u8"void main() {\n";
-        codegen_ctx.indent += 1;
+        ctx += u8"void main() {\n";
+        ctx.indent();
 
         // Write stage function call
-        write_indent(out, codegen_ctx.indent);
-        out += stage_function_name;
-        out += u8"(";
+        ctx.write_indent();
+        ctx += stage_function_name;
+        ctx += u8"(";
 
         // Write arguments
         for(i64 i = 0; i < stage.params.size(); ++i) {
@@ -1296,43 +1339,65 @@ namespace vush {
             }
 
             if(i > 0) {
-                out += u8", ";
+                ctx += u8", ";
             }
 
-            out += res.value();
+            ctx += res.value();
         }
 
-        out += u8");\n";
-        codegen_ctx.indent -= 1;
-        out += u8"}\n";
-        return {anton::expected_value, ANTON_MOV(out)};
+        ctx += u8");\n";
+        ctx.unindent();
+        ctx += u8"}\n";
+        return {anton::expected_value};
+    }
+
+    static void stringify_function_forward_declaration(Codegen_Context& ctx, Function_Declaration const& node) {
+        stringify(ctx, *node.return_type);
+        ctx += u8" ";
+        stringify(ctx, *node.identifier);
+        ctx += u8"(";
+        if(node.params.size() > 0) {
+            stringify(ctx, *node.params[0]);
+            for(i64 i = 1; i != node.params.size(); ++i) {
+                ctx += u8", ";
+                stringify(ctx, *node.params[i]);
+            }
+        }
+        ctx += u8");\n";
     }
 
     anton::Expected<anton::Array<Pass_Data>, anton::String> generate_glsl(Context const& ctx, Codegen_Data const& data) {
-        Codegen_Context codegen_ctx{ctx, 0};
-        anton::String stringified_extensions;
+        // We force the start line to be 4 because we are going to prepend 3 lines to the final string
+        // containing the version and shader_type pragmas:
+        //
+        // 1 | #version <version number> core\n
+        // 2 | #pragma shader_type(<type>)\n
+        // 3 | \n
+        // 4 | <here we will start appending code>
+        //
+        Codegen_Context codegen_ctx{ctx, 4};
         if(data.extensions.size() > 0) {
             for(Extension const& extension: data.extensions) {
-                stringified_extensions += u8"#extension ";
-                stringified_extensions += extension.name;
-                stringified_extensions += u8": ";
+                codegen_ctx += u8"#extension ";
+                codegen_ctx += extension.name;
+                codegen_ctx += u8": ";
                 switch(extension.behaviour) {
                     case Extension_Behaviour::require:
-                        stringified_extensions += u8"require";
+                        codegen_ctx += u8"require";
                         break;
                     case Extension_Behaviour::enable:
-                        stringified_extensions += u8"enable";
+                        codegen_ctx += u8"enable";
                         break;
                     case Extension_Behaviour::warn:
-                        stringified_extensions += u8"warn";
+                        codegen_ctx += u8"warn";
                         break;
                     case Extension_Behaviour::disable:
-                        stringified_extensions += u8"disable";
+                        codegen_ctx += u8"disable";
                         break;
                 }
-                stringified_extensions += U'\n';
+                codegen_ctx += '\n';
             }
-            stringified_extensions += U'\n';
+            codegen_ctx += '\n';
         }
 
         anton::Array<Pass_Data> pass_datas;
@@ -1377,83 +1442,81 @@ namespace vush {
                 }
             }
 
-            anton::String stringified_sources;
+            if(pass.structs_and_constants.size() > 0) {
+                for(Declaration const* const declaration: pass.structs_and_constants) {
+                    stringify(codegen_ctx, *declaration);
+                }
+                codegen_ctx += u8"\n";
+            }
+
             if(source_definitions.size() > 0) {
                 for(auto [source, def]: source_definitions) {
-                    stringified_sources += def.declaration;
-                    stringified_sources += U'\n';
+                    codegen_ctx += def.declaration;
+                    codegen_ctx += U'\n';
                 }
-
-                stringified_sources += u8"\n";
+                codegen_ctx += u8"\n";
             }
 
-            anton::String stringified_functions;
             if(pass.functions.size() > 0) {
-                for(Function_Declaration const* const decl: pass.functions) {
-                    stringify_function_forward_decl(stringified_functions, *decl, codegen_ctx);
+                for(Function_Declaration const* const fn: pass.functions) {
+                    stringify_function_forward_declaration(codegen_ctx, *fn);
                 }
 
-                stringified_functions += u8"\n";
+                codegen_ctx += u8"\n";
 
-                for(Function_Declaration const* const decl: pass.functions) {
-                    stringify(stringified_functions, *decl, codegen_ctx);
-                    stringified_functions += u8"\n";
+                for(Function_Declaration const* const fn: pass.functions) {
+                    stringify(codegen_ctx, *fn);
+                    codegen_ctx += u8"\n";
                 }
-            }
-
-            anton::String stringified_structs_and_consts;
-            if(pass.structs_and_constants.size() > 0) {
-                for(Declaration const* const decl: pass.structs_and_constants) {
-                    stringify(stringified_structs_and_consts, *decl, codegen_ctx);
-                }
-
-                stringified_structs_and_consts += u8"\n";
             }
 
             Pass_Data& pass_data = pass_datas.emplace_back(Pass_Data{pass.name, {}});
             if(pass.vertex_stage) {
-                anton::String out{"#version 460 core\n#pragma shader_stage(vertex)\n\n"};
-                // write the common part
-                out += stringified_extensions;
-                out += stringified_structs_and_consts;
-                out += stringified_sources;
-                out += stringified_functions;
-                anton::Expected<anton::String, anton::String> res = generate_vertex_stage(ctx, codegen_ctx, *pass.vertex_stage, source_definitions);
+                // We make a copy of the common part
+                Codegen_Context vertex_ctx{codegen_ctx};
+                anton::Expected<void, anton::String> res = generate_vertex_stage(vertex_ctx, *pass.vertex_stage, source_definitions);
                 if(!res) {
                     return {anton::expected_error, ANTON_MOV(res.error())};
                 }
-                out += res.value();
-                pass_data.files.emplace_back(GLSL_File{ANTON_MOV(out), Stage_Type::vertex});
+
+                anton::String_View const header = u8"#version 460 core\n#pragma shader_stage(vertex)\n\n"_sv;
+                anton::String const& out = vertex_ctx.get_output();
+                anton::String result{anton::reserve, header.size_bytes() + out.size_bytes()};
+                result += header;
+                result += out;
+                pass_data.files.emplace_back(GLSL_File{ANTON_MOV(result), Stage_Type::vertex});
             }
 
             if(pass.fragment_stage) {
-                anton::String out{"#version 460 core\n#pragma shader_stage(fragment)\n\n"};
-                // write the common part
-                out += stringified_extensions;
-                out += stringified_structs_and_consts;
-                out += stringified_sources;
-                out += stringified_functions;
-                anton::Expected<anton::String, anton::String> res = generate_fragment_stage(ctx, codegen_ctx, *pass.fragment_stage, source_definitions);
+                // We make a copy of the common part
+                Codegen_Context fragment_ctx{codegen_ctx};
+                anton::Expected<void, anton::String> res = generate_fragment_stage(fragment_ctx, *pass.fragment_stage, source_definitions);
                 if(!res) {
                     return {anton::expected_error, ANTON_MOV(res.error())};
                 }
-                out += res.value();
-                pass_data.files.emplace_back(GLSL_File{ANTON_MOV(out), Stage_Type::fragment});
+
+                anton::String_View const header = u8"#version 460 core\n#pragma shader_stage(fragment)\n\n"_sv;
+                anton::String const& out = fragment_ctx.get_output();
+                anton::String result{anton::reserve, header.size_bytes() + out.size_bytes()};
+                result += header;
+                result += out;
+                pass_data.files.emplace_back(GLSL_File{ANTON_MOV(result), Stage_Type::fragment});
             }
 
             if(pass.compute_stage) {
-                anton::String out{"#version 460 core\n#pragma shader_stage(compute)\n\n"};
-                // write the common part
-                out += stringified_extensions;
-                out += stringified_structs_and_consts;
-                out += stringified_sources;
-                out += stringified_functions;
-                anton::Expected<anton::String, anton::String> res = generate_compute_stage(codegen_ctx, *pass.compute_stage, source_definitions);
+                // We make a copy of the common part
+                Codegen_Context compute_ctx{codegen_ctx};
+                anton::Expected<void, anton::String> res = generate_compute_stage(compute_ctx, *pass.compute_stage, source_definitions);
                 if(!res) {
                     return {anton::expected_error, ANTON_MOV(res.error())};
                 }
-                out += res.value();
-                pass_data.files.emplace_back(GLSL_File{ANTON_MOV(out), Stage_Type::compute});
+
+                anton::String_View const header = u8"#version 460 core\n#pragma shader_stage(compute)\n\n"_sv;
+                anton::String const& out = compute_ctx.get_output();
+                anton::String result{anton::reserve, header.size_bytes() + out.size_bytes()};
+                result += header;
+                result += out;
+                pass_data.files.emplace_back(GLSL_File{ANTON_MOV(result), Stage_Type::compute});
             }
         }
 
