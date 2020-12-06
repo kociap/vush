@@ -1454,13 +1454,13 @@ namespace vush {
                 anton::Array<Sourced_Variable> opaque_variables{anton::reserve, value.opaque_variables.size()};
                 for(Sourced_Data const& data: value.opaque_variables) {
                     anton::String type = stringify_type(*data.type);
-                    variables.emplace_back(data.name->value, ANTON_MOV(type));
+                    opaque_variables.emplace_back(data.name->value, ANTON_MOV(type));
                 }
 
                 anton::Array<Sourced_Variable> unsized_variables{anton::reserve, value.unsized_variables.size()};
                 for(Sourced_Data const& data: value.unsized_variables) {
                     anton::String type = stringify_type(*data.type);
-                    variables.emplace_back(data.name->value, ANTON_MOV(type));
+                    unsized_variables.emplace_back(data.name->value, ANTON_MOV(type));
                 }
                 Source_Definition_Context src_def_ctx{key, settings, variables, opaque_variables, unsized_variables, ctx.source_definition_user_data};
                 anton::Expected<Source_Definition, anton::String> result = ctx.source_definition_cb(src_def_ctx);
