@@ -1441,6 +1441,8 @@ namespace vush {
 
         anton::Array<Pass_Data> pass_data;
         for(Pass_Context& pass: passes) {
+            Pass_Settings const* const this_pass_settings =
+                anton::find_if(settings.begin(), settings.end(), [&pass](Pass_Settings const& settings) { return settings.pass_name == pass.name; });
             anton::Flat_Hash_Map<anton::String, Source_Definition> source_definitions;
             for(auto [key, value]: pass.sourced_data) {
                 // We have to make a lot of string copies so that we can expose the variables in the public api
@@ -1462,7 +1464,13 @@ namespace vush {
                     anton::String type = stringify_type(*data.type);
                     unsized_variables.emplace_back(data.name->value, ANTON_MOV(type));
                 }
-                Source_Definition_Context src_def_ctx{key, settings, variables, opaque_variables, unsized_variables, ctx.source_definition_user_data};
+
+                anton::Slice<Setting_Key_Value const> skv;
+                if(this_pass_settings) {
+                    skv = this_pass_settings->settings;
+                }
+
+                Source_Definition_Context src_def_ctx{pass.name, key, skv, variables, opaque_variables, unsized_variables, ctx.source_definition_user_data};
                 anton::Expected<Source_Definition, anton::String> result = ctx.source_definition_cb(src_def_ctx);
                 if(result) {
                     source_definitions.emplace(key, ANTON_MOV(result.value()));

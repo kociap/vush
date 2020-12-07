@@ -45,8 +45,9 @@ namespace vush {
     };
 
     struct Source_Definition_Context {
+        anton::String_View pass_name;
         anton::String_View source_name;
-        anton::Slice<Pass_Settings const> settings;
+        anton::Slice<Setting_Key_Value const> settings;
         anton::Slice<Sourced_Variable const> variables;
         anton::Slice<Sourced_Variable const> opaque_variables;
         anton::Slice<Sourced_Variable const> unsized_variables;
