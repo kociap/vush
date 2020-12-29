@@ -1965,6 +1965,12 @@ namespace vush {
                 return nullptr;
             }
 
+            if(_lexer.match(token_paren_open)) {
+                set_error("unexpected '(' after 'for'");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
             // Match variable
 
             Owning_Ptr<Variable_Declaration> variable_declaration;
@@ -3303,7 +3309,7 @@ namespace vush {
             }
 
             if(is_keyword(identifier)) {
-                anton::String msg = u8"expected identifier, got '" + identifier + "' instead";
+                anton::String msg = u8"keyword '" + identifier + "' may not be used as identifier";
                 set_error(msg, state_backup);
                 _lexer.restore_state(state_backup);
                 return nullptr;
