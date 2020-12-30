@@ -686,7 +686,7 @@ namespace vush {
         Owning_Ptr<Identifier> identifier;
         Owning_Ptr<Expression> initializer;
         Interpolation interpolation;
-        // whether the member is qualifier with 'invariant'
+        // Whether the member is qualified with 'invariant'
         bool invariant;
 
         Struct_Member(Owning_Ptr<Type> type, Owning_Ptr<Identifier> identifier, Owning_Ptr<Expression> initializer, Interpolation interpolation, bool invariant,

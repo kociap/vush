@@ -851,6 +851,57 @@ namespace vush {
         return {anton::expected_value, ANTON_MOV(ast)};
     }
 
+    static void populate_builtin_glsl_variables(Context& ctx, anton::Array<Owning_Ptr<Declaration>>& storage) {
+        struct Builtin_Variable {
+            anton::String_View name;
+            Builtin_GLSL_Type type;
+        };
+
+        Builtin_Variable builtin_variables[] = {// Vertex Shader
+                                                {"gl_VertexID", Builtin_GLSL_Type::glsl_int},
+                                                {"gl_InstanceID", Builtin_GLSL_Type::glsl_int},
+                                                {"gl_VertexIndex", Builtin_GLSL_Type::glsl_int},
+                                                {"gl_InstanceIndex", Builtin_GLSL_Type::glsl_int},
+                                                {"gl_DrawID", Builtin_GLSL_Type::glsl_int},
+                                                {"gl_BaseVertex", Builtin_GLSL_Type::glsl_int},
+                                                {"gl_BaseInstance", Builtin_GLSL_Type::glsl_int},
+                                                {"gl_Position", Builtin_GLSL_Type::glsl_vec4},
+                                                // TODO: Add vertex shader gl_PointSize, gl_ClipDistance, gl_CullDistance
+                                                // TODO: Add tessellation shader variables and geometry shader variables
+                                                // Fragment Shader
+                                                {"gl_FragCoord", Builtin_GLSL_Type::glsl_vec4},
+                                                {"gl_FrontFacing", Builtin_GLSL_Type::glsl_bool},
+                                                // TODO: Add fragment shader gl_ClipDistance, gl_CullDistance
+                                                {"gl_PointCoord", Builtin_GLSL_Type::glsl_vec2},
+                                                {"gl_PrimitiveID", Builtin_GLSL_Type::glsl_int},
+                                                {"gl_SampleID", Builtin_GLSL_Type::glsl_int},
+                                                {"gl_SamplePosition", Builtin_GLSL_Type::glsl_vec2},
+                                                // TODO: Add fragment shader gl_SampleMaskIn
+                                                {"gl_Layer", Builtin_GLSL_Type::glsl_int},
+                                                {"gl_ViewportIndex", Builtin_GLSL_Type::glsl_int},
+                                                {"gl_HelperInvocation", Builtin_GLSL_Type::glsl_int},
+                                                {"gl_FragDepth", Builtin_GLSL_Type::glsl_float},
+                                                // TODO: Add fragment shader gl_SampleMask
+                                                // Compute Shader
+                                                {"gl_NumWorkGroups", Builtin_GLSL_Type::glsl_uvec3},
+                                                {"gl_WorkgroupSize", Builtin_GLSL_Type::glsl_uvec3},
+                                                {"gl_WorkGroupID", Builtin_GLSL_Type::glsl_uvec3},
+                                                {"gl_LocalInvocationID", Builtin_GLSL_Type::glsl_uvec3},
+                                                {"gl_GlobalInvocationID", Builtin_GLSL_Type::glsl_uvec3},
+                                                {"gl_LocalInvocationIndex", Builtin_GLSL_Type::glsl_uint}};
+        // Populate storage and symbols
+        constexpr i64 variable_count = sizeof(builtin_variables) / sizeof(Builtin_Variable);
+        for(i64 i = 0; i < variable_count; ++i) {
+            Builtin_Variable const& var = builtin_variables[i];
+            Variable_Declaration* decl = new Variable_Declaration(Owning_Ptr{new Builtin_Type(Builtin_GLSL_Type::glsl_int, {u8"<GLSL Builtin>", 0, 0, 0})},
+                                                                  Owning_Ptr{new Identifier(anton::String(var.name), {u8"<GLSL Builtin>", 0, 0, 0})}, nullptr,
+                                                                  {u8"<GLSL Builtin>", 0, 0, 0});
+            Symbol symbol{Symbol_Type::variable, decl};
+            ctx.symbols[0].emplace(var.name, symbol);
+            storage.emplace_back(decl);
+        }
+    }
+
     anton::Expected<Build_Result, anton::String> compile_to_glsl(Configuration const& config, source_request_callback callback, void* user_data) {
         Context ctx = {};
         ctx.source_request_cb = callback;
@@ -869,10 +920,13 @@ namespace vush {
                                                                   Owning_Ptr{new Integer_Literal(anton::to_string(define.value), Integer_Literal_Type::i32,
                                                                                                  Integer_Literal_Base::dec, {config.source_name, 0, 0, 0})},
                                                                   {config.source_name, 0, 0, 0});
-            constant_decls.emplace_back(decl);
             symbol.declaration = decl;
             ctx.symbols[0].emplace(define.name, symbol);
+            constant_decls.emplace_back(decl);
         }
+        // Create symbols for the builtin glsl variables
+        anton::Array<Owning_Ptr<Declaration>> builtin_variables;
+        populate_builtin_glsl_variables(ctx, builtin_variables);
 
         anton::Array<Pass_Settings> settings;
         anton::Expected<Owning_Ptr<Declaration_List>, anton::String> parse_res = build_ast_from_sources(ctx, config.source_name, settings);
