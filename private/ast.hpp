@@ -582,6 +582,7 @@ namespace vush {
 
     struct Array_Type: public Type {
         Owning_Ptr<Type> base;
+        // nullptr when the array type is unsized
         Owning_Ptr<Integer_Literal> size;
 
         Array_Type(Owning_Ptr<Type> base, Owning_Ptr<Integer_Literal> size, Source_Info const& source_info)
@@ -965,23 +966,24 @@ namespace vush {
     };
 
     struct Postfix_Inc_Expr: public Expression {
-        Owning_Ptr<Expression> base;
+        Owning_Ptr<Expression> expression;
 
-        Postfix_Inc_Expr(Owning_Ptr<Expression> base, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::postfix_inc_expr), base(ANTON_MOV(base)) {}
+        Postfix_Inc_Expr(Owning_Ptr<Expression> expression, Source_Info const& source_info)
+            : Expression(source_info, AST_Node_Type::postfix_inc_expr), expression(ANTON_MOV(expression)) {}
     };
 
     struct Postfix_Dec_Expr: public Expression {
-        Owning_Ptr<Expression> base;
+        Owning_Ptr<Expression> expression;
 
-        Postfix_Dec_Expr(Owning_Ptr<Expression> base, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::postfix_dec_expr), base(ANTON_MOV(base)) {}
+        Postfix_Dec_Expr(Owning_Ptr<Expression> expression, Source_Info const& source_info)
+            : Expression(source_info, AST_Node_Type::postfix_dec_expr), expression(ANTON_MOV(expression)) {}
     };
 
     struct Paren_Expr: public Expression {
-        Owning_Ptr<Expression> expr;
+        Owning_Ptr<Expression> expression;
 
-        Paren_Expr(Owning_Ptr<Expression> expr, Source_Info const& source_info): Expression(source_info, AST_Node_Type::paren_expr), expr(ANTON_MOV(expr)) {}
+        Paren_Expr(Owning_Ptr<Expression> expression, Source_Info const& source_info)
+            : Expression(source_info, AST_Node_Type::paren_expr), expression(ANTON_MOV(expression)) {}
     };
 
     struct Reinterpret_Expr: public Expression {

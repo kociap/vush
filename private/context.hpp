@@ -6,7 +6,6 @@
 #include <anton/string.hpp>
 #include <anton/string_view.hpp>
 #include <owning_ptr.hpp>
-#include <symbol.hpp>
 #include <vush/vush.hpp>
 
 namespace vush {
@@ -20,6 +19,21 @@ namespace vush {
         void* source_definition_user_data;
         source_request_callback source_request_cb;
         void* source_request_user_data;
+    };
+
+    enum struct Symbol_Type {
+        struct_decl,
+        variable,
+        constant,
+        function,
+        pass_stage,
+    };
+
+    struct Declaration;
+
+    struct Symbol {
+        Symbol_Type type;
+        Declaration* declaration;
     };
 
     // find_symbol
@@ -38,7 +52,7 @@ namespace vush {
     // Adding a symbol might invalidate the pointers previously returned by add_symbol and find_symbol.
     //
     // Returns:
-    // Pointer to the newly symbol
+    // Pointer to the newly created symbol.
     //
     Symbol* add_symbol(Context& ctx, anton::String_View name, Symbol const& symbol);
 
