@@ -739,14 +739,14 @@ namespace vush {
 
             case AST_Node_Type::postfix_inc_expr: {
                 Postfix_Inc_Expr& node = (Postfix_Inc_Expr&)ast_node;
-                stringify(out, *node.base, ctx);
+                stringify(out, *node.expression, ctx);
                 out += u8"++";
                 return;
             }
 
             case AST_Node_Type::postfix_dec_expr: {
                 Postfix_Dec_Expr& node = (Postfix_Dec_Expr&)ast_node;
-                stringify(out, *node.base, ctx);
+                stringify(out, *node.expression, ctx);
                 out += u8"--";
                 return;
             }
@@ -760,7 +760,7 @@ namespace vush {
             case AST_Node_Type::paren_expr: {
                 Paren_Expr& node = (Paren_Expr&)ast_node;
                 out += u8"(";
-                stringify(out, *node.expr, ctx);
+                stringify(out, *node.expression, ctx);
                 out += u8")";
                 return;
             }

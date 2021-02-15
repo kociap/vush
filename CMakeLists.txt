@@ -55,7 +55,6 @@ target_sources(vush
     "${CMAKE_CURRENT_SOURCE_DIR}/private/owning_ptr.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/parser.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/parser.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/private/symbol.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/vush.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/public/vush/types.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/public/vush/vush.hpp"

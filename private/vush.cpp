@@ -9,7 +9,6 @@
 #include <context.hpp>
 #include <diagnostics.hpp>
 #include <parser.hpp>
-#include <symbol.hpp>
 
 namespace vush {
     // process_fn_param_list
@@ -368,6 +367,174 @@ namespace vush {
                 return {anton::expected_value};
             }
 
+            case AST_Node_Type::identifier_expression: {
+                Owning_Ptr<Identifier_Expression>& node = (Owning_Ptr<Identifier_Expression>&)expression;
+                Symbol const* const symbol = find_symbol(ctx, node->identifier->value);
+                if(!symbol) {
+                    return {anton::expected_error, format_undefined_symbol(ctx, node->identifier->source_info)};
+                }
+
+                return {anton::expected_value};
+            }
+
+            case AST_Node_Type::assignment_expression: {
+                Owning_Ptr<Assignment_Expression>& node = (Owning_Ptr<Assignment_Expression>&)expression;
+                anton::Expected<void, anton::String> lhs_res = process_expression(ctx, node->lhs);
+                if(!lhs_res) {
+                    return lhs_res;
+                }
+
+                anton::Expected<void, anton::String> rhs_res = process_expression(ctx, node->rhs);
+                if(!rhs_res) {
+                    return rhs_res;
+                }
+
+                return {anton::expected_value};
+            }
+
+            case AST_Node_Type::arithmetic_assignment_expression: {
+                Owning_Ptr<Arithmetic_Assignment_Expression>& node = (Owning_Ptr<Arithmetic_Assignment_Expression>&)expression;
+                anton::Expected<void, anton::String> lhs_res = process_expression(ctx, node->lhs);
+                if(!lhs_res) {
+                    return lhs_res;
+                }
+
+                anton::Expected<void, anton::String> rhs_res = process_expression(ctx, node->rhs);
+                if(!rhs_res) {
+                    return rhs_res;
+                }
+
+                return {anton::expected_value};
+            }
+
+            case AST_Node_Type::elvis_expr: {
+                Owning_Ptr<Elvis_Expr>& node = (Owning_Ptr<Elvis_Expr>&)expression;
+                anton::Expected<void, anton::String> condition_res = process_expression(ctx, node->condition);
+                if(!condition_res) {
+                    return condition_res;
+                }
+
+                anton::Expected<void, anton::String> true_expr_res = process_expression(ctx, node->true_expr);
+                if(!true_expr_res) {
+                    return true_expr_res;
+                }
+
+                anton::Expected<void, anton::String> false_expr_res = process_expression(ctx, node->false_expr);
+                if(!false_expr_res) {
+                    return false_expr_res;
+                }
+
+                return {anton::expected_value};
+            }
+
+            case AST_Node_Type::unary_expression: {
+                Owning_Ptr<Unary_Expression>& node = (Owning_Ptr<Unary_Expression>&)expression;
+                anton::Expected<void, anton::String> res = process_expression(ctx, node->expression);
+                if(!res) {
+                    return res;
+                }
+
+                return {anton::expected_value};
+            }
+
+            case AST_Node_Type::prefix_inc_expr: {
+                Owning_Ptr<Prefix_Inc_Expr>& node = (Owning_Ptr<Prefix_Inc_Expr>&)expression;
+                anton::Expected<void, anton::String> res = process_expression(ctx, node->expression);
+                if(!res) {
+                    return res;
+                }
+
+                return {anton::expected_value};
+            }
+
+            case AST_Node_Type::prefix_dec_expr: {
+                Owning_Ptr<Prefix_Dec_Expr>& node = (Owning_Ptr<Prefix_Dec_Expr>&)expression;
+                anton::Expected<void, anton::String> res = process_expression(ctx, node->expression);
+                if(!res) {
+                    return res;
+                }
+
+                return {anton::expected_value};
+            }
+
+            case AST_Node_Type::postfix_inc_expr: {
+                Owning_Ptr<Postfix_Inc_Expr>& node = (Owning_Ptr<Postfix_Inc_Expr>&)expression;
+                anton::Expected<void, anton::String> res = process_expression(ctx, node->expression);
+                if(!res) {
+                    return res;
+                }
+
+                return {anton::expected_value};
+            }
+
+            case AST_Node_Type::postfix_dec_expr: {
+                Owning_Ptr<Postfix_Dec_Expr>& node = (Owning_Ptr<Postfix_Dec_Expr>&)expression;
+                anton::Expected<void, anton::String> res = process_expression(ctx, node->expression);
+                if(!res) {
+                    return res;
+                }
+
+                return {anton::expected_value};
+            }
+
+            case AST_Node_Type::function_call_expression: {
+                Owning_Ptr<Function_Call_Expression>& node = (Owning_Ptr<Function_Call_Expression>&)expression;
+                for(Owning_Ptr<Expression>& arg: node->arg_list->arguments) {
+                    anton::Expected<void, anton::String> res = process_expression(ctx, arg);
+                    if(!res) {
+                        return res;
+                    }
+                }
+
+                Symbol const* const symbol = find_symbol(ctx, node->identifier->value);
+                if(!symbol) {
+                    return {anton::expected_error, format_undefined_symbol(ctx, node->identifier->source_info)};
+                }
+
+                if(symbol->type != Symbol_Type::function) {
+                    return {anton::expected_error, format_called_symbol_does_not_name_function(ctx, node->identifier->source_info)};
+                }
+
+                return {anton::expected_value};
+            }
+
+            case AST_Node_Type::member_access_expression: {
+                Owning_Ptr<Member_Access_Expression>& node = (Owning_Ptr<Member_Access_Expression>&)expression;
+                anton::Expected<void, anton::String> res = process_expression(ctx, node->base);
+                if(!res) {
+                    return res;
+                }
+
+                // TODO: Validate member exists
+
+                return {anton::expected_value};
+            }
+
+            case AST_Node_Type::array_access_expression: {
+                Owning_Ptr<Array_Access_Expression>& node = (Owning_Ptr<Array_Access_Expression>&)expression;
+                anton::Expected<void, anton::String> base_res = process_expression(ctx, node->base);
+                if(!base_res) {
+                    return base_res;
+                }
+
+                anton::Expected<void, anton::String> index_res = process_expression(ctx, node->index);
+                if(!index_res) {
+                    return index_res;
+                }
+
+                return {anton::expected_value};
+            }
+
+            case AST_Node_Type::paren_expr: {
+                Owning_Ptr<Paren_Expr>& node = (Owning_Ptr<Paren_Expr>&)expression;
+                anton::Expected<void, anton::String> res = process_expression(ctx, node->expression);
+                if(!res) {
+                    return res;
+                }
+
+                return {anton::expected_value};
+            }
+
             case AST_Node_Type::binary_expr: {
                 Owning_Ptr<Binary_Expr>& node = (Owning_Ptr<Binary_Expr>&)expression;
                 if(anton::Expected<void, anton::String> lhs = process_expression(ctx, node->lhs); !lhs) {
@@ -418,6 +585,8 @@ namespace vush {
                 }
                 return {anton::expected_value};
             }
+
+                // TODO: Add reinterpret_expr
 
             default:
                 return {anton::expected_value};
@@ -773,11 +942,11 @@ namespace vush {
                 case AST_Node_Type::function_declaration: {
                     Function_Declaration& fn = static_cast<Function_Declaration&>(*ast->declarations[i]);
                     ctx.symbols[0].emplace(fn.name->value, Symbol{Symbol_Type::function, &fn});
-                    if(anton::Expected<void, anton::String> res = process_fn_param_list(ctx, fn); !res) {
+                    if(anton::Expected<void, anton::String> res = validate_function_attributes(ctx, fn); !res) {
                         return {anton::expected_error, ANTON_MOV(res.error())};
                     }
 
-                    if(anton::Expected<void, anton::String> res = validate_function_attributes(ctx, fn); !res) {
+                    if(anton::Expected<void, anton::String> res = process_fn_param_list(ctx, fn); !res) {
                         return {anton::expected_error, ANTON_MOV(res.error())};
                     }
 
@@ -806,11 +975,11 @@ namespace vush {
                             break;
                     }
 
-                    if(anton::Expected<void, anton::String> res = process_fn_param_list(ctx, fn); !res) {
+                    if(anton::Expected<void, anton::String> res = validate_function_attributes(ctx, fn); !res) {
                         return {anton::expected_error, ANTON_MOV(res.error())};
                     }
 
-                    if(anton::Expected<void, anton::String> res = validate_function_attributes(ctx, fn); !res) {
+                    if(anton::Expected<void, anton::String> res = process_fn_param_list(ctx, fn); !res) {
                         return {anton::expected_error, ANTON_MOV(res.error())};
                     }
 

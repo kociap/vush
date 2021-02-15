@@ -66,6 +66,46 @@ namespace vush {
         return message;
     }
 
+    anton::String format_undefined_symbol(Context const& ctx, Source_Info const& symbol) {
+        auto iter = ctx.source_registry.find(symbol.file_path);
+        anton::String const& source = iter->value;
+        anton::String_View const symbol_name{source.data() + symbol.start_offset, source.data() + symbol.end_offset};
+
+        anton::String message = format_diagnostic_location(symbol);
+        message += u8"error: undefined symbol '";
+        message += symbol_name;
+        message += u8"'\n";
+
+        Line_Limits const line = find_line_limits(source, symbol.start_offset);
+        anton::String_View const source_bit{source.data() + line.start, source.data() + line.end};
+        message += source_bit;
+        message += U'\n';
+        i64 const padding = symbol.start_offset - line.start;
+        i64 const underline = symbol.end_offset - symbol.start_offset;
+        print_underline(message, padding, underline);
+        return message;
+    }
+
+    anton::String format_called_symbol_does_not_name_function(Context const& ctx, Source_Info const& symbol) {
+        auto iter = ctx.source_registry.find(symbol.file_path);
+        anton::String const& source = iter->value;
+        anton::String_View const symbol_name{source.data() + symbol.start_offset, source.data() + symbol.end_offset};
+
+        anton::String message = format_diagnostic_location(symbol);
+        message += u8"error: called symbol '";
+        message += symbol_name;
+        message += u8"' does not name a function\n";
+
+        Line_Limits const line = find_line_limits(source, symbol.start_offset);
+        anton::String_View const source_bit{source.data() + line.start, source.data() + line.end};
+        message += source_bit;
+        message += U'\n';
+        i64 const padding = symbol.start_offset - line.start;
+        i64 const underline = symbol.end_offset - symbol.start_offset;
+        print_underline(message, padding, underline);
+        return message;
+    }
+
     anton::String format_duplicate_pass_stage_error(Source_Info const& duplicate, Source_Info const& previous, anton::String const& pass_name,
                                                     Stage_Type const& stage) {
         anton::String message = format_diagnostic_location(duplicate) + u8"error: duplicate " + stringify(stage) + u8" stage in pass '" + pass_name + "'\n";

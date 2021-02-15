@@ -31,7 +31,7 @@ namespace vush {
 
             case AST_Node_Type::paren_expr: {
                 Paren_Expr& expr = (Paren_Expr&)expression;
-                anton::Expected<bool, anton::String> res = is_compiletime_evaluable(ctx, *expr.expr);
+                anton::Expected<bool, anton::String> res = is_compiletime_evaluable(ctx, *expr.expression);
                 return res;
             }
 
@@ -115,7 +115,7 @@ namespace vush {
 
             case AST_Node_Type::paren_expr: {
                 Paren_Expr& expr = (Paren_Expr&)expression;
-                return evaluate_const_expr(ctx, *expr.expr);
+                return evaluate_const_expr(ctx, *expr.expression);
             }
 
             case AST_Node_Type::binary_expr: {
