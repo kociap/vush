@@ -24,6 +24,7 @@ namespace vush {
     [[nodiscard]] anton::String format_integer_literal_overflow(Context const& ctx, Source_Info const& integer);
     [[nodiscard]] anton::String format_undefined_symbol(Context const& ctx, Source_Info const& symbol);
     [[nodiscard]] anton::String format_called_symbol_does_not_name_function(Context const& ctx, Source_Info const& symbol);
+    [[nodiscard]] anton::String format_variable_declaration_in_global_scope(Context const& ctx, Source_Info const& declaration);
     [[nodiscard]] anton::String format_duplicate_pass_stage_error(Source_Info const& duplicate, Source_Info const& previous, anton::String const& pass_name,
                                                                   Stage_Type const& stage);
     [[nodiscard]] anton::String format_missing_vertex_stage_error(anton::String const& pass_name);
