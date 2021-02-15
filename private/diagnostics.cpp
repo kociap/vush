@@ -42,6 +42,16 @@ namespace vush {
         return limits;
     }
 
+    static void print_source_snippet(anton::String& out, anton::String const& source, Source_Info const& src_info) {
+        Line_Limits const line = find_line_limits(source, src_info.start_offset);
+        anton::String_View const source_bit{source.data() + line.start, source.data() + line.end};
+        out += source_bit;
+        out += U'\n';
+        i64 const padding = src_info.start_offset - line.start;
+        i64 const underline = src_info.end_offset - src_info.start_offset;
+        print_underline(out, padding, underline);
+    }
+
     [[nodiscard]] static anton::String format_diagnostic_location(Source_Info const& info) {
         return anton::String{info.file_path} + u8":" + anton::to_string(info.line + 1) + u8":" + anton::to_string(info.column + 1) + u8": ";
     }
@@ -53,16 +63,9 @@ namespace vush {
     anton::String format_integer_literal_overflow(Context const& ctx, Source_Info const& integer) {
         anton::String message = format_diagnostic_location(integer);
         message += u8"error: integer literal requires more than 32 bits\n";
-
         auto iter = ctx.source_registry.find(integer.file_path);
         anton::String const& source = iter->value;
-        Line_Limits const line = find_line_limits(source, integer.start_offset);
-        anton::String_View const source_bit{source.data() + line.start, source.data() + line.end};
-        message += source_bit;
-        message += U'\n';
-        i64 const padding = integer.start_offset - line.start;
-        i64 const underline = integer.end_offset - integer.start_offset;
-        print_underline(message, padding, underline);
+        print_source_snippet(message, source, integer);
         return message;
     }
 
@@ -70,19 +73,11 @@ namespace vush {
         auto iter = ctx.source_registry.find(symbol.file_path);
         anton::String const& source = iter->value;
         anton::String_View const symbol_name{source.data() + symbol.start_offset, source.data() + symbol.end_offset};
-
         anton::String message = format_diagnostic_location(symbol);
         message += u8"error: undefined symbol '";
         message += symbol_name;
         message += u8"'\n";
-
-        Line_Limits const line = find_line_limits(source, symbol.start_offset);
-        anton::String_View const source_bit{source.data() + line.start, source.data() + line.end};
-        message += source_bit;
-        message += U'\n';
-        i64 const padding = symbol.start_offset - line.start;
-        i64 const underline = symbol.end_offset - symbol.start_offset;
-        print_underline(message, padding, underline);
+        print_source_snippet(message, source, symbol);
         return message;
     }
 
@@ -90,19 +85,20 @@ namespace vush {
         auto iter = ctx.source_registry.find(symbol.file_path);
         anton::String const& source = iter->value;
         anton::String_View const symbol_name{source.data() + symbol.start_offset, source.data() + symbol.end_offset};
-
         anton::String message = format_diagnostic_location(symbol);
         message += u8"error: called symbol '";
         message += symbol_name;
         message += u8"' does not name a function\n";
+        print_source_snippet(message, source, symbol);
+        return message;
+    }
 
-        Line_Limits const line = find_line_limits(source, symbol.start_offset);
-        anton::String_View const source_bit{source.data() + line.start, source.data() + line.end};
-        message += source_bit;
-        message += U'\n';
-        i64 const padding = symbol.start_offset - line.start;
-        i64 const underline = symbol.end_offset - symbol.start_offset;
-        print_underline(message, padding, underline);
+    anton::String format_variable_declaration_in_global_scope(Context const& ctx, Source_Info const& declaration) {
+        anton::String message = format_diagnostic_location(declaration);
+        message += u8"error: illegal declaration of a variable in global scope\n";
+        auto iter = ctx.source_registry.find(declaration.file_path);
+        anton::String const& source = iter->value;
+        print_source_snippet(message, source, declaration);
         return message;
     }
 
@@ -130,16 +126,9 @@ namespace vush {
     anton::String format_compute_return_type_must_be_void(Context const& ctx, Source_Info const& return_type) {
         anton::String message = format_diagnostic_location(return_type);
         message += u8"error: the return type of compute stage must be void\n";
-
         auto iter = ctx.source_registry.find(return_type.file_path);
         anton::String const& source = iter->value;
-        Line_Limits const line = find_line_limits(source, return_type.start_offset);
-        anton::String_View const source_bit{source.data() + line.start, source.data() + line.end};
-        message += source_bit;
-        message += U'\n';
-        i64 const padding = return_type.start_offset - line.start;
-        i64 const underline = return_type.end_offset - return_type.start_offset;
-        print_underline(message, padding, underline);
+        print_source_snippet(message, source, return_type);
         return message;
     }
 
@@ -154,17 +143,9 @@ namespace vush {
         anton::String message = format_diagnostic_location(string_src_info);
         message += u8"error: source import failed with the following error: ";
         message += source_callback_message;
-
         auto iter = ctx.source_registry.find(string_src_info.file_path);
         anton::String const& source = iter->value;
-        Line_Limits const line = find_line_limits(source, string_src_info.start_offset);
-        anton::String_View const source_bit{source.data() + line.start, source.data() + line.end};
-        message += U'\n';
-        message += source_bit;
-        message += U'\n';
-        i64 const padding = string_src_info.start_offset - line.start;
-        i64 const underline = string_src_info.end_offset - string_src_info.start_offset;
-        print_underline(message, padding, underline);
+        print_source_snippet(message, source, string_src_info);
         return message;
     }
 } // namespace vush
