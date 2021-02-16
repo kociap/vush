@@ -33,9 +33,8 @@ namespace vush {
                 }
 
                 if(!is_implicitly_convertible_to_boolean(result.value().type)) {
-                    Source_Info const& src = node.source_info;
-                    return {anton::expected_error,
-                            build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
+                    Source_Info const& src = node.condition->source_info;
+                    return {anton::expected_error, format_expression_not_implicitly_convertible_to_bool(ctx, src)};
                 }
 
                 if(result.value().as_boolean()) {
@@ -97,9 +96,8 @@ namespace vush {
                 }
 
                 if(!is_implicitly_convertible_to_boolean(result.value().type)) {
-                    Source_Info const& src = node.source_info;
-                    return {anton::expected_error,
-                            build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
+                    Source_Info const& src = node.condition->source_info;
+                    return {anton::expected_error, format_expression_not_implicitly_convertible_to_bool(ctx, src)};
                 }
 
                 if(result.value().as_boolean()) {
@@ -566,9 +564,8 @@ namespace vush {
                 }
 
                 if(!is_implicitly_convertible_to_boolean(result.value().type)) {
-                    Source_Info const& src = node->source_info;
-                    return {anton::expected_error,
-                            build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
+                    Source_Info const& src = node->condition->source_info;
+                    return {anton::expected_error, format_expression_not_implicitly_convertible_to_bool(ctx, src)};
                 }
 
                 if(result.value().as_boolean()) {
@@ -658,9 +655,8 @@ namespace vush {
                         }
 
                         if(!is_implicitly_convertible_to_boolean(eval_res.value().type)) {
-                            Source_Info const& src = node->source_info;
-                            return {anton::expected_error,
-                                    build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
+                            Source_Info const& src = node->condition->source_info;
+                            return {anton::expected_error, format_expression_not_implicitly_convertible_to_bool(ctx, src)};
                         }
 
                         if(eval_res.value().as_boolean()) {
@@ -830,96 +826,135 @@ namespace vush {
         return {anton::expected_value};
     }
 
-    // build_ast_from_sources
-    // Parse sources, process imports and declaration ifs, build top-level symbol table, validate functions, fold constants, extract settings
+    // process_functions
+    // Validates function attributes, processes parameter lists and function bodies resolving any compiletime ifs.
+    // Does not add any symbols to the top level scope.
     //
-    static anton::Expected<Owning_Ptr<Declaration_List>, anton::String> build_ast_from_sources(Context& ctx, anton::String const& path,
-                                                                                               anton::Array<Pass_Settings>& settings) {
-        Owning_Ptr<Declaration_List> ast;
-        // Parse the entry source
-        {
-            anton::Expected<Source_Request_Result, anton::String> source_request_res = ctx.source_request_cb(path, ctx.source_request_user_data);
-            if(!source_request_res) {
-                return {anton::expected_error, u8"error: " + source_request_res.error()};
-            }
+    static anton::Expected<void, anton::String> process_functions(Context& ctx, Declaration_List& ast) {
+        for(auto& ast_node: ast) {
+            if(ast_node->node_type == AST_Node_Type::function_declaration) {
+                Function_Declaration& fn = static_cast<Function_Declaration&>(*ast_node);
+                if(anton::Expected<void, anton::String> res = validate_function_attributes(ctx, fn); !res) {
+                    return res;
+                }
 
-            Source_Request_Result& request_res = source_request_res.value();
-            ctx.source_registry.emplace(request_res.source_name, request_res.data);
-            anton::Input_String_Stream stream{ANTON_MOV(request_res.data)};
-            Owning_Ptr<anton::String> const& current_source_name =
-                ctx.imported_sources.emplace_back(Owning_Ptr{new anton::String{ANTON_MOV(request_res.source_name)}});
-            anton::Expected<Owning_Ptr<Declaration_List>, Parse_Error> parse_result = parse_source(stream, *current_source_name);
-            if(parse_result) {
-                ast = ANTON_MOV(parse_result.value());
-            } else {
-                Parse_Error const& error = parse_result.error();
-                anton::String error_msg = build_error_message(path, error.line, error.column, error.message);
-                return {anton::expected_error, ANTON_MOV(error_msg)};
+                if(anton::Expected<void, anton::String> res = process_fn_param_list(ctx, fn); !res) {
+                    return res;
+                }
+
+                if(anton::Expected<void, anton::String> res = process_statements(ctx, fn.body); !res) {
+                    return res;
+                }
+            } else if(ast_node->node_type == AST_Node_Type::pass_stage_declaration) {
+                Pass_Stage_Declaration& fn = static_cast<Pass_Stage_Declaration&>(*ast_node);
+                // Validate the return types
+                switch(fn.stage) {
+                    case Stage_Type::compute: {
+                        // Return type of a compute stage must always be void
+                        Type& return_type = *fn.return_type;
+                        bool const return_type_is_void =
+                            return_type.node_type == AST_Node_Type::builtin_type && ((Builtin_Type&)return_type).type == Builtin_GLSL_Type::glsl_void;
+                        if(!return_type_is_void) {
+                            Source_Info const& src = return_type.source_info;
+                            return {anton::expected_error, format_compute_return_type_must_be_void(ctx, src)};
+                        }
+                    } break;
+
+                    default:
+                        // TODO: Add symbol lookup to ensure the return types actually exist
+                        break;
+                }
+
+                if(anton::Expected<void, anton::String> res = validate_function_attributes(ctx, fn); !res) {
+                    return res;
+                }
+
+                if(anton::Expected<void, anton::String> res = process_fn_param_list(ctx, fn); !res) {
+                    return res;
+                }
+
+                if(anton::Expected<void, anton::String> res = process_statements(ctx, fn.body); !res) {
+                    return res;
+                }
             }
         }
 
-        for(i64 i = 0; i < ast->declarations.size();) {
-            bool const should_advance =
-                ast->declarations[i]->node_type != AST_Node_Type::import_decl && ast->declarations[i]->node_type != AST_Node_Type::declaration_if;
-            switch(ast->declarations[i]->node_type) {
-                case AST_Node_Type::import_decl: {
-                    Owning_Ptr<Import_Decl> node{static_cast<Import_Decl*>(ast->declarations[i].release())};
-                    anton::Expected<Source_Request_Result, anton::String> source_request_res =
-                        ctx.source_request_cb(node->path->value, ctx.source_request_user_data);
-                    if(!source_request_res) {
-                        return {anton::expected_error, format_source_import_failed(ctx, *node, source_request_res.error())};
+        return {anton::expected_value};
+    }
+
+    // resolve_imports_and_declaration_ifs
+    // Processes top-level ast to resolve import declarations and declaration ifs. Modifies ast.
+    //
+    static anton::Expected<void, anton::String> resolve_imports_and_declaration_ifs(Context& ctx, Declaration_List& ast) {
+        // TODO: Currently constants cannot be used in declaration ifs because they are not added to the symbol table as
+        //       we process the ast. Should we allow constants in declaration ifs?
+        for(i64 i = 0; i < ast.size();) {
+            bool const should_advance = ast[i]->node_type != AST_Node_Type::import_decl && ast[i]->node_type != AST_Node_Type::declaration_if;
+            if(ast[i]->node_type == AST_Node_Type::import_decl) {
+                Owning_Ptr<Import_Decl> node{static_cast<Import_Decl*>(ast[i].release())};
+                ast.erase(ast.begin() + i, ast.begin() + i + 1);
+
+                anton::Expected<Source_Request_Result, anton::String> source_request_res =
+                    ctx.source_request_cb(node->path->value, ctx.source_request_user_data);
+                if(!source_request_res) {
+                    return {anton::expected_error, format_source_import_failed(ctx, *node, source_request_res.error())};
+                }
+
+                Source_Request_Result& request_res = source_request_res.value();
+                // Ensure we're not importing the same source multiple times
+                auto iter = anton::find_if(ctx.imported_sources.begin(), ctx.imported_sources.end(),
+                                           [&source_name = request_res.source_name](Owning_Ptr<anton::String> const& v) { return *v == source_name; });
+                if(iter == ctx.imported_sources.end()) {
+                    ctx.source_registry.emplace(request_res.source_name, request_res.data);
+                    anton::Input_String_Stream stream{ANTON_MOV(request_res.data)};
+                    Owning_Ptr<anton::String> const& current_source_name =
+                        ctx.imported_sources.emplace_back(Owning_Ptr{new anton::String{ANTON_MOV(request_res.source_name)}});
+                    anton::Expected<Declaration_List, Parse_Error> parse_result = parse_source(stream, *current_source_name);
+                    if(!parse_result) {
+                        Parse_Error const& error = parse_result.error();
+                        anton::String error_msg = build_error_message(*current_source_name, error.line, error.column, error.message);
+                        return {anton::expected_error, ANTON_MOV(error_msg)};
                     }
 
-                    ast->declarations.erase(ast->declarations.begin() + i, ast->declarations.begin() + i + 1);
-                    Source_Request_Result& request_res = source_request_res.value();
-                    // Ensure we're not importing the same source multiple times
-                    auto iter = anton::find_if(ctx.imported_sources.begin(), ctx.imported_sources.end(),
-                                               [&source_name = request_res.source_name](Owning_Ptr<anton::String> const& v) { return *v == source_name; });
-                    if(iter == ctx.imported_sources.end()) {
-                        ctx.source_registry.emplace(request_res.source_name, request_res.data);
-                        anton::Input_String_Stream stream{ANTON_MOV(request_res.data)};
-                        Owning_Ptr<anton::String> const& current_source_name =
-                            ctx.imported_sources.emplace_back(Owning_Ptr{new anton::String{ANTON_MOV(request_res.source_name)}});
-                        anton::Expected<Owning_Ptr<Declaration_List>, Parse_Error> parse_result = parse_source(stream, *current_source_name);
-                        if(!parse_result) {
-                            Parse_Error const& error = ANTON_MOV(parse_result.error());
-                            anton::String error_msg = build_error_message(*current_source_name, error.line, error.column, error.message);
-                            return {anton::expected_error, ANTON_MOV(error_msg)};
-                        }
+                    // Insert the result of parsing into the ast
+                    Declaration_List& decls = parse_result.value();
+                    anton::Move_Iterator begin(decls.begin());
+                    anton::Move_Iterator end(decls.end());
+                    ast.insert(i, begin, end);
+                }
+            } else if(ast[i]->node_type == AST_Node_Type::declaration_if) {
+                Owning_Ptr<Declaration_If> node{static_cast<Declaration_If*>(ast[i].release())};
+                ast.erase(ast.begin() + i, ast.begin() + i + 1);
 
-                        // Insert the result of parsing into the ast
-                        Declaration_List& decls = *parse_result.value();
-                        anton::Move_Iterator begin(decls.declarations.begin());
-                        anton::Move_Iterator end(decls.declarations.end());
-                        ast->declarations.insert(i, begin, end);
-                    }
-                } break;
+                anton::Expected<Expr_Value, anton::String> result = evaluate_const_expr(ctx, *node->condition);
+                if(!result) {
+                    return {anton::expected_error, ANTON_MOV(result.error())};
+                }
 
-                case AST_Node_Type::declaration_if: {
-                    Owning_Ptr<Declaration_If> node{static_cast<Declaration_If*>(ast->declarations[i].release())};
-                    anton::Expected<Expr_Value, anton::String> result = evaluate_const_expr(ctx, *node->condition);
-                    if(!result) {
-                        return {anton::expected_error, ANTON_MOV(result.error())};
-                    }
+                if(!is_implicitly_convertible_to_boolean(result.value().type)) {
+                    Source_Info const& src = node->condition->source_info;
+                    return {anton::expected_error, format_expression_not_implicitly_convertible_to_bool(ctx, src)};
+                }
 
-                    if(!is_implicitly_convertible_to_boolean(result.value().type)) {
-                        Source_Info const& src = node->source_info;
-                        return {anton::expected_error,
-                                build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
-                    }
+                // Insert one of the branches into the ast
+                Declaration_List& decls = (result.value().as_boolean() ? node->true_declarations : node->false_declarations);
+                anton::Move_Iterator begin(decls.begin());
+                anton::Move_Iterator end(decls.end());
+                ast.insert(i, begin, end);
+            }
 
-                    ast->declarations.erase(ast->declarations.begin() + i, ast->declarations.begin() + i + 1);
-                    // Insert one of the branches into the ast
-                    Declaration_List* decls = (result.value().as_boolean() ? node->true_declarations.get() : node->false_declarations.get());
-                    if(decls) {
-                        anton::Move_Iterator begin(decls->declarations.begin());
-                        anton::Move_Iterator end(decls->declarations.end());
-                        ast->declarations.insert(i, begin, end);
-                    }
-                } break;
+            i += should_advance;
+        }
 
+        return {anton::expected_value};
+    }
+
+    static anton::Expected<void, anton::String> process_objects_and_settings_and_populate_symbol_table(Context& ctx, Declaration_List& ast,
+                                                                                                       anton::Array<Pass_Settings>& settings) {
+        for(auto& ast_node: ast) {
+            switch(ast_node->node_type) {
                 case AST_Node_Type::struct_decl: {
-                    Struct_Decl& node = static_cast<Struct_Decl&>(*ast->declarations[i]);
+                    Struct_Decl& node = static_cast<Struct_Decl&>(*ast_node);
                     if(node.members.size() == 0) {
                         return {anton::expected_error, format_empty_struct(node.source_info)};
                     }
@@ -928,68 +963,29 @@ namespace vush {
                 } break;
 
                 case AST_Node_Type::variable_declaration: {
-                    Variable_Declaration& node = static_cast<Variable_Declaration&>(*ast->declarations[i]);
-                    Source_Info const& src = node.source_info;
-                    anton::String error_msg = build_error_message(src.file_path, src.line, src.column, u8"illegal variable declaration in global scope");
-                    return {anton::expected_error, ANTON_MOV(error_msg)};
+                    Variable_Declaration& node = static_cast<Variable_Declaration&>(*ast_node);
+                    return {anton::expected_error, format_variable_declaration_in_global_scope(ctx, node.source_info)};
                 } break;
 
                 case AST_Node_Type::constant_declaration: {
-                    Constant_Declaration& node = static_cast<Constant_Declaration&>(*ast->declarations[i]);
+                    Constant_Declaration& node = static_cast<Constant_Declaration&>(*ast_node);
                     ctx.symbols[0].emplace(node.identifier->value, Symbol{Symbol_Type::constant, &node});
+                    if(!node.initializer) {
+                        return {anton::expected_error, format_constant_missing_initializer(ctx, node.source_info)};
+                    }
+
+                    if(anton::Expected<void, anton::String> res = process_expression(ctx, node.initializer); !res) {
+                        return res;
+                    }
                 } break;
 
                 case AST_Node_Type::function_declaration: {
-                    Function_Declaration& fn = static_cast<Function_Declaration&>(*ast->declarations[i]);
-                    ctx.symbols[0].emplace(fn.name->value, Symbol{Symbol_Type::function, &fn});
-                    if(anton::Expected<void, anton::String> res = validate_function_attributes(ctx, fn); !res) {
-                        return {anton::expected_error, ANTON_MOV(res.error())};
-                    }
-
-                    if(anton::Expected<void, anton::String> res = process_fn_param_list(ctx, fn); !res) {
-                        return {anton::expected_error, ANTON_MOV(res.error())};
-                    }
-
-                    if(anton::Expected<void, anton::String> res = process_statements(ctx, fn.body); !res) {
-                        return {anton::expected_error, ANTON_MOV(res.error())};
-                    }
-                } break;
-
-                case AST_Node_Type::pass_stage_declaration: {
-                    Pass_Stage_Declaration& fn = static_cast<Pass_Stage_Declaration&>(*ast->declarations[i]);
-                    // Validate the return types
-                    switch(fn.stage) {
-                        case Stage_Type::compute: {
-                            // Return type of a compute stage must always be void
-                            Type& return_type = *fn.return_type;
-                            bool const return_type_is_void =
-                                return_type.node_type == AST_Node_Type::builtin_type && ((Builtin_Type&)return_type).type == Builtin_GLSL_Type::glsl_void;
-                            if(!return_type_is_void) {
-                                Source_Info const& src = return_type.source_info;
-                                return {anton::expected_error, format_compute_return_type_must_be_void(ctx, src)};
-                            }
-                        } break;
-
-                        default:
-                            // TODO: Add symbol lookup to ensure the types actually exist
-                            break;
-                    }
-
-                    if(anton::Expected<void, anton::String> res = validate_function_attributes(ctx, fn); !res) {
-                        return {anton::expected_error, ANTON_MOV(res.error())};
-                    }
-
-                    if(anton::Expected<void, anton::String> res = process_fn_param_list(ctx, fn); !res) {
-                        return {anton::expected_error, ANTON_MOV(res.error())};
-                    }
-
-                    if(anton::Expected<void, anton::String> res = process_statements(ctx, fn.body); !res) {
-                        return {anton::expected_error, ANTON_MOV(res.error())};
-                    }
+                    Function_Declaration& node = static_cast<Function_Declaration&>(*ast_node);
+                    ctx.symbols[0].emplace(node.name->value, Symbol{Symbol_Type::function, &node});
                 } break;
 
                 case AST_Node_Type::settings_decl: {
-                    Settings_Decl& decl = static_cast<Settings_Decl&>(*ast->declarations[i]);
+                    Settings_Decl& decl = static_cast<Settings_Decl&>(*ast_node);
                     Pass_Settings* pass_iter = anton::find_if(
                         settings.begin(), settings.end(), [&pass_name = decl.pass_name->value](Pass_Settings const& v) { return v.pass_name == pass_name; });
                     if(pass_iter == settings.end()) {
@@ -1009,16 +1005,54 @@ namespace vush {
                         }
                     }
                 } break;
+            }
+        }
 
-                default:
-                    break;
+        return {anton::expected_value};
+    }
+
+    // build_ast_from_sources
+    // Parse sources, process imports and declaration ifs, build top-level symbol table, validate functions, fold constants, extract settings
+    //
+    static anton::Expected<Declaration_List, anton::String> build_ast_from_sources(Context& ctx, anton::String const& path,
+                                                                                   anton::Array<Pass_Settings>& settings) {
+        Declaration_List ast;
+        // Parse the entry source
+        {
+            anton::Expected<Source_Request_Result, anton::String> source_request_res = ctx.source_request_cb(path, ctx.source_request_user_data);
+            if(!source_request_res) {
+                return {anton::expected_error, u8"error: " + source_request_res.error()};
             }
 
-            i += should_advance;
+            Source_Request_Result& request_res = source_request_res.value();
+            ctx.source_registry.emplace(request_res.source_name, request_res.data);
+            anton::Input_String_Stream stream{ANTON_MOV(request_res.data)};
+            Owning_Ptr<anton::String> const& current_source_name =
+                ctx.imported_sources.emplace_back(Owning_Ptr{new anton::String{ANTON_MOV(request_res.source_name)}});
+            anton::Expected<Declaration_List, Parse_Error> parse_result = parse_source(stream, *current_source_name);
+            if(parse_result) {
+                ast = ANTON_MOV(parse_result.value());
+            } else {
+                Parse_Error const& error = parse_result.error();
+                anton::String error_msg = build_error_message(path, error.line, error.column, error.message);
+                return {anton::expected_error, ANTON_MOV(error_msg)};
+            }
+        }
+
+        if(anton::Expected<void, anton::String> res = resolve_imports_and_declaration_ifs(ctx, ast); !res) {
+            return {anton::expected_error, ANTON_MOV(res.error())};
+        }
+
+        if(anton::Expected<void, anton::String> res = process_objects_and_settings_and_populate_symbol_table(ctx, ast, settings); !res) {
+            return {anton::expected_error, ANTON_MOV(res.error())};
+        }
+
+        if(anton::Expected<void, anton::String> res = process_functions(ctx, ast); !res) {
+            return {anton::expected_error, ANTON_MOV(res.error())};
         }
 
         return {anton::expected_value, ANTON_MOV(ast)};
-    }
+    } // namespace vush
 
     static void populate_builtin_glsl_variables(Context& ctx, anton::Array<Owning_Ptr<Declaration>>& storage) {
         struct Builtin_Variable {
@@ -1098,13 +1132,13 @@ namespace vush {
         populate_builtin_glsl_variables(ctx, builtin_variables);
 
         anton::Array<Pass_Settings> settings;
-        anton::Expected<Owning_Ptr<Declaration_List>, anton::String> parse_res = build_ast_from_sources(ctx, config.source_name, settings);
+        anton::Expected<Declaration_List, anton::String> parse_res = build_ast_from_sources(ctx, config.source_name, settings);
         if(!parse_res) {
             return {anton::expected_error, ANTON_MOV(parse_res.error())};
         }
 
-        Owning_Ptr<Declaration_List> ast = ANTON_MOV(parse_res.value());
-        anton::Expected<anton::Array<Pass_Data>, anton::String> codegen_res = generate_glsl(ctx, *ast, config.format, config.extensions, settings);
+        Declaration_List& ast = parse_res.value();
+        anton::Expected<anton::Array<Pass_Data>, anton::String> codegen_res = generate_glsl(ctx, ast, config.format, config.extensions, settings);
         if(!codegen_res) {
             return {anton::expected_error, ANTON_MOV(codegen_res.error())};
         }

@@ -129,8 +129,7 @@ namespace vush {
 
                         if(!is_implicitly_convertible_to_boolean(lhs_res.value().type)) {
                             Source_Info const& src = expr.lhs->source_info;
-                            return {anton::expected_error,
-                                    build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
+                            return {anton::expected_error, format_expression_not_implicitly_convertible_to_bool(ctx, src)};
                         }
 
                         anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
@@ -140,8 +139,7 @@ namespace vush {
 
                         if(!is_implicitly_convertible_to_boolean(rhs_res.value().type)) {
                             Source_Info const& src = expr.rhs->source_info;
-                            return {anton::expected_error,
-                                    build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
+                            return {anton::expected_error, format_expression_not_implicitly_convertible_to_bool(ctx, src)};
                         }
 
                         bool lhs_val = lhs_res.value().as_boolean();
@@ -160,8 +158,7 @@ namespace vush {
 
                         if(!is_implicitly_convertible_to_boolean(lhs_res.value().type)) {
                             Source_Info const& src = expr.lhs->source_info;
-                            return {anton::expected_error,
-                                    build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
+                            return {anton::expected_error, format_expression_not_implicitly_convertible_to_bool(ctx, src)};
                         }
 
                         anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
@@ -171,8 +168,7 @@ namespace vush {
 
                         if(!is_implicitly_convertible_to_boolean(rhs_res.value().type)) {
                             Source_Info const& src = expr.rhs->source_info;
-                            return {anton::expected_error,
-                                    build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
+                            return {anton::expected_error, format_expression_not_implicitly_convertible_to_bool(ctx, src)};
                         }
 
                         bool lhs_val = lhs_res.value().as_boolean();
@@ -191,8 +187,7 @@ namespace vush {
 
                         if(!is_implicitly_convertible_to_boolean(lhs_res.value().type)) {
                             Source_Info const& src = expr.lhs->source_info;
-                            return {anton::expected_error,
-                                    build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
+                            return {anton::expected_error, format_expression_not_implicitly_convertible_to_bool(ctx, src)};
                         }
 
                         anton::Expected<Expr_Value, anton::String> rhs_res = evaluate_const_expr(ctx, *expr.rhs);
@@ -202,8 +197,7 @@ namespace vush {
 
                         if(!is_implicitly_convertible_to_boolean(rhs_res.value().type)) {
                             Source_Info const& src = expr.rhs->source_info;
-                            return {anton::expected_error,
-                                    build_error_message(src.file_path, src.line, src.column, u8"expression is not implicitly convertible to bool")};
+                            return {anton::expected_error, format_expression_not_implicitly_convertible_to_bool(ctx, src)};
                         }
 
                         bool lhs_val = lhs_res.value().as_boolean();

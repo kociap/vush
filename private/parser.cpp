@@ -476,20 +476,16 @@ namespace vush {
     public:
         Parser(anton::Input_Stream& stream, anton::String_View source_name): _source_name(source_name), _lexer(stream) {}
 
-        Owning_Ptr<Declaration_List> build_ast() {
-            Owning_Ptr declarations{new Declaration_List};
+        anton::Expected<Declaration_List, Parse_Error> build_ast() {
+            Declaration_List ast;
             while(!_lexer.match_eof()) {
                 if(Owning_Ptr declaration = try_declaration()) {
-                    declarations->append(ANTON_MOV(declaration));
+                    ast.emplace_back(ANTON_MOV(declaration));
                 } else {
-                    return nullptr;
+                    return {anton::expected_error, _last_error};
                 }
             }
-            return declarations;
-        }
-
-        [[nodiscard]] Parse_Error get_last_error() const {
-            return _last_error;
+            return {anton::expected_value, ANTON_MOV(ast)};
         }
 
     private:
@@ -581,7 +577,7 @@ namespace vush {
                 return nullptr;
             }
 
-            Owning_Ptr true_declarations{new Declaration_List};
+            Declaration_List true_declarations;
             while(!_lexer.match(token_brace_close)) {
                 if(_lexer.match_eof()) {
                     set_error(u8"unexpected end of file");
@@ -590,18 +586,16 @@ namespace vush {
                 }
 
                 if(Owning_Ptr declaration = try_declaration()) {
-                    true_declarations->append(ANTON_MOV(declaration));
+                    true_declarations.emplace_back(ANTON_MOV(declaration));
                 } else {
                     return nullptr;
                 }
             }
 
+            Declaration_List false_declarations;
             if(_lexer.match(kw_else, true)) {
                 if(Owning_Ptr if_declaration = try_declaration_if()) {
-                    Owning_Ptr false_declarations{new Declaration_List};
-                    false_declarations->append(ANTON_MOV(if_declaration));
-                    return Owning_Ptr{new Declaration_If(ANTON_MOV(condition), ANTON_MOV(true_declarations), ANTON_MOV(false_declarations),
-                                                         src_info(state_backup, state_backup))};
+                    false_declarations.emplace_back(ANTON_MOV(if_declaration));
                 } else {
                     if(!_lexer.match(token_brace_open)) {
                         set_error(u8"expected '{'");
@@ -609,22 +603,18 @@ namespace vush {
                         return nullptr;
                     }
 
-                    Owning_Ptr false_declarations{new Declaration_List};
                     while(!_lexer.match(token_brace_close)) {
                         if(Owning_Ptr declaration = try_declaration()) {
-                            false_declarations->append(ANTON_MOV(declaration));
+                            false_declarations.emplace_back(ANTON_MOV(declaration));
                         } else {
                             _lexer.restore_state(state_backup);
                             return nullptr;
                         }
                     }
-
-                    return Owning_Ptr{new Declaration_If(ANTON_MOV(condition), ANTON_MOV(true_declarations), ANTON_MOV(false_declarations),
-                                                         src_info(state_backup, state_backup))};
                 }
-            } else {
-                return Owning_Ptr{new Declaration_If(ANTON_MOV(condition), ANTON_MOV(true_declarations), nullptr, src_info(state_backup, state_backup))};
             }
+            return Owning_Ptr{
+                new Declaration_If(ANTON_MOV(condition), ANTON_MOV(true_declarations), ANTON_MOV(false_declarations), src_info(state_backup, state_backup))};
         }
 
         Owning_Ptr<Import_Decl> try_import_decl() {
@@ -1367,7 +1357,6 @@ namespace vush {
         anton::Optional<anton::Array<Owning_Ptr<Statement>>> try_statement_list() {
             anton::Array<Owning_Ptr<Statement>> statements;
             while(true) {
-                Lexer_State const statement_state = _lexer.get_current_state();
                 if(Owning_Ptr block_statement = try_block_statement()) {
                     statements.emplace_back(ANTON_MOV(block_statement));
                     continue;
@@ -2734,7 +2723,6 @@ namespace vush {
 
             Owning_Ptr<Expression> expr = ANTON_MOV(primary_expr);
             while(true) {
-                Lexer_State const op_state = _lexer.get_current_state();
                 if(_lexer.match(token_dot)) {
                     if(Owning_Ptr member_name = try_identifier()) {
                         Lexer_State const end_state = _lexer.get_current_state_no_skip();
@@ -3330,14 +3318,9 @@ namespace vush {
         }
     };
 
-    anton::Expected<Owning_Ptr<Declaration_List>, Parse_Error> parse_source(anton::Input_Stream& stream, anton::String_View const source_name) {
+    anton::Expected<Declaration_List, Parse_Error> parse_source(anton::Input_Stream& stream, anton::String_View const source_name) {
         Parser parser(stream, source_name);
-        Owning_Ptr ast = parser.build_ast();
-        if(ast) {
-            return {anton::expected_value, ANTON_MOV(ast)};
-        } else {
-            Parse_Error error = parser.get_last_error();
-            return {anton::expected_error, ANTON_MOV(error)};
-        }
+        anton::Expected<Declaration_List, Parse_Error> ast = parser.build_ast();
+        return ast;
     }
 } // namespace vush

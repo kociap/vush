@@ -102,6 +102,24 @@ namespace vush {
         return message;
     }
 
+    anton::String format_constant_missing_initializer(Context const& ctx, Source_Info const& constant) {
+        anton::String message = format_diagnostic_location(constant);
+        message += u8"error: missing constant initializer\n";
+        auto iter = ctx.source_registry.find(constant.file_path);
+        anton::String const& source = iter->value;
+        print_source_snippet(message, source, constant);
+        return message;
+    }
+
+    anton::String format_expression_not_implicitly_convertible_to_bool(Context const& ctx, Source_Info const& expression) {
+        anton::String message = format_diagnostic_location(expression);
+        message += u8"error: expression is not implicitly convertible to bool\n";
+        auto iter = ctx.source_registry.find(expression.file_path);
+        anton::String const& source = iter->value;
+        print_source_snippet(message, source, expression);
+        return message;
+    }
+
     anton::String format_duplicate_pass_stage_error(Source_Info const& duplicate, Source_Info const& previous, anton::String const& pass_name,
                                                     Stage_Type const& stage) {
         anton::String message = format_diagnostic_location(duplicate) + u8"error: duplicate " + stringify(stage) + u8" stage in pass '" + pass_name + "'\n";
