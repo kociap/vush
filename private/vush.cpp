@@ -659,46 +659,21 @@ namespace vush {
                             return {anton::expected_error, format_expression_not_implicitly_convertible_to_bool(ctx, src)};
                         }
 
-                        if(eval_res.value().as_boolean()) {
-                            if(node->true_statement) {
-                                statements[i] = ANTON_MOV(node->true_statement);
-                            } else {
-                                statements.erase(statements.begin() + i, statements.begin() + i + 1);
-                            }
-                        } else {
-                            if(node->false_statement) {
-                                statements[i] = ANTON_MOV(node->false_statement);
-                            } else {
-                                statements.erase(statements.begin() + i, statements.begin() + i + 1);
-                            }
-                        }
+                        // We have to keep the if_statement object around until we no longer need the branch statements
+                        Owning_Ptr owner{node.release()};
+                        // Remove the if_statement node from ast and insert the statements corresponding to the true or false branch
+                        statements.erase(statements.begin() + i, statements.begin() + i + 1);
+                        Statement_List& insert_statements = (eval_res.value().as_boolean() ? owner->true_statements : owner->false_statements);
+                        anton::Move_Iterator begin{insert_statements.begin()};
+                        anton::Move_Iterator end{insert_statements.end()};
+                        statements.insert(i, begin, end);
                     } else {
-                        // We use the loop to process the 'else if' case (we treat 'else if' as a different 'if')
-                        If_Statement* s = node.get();
-                        while(true) {
-                            anton::Expected<void, anton::String> true_res = process_statements(ctx, s->true_statement->statements);
-                            if(!true_res) {
-                                return true_res;
-                            }
+                        if(anton::Expected<void, anton::String> res = process_statements(ctx, node->true_statements); !res) {
+                            return res;
+                        }
 
-                            if(s->false_statement) {
-                                ANTON_ASSERT(s->false_statement->node_type == AST_Node_Type::if_statement ||
-                                                 s->false_statement->node_type == AST_Node_Type::block_statement,
-                                             u8"invalid ast node type in false branch of an if statement");
-                                if(s->false_statement->node_type == AST_Node_Type::block_statement) {
-                                    Block_Statement& b = (Block_Statement&)*s->false_statement;
-                                    anton::Expected<void, anton::String> false_res = process_statements(ctx, b.statements);
-                                    if(!false_res) {
-                                        return false_res;
-                                    }
-                                    break;
-                                } else {
-                                    // 'else if' case
-                                    s = (If_Statement*)s->false_statement.get();
-                                }
-                            } else {
-                                break;
-                            }
+                        if(anton::Expected<void, anton::String> res = process_statements(ctx, node->false_statements); !res) {
+                            return res;
                         }
                     }
                 } break;
