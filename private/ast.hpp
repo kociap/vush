@@ -757,10 +757,10 @@ namespace vush {
         anton::Array<Owning_Ptr<Function_Attribute>> attributes;
         Owning_Ptr<Identifier> name;
         Owning_Ptr<Type> return_type;
-        anton::Array<Owning_Ptr<Statement>> body;
+        Statement_List body;
 
         Function_Declaration(anton::Array<Owning_Ptr<Function_Attribute>>&& attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> name,
-                             anton::Array<Owning_Ptr<Function_Param>>&& params, anton::Array<Owning_Ptr<Statement>> body, Source_Info const& source_info)
+                             anton::Array<Owning_Ptr<Function_Param>>&& params, Statement_List body, Source_Info const& source_info)
             : Declaration(source_info, AST_Node_Type::function_declaration), params(ANTON_MOV(params)), attributes(ANTON_MOV(attributes)),
               name(ANTON_MOV(name)), return_type(ANTON_MOV(return_type)), body(ANTON_MOV(body)) {}
     };
@@ -781,12 +781,11 @@ namespace vush {
         anton::Array<Owning_Ptr<Function_Attribute>> attributes;
         Owning_Ptr<Identifier> pass;
         Owning_Ptr<Type> return_type;
-        anton::Array<Owning_Ptr<Statement>> body;
+        Statement_List body;
         Stage_Type stage;
 
         Pass_Stage_Declaration(anton::Array<Owning_Ptr<Function_Attribute>>&& attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> pass,
-                               Stage_Type stage, anton::Array<Owning_Ptr<Function_Param>>&& params, anton::Array<Owning_Ptr<Statement>> body,
-                               Source_Info const& source_info)
+                               Stage_Type stage, anton::Array<Owning_Ptr<Function_Param>>&& params, Statement_List body, Source_Info const& source_info)
             : Declaration(source_info, AST_Node_Type::pass_stage_declaration), params(ANTON_MOV(params)), attributes(ANTON_MOV(attributes)),
               pass(ANTON_MOV(pass)), return_type(ANTON_MOV(return_type)), body(ANTON_MOV(body)), stage(ANTON_MOV(stage)) {}
     };
@@ -1021,44 +1020,43 @@ namespace vush {
     };
 
     struct Block_Statement: public Statement {
-        anton::Array<Owning_Ptr<Statement>> statements;
+        Statement_List statements;
 
-        Block_Statement(anton::Array<Owning_Ptr<Statement>> statements, Source_Info const& source_info)
+        Block_Statement(Statement_List statements, Source_Info const& source_info)
             : Statement(source_info, AST_Node_Type::block_statement), statements(ANTON_MOV(statements)) {}
     };
 
     // false_statement might be If_Statement ('else if' case), Block_Statement or nullptr (else branch missing)
     struct If_Statement: public Statement {
         Owning_Ptr<Expression> condition;
-        Owning_Ptr<Block_Statement> true_statement;
-        Owning_Ptr<Statement> false_statement;
+        Statement_List true_statements;
+        Statement_List false_statements;
 
-        If_Statement(Owning_Ptr<Expression> condition, Owning_Ptr<Block_Statement> true_statement, Owning_Ptr<Statement> false_statement,
-                     Source_Info const& source_info)
-            : Statement(source_info, AST_Node_Type::if_statement), condition(ANTON_MOV(condition)), true_statement(ANTON_MOV(true_statement)),
-              false_statement(ANTON_MOV(false_statement)) {}
+        If_Statement(Owning_Ptr<Expression> condition, Statement_List true_statements, Statement_List false_statements, Source_Info const& source_info)
+            : Statement(source_info, AST_Node_Type::if_statement), condition(ANTON_MOV(condition)), true_statements(ANTON_MOV(true_statements)),
+              false_statements(ANTON_MOV(false_statements)) {}
     };
 
     struct Case_Statement: public Statement {
         Owning_Ptr<Expression> condition;
-        anton::Array<Owning_Ptr<Statement>> statements;
+        Statement_List statements;
 
-        Case_Statement(Owning_Ptr<Expression> condition, anton::Array<Owning_Ptr<Statement>> statements, Source_Info const& source_info)
+        Case_Statement(Owning_Ptr<Expression> condition, Statement_List statements, Source_Info const& source_info)
             : Statement(source_info, AST_Node_Type::case_statement), condition(ANTON_MOV(condition)), statements(ANTON_MOV(statements)) {}
     };
 
     struct Default_Case_Statement: public Statement {
-        anton::Array<Owning_Ptr<Statement>> statements;
+        Statement_List statements;
 
-        Default_Case_Statement(anton::Array<Owning_Ptr<Statement>> statements, Source_Info const& source_info)
+        Default_Case_Statement(Statement_List statements, Source_Info const& source_info)
             : Statement(source_info, AST_Node_Type::default_case_statement), statements(ANTON_MOV(statements)) {}
     };
 
     struct Switch_Statement: public Statement {
-        anton::Array<Owning_Ptr<Statement>> cases;
+        Statement_List cases;
         Owning_Ptr<Expression> match_expr;
 
-        Switch_Statement(Owning_Ptr<Expression> match_expr, anton::Array<Owning_Ptr<Statement>> cases, Source_Info const& source_info)
+        Switch_Statement(Owning_Ptr<Expression> match_expr, Statement_List cases, Source_Info const& source_info)
             : Statement(source_info, AST_Node_Type::switch_statement), cases(ANTON_MOV(cases)), match_expr(ANTON_MOV(match_expr)) {}
     };
 
@@ -1066,27 +1064,27 @@ namespace vush {
         Owning_Ptr<Variable_Declaration> declaration;
         Owning_Ptr<Expression> condition;
         Owning_Ptr<Expression> post_expression;
-        anton::Array<Owning_Ptr<Statement>> statements;
+        Statement_List statements;
 
         For_Statement(Owning_Ptr<Variable_Declaration> declaration, Owning_Ptr<Expression> condition, Owning_Ptr<Expression> post_expression,
-                      anton::Array<Owning_Ptr<Statement>> statements, Source_Info const& source_info)
+                      Statement_List statements, Source_Info const& source_info)
             : Statement(source_info, AST_Node_Type::for_statement), declaration(ANTON_MOV(declaration)), condition(ANTON_MOV(condition)),
               post_expression(ANTON_MOV(post_expression)), statements(ANTON_MOV(statements)) {}
     };
 
     struct While_Statement: public Statement {
         Owning_Ptr<Expression> condition;
-        anton::Array<Owning_Ptr<Statement>> statements;
+        Statement_List statements;
 
-        While_Statement(Owning_Ptr<Expression> condition, anton::Array<Owning_Ptr<Statement>> statements, Source_Info const& source_info)
+        While_Statement(Owning_Ptr<Expression> condition, Statement_List statements, Source_Info const& source_info)
             : Statement(source_info, AST_Node_Type::while_statement), condition(ANTON_MOV(condition)), statements(ANTON_MOV(statements)) {}
     };
 
     struct Do_While_Statement: public Statement {
         Owning_Ptr<Expression> condition;
-        anton::Array<Owning_Ptr<Statement>> statements;
+        Statement_List statements;
 
-        Do_While_Statement(Owning_Ptr<Expression> condition, anton::Array<Owning_Ptr<Statement>> statements, Source_Info const& source_info)
+        Do_While_Statement(Owning_Ptr<Expression> condition, Statement_List statements, Source_Info const& source_info)
             : Statement(source_info, AST_Node_Type::do_while_statement), condition(ANTON_MOV(condition)), statements(ANTON_MOV(statements)) {}
     };
 

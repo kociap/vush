@@ -343,40 +343,30 @@ namespace vush {
             }
 
             case AST_Node_Type::if_statement: {
+                If_Statement& node = (If_Statement&)ast_node;
                 write_indent(out, ctx.indent);
-                If_Statement* node = (If_Statement*)&ast_node;
-                while(true) {
-                    out += u8"if(";
-                    stringify(out, *node->condition, ctx);
-                    out += u8") {\n";
-                    ctx.indent += 1;
-                    Block_Statement& true_statement = (Block_Statement&)*node->true_statement;
-                    for(auto& statement: true_statement.statements) {
-                        stringify(out, *statement, ctx);
-                    }
-                    ctx.indent -= 1;
-                    // We keep iterating as long as the else branch exists and it's an if statement
-                    if(node->false_statement && node->false_statement->node_type == AST_Node_Type::if_statement) {
-                        write_indent(out, ctx.indent);
-                        out += u8"} else ";
-                        node = (If_Statement*)node->false_statement.get();
-                    } else {
-                        break;
-                    }
+                out += u8"if(";
+                stringify(out, *node.condition, ctx);
+                out += u8") {\n";
+                ctx.indent += 1;
+                for(auto& statement: node.true_statements) {
+                    stringify(out, *statement, ctx);
                 }
-
-                if(node->false_statement) {
+                ctx.indent -= 1;
+                if(node.false_statements.size() == 0) {
+                    write_indent(out, ctx.indent);
+                    out += u8"}\n";
+                } else {
                     write_indent(out, ctx.indent);
                     out += u8"} else {\n";
                     ctx.indent += 1;
-                    Block_Statement& false_statement = (Block_Statement&)*node->false_statement;
-                    for(auto& statement: false_statement.statements) {
+                    for(auto& statement: node.false_statements) {
                         stringify(out, *statement, ctx);
                     }
                     ctx.indent -= 1;
+                    write_indent(out, ctx.indent);
+                    out += u8"}\n";
                 }
-                write_indent(out, ctx.indent);
-                out += u8"}\n";
                 return;
             }
 
