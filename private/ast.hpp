@@ -1,5 +1,6 @@
 #pragma once
 
+#include <ast_fwd.hpp>
 #include <owning_ptr.hpp>
 #include <vush/vush.hpp>
 
@@ -9,7 +10,6 @@ namespace vush {
         builtin_type,
         user_defined_type,
         array_type,
-        declaration_list,
         declaration_if,
         import_decl,
         sourced_global_decl,
@@ -598,26 +598,12 @@ namespace vush {
         using AST_Node::AST_Node;
     };
 
-    struct Declaration_List: public AST_Node {
-        anton::Array<Owning_Ptr<Declaration>> declarations;
-
-        Declaration_List(): AST_Node({}, AST_Node_Type::declaration_list) {}
-
-        void append(Owning_Ptr<Declaration> declaration) {
-            declarations.emplace_back(ANTON_MOV(declaration));
-        }
-
-        [[nodiscard]] i64 size() const {
-            return declarations.size();
-        }
-    };
-
     struct Declaration_If: public Declaration {
         Owning_Ptr<Expression> condition;
-        Owning_Ptr<Declaration_List> true_declarations;
-        Owning_Ptr<Declaration_List> false_declarations;
+        Declaration_List true_declarations;
+        Declaration_List false_declarations;
 
-        Declaration_If(Owning_Ptr<Expression> condition, Owning_Ptr<Declaration_List> true_declarations, Owning_Ptr<Declaration_List> false_declarations,
+        Declaration_If(Owning_Ptr<Expression> condition, Declaration_List true_declarations, Declaration_List false_declarations,
                        Source_Info const& source_info)
             : Declaration(source_info, AST_Node_Type::declaration_if), condition(ANTON_MOV(condition)), true_declarations(ANTON_MOV(true_declarations)),
               false_declarations(ANTON_MOV(false_declarations)) {}

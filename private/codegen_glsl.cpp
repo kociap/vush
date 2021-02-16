@@ -803,7 +803,6 @@ namespace vush {
                 return;
             }
 
-            case AST_Node_Type::declaration_list:
             case AST_Node_Type::declaration_if:
             case AST_Node_Type::import_decl:
             case AST_Node_Type::function_param_if:
@@ -1204,7 +1203,7 @@ namespace vush {
         }
     }
 
-    anton::Expected<anton::Array<Pass_Data>, anton::String> generate_glsl(Context const& ctx, Declaration_List& node, Format_Options const& format,
+    anton::Expected<anton::Array<Pass_Data>, anton::String> generate_glsl(Context const& ctx, Declaration_List& declarations, Format_Options const& format,
                                                                           anton::Slice<Extension const> const extensions,
                                                                           anton::Slice<Pass_Settings const> const settings) {
         // TODO: Move all validation, transformations and aggregation into vush.cpp
@@ -1215,7 +1214,7 @@ namespace vush {
 
         {
             anton::Flat_Hash_Map<anton::String, anton::Array<Sourced_Global_Decl*>> globals;
-            for(auto& decl: node.declarations) {
+            for(auto& decl: declarations) {
                 switch(decl->node_type) {
                     case AST_Node_Type::struct_decl:
                     case AST_Node_Type::constant_declaration: {
