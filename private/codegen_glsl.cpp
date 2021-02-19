@@ -496,6 +496,12 @@ namespace vush {
                 return;
             }
 
+            case AST_Node_Type::discard_statement: {
+                write_indent(out, ctx.indent);
+                out += u8"discard;\n";
+                return;
+            }
+
             case AST_Node_Type::declaration_statement: {
                 Declaration_Statement& node = (Declaration_Statement&)ast_node;
                 write_indent(out, ctx.indent);

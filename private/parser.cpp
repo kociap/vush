@@ -23,6 +23,7 @@ namespace vush {
     static constexpr anton::String_View kw_return = u8"return";
     static constexpr anton::String_View kw_break = u8"break";
     static constexpr anton::String_View kw_continue = u8"continue";
+    static constexpr anton::String_View kw_discard = u8"discard";
     static constexpr anton::String_View kw_true = u8"true";
     static constexpr anton::String_View kw_false = u8"false";
     static constexpr anton::String_View kw_from = u8"from";
@@ -30,7 +31,6 @@ namespace vush {
     static constexpr anton::String_View kw_import = u8"import";
     static constexpr anton::String_View kw_const = u8"const";
     static constexpr anton::String_View kw_in = u8"in";
-    static constexpr anton::String_View kw_source_definition = u8"source_definition";
     static constexpr anton::String_View kw_source = u8"source";
     static constexpr anton::String_View kw_emit = u8"emit";
     static constexpr anton::String_View kw_settings = u8"settings";
@@ -131,29 +131,8 @@ namespace vush {
 
     [[nodiscard]] static bool is_keyword(anton::String_View string) {
         static constexpr anton::String_View keywords[] = {
-            kw_if,
-            kw_else,
-            kw_switch,
-            kw_case,
-            kw_default,
-            kw_for,
-            kw_while,
-            kw_do,
-            kw_return,
-            kw_break,
-            kw_continue,
-            kw_true,
-            kw_false,
-            kw_from,
-            kw_struct,
-            kw_import,
-            kw_const,
-            kw_in,
-            kw_source_definition,
-            kw_source,
-            kw_emit,
-            kw_settings,
-            kw_reinterpret,
+            kw_if,   kw_else,  kw_switch, kw_case,   kw_default, kw_for,   kw_while, kw_do,     kw_return, kw_break,    kw_continue,    kw_discard,
+            kw_true, kw_false, kw_from,   kw_struct, kw_import,  kw_const, kw_in,    kw_source, kw_emit,   kw_settings, kw_reinterpret,
         };
 
         constexpr i64 array_size = sizeof(keywords) / sizeof(anton::String_View);
@@ -1219,6 +1198,11 @@ namespace vush {
                     continue;
                 }
 
+                if(Owning_Ptr discard_statement = try_discard_statement()) {
+                    statements.emplace_back(ANTON_MOV(discard_statement));
+                    continue;
+                }
+
                 if(Owning_Ptr decl = try_variable_declaration()) {
                     Source_Info const src = decl->source_info;
                     Owning_Ptr decl_stmt{new Declaration_Statement(ANTON_MOV(decl), src)};
@@ -1656,6 +1640,25 @@ namespace vush {
             Lexer_State const end_state = _lexer.get_current_state_no_skip();
             Source_Info const src = src_info(state_backup, end_state);
             return Owning_Ptr{new Continue_Statement(src)};
+        }
+
+        Owning_Ptr<Discard_Statement> try_discard_statement() {
+            Lexer_State const state_backup = _lexer.get_current_state();
+            if(!_lexer.match(kw_discard, true)) {
+                set_error(u8"expected 'discard'");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            if(!_lexer.match(token_semicolon)) {
+                set_error(u8"expected ';' after discard statement");
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            Lexer_State const end_state = _lexer.get_current_state_no_skip();
+            Source_Info const src = src_info(state_backup, end_state);
+            return Owning_Ptr{new Discard_Statement(src)};
         }
 
         Owning_Ptr<Expression_Statement> try_expression_statement() {
