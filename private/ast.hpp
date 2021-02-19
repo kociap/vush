@@ -58,6 +58,7 @@ namespace vush {
         return_statement,
         break_statement,
         continue_statement,
+        discard_statement,
         declaration_statement,
         expression_statement,
     };
@@ -792,6 +793,10 @@ namespace vush {
 
     struct Continue_Statement: public Statement {
         Continue_Statement(Source_Info const& source_info): Statement(source_info, AST_Node_Type::continue_statement) {}
+    };
+
+    struct Discard_Statement: public Statement {
+        Discard_Statement(Source_Info const& source_info): Statement(source_info, AST_Node_Type::discard_statement) {}
     };
 
     struct Declaration_Statement: public Statement {
