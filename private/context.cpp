@@ -8,7 +8,7 @@ namespace vush {
             auto& symbol_map = ctx.symbols[i];
             auto iter = symbol_map.find(name);
             if(iter != symbol_map.end()) {
-                return &iter->value;
+                return iter->value;
             }
         }
         return nullptr;
@@ -19,16 +19,15 @@ namespace vush {
             auto& symbol_map = ctx.symbols[i];
             auto iter = symbol_map.find(name);
             if(iter != symbol_map.end()) {
-                return &iter->value;
+                return iter->value;
             }
         }
         return nullptr;
     }
 
-    Symbol* add_symbol(Context& ctx, anton::String_View name, Symbol const& symbol) {
+    void add_symbol(Context& ctx, anton::String_View name, Symbol* symbol) {
         auto& symbol_map = ctx.symbols[ctx.symbols.size() - 1];
-        auto iter = symbol_map.emplace(name, symbol);
-        return &iter->value;
+        symbol_map.emplace(name, symbol);
     }
 
     void push_scope(Context& ctx) {

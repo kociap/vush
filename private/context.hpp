@@ -10,25 +10,15 @@
 #include <vush/vush.hpp>
 
 namespace vush {
-    enum struct Symbol_Type {
-        struct_decl,
-        variable,
-        constant,
-        function,
-        pass_stage,
-    };
-
-    struct Symbol {
-        Symbol_Type type;
-        Declaration* declaration;
-    };
+    using Symbol = AST_Node;
+    using Symbol_Type = AST_Node_Type;
 
     struct Context {
         // Maps source's name to source's contents
         anton::Flat_Hash_Map<anton::String, anton::String> source_registry;
         // Array of address-stable names of the imported sources
         anton::Array<Owning_Ptr<anton::String>> imported_sources;
-        anton::Array<anton::Flat_Hash_Map<anton::String, Symbol>> symbols;
+        anton::Array<anton::Flat_Hash_Map<anton::String, Symbol*>> symbols;
         source_definition_callback source_definition_cb;
         void* source_definition_user_data;
         source_request_callback source_request_cb;
@@ -50,10 +40,7 @@ namespace vush {
     // Adds a symbol to the current scope.
     // Adding a symbol might invalidate the pointers previously returned by add_symbol and find_symbol.
     //
-    // Returns:
-    // Pointer to the newly created symbol.
-    //
-    Symbol* add_symbol(Context& ctx, anton::String_View name, Symbol const& symbol);
+    void add_symbol(Context& ctx, anton::String_View name, Symbol* symbol);
 
     // push_scope
     //

@@ -26,7 +26,7 @@ namespace vush {
                     return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, msg)};
                 }
 
-                return {anton::expected_value, symbol->type == Symbol_Type::constant};
+                return {anton::expected_value, symbol->node_type == Symbol_Type::constant_declaration};
             }
 
             case AST_Node_Type::paren_expr: {
@@ -103,13 +103,13 @@ namespace vush {
                     return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, msg)};
                 }
 
-                if(symbol->type != Symbol_Type::constant) {
+                if(symbol->node_type != Symbol_Type::constant_declaration) {
                     Source_Info const& src = expr.source_info;
                     anton::String msg = u8"identifier '" + expr.identifier->value + u8"' does not name a constant";
                     return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, msg)};
                 }
 
-                Constant_Declaration* decl = (Constant_Declaration*)symbol->declaration;
+                Constant_Declaration* decl = (Constant_Declaration*)symbol;
                 return evaluate_const_expr(ctx, *decl->initializer);
             }
 

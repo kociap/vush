@@ -1,5 +1,6 @@
 #pragma once
 
+#include <anton/optional.hpp>
 #include <ast_fwd.hpp>
 #include <owning_ptr.hpp>
 #include <vush/vush.hpp>
@@ -256,6 +257,8 @@ namespace vush {
     [[nodiscard]] constexpr bool is_opaque_type(Builtin_GLSL_Type type) {
         return static_cast<i32>(type) >= static_cast<i32>(Builtin_GLSL_Type::glsl_sampler1D);
     }
+
+    [[nodiscard]] anton::Optional<Builtin_GLSL_Type> enumify_builtin_glsl_type(anton::String_View type);
 
     [[nodiscard]] constexpr anton::String_View stringify(Builtin_GLSL_Type type) {
         switch(type) {
