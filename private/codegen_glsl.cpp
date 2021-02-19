@@ -39,7 +39,7 @@ namespace vush {
                 out += u8"(";
                 // We made sure that the symbol exists during validation stage
                 Symbol const* symbol = find_symbol(codegen_ctx.ctx, t.name);
-                Struct_Decl& struct_decl = (Struct_Decl&)*symbol->declaration;
+                Struct_Decl const& struct_decl = (Struct_Decl const&)*symbol;
                 for(i64 i = 0; i < struct_decl.members.size(); ++i) {
                     if(i != 0) {
                         out += u8", ";
@@ -864,7 +864,7 @@ namespace vush {
                 User_Defined_Type const& node = (User_Defined_Type const&)type;
                 Symbol const* symbol = find_symbol(ctx, node.name);
                 ANTON_ASSERT(symbol, "undefined symbol");
-                Struct_Decl const* struct_decl = (Struct_Decl const*)symbol->declaration;
+                Struct_Decl const* struct_decl = (Struct_Decl const*)symbol;
                 for(auto& member: struct_decl->members) {
                     name_components.emplace_back(member->identifier->value);
                     Interpolation const interpolation = (member->interpolation != Interpolation::none ? member->interpolation : parent_interpolation);
@@ -1156,7 +1156,7 @@ namespace vush {
         } else if(type.node_type == AST_Node_Type::user_defined_type) {
             User_Defined_Type const& t = (User_Defined_Type const&)type;
             Symbol const* symbol = find_symbol(ctx, t.name);
-            Struct_Decl const* struct_decl = (Struct_Decl const*)symbol->declaration;
+            Struct_Decl const* struct_decl = (Struct_Decl const*)symbol;
             i64 max_alignment = 0;
             i64 offset = 0;
             for(auto& member: struct_decl->members) {

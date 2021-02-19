@@ -12,7 +12,8 @@
 
 namespace vush {
     // process_fn_param_list
-    // Resolves any function parameter ifs and validates that the following requirements are met:
+    // Resolves any function parameter ifs and adds the parameters to the symbol table.
+    // Validates that the following requirements are met:
     //  - for functions only ordinary parameters are allowed
     //  - for vertex stages only vertex input parameters and sourced parameters are allowed
     //  - for fragment stages all parameters must be sourced with the exception of the first one which might be an ordinary parameter that is used as the input from the previous stage
@@ -56,6 +57,9 @@ namespace vush {
         }
 
         for(auto& param: params) {
+            ANTON_ASSERT(param->node_type == AST_Node_Type::ordinary_function_param || param->node_type == AST_Node_Type::sourced_function_param ||
+                             param->node_type == AST_Node_Type::vertex_input_param,
+                         u8"unknown parameter type");
             if(param->node_type == AST_Node_Type::ordinary_function_param) {
                 Ordinary_Function_Param& node = (Ordinary_Function_Param&)*param;
                 Type& type = *node.type;
@@ -66,6 +70,8 @@ namespace vush {
                     return {anton::expected_error,
                             build_error_message(src.file_path, src.line, src.column, u8"ordinary parameters must not be unsized arrays")};
                 }
+
+                add_symbol(ctx, node.identifier->value, &node);
             } else if(param->node_type == AST_Node_Type::sourced_function_param) {
                 Source_Info const& src = param->source_info;
                 return {anton::expected_error,
@@ -127,8 +133,9 @@ namespace vush {
                                 build_error_message(src.file_path, src.line, src.column, u8"ordinary parameters are not allowed on vertex stage")};
                     } else if(param->node_type == AST_Node_Type::sourced_function_param) {
                         Sourced_Function_Param& node = (Sourced_Function_Param&)*param;
-                        Type& type = *node.type;
+                        add_symbol(ctx, node.identifier->value, &node);
 
+                        Type& type = *node.type;
                         // Sourced parameters that are arrays must be sized
                         if(is_unsized_array(type)) {
                             Source_Info const& src = type.source_info;
@@ -146,8 +153,9 @@ namespace vush {
                         }
                     } else if(param->node_type == AST_Node_Type::vertex_input_param) {
                         Vertex_Input_Param& node = (Vertex_Input_Param&)*param;
-                        Type& type = *node.type;
+                        add_symbol(ctx, node.identifier->value, &node);
 
+                        Type& type = *node.type;
                         // Vertex input parameters must not be arrays (we do not support them yet)
                         if(type.node_type == AST_Node_Type::array_type) {
                             Source_Info const& src = type.source_info;
@@ -175,8 +183,9 @@ namespace vush {
                     bool const has_ordinary_parameter = params[0]->node_type == AST_Node_Type::ordinary_function_param;
                     if(has_ordinary_parameter) {
                         Ordinary_Function_Param& node = (Ordinary_Function_Param&)*params[0];
-                        Type& type = *node.type;
+                        add_symbol(ctx, node.identifier->value, &node);
 
+                        Type& type = *node.type;
                         // Sourced parameters that are arrays must be sized
                         if(is_unsized_array(type)) {
                             Source_Info const& src = type.source_info;
@@ -198,8 +207,9 @@ namespace vush {
                         auto& param = params[i];
                         if(param->node_type == AST_Node_Type::sourced_function_param) {
                             Sourced_Function_Param& node = (Sourced_Function_Param&)*param;
-                            Type& type = *node.type;
+                            add_symbol(ctx, node.identifier->value, &node);
 
+                            Type& type = *node.type;
                             // Sourced parameters that are arrays must be sized
                             if(is_unsized_array(type)) {
                                 Source_Info const& src = type.source_info;
@@ -239,8 +249,9 @@ namespace vush {
                                 build_error_message(src.file_path, src.line, src.column, u8"ordinary parameters are not allowed on compute stage")};
                     } else if(param->node_type == AST_Node_Type::sourced_function_param) {
                         Sourced_Function_Param& node = (Sourced_Function_Param&)*param;
-                        Type& type = *node.type;
+                        add_symbol(ctx, node.identifier->value, &node);
 
+                        Type& type = *node.type;
                         // Sourced parameters that are arrays must be sized
                         if(is_unsized_array(type)) {
                             Source_Info const& src = type.source_info;
@@ -484,12 +495,19 @@ namespace vush {
                     }
                 }
 
+                // If the identifier is a builtin glsl type, it's a constructor call
+                if(anton::Optional<Builtin_GLSL_Type> res = enumify_builtin_glsl_type(node->identifier->value); res) {
+                    return {anton::expected_value};
+                }
+
+                // Otherwise we look up the symbol to verify that it exists
                 Symbol const* const symbol = find_symbol(ctx, node->identifier->value);
                 if(!symbol) {
                     return {anton::expected_error, format_undefined_symbol(ctx, node->identifier->source_info)};
                 }
 
-                if(symbol->type != Symbol_Type::function) {
+                if(symbol->node_type != Symbol_Type::struct_decl && symbol->node_type != Symbol_Type::function_declaration) {
+                    // Not a user defined type constructor call and not a function call
                     return {anton::expected_error, format_called_symbol_does_not_name_function(ctx, node->identifier->source_info)};
                 }
 
@@ -590,7 +608,7 @@ namespace vush {
         }
     }
 
-    static anton::Expected<void, anton::String> process_statements(Context& ctx, anton::Array<Owning_Ptr<Statement>>& statements) {
+    static anton::Expected<void, anton::String> process_statements(Context& ctx, Statement_List& statements) {
         // We push new scope and pop it only at the end of the function. We do not pop the scope when we fail
         // because an error always leads to termination.
         push_scope(ctx);
@@ -605,8 +623,7 @@ namespace vush {
                                  u8"invalid ast node type");
                     if(node.declaration->node_type == AST_Node_Type::variable_declaration) {
                         Variable_Declaration& decl = (Variable_Declaration&)*node.declaration;
-                        Symbol symbol{Symbol_Type::variable, &decl};
-                        add_symbol(ctx, decl.identifier->value, symbol);
+                        add_symbol(ctx, decl.identifier->value, &decl);
                         if(decl.initializer) {
                             anton::Expected<void, anton::String> res = process_expression(ctx, decl.initializer);
                             if(!res) {
@@ -615,13 +632,13 @@ namespace vush {
                         }
                     } else {
                         Constant_Declaration& decl = (Constant_Declaration&)*node.declaration;
-                        Symbol symbol{Symbol_Type::variable, &decl};
-                        add_symbol(ctx, decl.identifier->value, symbol);
-                        if(decl.initializer) {
-                            anton::Expected<void, anton::String> res = process_expression(ctx, decl.initializer);
-                            if(!res) {
-                                return res;
-                            }
+                        add_symbol(ctx, decl.identifier->value, &decl);
+                        if(!decl.initializer) {
+                            return {anton::expected_error, format_constant_missing_initializer(ctx, decl.source_info)};
+                        }
+
+                        if(anton::Expected<void, anton::String> res = process_expression(ctx, decl.initializer); !res) {
+                            return res;
                         }
                     }
                 } break;
@@ -636,9 +653,8 @@ namespace vush {
 
                 case AST_Node_Type::if_statement: {
                     Owning_Ptr<If_Statement>& node = (Owning_Ptr<If_Statement>&)statements[i];
-                    anton::Expected<void, anton::String> expr_res = process_expression(ctx, node->condition);
-                    if(!expr_res) {
-                        return expr_res;
+                    if(anton::Expected<void, anton::String> res = process_expression(ctx, node->condition); !res) {
+                        return res;
                     }
 
                     anton::Expected<bool, anton::String> compiletime_res = is_compiletime_evaluable(ctx, *node->condition);
@@ -813,6 +829,8 @@ namespace vush {
                     return res;
                 }
 
+                // Push new scope for the function body and parameters
+                push_scope(ctx);
                 if(anton::Expected<void, anton::String> res = process_fn_param_list(ctx, fn); !res) {
                     return res;
                 }
@@ -820,6 +838,8 @@ namespace vush {
                 if(anton::Expected<void, anton::String> res = process_statements(ctx, fn.body); !res) {
                     return res;
                 }
+
+                pop_scope(ctx);
             } else if(ast_node->node_type == AST_Node_Type::pass_stage_declaration) {
                 Pass_Stage_Declaration& fn = static_cast<Pass_Stage_Declaration&>(*ast_node);
                 // Validate the return types
@@ -844,6 +864,8 @@ namespace vush {
                     return res;
                 }
 
+                // Push new scope for the function body and parameters
+                push_scope(ctx);
                 if(anton::Expected<void, anton::String> res = process_fn_param_list(ctx, fn); !res) {
                     return res;
                 }
@@ -851,6 +873,8 @@ namespace vush {
                 if(anton::Expected<void, anton::String> res = process_statements(ctx, fn.body); !res) {
                     return res;
                 }
+
+                pop_scope(ctx);
             }
         }
 
@@ -934,7 +958,7 @@ namespace vush {
                         return {anton::expected_error, format_empty_struct(node.source_info)};
                     }
 
-                    ctx.symbols[0].emplace(node.name->value, Symbol{Symbol_Type::struct_decl, &node});
+                    ctx.symbols[0].emplace(node.name->value, &node);
                 } break;
 
                 case AST_Node_Type::variable_declaration: {
@@ -944,7 +968,7 @@ namespace vush {
 
                 case AST_Node_Type::constant_declaration: {
                     Constant_Declaration& node = static_cast<Constant_Declaration&>(*ast_node);
-                    ctx.symbols[0].emplace(node.identifier->value, Symbol{Symbol_Type::constant, &node});
+                    ctx.symbols[0].emplace(node.identifier->value, &node);
                     if(!node.initializer) {
                         return {anton::expected_error, format_constant_missing_initializer(ctx, node.source_info)};
                     }
@@ -956,7 +980,7 @@ namespace vush {
 
                 case AST_Node_Type::function_declaration: {
                     Function_Declaration& node = static_cast<Function_Declaration&>(*ast_node);
-                    ctx.symbols[0].emplace(node.name->value, Symbol{Symbol_Type::function, &node});
+                    ctx.symbols[0].emplace(node.name->value, &node);
                 } break;
 
                 case AST_Node_Type::settings_decl: {
@@ -1027,55 +1051,58 @@ namespace vush {
         }
 
         return {anton::expected_value, ANTON_MOV(ast)};
-    } // namespace vush
+    }
 
-    static void populate_builtin_glsl_variables(Context& ctx, anton::Array<Owning_Ptr<Declaration>>& storage) {
+    static void populate_builtin_glsl_variables(Context& ctx, Declaration_List& storage) {
         struct Builtin_Variable {
             anton::String_View name;
-            Builtin_GLSL_Type type;
+            Type* type;
         };
 
-        Builtin_Variable builtin_variables[] = {// Vertex Shader
-                                                {"gl_VertexID", Builtin_GLSL_Type::glsl_int},
-                                                {"gl_InstanceID", Builtin_GLSL_Type::glsl_int},
-                                                {"gl_VertexIndex", Builtin_GLSL_Type::glsl_int},
-                                                {"gl_InstanceIndex", Builtin_GLSL_Type::glsl_int},
-                                                {"gl_DrawID", Builtin_GLSL_Type::glsl_int},
-                                                {"gl_BaseVertex", Builtin_GLSL_Type::glsl_int},
-                                                {"gl_BaseInstance", Builtin_GLSL_Type::glsl_int},
-                                                {"gl_Position", Builtin_GLSL_Type::glsl_vec4},
-                                                // TODO: Add vertex shader gl_PointSize, gl_ClipDistance, gl_CullDistance
-                                                // TODO: Add tessellation shader variables and geometry shader variables
-                                                // Fragment Shader
-                                                {"gl_FragCoord", Builtin_GLSL_Type::glsl_vec4},
-                                                {"gl_FrontFacing", Builtin_GLSL_Type::glsl_bool},
-                                                // TODO: Add fragment shader gl_ClipDistance, gl_CullDistance
-                                                {"gl_PointCoord", Builtin_GLSL_Type::glsl_vec2},
-                                                {"gl_PrimitiveID", Builtin_GLSL_Type::glsl_int},
-                                                {"gl_SampleID", Builtin_GLSL_Type::glsl_int},
-                                                {"gl_SamplePosition", Builtin_GLSL_Type::glsl_vec2},
-                                                // TODO: Add fragment shader gl_SampleMaskIn
-                                                {"gl_Layer", Builtin_GLSL_Type::glsl_int},
-                                                {"gl_ViewportIndex", Builtin_GLSL_Type::glsl_int},
-                                                {"gl_HelperInvocation", Builtin_GLSL_Type::glsl_int},
-                                                {"gl_FragDepth", Builtin_GLSL_Type::glsl_float},
-                                                // TODO: Add fragment shader gl_SampleMask
-                                                // Compute Shader
-                                                {"gl_NumWorkGroups", Builtin_GLSL_Type::glsl_uvec3},
-                                                {"gl_WorkgroupSize", Builtin_GLSL_Type::glsl_uvec3},
-                                                {"gl_WorkGroupID", Builtin_GLSL_Type::glsl_uvec3},
-                                                {"gl_LocalInvocationID", Builtin_GLSL_Type::glsl_uvec3},
-                                                {"gl_GlobalInvocationID", Builtin_GLSL_Type::glsl_uvec3},
-                                                {"gl_LocalInvocationIndex", Builtin_GLSL_Type::glsl_uint}};
+        Source_Info const src_info{u8"<GLSL Builtin>", 0, 0, 0};
+        Builtin_Variable builtin_variables[] = {
+            // Vertex Shader
+            {"gl_VertexID", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
+            {"gl_InstanceID", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
+            {"gl_VertexIndex", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
+            {"gl_InstanceIndex", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
+            {"gl_DrawID", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
+            {"gl_BaseVertex", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
+            {"gl_BaseInstance", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
+            {"gl_Position", new Builtin_Type(Builtin_GLSL_Type::glsl_vec4, src_info)},
+            {"gl_PointSize", new Builtin_Type(Builtin_GLSL_Type::glsl_float, src_info)},
+            {"gl_ClipDistance", new Array_Type(Owning_Ptr{new Builtin_Type(Builtin_GLSL_Type::glsl_float, src_info)}, nullptr, src_info)},
+            {"gl_CullDistance", new Array_Type(Owning_Ptr{new Builtin_Type(Builtin_GLSL_Type::glsl_float, src_info)}, nullptr, src_info)},
+            // TODO: Add tessellation shader variables and geometry shader variables
+            // Fragment Shader
+            {"gl_FragCoord", new Builtin_Type(Builtin_GLSL_Type::glsl_vec4, src_info)},
+            {"gl_FrontFacing", new Builtin_Type(Builtin_GLSL_Type::glsl_bool, src_info)},
+            // gl_ClipDistance, gl_CullDistance already declared above in the vertex shader section
+            {"gl_PointCoord", new Builtin_Type(Builtin_GLSL_Type::glsl_vec2, src_info)},
+            {"gl_PrimitiveID", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
+            {"gl_SampleID", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
+            {"gl_SamplePosition", new Builtin_Type(Builtin_GLSL_Type::glsl_vec2, src_info)},
+            {"gl_SampleMaskIn", new Array_Type(Owning_Ptr{new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)}, nullptr, src_info)},
+            {"gl_Layer", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
+            {"gl_ViewportIndex", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
+            {"gl_HelperInvocation", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
+            {"gl_FragDepth", new Builtin_Type(Builtin_GLSL_Type::glsl_float, src_info)},
+            {"gl_SampleMask", new Array_Type(Owning_Ptr{new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)}, nullptr, src_info)},
+            // Compute Shader
+            {"gl_NumWorkGroups", new Builtin_Type(Builtin_GLSL_Type::glsl_uvec3, src_info)},
+            {"gl_WorkgroupSize", new Builtin_Type(Builtin_GLSL_Type::glsl_uvec3, src_info)},
+            {"gl_WorkGroupID", new Builtin_Type(Builtin_GLSL_Type::glsl_uvec3, src_info)},
+            {"gl_LocalInvocationID", new Builtin_Type(Builtin_GLSL_Type::glsl_uvec3, src_info)},
+            {"gl_GlobalInvocationID", new Builtin_Type(Builtin_GLSL_Type::glsl_uvec3, src_info)},
+            {"gl_LocalInvocationIndex", new Builtin_Type(Builtin_GLSL_Type::glsl_uint, src_info)}};
+
         // Populate storage and symbols
         constexpr i64 variable_count = sizeof(builtin_variables) / sizeof(Builtin_Variable);
         for(i64 i = 0; i < variable_count; ++i) {
             Builtin_Variable const& var = builtin_variables[i];
-            Variable_Declaration* decl = new Variable_Declaration(Owning_Ptr{new Builtin_Type(Builtin_GLSL_Type::glsl_int, {u8"<GLSL Builtin>", 0, 0, 0})},
-                                                                  Owning_Ptr{new Identifier(anton::String(var.name), {u8"<GLSL Builtin>", 0, 0, 0})}, nullptr,
-                                                                  {u8"<GLSL Builtin>", 0, 0, 0});
-            Symbol symbol{Symbol_Type::variable, decl};
-            ctx.symbols[0].emplace(var.name, symbol);
+            Variable_Declaration* decl =
+                new Variable_Declaration(Owning_Ptr{var.type}, Owning_Ptr{new Identifier(anton::String(var.name), src_info)}, nullptr, src_info);
+            ctx.symbols[0].emplace(var.name, decl);
             storage.emplace_back(decl);
         }
     }
@@ -1091,15 +1118,12 @@ namespace vush {
         // Create symbols for the constant defines passed via config
         anton::Array<Owning_Ptr<Declaration>> constant_decls;
         for(Constant_Define const& define: config.defines) {
-            Symbol symbol;
-            symbol.type = Symbol_Type::constant;
             Constant_Declaration* decl = new Constant_Declaration(Owning_Ptr{new Builtin_Type(Builtin_GLSL_Type::glsl_int, {config.source_name, 0, 0, 0})},
                                                                   Owning_Ptr{new Identifier(anton::String(define.name), {config.source_name, 0, 0, 0})},
                                                                   Owning_Ptr{new Integer_Literal(anton::to_string(define.value), Integer_Literal_Type::i32,
                                                                                                  Integer_Literal_Base::dec, {config.source_name, 0, 0, 0})},
                                                                   {config.source_name, 0, 0, 0});
-            symbol.declaration = decl;
-            ctx.symbols[0].emplace(define.name, symbol);
+            ctx.symbols[0].emplace(define.name, decl);
             constant_decls.emplace_back(decl);
         }
         // Create symbols for the builtin glsl variables

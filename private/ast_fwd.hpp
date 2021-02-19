@@ -4,6 +4,8 @@
 #include <owning_ptr.hpp>
 
 namespace vush {
+    enum struct AST_Node_Type;
+    struct AST_Node;
     struct Declaration;
     struct Statement;
 
