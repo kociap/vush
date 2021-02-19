@@ -867,7 +867,9 @@ namespace vush {
 
                 case AST_Node_Type::for_statement: {
                     For_Statement& node = (For_Statement&)*statements[i];
+                    push_scope(ctx);
                     if(node.declaration) {
+                        add_symbol(ctx, node.declaration->identifier->value, node.declaration.get());
                         anton::Expected<void, anton::String> res = process_expression(ctx, node.declaration->initializer);
                         if(!res) {
                             return res;
@@ -892,6 +894,8 @@ namespace vush {
                     if(!res) {
                         return res;
                     }
+
+                    pop_scope(ctx);
                 } break;
 
                 case AST_Node_Type::while_statement: {
