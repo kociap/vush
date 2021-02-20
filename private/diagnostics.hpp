@@ -6,11 +6,6 @@
 #include <vush/vush.hpp>
 
 namespace vush {
-    struct Source_Info;
-    enum struct Stage_Type;
-    struct Sourced_Global_Decl;
-    struct Import_Decl;
-
     [[nodiscard]] inline anton::String build_error_message(anton::String_View const message) {
         return anton::String{u8"error: "} + message;
     }
@@ -27,12 +22,13 @@ namespace vush {
     [[nodiscard]] anton::String format_variable_declaration_in_global_scope(Context const& ctx, Source_Info const& declaration);
     [[nodiscard]] anton::String format_constant_missing_initializer(Context const& ctx, Source_Info const& constant);
     [[nodiscard]] anton::String format_expression_not_implicitly_convertible_to_bool(Context const& ctx, Source_Info const& expression);
+    [[nodiscard]] anton::String format_ordinary_parameter_not_allowed_on_stage(Context const& ctx, Source_Info const& src, Stage_Type stage);
+    [[nodiscard]] anton::String format_vertex_input_not_allowed_on_stage(Context const& ctx, Source_Info const& src, Stage_Type stage);
     [[nodiscard]] anton::String format_duplicate_pass_stage_error(Source_Info const& duplicate, Source_Info const& previous, anton::String const& pass_name,
                                                                   Stage_Type const& stage);
     [[nodiscard]] anton::String format_missing_vertex_stage_error(anton::String const& pass_name);
     [[nodiscard]] anton::String format_vertex_and_compute_stages_error(anton::String const& pass_name);
     [[nodiscard]] anton::String format_empty_struct(Source_Info const& struct_info);
     [[nodiscard]] anton::String format_compute_return_type_must_be_void(Context const& ctx, Source_Info const& return_type);
-    [[nodiscard]] anton::String format_sourced_global_pass_does_not_exist(Sourced_Global_Decl const& global);
     [[nodiscard]] anton::String format_source_import_failed(Context const& ctx, Import_Decl const& import_decl, anton::String_View source_callback_message);
 } // namespace vush
