@@ -31,8 +31,6 @@ namespace vush {
     static constexpr anton::String_View kw_import = u8"import";
     static constexpr anton::String_View kw_const = u8"const";
     static constexpr anton::String_View kw_in = u8"in";
-    static constexpr anton::String_View kw_source = u8"source";
-    static constexpr anton::String_View kw_emit = u8"emit";
     static constexpr anton::String_View kw_settings = u8"settings";
     static constexpr anton::String_View kw_reinterpret = u8"reinterpret";
     static constexpr anton::String_View kw_invariant = u8"invariant";
@@ -131,8 +129,8 @@ namespace vush {
 
     [[nodiscard]] static bool is_keyword(anton::String_View string) {
         static constexpr anton::String_View keywords[] = {
-            kw_if,   kw_else,  kw_switch, kw_case,   kw_default, kw_for,   kw_while, kw_do,     kw_return, kw_break,    kw_continue,    kw_discard,
-            kw_true, kw_false, kw_from,   kw_struct, kw_import,  kw_const, kw_in,    kw_source, kw_emit,   kw_settings, kw_reinterpret,
+            kw_if,       kw_else,    kw_switch, kw_case,  kw_default, kw_for,    kw_while,  kw_do,    kw_return,   kw_break,
+            kw_continue, kw_discard, kw_true,   kw_false, kw_from,    kw_struct, kw_import, kw_const, kw_settings, kw_reinterpret,
         };
 
         constexpr i64 array_size = sizeof(keywords) / sizeof(anton::String_View);
@@ -333,10 +331,6 @@ namespace vush {
                 return settings_decl;
             }
 
-            if(Owning_Ptr src_decl = try_source_declaration()) {
-                return src_decl;
-            }
-
             if(Owning_Ptr struct_decl = try_struct_decl()) {
                 return struct_decl;
             }
@@ -437,68 +431,6 @@ namespace vush {
                 _lexer.restore_state(state_backup);
                 return nullptr;
             }
-        }
-
-        Owning_Ptr<Sourced_Global_Decl> try_source_declaration() {
-            Lexer_State const state_backup = _lexer.get_current_state();
-
-            if(!_lexer.match(kw_source, true)) {
-                set_error(u8"expected 'source'");
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            Owning_Ptr pass_name = try_identifier();
-            if(!pass_name) {
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            if(!_lexer.match(token_scope_resolution)) {
-                set_error(u8"expected '::'");
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            Owning_Ptr type = try_type();
-            if(!type) {
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            Lexer_State const name_backup = _lexer.get_current_state();
-            Owning_Ptr name = try_identifier();
-            if(!name) {
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            if(name->value == kw_from) {
-                set_error(u8"expected name before 'from'", name_backup);
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            if(!_lexer.match(kw_from, true)) {
-                set_error(u8"expected 'from'");
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            Owning_Ptr source = try_identifier();
-            if(!source) {
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            if(!_lexer.match(token_semicolon)) {
-                set_error(u8"expected ';' after sourced global");
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            return Owning_Ptr{
-                new Sourced_Global_Decl(ANTON_MOV(pass_name), ANTON_MOV(type), ANTON_MOV(name), ANTON_MOV(source), src_info(state_backup, state_backup))};
         }
 
         Owning_Ptr<Variable_Declaration> try_variable_declaration() {

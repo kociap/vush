@@ -1208,96 +1208,71 @@ namespace vush {
         anton::Array<Declaration*> functions;
         anton::Array<Pass_Context> passes;
 
-        {
-            anton::Flat_Hash_Map<anton::String, anton::Array<Sourced_Global_Decl*>> globals;
-            for(auto& decl: declarations) {
-                switch(decl->node_type) {
-                    case AST_Node_Type::struct_decl:
-                    case AST_Node_Type::constant_declaration: {
-                        structs_and_consts.emplace_back(decl.get());
-                    } break;
+        for(auto& decl: declarations) {
+            switch(decl->node_type) {
+                case AST_Node_Type::struct_decl:
+                case AST_Node_Type::constant_declaration: {
+                    structs_and_consts.emplace_back(decl.get());
+                } break;
 
-                    case AST_Node_Type::function_declaration: {
-                        functions.emplace_back(decl.get());
-                    } break;
+                case AST_Node_Type::function_declaration: {
+                    functions.emplace_back(decl.get());
+                } break;
 
-                    case AST_Node_Type::pass_stage_declaration: {
-                        Pass_Stage_Declaration* pass_decl = (Pass_Stage_Declaration*)decl.get();
-                        Pass_Context* pass =
-                            anton::find_if(passes.begin(), passes.end(), [pass_decl](Pass_Context const& v) { return v.name == pass_decl->pass->value; });
-                        if(pass == passes.end()) {
-                            Pass_Context& v = passes.emplace_back(Pass_Context{pass_decl->pass->value, {}});
-                            pass = &v;
-                        }
-
-                        // Ensure there is only 1 stage of each type
-                        switch(pass_decl->stage) {
-                            case Stage_Type::vertex: {
-                                if(pass->vertex_stage) {
-                                    Source_Info const& src1 = pass_decl->source_info;
-                                    Source_Info const& src2 = pass->vertex_stage->source_info;
-                                    return {anton::expected_error, format_duplicate_pass_stage_error(src1, src2, pass->name, Stage_Type::vertex)};
-                                }
-
-                                pass->vertex_stage = pass_decl;
-                            } break;
-
-                            case Stage_Type::fragment: {
-                                if(pass->fragment_stage) {
-                                    Source_Info const& src1 = pass_decl->source_info;
-                                    Source_Info const& src2 = pass->vertex_stage->source_info;
-                                    return {anton::expected_error, format_duplicate_pass_stage_error(src1, src2, pass->name, Stage_Type::fragment)};
-                                }
-
-                                pass->fragment_stage = pass_decl;
-                            } break;
-
-                            case Stage_Type::compute: {
-                                if(pass->compute_stage) {
-                                    Source_Info const& src1 = pass_decl->source_info;
-                                    Source_Info const& src2 = pass->vertex_stage->source_info;
-                                    return {anton::expected_error, format_duplicate_pass_stage_error(src1, src2, pass->name, Stage_Type::compute)};
-                                }
-
-                                pass->compute_stage = pass_decl;
-                            } break;
-                        }
-
-                        for(auto& param: pass_decl->params) {
-                            if(param->node_type == AST_Node_Type::sourced_function_param) {
-                                Sourced_Function_Param* sourced_param = (Sourced_Function_Param*)param.get();
-                                auto iter = pass->sourced_data.find_or_emplace(sourced_param->source->value);
-                                Sourced_Data data{sourced_param->type.get(), sourced_param->identifier.get(), sourced_param->source.get()};
-                                iter->value.all.emplace_back(data);
-                            }
-                        }
-                    } break;
-
-                    case AST_Node_Type::sourced_global_decl: {
-                        Sourced_Global_Decl* global = (Sourced_Global_Decl*)decl.get();
-                        anton::String const& pass_name = global->pass_name->value;
-                        auto iter = globals.find_or_emplace(pass_name);
-                        iter->value.emplace_back(global);
-                    } break;
-
-                    default:
-                        break;
-                }
-            }
-
-            for(auto [pass_name, data]: globals) {
-                anton::String const& pn = pass_name;
-                Pass_Context* const pass = anton::find_if(passes.begin(), passes.end(), [&pn](Pass_Context& pass) { return pass.name == pn; });
-                if(pass != passes.end()) {
-                    for(Sourced_Global_Decl* global: data) {
-                        auto iter = pass->sourced_data.find_or_emplace(global->source->value);
-                        Sourced_Data data{global->type.get(), global->name.get(), global->source.get()};
-                        iter->value.all.emplace_back(data);
+                case AST_Node_Type::pass_stage_declaration: {
+                    Pass_Stage_Declaration* pass_decl = (Pass_Stage_Declaration*)decl.get();
+                    Pass_Context* pass =
+                        anton::find_if(passes.begin(), passes.end(), [pass_decl](Pass_Context const& v) { return v.name == pass_decl->pass->value; });
+                    if(pass == passes.end()) {
+                        Pass_Context& v = passes.emplace_back(Pass_Context{pass_decl->pass->value, {}});
+                        pass = &v;
                     }
-                } else {
-                    // TODO: Improve this diagnostic
-                    return {anton::expected_error, format_sourced_global_pass_does_not_exist(*data[0])};
-                }
+
+                    // Ensure there is only 1 stage of each type
+                    switch(pass_decl->stage) {
+                        case Stage_Type::vertex: {
+                            if(pass->vertex_stage) {
+                                Source_Info const& src1 = pass_decl->source_info;
+                                Source_Info const& src2 = pass->vertex_stage->source_info;
+                                return {anton::expected_error, format_duplicate_pass_stage_error(src1, src2, pass->name, Stage_Type::vertex)};
+                            }
+
+                            pass->vertex_stage = pass_decl;
+                        } break;
+
+                        case Stage_Type::fragment: {
+                            if(pass->fragment_stage) {
+                                Source_Info const& src1 = pass_decl->source_info;
+                                Source_Info const& src2 = pass->vertex_stage->source_info;
+                                return {anton::expected_error, format_duplicate_pass_stage_error(src1, src2, pass->name, Stage_Type::fragment)};
+                            }
+
+                            pass->fragment_stage = pass_decl;
+                        } break;
+
+                        case Stage_Type::compute: {
+                            if(pass->compute_stage) {
+                                Source_Info const& src1 = pass_decl->source_info;
+                                Source_Info const& src2 = pass->vertex_stage->source_info;
+                                return {anton::expected_error, format_duplicate_pass_stage_error(src1, src2, pass->name, Stage_Type::compute)};
+                            }
+
+                            pass->compute_stage = pass_decl;
+                        } break;
+                    }
+
+                    for(auto& param: pass_decl->params) {
+                        if(param->node_type == AST_Node_Type::sourced_function_param) {
+                            Sourced_Function_Param* sourced_param = (Sourced_Function_Param*)param.get();
+                            auto iter = pass->sourced_data.find_or_emplace(sourced_param->source->value);
+                            Sourced_Data data{sourced_param->type.get(), sourced_param->identifier.get(), sourced_param->source.get()};
+                            iter->value.all.emplace_back(data);
+                        }
+                    }
+                } break;
+
+                default:
+                    break;
             }
         }
 

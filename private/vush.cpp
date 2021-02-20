@@ -62,16 +62,12 @@ namespace vush {
                          u8"unknown parameter type");
             if(param->node_type == AST_Node_Type::ordinary_function_param) {
                 Ordinary_Function_Param& node = (Ordinary_Function_Param&)*param;
-                Type& type = *node.type;
-
-                // Ordinary parameters that are arrays must be sized
-                if(is_unsized_array(type)) {
-                    Source_Info const& src = type.source_info;
-                    return {anton::expected_error,
-                            build_error_message(src.file_path, src.line, src.column, u8"ordinary parameters must not be unsized arrays")};
-                }
-
                 add_symbol(ctx, node.identifier->value, &node);
+
+                // TODO: Remove unsized array parameters from parameter list because they are global. We have them to only provide a symbol.
+                // if(is_unsized_array(type)) {
+                // }
+
             } else if(param->node_type == AST_Node_Type::sourced_function_param) {
                 Source_Info const& src = param->source_info;
                 return {anton::expected_error,
@@ -129,28 +125,10 @@ namespace vush {
                 for(auto& param: params) {
                     if(param->node_type == AST_Node_Type::ordinary_function_param) {
                         Source_Info const& src = param->source_info;
-                        return {anton::expected_error,
-                                build_error_message(src.file_path, src.line, src.column, u8"ordinary parameters are not allowed on vertex stage")};
+                        return {anton::expected_error, format_ordinary_parameter_not_allowed_on_stage(ctx, src, Stage_Type::vertex)};
                     } else if(param->node_type == AST_Node_Type::sourced_function_param) {
                         Sourced_Function_Param& node = (Sourced_Function_Param&)*param;
                         add_symbol(ctx, node.identifier->value, &node);
-
-                        Type& type = *node.type;
-                        // Sourced parameters that are arrays must be sized
-                        if(is_unsized_array(type)) {
-                            Source_Info const& src = type.source_info;
-                            return {anton::expected_error,
-                                    build_error_message(src.file_path, src.line, src.column, u8"sourced parameters must not be unsized arrays")};
-                        }
-
-                        // Sourced parameters must not be opaque
-                        if(is_opaque_type(type)) {
-                            Source_Info const& src = type.source_info;
-                            return {anton::expected_error,
-                                    build_error_message(src.file_path, src.line, src.column,
-                                                        u8"sourced parameters must be of non-opaque type (non-opaque builtin type or user "
-                                                        u8"defined type) or an array of non-opaque type")};
-                        }
                     } else if(param->node_type == AST_Node_Type::vertex_input_param) {
                         Vertex_Input_Param& node = (Vertex_Input_Param&)*param;
                         add_symbol(ctx, node.identifier->value, &node);
@@ -161,15 +139,6 @@ namespace vush {
                             Source_Info const& src = type.source_info;
                             return {anton::expected_error,
                                     build_error_message(src.file_path, src.line, src.column, u8"vertex input parameters must not be arrays")};
-                        }
-
-                        // Vertex input parameters must not be opaque
-                        if(is_opaque_type(type)) {
-                            Source_Info const& src = type.source_info;
-                            return {anton::expected_error,
-                                    build_error_message(src.file_path, src.line, src.column,
-                                                        u8"vertex input parameters must be of non-opaque type (non-opaque builtin type or user "
-                                                        u8"defined type) or an array of non-opaque type")};
                         }
                     } else {
                         Source_Info const& src = param->source_info;
@@ -185,6 +154,7 @@ namespace vush {
                         Ordinary_Function_Param& node = (Ordinary_Function_Param&)*params[0];
                         add_symbol(ctx, node.identifier->value, &node);
 
+                        // TODO: Is this validation correct?
                         Type& type = *node.type;
                         // Sourced parameters that are arrays must be sized
                         if(is_unsized_array(type)) {
@@ -205,36 +175,15 @@ namespace vush {
 
                     for(i64 i = has_ordinary_parameter; i < params.size(); ++i) {
                         auto& param = params[i];
+                        Source_Info const& src = param->source_info;
                         if(param->node_type == AST_Node_Type::sourced_function_param) {
                             Sourced_Function_Param& node = (Sourced_Function_Param&)*param;
                             add_symbol(ctx, node.identifier->value, &node);
-
-                            Type& type = *node.type;
-                            // Sourced parameters that are arrays must be sized
-                            if(is_unsized_array(type)) {
-                                Source_Info const& src = type.source_info;
-                                return {anton::expected_error,
-                                        build_error_message(src.file_path, src.line, src.column, u8"sourced parameters must not be unsized arrays")};
-                            }
-
-                            // Sourced parameters must not be opaque
-                            if(is_opaque_type(type)) {
-                                Source_Info const& src = type.source_info;
-                                return {anton::expected_error,
-                                        build_error_message(src.file_path, src.line, src.column,
-                                                            u8"sourced parameters must be of non-opaque type (non-opaque builtin type or user "
-                                                            u8"defined type) or an array of non-opaque type")};
-                            }
                         } else if(param->node_type == AST_Node_Type::ordinary_function_param) {
-                            Source_Info const& src = param->source_info;
-                            return {anton::expected_error,
-                                    build_error_message(src.file_path, src.line, src.column, u8"ordinary parameters are not allowed on fragment stage")};
+                            return {anton::expected_error, format_ordinary_parameter_not_allowed_on_stage(ctx, src, Stage_Type::fragment)};
                         } else if(param->node_type == AST_Node_Type::vertex_input_param) {
-                            Source_Info const& src = param->source_info;
-                            return {anton::expected_error,
-                                    build_error_message(src.file_path, src.line, src.column, u8"vertex input parameters are not allowed on fragment stage")};
+                            return {anton::expected_error, format_vertex_input_not_allowed_on_stage(ctx, src, Stage_Type::fragment)};
                         } else {
-                            Source_Info const& src = param->source_info;
                             return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"unknown parameter type")};
                         }
                     }
@@ -243,36 +192,15 @@ namespace vush {
 
             case Stage_Type::compute: {
                 for(auto& param: params) {
+                    Source_Info const& src = param->source_info;
                     if(param->node_type == AST_Node_Type::ordinary_function_param) {
-                        Source_Info const& src = param->source_info;
-                        return {anton::expected_error,
-                                build_error_message(src.file_path, src.line, src.column, u8"ordinary parameters are not allowed on compute stage")};
+                        return {anton::expected_error, format_ordinary_parameter_not_allowed_on_stage(ctx, src, Stage_Type::compute)};
                     } else if(param->node_type == AST_Node_Type::sourced_function_param) {
                         Sourced_Function_Param& node = (Sourced_Function_Param&)*param;
                         add_symbol(ctx, node.identifier->value, &node);
-
-                        Type& type = *node.type;
-                        // Sourced parameters that are arrays must be sized
-                        if(is_unsized_array(type)) {
-                            Source_Info const& src = type.source_info;
-                            return {anton::expected_error,
-                                    build_error_message(src.file_path, src.line, src.column, u8"sourced parameters must not be unsized arrays")};
-                        }
-
-                        // Sourced parameters must not be opaque
-                        if(is_opaque_type(type)) {
-                            Source_Info const& src = type.source_info;
-                            return {anton::expected_error,
-                                    build_error_message(src.file_path, src.line, src.column,
-                                                        u8"sourced parameters must be of non-opaque type (non-opaque builtin type or user "
-                                                        u8"defined type) or an array of non-opaque type")};
-                        }
                     } else if(param->node_type == AST_Node_Type::vertex_input_param) {
-                        Source_Info const& src = param->source_info;
-                        return {anton::expected_error,
-                                build_error_message(src.file_path, src.line, src.column, u8"vertex input parameters are not allowed on compute stage")};
+                        return {anton::expected_error, format_vertex_input_not_allowed_on_stage(ctx, src, Stage_Type::compute)};
                     } else {
-                        Source_Info const& src = param->source_info;
                         return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"unknown parameter type")};
                     }
                 }
@@ -666,7 +594,7 @@ namespace vush {
                     return {anton::expected_value};
                 }
 
-                // Temporarily check whether it's the name of a builtin function
+                // TODO: Temporarily check whether it's the name of a builtin function
                 if(is_builtin_function_name(node->identifier->value)) {
                     return {anton::expected_value};
                 }
