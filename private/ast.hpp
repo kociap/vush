@@ -13,7 +13,6 @@ namespace vush {
         array_type,
         declaration_if,
         import_decl,
-        sourced_global_decl,
         variable_declaration,
         constant_declaration,
         struct_member,
@@ -326,18 +325,6 @@ namespace vush {
                 return u8"noperspective";
         }
     }
-
-    struct Sourced_Global_Decl: public Declaration {
-        Owning_Ptr<Identifier> pass_name;
-        Owning_Ptr<Type> type;
-        Owning_Ptr<Identifier> name;
-        Owning_Ptr<Identifier> source;
-
-        Sourced_Global_Decl(Owning_Ptr<Identifier> pass_name, Owning_Ptr<Type> type, Owning_Ptr<Identifier> name, Owning_Ptr<Identifier> source,
-                            Source_Info const& source_info)
-            : Declaration(source_info, AST_Node_Type::sourced_global_decl), pass_name(ANTON_MOV(pass_name)), type(ANTON_MOV(type)), name(ANTON_MOV(name)),
-              source(ANTON_MOV(source)) {}
-    };
 
     struct Variable_Declaration: public Declaration {
         Owning_Ptr<Type> type;
