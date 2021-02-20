@@ -120,6 +120,28 @@ namespace vush {
         return message;
     }
 
+    anton::String format_ordinary_parameter_not_allowed_on_stage(Context const& ctx, Source_Info const& src, Stage_Type const stage) {
+        anton::String message = format_diagnostic_location(src);
+        message += u8"ordinary parameters are not allowed on ";
+        message += stringify(stage);
+        message += u8" stage";
+        auto iter = ctx.source_registry.find(src.file_path);
+        anton::String const& source = iter->value;
+        print_source_snippet(message, source, src);
+        return message;
+    }
+
+    anton::String format_vertex_input_not_allowed_on_stage(Context const& ctx, Source_Info const& src, Stage_Type const stage) {
+        anton::String message = format_diagnostic_location(src);
+        message += u8"vertex input parameters are not allowed on ";
+        message += stringify(stage);
+        message += u8" stage";
+        auto iter = ctx.source_registry.find(src.file_path);
+        anton::String const& source = iter->value;
+        print_source_snippet(message, source, src);
+        return message;
+    }
+
     anton::String format_duplicate_pass_stage_error(Source_Info const& duplicate, Source_Info const& previous, anton::String const& pass_name,
                                                     Stage_Type const& stage) {
         anton::String message = format_diagnostic_location(duplicate) + u8"error: duplicate " + stringify(stage) + u8" stage in pass '" + pass_name + "'\n";
@@ -147,12 +169,6 @@ namespace vush {
         auto iter = ctx.source_registry.find(return_type.file_path);
         anton::String const& source = iter->value;
         print_source_snippet(message, source, return_type);
-        return message;
-    }
-
-    anton::String format_sourced_global_pass_does_not_exist(Sourced_Global_Decl const& global) {
-        anton::String message = format_diagnostic_location(global.source_info);
-        message += u8"error: global sourced from pass named '" + global.pass_name->value + "' that does not exist";
         return message;
     }
 
