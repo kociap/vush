@@ -582,7 +582,7 @@ namespace vush {
 
             case AST_Node_Type::function_call_expression: {
                 Owning_Ptr<Function_Call_Expression>& node = (Owning_Ptr<Function_Call_Expression>&)expression;
-                for(Owning_Ptr<Expression>& arg: node->arg_list->arguments) {
+                for(Owning_Ptr<Expression>& arg: node->arguments) {
                     anton::Expected<void, anton::String> res = process_expression(ctx, arg);
                     if(!res) {
                         return res;
@@ -903,7 +903,7 @@ namespace vush {
 
                 case AST_Node_Type::expression_statement: {
                     Expression_Statement& node = (Expression_Statement&)*statements[i];
-                    anton::Expected<void, anton::String> res = process_expression(ctx, node.expr);
+                    anton::Expected<void, anton::String> res = process_expression(ctx, node.expression);
                     if(!res) {
                         return res;
                     }
@@ -1061,7 +1061,7 @@ namespace vush {
                         return {anton::expected_error, format_empty_struct(node.source_info)};
                     }
 
-                    ctx.symbols[0].emplace(node.name->value, &node);
+                    ctx.symbols[0].emplace(node.identifier->value, &node);
                 } break;
 
                 case AST_Node_Type::variable_declaration: {
@@ -1083,7 +1083,7 @@ namespace vush {
 
                 case AST_Node_Type::function_declaration: {
                     Function_Declaration& node = static_cast<Function_Declaration&>(*ast_node);
-                    ctx.symbols[0].emplace(node.name->value, &node);
+                    ctx.symbols[0].emplace(node.identifier->value, &node);
                 } break;
 
                 case AST_Node_Type::settings_decl: {

@@ -265,7 +265,7 @@ namespace vush {
             case AST_Node_Type::struct_decl: {
                 Struct_Decl& node = (Struct_Decl&)ast_node;
                 out += u8"struct ";
-                stringify(out, *node.name, ctx);
+                stringify(out, *node.identifier, ctx);
                 out += u8" {\n";
                 ctx.indent += 1;
                 for(auto& member: node.members) {
@@ -284,7 +284,7 @@ namespace vush {
                 Function_Declaration& node = (Function_Declaration&)ast_node;
                 stringify(out, *node.return_type, ctx);
                 out += u8" ";
-                stringify(out, *node.name, ctx);
+                stringify(out, *node.identifier, ctx);
                 // param list
                 out += u8"(";
                 if(node.params.size() > 0) {
@@ -512,7 +512,7 @@ namespace vush {
             case AST_Node_Type::expression_statement: {
                 Expression_Statement& node = (Expression_Statement&)ast_node;
                 write_indent(out, ctx.indent);
-                stringify(out, *node.expr, ctx);
+                stringify(out, *node.expression, ctx);
                 out += u8";\n";
                 return;
             }
@@ -694,24 +694,18 @@ namespace vush {
                 return;
             }
 
-            case AST_Node_Type::argument_list: {
-                Argument_List& node = (Argument_List&)ast_node;
-                if(node.arguments.size() > 0) {
-                    stringify(out, *node.arguments[0], ctx);
-
-                    for(i64 i = 1; i != node.arguments.size(); ++i) {
-                        out += u8", ";
-                        stringify(out, *node.arguments[i], ctx);
-                    }
-                }
-                return;
-            }
-
             case AST_Node_Type::function_call_expression: {
                 Function_Call_Expression& node = (Function_Call_Expression&)ast_node;
                 stringify(out, *node.identifier, ctx);
                 out += u8"(";
-                stringify(out, *node.arg_list, ctx);
+                if(node.arguments.size() > 0) {
+                    stringify(out, *node.arguments[0], ctx);
+
+                    for(i64 i = 1; i < node.arguments.size(); ++i) {
+                        out += u8", ";
+                        stringify(out, *node.arguments[i], ctx);
+                    }
+                }
                 out += u8")";
                 return;
             }
@@ -814,7 +808,7 @@ namespace vush {
     static void stringify_function_forward_decl(anton::String& out, Function_Declaration& node, Codegen_Context& ctx) {
         stringify(out, *node.return_type, ctx);
         out += u8" ";
-        stringify(out, *node.name, ctx);
+        stringify(out, *node.identifier, ctx);
         // param list
         out += u8"(";
         if(node.params.size() > 0) {

@@ -2390,16 +2390,16 @@ namespace vush {
                 return nullptr;
             }
 
-            Owning_Ptr arg_list{new Argument_List};
+            anton::Array<Owning_Ptr<Expression>> arguments;
             if(_lexer.match(token_paren_close)) {
                 Lexer_State const end_state = _lexer.get_current_state_no_skip();
                 Source_Info const src = src_info(state_backup, end_state);
-                return Owning_Ptr{new Function_Call_Expression(ANTON_MOV(identifier), ANTON_MOV(arg_list), src)};
+                return Owning_Ptr{new Function_Call_Expression(ANTON_MOV(identifier), ANTON_MOV(arguments), src)};
             }
 
             do {
                 if(Owning_Ptr expression = try_expression()) {
-                    arg_list->append(ANTON_MOV(expression));
+                    arguments.emplace_back(ANTON_MOV(expression));
                 } else {
                     _lexer.restore_state(state_backup);
                     return nullptr;
@@ -2414,7 +2414,7 @@ namespace vush {
 
             Lexer_State const end_state = _lexer.get_current_state_no_skip();
             Source_Info const src = src_info(state_backup, end_state);
-            return Owning_Ptr{new Function_Call_Expression(ANTON_MOV(identifier), ANTON_MOV(arg_list), src)};
+            return Owning_Ptr{new Function_Call_Expression(ANTON_MOV(identifier), ANTON_MOV(arguments), src)};
         }
 
         Owning_Ptr<Float_Literal> try_float_literal() {
