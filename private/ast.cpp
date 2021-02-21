@@ -696,4 +696,644 @@ namespace vush {
     bool is_sized_array(Type const& type) {
         return type.node_type == AST_Node_Type::array_type && static_cast<Array_Type const&>(type).size;
     }
+
+    template<typename T>
+    anton::Array<Owning_Ptr<T>> clone(anton::Array<Owning_Ptr<T>> const& array) {
+        anton::Array<Owning_Ptr<T>> copy{anton::reserve, array.size()};
+        for(Owning_Ptr<T> const& object: array) {
+            copy.emplace_back(object->clone());
+        }
+        return copy;
+    }
+
+    AST_Node::AST_Node(Source_Info const& source_info, AST_Node_Type node_type): source_info(source_info), node_type(node_type) {}
+
+    Owning_Ptr<AST_Node> AST_Node::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Identifier::Identifier(anton::String value, Source_Info const& source_info): AST_Node(source_info, AST_Node_Type::identifier), value(ANTON_MOV(value)) {}
+
+    Owning_Ptr<Identifier> Identifier::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Identifier* Identifier::_clone() const {
+        return new Identifier(value, source_info);
+    }
+
+    Owning_Ptr<Type> Type::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Builtin_Type::Builtin_Type(Builtin_GLSL_Type type, Source_Info const& source_info): Type(source_info, AST_Node_Type::builtin_type), type(type) {}
+
+    Owning_Ptr<Builtin_Type> Builtin_Type::clone() const {
+        return Owning_Ptr(_clone());
+    }
+
+    Builtin_Type* Builtin_Type::_clone() const {
+        return new Builtin_Type(type, source_info);
+    }
+
+    User_Defined_Type::User_Defined_Type(anton::String name, Source_Info const& source_info)
+        : Type(source_info, AST_Node_Type::user_defined_type), name(ANTON_MOV(name)) {}
+
+    Owning_Ptr<User_Defined_Type> User_Defined_Type::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    User_Defined_Type* User_Defined_Type::_clone() const {
+        return new User_Defined_Type(name, source_info);
+    }
+
+    Array_Type::Array_Type(Owning_Ptr<Type> base, Owning_Ptr<Integer_Literal> size, Source_Info const& source_info)
+        : Type(source_info, AST_Node_Type::array_type), base(ANTON_MOV(base)), size(ANTON_MOV(size)) {}
+
+    Owning_Ptr<Array_Type> Array_Type::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Array_Type* Array_Type::_clone() const {
+        return new Array_Type(base->clone(), size->clone(), source_info);
+    }
+
+    Owning_Ptr<Declaration> Declaration::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Declaration_If::Declaration_If(Owning_Ptr<Expression> condition, Declaration_List true_declarations, Declaration_List false_declarations,
+                                   Source_Info const& source_info)
+        : Declaration(source_info, AST_Node_Type::declaration_if), condition(ANTON_MOV(condition)), true_declarations(ANTON_MOV(true_declarations)),
+          false_declarations(ANTON_MOV(false_declarations)) {}
+
+    Owning_Ptr<Declaration_If> Declaration_If::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Declaration_If* Declaration_If::_clone() const {
+        return new Declaration_If(condition->clone(), vush::clone(true_declarations), vush::clone(false_declarations), source_info);
+    }
+
+    Import_Decl::Import_Decl(Owning_Ptr<String_Literal> path, Source_Info const& source_info)
+        : Declaration(source_info, AST_Node_Type::import_decl), path(ANTON_MOV(path)) {}
+
+    Owning_Ptr<Import_Decl> Import_Decl::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Import_Decl* Import_Decl::_clone() const {
+        return new Import_Decl(path->clone(), source_info);
+    }
+
+    Variable_Declaration::Variable_Declaration(Owning_Ptr<Type> type, Owning_Ptr<Identifier> identifier, Owning_Ptr<Expression> initializer,
+                                               Source_Info const& source_info)
+        : Declaration(source_info, AST_Node_Type::variable_declaration), type(ANTON_MOV(type)), identifier(ANTON_MOV(identifier)),
+          initializer(ANTON_MOV(initializer)) {}
+
+    Owning_Ptr<Variable_Declaration> Variable_Declaration::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Variable_Declaration* Variable_Declaration::_clone() const {
+        return new Variable_Declaration(type->clone(), identifier->clone(), initializer->clone(), source_info);
+    }
+
+    Constant_Declaration::Constant_Declaration(Owning_Ptr<Type> type, Owning_Ptr<Identifier> identifier, Owning_Ptr<Expression> initializer,
+                                               Source_Info const& source_info)
+        : Declaration(source_info, AST_Node_Type::constant_declaration), type(ANTON_MOV(type)), identifier(ANTON_MOV(identifier)),
+          initializer(ANTON_MOV(initializer)) {}
+
+    Owning_Ptr<Constant_Declaration> Constant_Declaration::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Constant_Declaration* Constant_Declaration::_clone() const {
+        return new Constant_Declaration(type->clone(), identifier->clone(), initializer->clone(), source_info);
+    }
+
+    Struct_Member::Struct_Member(Owning_Ptr<Type> type, Owning_Ptr<Identifier> identifier, Owning_Ptr<Expression> initializer, Interpolation interpolation,
+                                 bool invariant, Source_Info const& source_info)
+        : AST_Node(source_info, AST_Node_Type::struct_member), type(ANTON_MOV(type)), identifier(ANTON_MOV(identifier)), initializer(ANTON_MOV(initializer)),
+          interpolation(interpolation), invariant(invariant) {}
+
+    Owning_Ptr<Struct_Member> Struct_Member::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Struct_Member* Struct_Member::_clone() const {
+        return new Struct_Member(type->clone(), identifier->clone(), initializer->clone(), interpolation, invariant, source_info);
+    }
+
+    Struct_Decl::Struct_Decl(Owning_Ptr<Identifier> identifier, anton::Array<Owning_Ptr<Struct_Member>> members, Source_Info const& source_info)
+        : Declaration(source_info, AST_Node_Type::struct_decl), members(ANTON_MOV(members)), identifier(ANTON_MOV(identifier)) {}
+
+    Owning_Ptr<Struct_Decl> Struct_Decl::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Struct_Decl* Struct_Decl::_clone() const {
+        return new Struct_Decl(identifier->clone(), vush::clone(members), source_info);
+    }
+
+    Settings_Decl::Settings_Decl(Owning_Ptr<Identifier> pass_name, Source_Info const& source_info)
+        : Declaration(source_info, AST_Node_Type::settings_decl), pass_name(ANTON_MOV(pass_name)) {}
+
+    Settings_Decl::Settings_Decl(Owning_Ptr<Identifier> pass_name, anton::Array<Setting_Key_Value> settings, Source_Info const& source_info)
+        : Declaration(source_info, AST_Node_Type::settings_decl), pass_name(ANTON_MOV(pass_name)), settings(ANTON_MOV(settings)) {}
+
+    Owning_Ptr<Settings_Decl> Settings_Decl::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Settings_Decl* Settings_Decl::_clone() const {
+        return new Settings_Decl(pass_name->clone(), settings, source_info);
+    }
+
+    Owning_Ptr<Function_Attribute> Function_Attribute::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Workgroup_Attribute::Workgroup_Attribute(Owning_Ptr<Integer_Literal> x, Owning_Ptr<Integer_Literal> y, Owning_Ptr<Integer_Literal> z,
+                                             Source_Info const& source_info)
+        : Function_Attribute(source_info, AST_Node_Type::workgroup_attribute), x(ANTON_MOV(x)), y(ANTON_MOV(y)), z(ANTON_MOV(z)) {}
+
+    Owning_Ptr<Workgroup_Attribute> Workgroup_Attribute::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Workgroup_Attribute* Workgroup_Attribute::_clone() const {
+        return new Workgroup_Attribute(x->clone(), y->clone(), z->clone(), source_info);
+    }
+
+    Owning_Ptr<Function_Param> Function_Param::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Function_Param_If::Function_Param_If(Owning_Ptr<Expression> condition, Owning_Ptr<Function_Param> true_param, Owning_Ptr<Function_Param> false_param,
+                                         Source_Info const& source_info)
+        : Function_Param(source_info, AST_Node_Type::function_param_if), condition(ANTON_MOV(condition)), true_param(ANTON_MOV(true_param)),
+          false_param(ANTON_MOV(false_param)) {}
+
+    Owning_Ptr<Function_Param_If> Function_Param_If::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Function_Param_If* Function_Param_If::_clone() const {
+        return new Function_Param_If(condition->clone(), true_param->clone(), false_param->clone(), source_info);
+    }
+
+    Ordinary_Function_Param::Ordinary_Function_Param(Owning_Ptr<Identifier> identifier, Owning_Ptr<Type> type, Source_Info const& source_info)
+        : Function_Param(source_info, AST_Node_Type::ordinary_function_param), identifier(ANTON_MOV(identifier)), type(ANTON_MOV(type)) {}
+
+    Owning_Ptr<Ordinary_Function_Param> Ordinary_Function_Param::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Ordinary_Function_Param* Ordinary_Function_Param::_clone() const {
+        return new Ordinary_Function_Param(identifier->clone(), type->clone(), source_info);
+    }
+
+    Sourced_Function_Param::Sourced_Function_Param(Owning_Ptr<Identifier> identifier, Owning_Ptr<Type> type, Owning_Ptr<Identifier> source,
+                                                   Source_Info const& source_info)
+        : Function_Param(source_info, AST_Node_Type::sourced_function_param), identifier(ANTON_MOV(identifier)), type(ANTON_MOV(type)),
+          source(ANTON_MOV(source)) {}
+
+    Owning_Ptr<Sourced_Function_Param> Sourced_Function_Param::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Sourced_Function_Param* Sourced_Function_Param::_clone() const {
+        return new Sourced_Function_Param(identifier->clone(), type->clone(), source->clone(), source_info);
+    }
+
+    Vertex_Input_Param::Vertex_Input_Param(Owning_Ptr<Identifier> identifier, Owning_Ptr<Type> type, Source_Info const& source_info)
+        : Function_Param(source_info, AST_Node_Type::vertex_input_param), identifier(ANTON_MOV(identifier)), type(ANTON_MOV(type)) {}
+
+    Owning_Ptr<Vertex_Input_Param> Vertex_Input_Param::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Vertex_Input_Param* Vertex_Input_Param::_clone() const {
+        return new Vertex_Input_Param(identifier->clone(), type->clone(), source_info);
+    }
+
+    Function_Declaration::Function_Declaration(anton::Array<Owning_Ptr<Function_Attribute>> attributes, Owning_Ptr<Type> return_type,
+                                               Owning_Ptr<Identifier> identifier, anton::Array<Owning_Ptr<Function_Param>> params, Statement_List body,
+                                               Source_Info const& source_info)
+        : Declaration(source_info, AST_Node_Type::function_declaration), params(ANTON_MOV(params)), attributes(ANTON_MOV(attributes)),
+          identifier(ANTON_MOV(identifier)), return_type(ANTON_MOV(return_type)), body(ANTON_MOV(body)) {}
+
+    Owning_Ptr<Function_Declaration> Function_Declaration::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Function_Declaration* Function_Declaration::_clone() const {
+        return new Function_Declaration(vush::clone(attributes), return_type->clone(), identifier->clone(), vush::clone(params), vush::clone(body),
+                                        source_info);
+    }
+
+    Pass_Stage_Declaration::Pass_Stage_Declaration(anton::Array<Owning_Ptr<Function_Attribute>> attributes, Owning_Ptr<Type> return_type,
+                                                   Owning_Ptr<Identifier> pass, Stage_Type stage, anton::Array<Owning_Ptr<Function_Param>> params,
+                                                   Statement_List body, Source_Info const& source_info)
+        : Declaration(source_info, AST_Node_Type::pass_stage_declaration), params(ANTON_MOV(params)), attributes(ANTON_MOV(attributes)), body(ANTON_MOV(body)),
+          pass(ANTON_MOV(pass)), return_type(ANTON_MOV(return_type)), stage(ANTON_MOV(stage)) {}
+
+    Owning_Ptr<Pass_Stage_Declaration> Pass_Stage_Declaration::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Pass_Stage_Declaration* Pass_Stage_Declaration::_clone() const {
+        return new Pass_Stage_Declaration(vush::clone(attributes), return_type->clone(), pass->clone(), stage, vush::clone(params), vush::clone(body),
+                                          source_info);
+    }
+
+    Owning_Ptr<Expression> Expression::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Expression_If::Expression_If(Owning_Ptr<Expression> condition, Owning_Ptr<Expression> true_expr, Owning_Ptr<Expression> false_expr,
+                                 Source_Info const& source_info)
+        : Expression(source_info, AST_Node_Type::expression_if), condition(ANTON_MOV(condition)), true_expr(ANTON_MOV(true_expr)),
+          false_expr(ANTON_MOV(false_expr)) {}
+
+    Owning_Ptr<Expression_If> Expression_If::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Expression_If* Expression_If::_clone() const {
+        return new Expression_If(condition->clone(), true_expr->clone(), false_expr->clone(), source_info);
+    }
+
+    Identifier_Expression::Identifier_Expression(Owning_Ptr<Identifier> identifier, Source_Info const& source_info)
+        : Expression(source_info, AST_Node_Type::identifier_expression), identifier(ANTON_MOV(identifier)) {}
+
+    Owning_Ptr<Identifier_Expression> Identifier_Expression::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Identifier_Expression* Identifier_Expression::_clone() const {
+        return new Identifier_Expression(identifier->clone(), source_info);
+    }
+
+    Assignment_Expression::Assignment_Expression(Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info)
+        : Expression(source_info, AST_Node_Type::assignment_expression), lhs(ANTON_MOV(lhs)), rhs(ANTON_MOV(rhs)) {}
+
+    Owning_Ptr<Assignment_Expression> Assignment_Expression::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Assignment_Expression* Assignment_Expression::_clone() const {
+        return new Assignment_Expression(lhs->clone(), rhs->clone(), source_info);
+    }
+
+    Arithmetic_Assignment_Expression::Arithmetic_Assignment_Expression(Arithmetic_Assignment_Type type, Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs,
+                                                                       Source_Info const& source_info)
+        : Expression(source_info, AST_Node_Type::arithmetic_assignment_expression), lhs(ANTON_MOV(lhs)), rhs(ANTON_MOV(rhs)), type(ANTON_MOV(type)) {}
+
+    Owning_Ptr<Arithmetic_Assignment_Expression> Arithmetic_Assignment_Expression::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Arithmetic_Assignment_Expression* Arithmetic_Assignment_Expression::_clone() const {
+        return new Arithmetic_Assignment_Expression(type, lhs->clone(), rhs->clone(), source_info);
+    }
+
+    Elvis_Expr::Elvis_Expr(Owning_Ptr<Expression> condition, Owning_Ptr<Expression> true_expr, Owning_Ptr<Expression> false_expr,
+                           Source_Info const& source_info)
+        : Expression(source_info, AST_Node_Type::elvis_expr), condition(ANTON_MOV(condition)), true_expr(ANTON_MOV(true_expr)),
+          false_expr(ANTON_MOV(false_expr)) {}
+
+    Owning_Ptr<Elvis_Expr> Elvis_Expr::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Elvis_Expr* Elvis_Expr::_clone() const {
+        return new Elvis_Expr(condition->clone(), true_expr->clone(), false_expr->clone(), source_info);
+    }
+
+    Binary_Expr::Binary_Expr(Binary_Expr_Type type, Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info)
+        : Expression(source_info, AST_Node_Type::binary_expr), lhs(ANTON_MOV(lhs)), rhs(ANTON_MOV(rhs)), type(type) {}
+
+    Owning_Ptr<Binary_Expr> Binary_Expr::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Binary_Expr* Binary_Expr::_clone() const {
+        return new Binary_Expr(type, lhs->clone(), rhs->clone(), source_info);
+    }
+
+    Unary_Expression::Unary_Expression(Unary_Type type, Owning_Ptr<Expression> expression, Source_Info const& source_info)
+        : Expression(source_info, AST_Node_Type::unary_expression), expression(ANTON_MOV(expression)), type(type) {}
+
+    Owning_Ptr<Unary_Expression> Unary_Expression::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Unary_Expression* Unary_Expression::_clone() const {
+        return new Unary_Expression(type, expression->clone(), source_info);
+    }
+
+    Prefix_Inc_Expr::Prefix_Inc_Expr(Owning_Ptr<Expression> expression, Source_Info const& source_info)
+        : Expression(source_info, AST_Node_Type::prefix_inc_expr), expression(ANTON_MOV(expression)) {}
+
+    Owning_Ptr<Prefix_Inc_Expr> Prefix_Inc_Expr::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Prefix_Inc_Expr* Prefix_Inc_Expr::_clone() const {
+        return new Prefix_Inc_Expr(expression->clone(), source_info);
+    }
+
+    Prefix_Dec_Expr::Prefix_Dec_Expr(Owning_Ptr<Expression> expression, Source_Info const& source_info)
+        : Expression(source_info, AST_Node_Type::prefix_dec_expr), expression(ANTON_MOV(expression)) {}
+
+    Owning_Ptr<Prefix_Dec_Expr> Prefix_Dec_Expr::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Prefix_Dec_Expr* Prefix_Dec_Expr::_clone() const {
+        return new Prefix_Dec_Expr(expression->clone(), source_info);
+    }
+
+    Function_Call_Expression::Function_Call_Expression(Owning_Ptr<Identifier> identifier, anton::Array<Owning_Ptr<Expression>> arguments,
+                                                       Source_Info const& source_info)
+        : Expression(source_info, AST_Node_Type::function_call_expression), identifier(ANTON_MOV(identifier)), arguments(ANTON_MOV(arguments)) {}
+
+    Owning_Ptr<Function_Call_Expression> Function_Call_Expression::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Function_Call_Expression* Function_Call_Expression::_clone() const {
+        return new Function_Call_Expression(identifier->clone(), vush::clone(arguments), source_info);
+    }
+
+    Member_Access_Expression::Member_Access_Expression(Owning_Ptr<Expression> base, Owning_Ptr<Identifier> member, Source_Info const& source_info)
+        : Expression(source_info, AST_Node_Type::member_access_expression), base(ANTON_MOV(base)), member(ANTON_MOV(member)) {}
+
+    Owning_Ptr<Member_Access_Expression> Member_Access_Expression::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Member_Access_Expression* Member_Access_Expression::_clone() const {
+        return new Member_Access_Expression(base->clone(), member->clone(), source_info);
+    }
+
+    Array_Access_Expression::Array_Access_Expression(Owning_Ptr<Expression> base, Owning_Ptr<Expression> index, Source_Info const& source_info)
+        : Expression(source_info, AST_Node_Type::array_access_expression), base(ANTON_MOV(base)), index(ANTON_MOV(index)) {}
+
+    Owning_Ptr<Array_Access_Expression> Array_Access_Expression::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Array_Access_Expression* Array_Access_Expression::_clone() const {
+        return new Array_Access_Expression(base->clone(), index->clone(), source_info);
+    }
+
+    Postfix_Inc_Expr::Postfix_Inc_Expr(Owning_Ptr<Expression> expression, Source_Info const& source_info)
+        : Expression(source_info, AST_Node_Type::postfix_inc_expr), expression(ANTON_MOV(expression)) {}
+
+    Owning_Ptr<Postfix_Inc_Expr> Postfix_Inc_Expr::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Postfix_Inc_Expr* Postfix_Inc_Expr::_clone() const {
+        return new Postfix_Inc_Expr(expression->clone(), source_info);
+    }
+
+    Postfix_Dec_Expr::Postfix_Dec_Expr(Owning_Ptr<Expression> expression, Source_Info const& source_info)
+        : Expression(source_info, AST_Node_Type::postfix_dec_expr), expression(ANTON_MOV(expression)) {}
+
+    Owning_Ptr<Postfix_Dec_Expr> Postfix_Dec_Expr::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Postfix_Dec_Expr* Postfix_Dec_Expr::_clone() const {
+        return new Postfix_Dec_Expr(expression->clone(), source_info);
+    }
+
+    Paren_Expr::Paren_Expr(Owning_Ptr<Expression> expression, Source_Info const& source_info)
+        : Expression(source_info, AST_Node_Type::paren_expr), expression(ANTON_MOV(expression)) {}
+
+    Owning_Ptr<Paren_Expr> Paren_Expr::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Paren_Expr* Paren_Expr::_clone() const {
+        return new Paren_Expr(expression->clone(), source_info);
+    }
+
+    Reinterpret_Expr::Reinterpret_Expr(Owning_Ptr<Type> target_type, Owning_Ptr<Expression> source, Owning_Ptr<Expression> index,
+                                       Source_Info const& source_info)
+        : Expression(source_info, AST_Node_Type::reinterpret_expr), target_type(ANTON_MOV(target_type)), source(ANTON_MOV(source)), index(ANTON_MOV(index)) {}
+
+    Owning_Ptr<Reinterpret_Expr> Reinterpret_Expr::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Reinterpret_Expr* Reinterpret_Expr::_clone() const {
+        return new Reinterpret_Expr(target_type->clone(), source->clone(), index->clone(), source_info);
+    }
+
+    String_Literal::String_Literal(anton::String value, Source_Info const& source_info)
+        : Expression(source_info, AST_Node_Type::string_literal), value(ANTON_MOV(value)) {}
+
+    Owning_Ptr<String_Literal> String_Literal::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    String_Literal* String_Literal::_clone() const {
+        return new String_Literal(value, source_info);
+    }
+
+    Bool_Literal::Bool_Literal(bool value, Source_Info const& source_info): Expression(source_info, AST_Node_Type::bool_literal), value(value) {}
+
+    Owning_Ptr<Bool_Literal> Bool_Literal::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Bool_Literal* Bool_Literal::_clone() const {
+        return new Bool_Literal(value, source_info);
+    }
+
+    Integer_Literal::Integer_Literal(anton::String value, Integer_Literal_Type type, Integer_Literal_Base base, Source_Info const& source_info)
+        : Expression(source_info, AST_Node_Type::integer_literal), value(ANTON_MOV(value)), type(type), base(base) {}
+
+    Owning_Ptr<Integer_Literal> Integer_Literal::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Integer_Literal* Integer_Literal::_clone() const {
+        return new Integer_Literal(value, type, base, source_info);
+    }
+
+    Float_Literal::Float_Literal(anton::String value, Float_Literal_Type type, Source_Info const& source_info)
+        : Expression(source_info, AST_Node_Type::float_literal), value(ANTON_MOV(value)), type(type) {}
+
+    Owning_Ptr<Float_Literal> Float_Literal::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Float_Literal* Float_Literal::_clone() const {
+        return new Float_Literal(value, type, source_info);
+    }
+
+    Owning_Ptr<Statement> Statement::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Block_Statement::Block_Statement(Statement_List statements, Source_Info const& source_info)
+        : Statement(source_info, AST_Node_Type::block_statement), statements(ANTON_MOV(statements)) {}
+
+    Owning_Ptr<Block_Statement> Block_Statement::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Block_Statement* Block_Statement::_clone() const {
+        return new Block_Statement(vush::clone(statements), source_info);
+    }
+
+    If_Statement::If_Statement(Owning_Ptr<Expression> condition, Statement_List true_statements, Statement_List false_statements,
+                               Source_Info const& source_info)
+        : Statement(source_info, AST_Node_Type::if_statement), condition(ANTON_MOV(condition)), true_statements(ANTON_MOV(true_statements)),
+          false_statements(ANTON_MOV(false_statements)) {}
+
+    Owning_Ptr<If_Statement> If_Statement::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    If_Statement* If_Statement::_clone() const {
+        return new If_Statement(condition->clone(), vush::clone(true_statements), vush::clone(false_statements), source_info);
+    }
+
+    Case_Statement::Case_Statement(Owning_Ptr<Expression> condition, Statement_List statements, Source_Info const& source_info)
+        : Statement(source_info, AST_Node_Type::case_statement), condition(ANTON_MOV(condition)), statements(ANTON_MOV(statements)) {}
+
+    Owning_Ptr<Case_Statement> Case_Statement::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Case_Statement* Case_Statement::_clone() const {
+        return new Case_Statement(condition->clone(), vush::clone(statements), source_info);
+    }
+
+    Default_Case_Statement::Default_Case_Statement(Statement_List statements, Source_Info const& source_info)
+        : Statement(source_info, AST_Node_Type::default_case_statement), statements(ANTON_MOV(statements)) {}
+
+    Owning_Ptr<Default_Case_Statement> Default_Case_Statement::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Default_Case_Statement* Default_Case_Statement::_clone() const {
+        return new Default_Case_Statement(vush::clone(statements), source_info);
+    }
+
+    Switch_Statement::Switch_Statement(Owning_Ptr<Expression> match_expr, Statement_List cases, Source_Info const& source_info)
+        : Statement(source_info, AST_Node_Type::switch_statement), cases(ANTON_MOV(cases)), match_expr(ANTON_MOV(match_expr)) {}
+
+    Owning_Ptr<Switch_Statement> Switch_Statement::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Switch_Statement* Switch_Statement::_clone() const {
+        return new Switch_Statement(match_expr->clone(), vush::clone(cases), source_info);
+    }
+
+    For_Statement::For_Statement(Owning_Ptr<Variable_Declaration> declaration, Owning_Ptr<Expression> condition, Owning_Ptr<Expression> post_expression,
+                                 Statement_List statements, Source_Info const& source_info)
+        : Statement(source_info, AST_Node_Type::for_statement), declaration(ANTON_MOV(declaration)), condition(ANTON_MOV(condition)),
+          post_expression(ANTON_MOV(post_expression)), statements(ANTON_MOV(statements)) {}
+
+    Owning_Ptr<For_Statement> For_Statement::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    For_Statement* For_Statement::_clone() const {
+        return new For_Statement(declaration->clone(), condition->clone(), post_expression->clone(), vush::clone(statements), source_info);
+    }
+
+    While_Statement::While_Statement(Owning_Ptr<Expression> condition, Statement_List statements, Source_Info const& source_info)
+        : Statement(source_info, AST_Node_Type::while_statement), condition(ANTON_MOV(condition)), statements(ANTON_MOV(statements)) {}
+
+    Owning_Ptr<While_Statement> While_Statement::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    While_Statement* While_Statement::_clone() const {
+        return new While_Statement(condition->clone(), vush::clone(statements), source_info);
+    }
+
+    Do_While_Statement::Do_While_Statement(Owning_Ptr<Expression> condition, Statement_List statements, Source_Info const& source_info)
+        : Statement(source_info, AST_Node_Type::do_while_statement), condition(ANTON_MOV(condition)), statements(ANTON_MOV(statements)) {}
+
+    Owning_Ptr<Do_While_Statement> Do_While_Statement::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Do_While_Statement* Do_While_Statement::_clone() const {
+        return new Do_While_Statement(condition->clone(), vush::clone(statements), source_info);
+    }
+
+    Return_Statement::Return_Statement(Owning_Ptr<Expression> return_expr, Source_Info const& source_info)
+        : Statement(source_info, AST_Node_Type::return_statement), return_expr(ANTON_MOV(return_expr)) {}
+
+    Owning_Ptr<Return_Statement> Return_Statement::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Return_Statement* Return_Statement::_clone() const {
+        return new Return_Statement(return_expr->clone(), source_info);
+    }
+
+    Break_Statement::Break_Statement(Source_Info const& source_info): Statement(source_info, AST_Node_Type::break_statement) {}
+
+    Owning_Ptr<Break_Statement> Break_Statement::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Break_Statement* Break_Statement::_clone() const {
+        return new Break_Statement(source_info);
+    }
+
+    Continue_Statement::Continue_Statement(Source_Info const& source_info): Statement(source_info, AST_Node_Type::continue_statement) {}
+
+    Owning_Ptr<Continue_Statement> Continue_Statement::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Continue_Statement* Continue_Statement::_clone() const {
+        return new Continue_Statement(source_info);
+    }
+
+    Discard_Statement::Discard_Statement(Source_Info const& source_info): Statement(source_info, AST_Node_Type::discard_statement) {}
+
+    Owning_Ptr<Discard_Statement> Discard_Statement::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Discard_Statement* Discard_Statement::_clone() const {
+        return new Discard_Statement(source_info);
+    }
+
+    Declaration_Statement::Declaration_Statement(Owning_Ptr<Declaration> declaration, Source_Info const& source_info)
+        : Statement(source_info, AST_Node_Type::declaration_statement), declaration(ANTON_MOV(declaration)) {}
+
+    Owning_Ptr<Declaration_Statement> Declaration_Statement::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Declaration_Statement* Declaration_Statement::_clone() const {
+        return new Declaration_Statement(declaration->clone(), source_info);
+    }
+
+    Expression_Statement::Expression_Statement(Owning_Ptr<Expression> expression, Source_Info const& source_info)
+        : Statement(source_info, AST_Node_Type::expression_statement), expression(ANTON_MOV(expression)) {}
+
+    Owning_Ptr<Expression_Statement> Expression_Statement::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Expression_Statement* Expression_Statement::_clone() const {
+        return new Expression_Statement(expression->clone(), source_info);
+    }
 } // namespace vush

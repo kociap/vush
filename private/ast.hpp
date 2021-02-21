@@ -34,7 +34,6 @@ namespace vush {
         unary_expression,
         prefix_inc_expr,
         prefix_dec_expr,
-        argument_list,
         function_call_expression,
         member_access_expression,
         array_access_expression,
@@ -78,24 +77,34 @@ namespace vush {
         Source_Info source_info;
         AST_Node_Type node_type;
 
-        AST_Node(Source_Info const& source_info, AST_Node_Type node_type): source_info(source_info), node_type(node_type) {}
+        AST_Node(Source_Info const& source_info, AST_Node_Type node_type);
+        AST_Node(AST_Node const&) = delete;
         virtual ~AST_Node() = default;
-    };
 
-    struct Declaration;
-    struct Expression;
-    struct Statement;
-    struct String_Literal;
-    struct Integer_Literal;
+        Owning_Ptr<AST_Node> clone() const;
+
+    private:
+        virtual AST_Node* _clone() const = 0;
+    };
 
     struct Identifier: public AST_Node {
         anton::String value;
 
-        Identifier(anton::String value, Source_Info const& source_info): AST_Node(source_info, AST_Node_Type::identifier), value(ANTON_MOV(value)) {}
+        Identifier(anton::String value, Source_Info const& source_info);
+
+        Owning_Ptr<Identifier> clone() const;
+
+    private:
+        virtual Identifier* _clone() const override;
     };
 
     struct Type: public AST_Node {
         using AST_Node::AST_Node;
+
+        Owning_Ptr<Type> clone() const;
+
+    private:
+        virtual Type* _clone() const override = 0;
     };
 
     enum struct Builtin_GLSL_Type : i32 {
@@ -261,13 +270,23 @@ namespace vush {
     struct Builtin_Type: public Type {
         Builtin_GLSL_Type type;
 
-        Builtin_Type(Builtin_GLSL_Type type, Source_Info const& source_info): Type(source_info, AST_Node_Type::builtin_type), type(type) {}
+        Builtin_Type(Builtin_GLSL_Type type, Source_Info const& source_info);
+
+        Owning_Ptr<Builtin_Type> clone() const;
+
+    private:
+        virtual Builtin_Type* _clone() const override;
     };
 
     struct User_Defined_Type: public Type {
         anton::String name;
 
-        User_Defined_Type(anton::String name, Source_Info const& source_info): Type(source_info, AST_Node_Type::user_defined_type), name(ANTON_MOV(name)) {}
+        User_Defined_Type(anton::String name, Source_Info const& source_info);
+
+        Owning_Ptr<User_Defined_Type> clone() const;
+
+    private:
+        virtual User_Defined_Type* _clone() const override;
     };
 
     struct Array_Type: public Type {
@@ -275,8 +294,12 @@ namespace vush {
         // nullptr when the array type is unsized
         Owning_Ptr<Integer_Literal> size;
 
-        Array_Type(Owning_Ptr<Type> base, Owning_Ptr<Integer_Literal> size, Source_Info const& source_info)
-            : Type(source_info, AST_Node_Type::array_type), base(ANTON_MOV(base)), size(ANTON_MOV(size)) {}
+        Array_Type(Owning_Ptr<Type> base, Owning_Ptr<Integer_Literal> size, Source_Info const& source_info);
+
+        Owning_Ptr<Array_Type> clone() const;
+
+    private:
+        virtual Array_Type* _clone() const override;
     };
 
     [[nodiscard]] bool is_opaque_type(Type const& type);
@@ -286,6 +309,11 @@ namespace vush {
 
     struct Declaration: public AST_Node {
         using AST_Node::AST_Node;
+
+        Owning_Ptr<Declaration> clone() const;
+
+    private:
+        virtual Declaration* _clone() const override = 0;
     };
 
     struct Declaration_If: public Declaration {
@@ -294,16 +322,23 @@ namespace vush {
         Declaration_List false_declarations;
 
         Declaration_If(Owning_Ptr<Expression> condition, Declaration_List true_declarations, Declaration_List false_declarations,
-                       Source_Info const& source_info)
-            : Declaration(source_info, AST_Node_Type::declaration_if), condition(ANTON_MOV(condition)), true_declarations(ANTON_MOV(true_declarations)),
-              false_declarations(ANTON_MOV(false_declarations)) {}
+                       Source_Info const& source_info);
+
+        Owning_Ptr<Declaration_If> clone() const;
+
+    private:
+        virtual Declaration_If* _clone() const override;
     };
 
     struct Import_Decl: public Declaration {
         Owning_Ptr<String_Literal> path;
 
-        Import_Decl(Owning_Ptr<String_Literal> path, Source_Info const& source_info)
-            : Declaration(source_info, AST_Node_Type::import_decl), path(ANTON_MOV(path)) {}
+        Import_Decl(Owning_Ptr<String_Literal> path, Source_Info const& source_info);
+
+        Owning_Ptr<Import_Decl> clone() const;
+
+    private:
+        virtual Import_Decl* _clone() const override;
     };
 
     enum struct Interpolation {
@@ -331,9 +366,12 @@ namespace vush {
         Owning_Ptr<Identifier> identifier;
         Owning_Ptr<Expression> initializer;
 
-        Variable_Declaration(Owning_Ptr<Type> type, Owning_Ptr<Identifier> identifier, Owning_Ptr<Expression> initializer, Source_Info const& source_info)
-            : Declaration(source_info, AST_Node_Type::variable_declaration), type(ANTON_MOV(type)), identifier(ANTON_MOV(identifier)),
-              initializer(ANTON_MOV(initializer)) {}
+        Variable_Declaration(Owning_Ptr<Type> type, Owning_Ptr<Identifier> identifier, Owning_Ptr<Expression> initializer, Source_Info const& source_info);
+
+        Owning_Ptr<Variable_Declaration> clone() const;
+
+    private:
+        virtual Variable_Declaration* _clone() const override;
     };
 
     struct Constant_Declaration: public Declaration {
@@ -341,9 +379,12 @@ namespace vush {
         Owning_Ptr<Identifier> identifier;
         Owning_Ptr<Expression> initializer;
 
-        Constant_Declaration(Owning_Ptr<Type> type, Owning_Ptr<Identifier> identifier, Owning_Ptr<Expression> initializer, Source_Info const& source_info)
-            : Declaration(source_info, AST_Node_Type::constant_declaration), type(ANTON_MOV(type)), identifier(ANTON_MOV(identifier)),
-              initializer(ANTON_MOV(initializer)) {}
+        Constant_Declaration(Owning_Ptr<Type> type, Owning_Ptr<Identifier> identifier, Owning_Ptr<Expression> initializer, Source_Info const& source_info);
+
+        Owning_Ptr<Constant_Declaration> clone() const;
+
+    private:
+        virtual Constant_Declaration* _clone() const override;
     };
 
     struct Struct_Member: public AST_Node {
@@ -355,29 +396,46 @@ namespace vush {
         bool invariant;
 
         Struct_Member(Owning_Ptr<Type> type, Owning_Ptr<Identifier> identifier, Owning_Ptr<Expression> initializer, Interpolation interpolation, bool invariant,
-                      Source_Info const& source_info)
-            : AST_Node(source_info, AST_Node_Type::struct_member), type(ANTON_MOV(type)), identifier(ANTON_MOV(identifier)),
-              initializer(ANTON_MOV(initializer)), interpolation(interpolation), invariant(invariant) {}
+                      Source_Info const& source_info);
+
+        Owning_Ptr<Struct_Member> clone() const;
+
+    private:
+        virtual Struct_Member* _clone() const override;
     };
 
     struct Struct_Decl: public Declaration {
         anton::Array<Owning_Ptr<Struct_Member>> members;
-        Owning_Ptr<Identifier> name;
+        Owning_Ptr<Identifier> identifier;
 
-        Struct_Decl(Owning_Ptr<Identifier> name, anton::Array<Owning_Ptr<Struct_Member>> members, Source_Info const& source_info)
-            : Declaration(source_info, AST_Node_Type::struct_decl), members(ANTON_MOV(members)), name(ANTON_MOV(name)) {}
+        Struct_Decl(Owning_Ptr<Identifier> identifier, anton::Array<Owning_Ptr<Struct_Member>> members, Source_Info const& source_info);
+
+        Owning_Ptr<Struct_Decl> clone() const;
+
+    private:
+        virtual Struct_Decl* _clone() const override;
     };
 
     struct Settings_Decl: public Declaration {
         Owning_Ptr<Identifier> pass_name;
         anton::Array<Setting_Key_Value> settings;
 
-        Settings_Decl(Owning_Ptr<Identifier> pass_name, Source_Info const& source_info)
-            : Declaration(source_info, AST_Node_Type::settings_decl), pass_name(ANTON_MOV(pass_name)) {}
+        Settings_Decl(Owning_Ptr<Identifier> pass_name, Source_Info const& source_info);
+        Settings_Decl(Owning_Ptr<Identifier> pass_name, anton::Array<Setting_Key_Value> settings, Source_Info const& source_info);
+
+        Owning_Ptr<Settings_Decl> clone() const;
+
+    private:
+        virtual Settings_Decl* _clone() const override;
     };
 
     struct Function_Attribute: public AST_Node {
         using AST_Node::AST_Node;
+
+        Owning_Ptr<Function_Attribute> clone() const;
+
+    private:
+        virtual Function_Attribute* _clone() const override = 0;
     };
 
     struct Workgroup_Attribute: public Function_Attribute {
@@ -385,12 +443,21 @@ namespace vush {
         Owning_Ptr<Integer_Literal> y;
         Owning_Ptr<Integer_Literal> z;
 
-        Workgroup_Attribute(Owning_Ptr<Integer_Literal> x, Owning_Ptr<Integer_Literal> y, Owning_Ptr<Integer_Literal> z, Source_Info const& source_info)
-            : Function_Attribute(source_info, AST_Node_Type::workgroup_attribute), x(ANTON_MOV(x)), y(ANTON_MOV(y)), z(ANTON_MOV(z)) {}
+        Workgroup_Attribute(Owning_Ptr<Integer_Literal> x, Owning_Ptr<Integer_Literal> y, Owning_Ptr<Integer_Literal> z, Source_Info const& source_info);
+
+        Owning_Ptr<Workgroup_Attribute> clone() const;
+
+    private:
+        virtual Workgroup_Attribute* _clone() const override;
     };
 
     struct Function_Param: public AST_Node {
         using AST_Node::AST_Node;
+
+        Owning_Ptr<Function_Param> clone() const;
+
+    private:
+        virtual Function_Param* _clone() const override = 0;
     };
 
     struct Function_Param_If: public Function_Param {
@@ -399,17 +466,24 @@ namespace vush {
         Owning_Ptr<Function_Param> false_param;
 
         Function_Param_If(Owning_Ptr<Expression> condition, Owning_Ptr<Function_Param> true_param, Owning_Ptr<Function_Param> false_param,
-                          Source_Info const& source_info)
-            : Function_Param(source_info, AST_Node_Type::function_param_if), condition(ANTON_MOV(condition)), true_param(ANTON_MOV(true_param)),
-              false_param(ANTON_MOV(false_param)) {}
+                          Source_Info const& source_info);
+
+        Owning_Ptr<Function_Param_If> clone() const;
+
+    private:
+        virtual Function_Param_If* _clone() const override;
     };
 
     struct Ordinary_Function_Param: public Function_Param {
         Owning_Ptr<Identifier> identifier;
         Owning_Ptr<Type> type;
 
-        Ordinary_Function_Param(Owning_Ptr<Identifier> identifier, Owning_Ptr<Type> type, Source_Info const& source_info)
-            : Function_Param(source_info, AST_Node_Type::ordinary_function_param), identifier(ANTON_MOV(identifier)), type(ANTON_MOV(type)) {}
+        Ordinary_Function_Param(Owning_Ptr<Identifier> identifier, Owning_Ptr<Type> type, Source_Info const& source_info);
+
+        Owning_Ptr<Ordinary_Function_Param> clone() const;
+
+    private:
+        virtual Ordinary_Function_Param* _clone() const override;
     };
 
     struct Sourced_Function_Param: public Function_Param {
@@ -417,30 +491,40 @@ namespace vush {
         Owning_Ptr<Type> type;
         Owning_Ptr<Identifier> source;
 
-        Sourced_Function_Param(Owning_Ptr<Identifier> identifier, Owning_Ptr<Type> type, Owning_Ptr<Identifier> source, Source_Info const& source_info)
-            : Function_Param(source_info, AST_Node_Type::sourced_function_param), identifier(ANTON_MOV(identifier)), type(ANTON_MOV(type)),
-              source(ANTON_MOV(source)) {}
+        Sourced_Function_Param(Owning_Ptr<Identifier> identifier, Owning_Ptr<Type> type, Owning_Ptr<Identifier> source, Source_Info const& source_info);
+
+        Owning_Ptr<Sourced_Function_Param> clone() const;
+
+    private:
+        virtual Sourced_Function_Param* _clone() const override;
     };
 
     struct Vertex_Input_Param: public Function_Param {
         Owning_Ptr<Identifier> identifier;
         Owning_Ptr<Type> type;
 
-        Vertex_Input_Param(Owning_Ptr<Identifier> identifier, Owning_Ptr<Type> type, Source_Info const& source_info)
-            : Function_Param(source_info, AST_Node_Type::vertex_input_param), identifier(ANTON_MOV(identifier)), type(ANTON_MOV(type)) {}
+        Vertex_Input_Param(Owning_Ptr<Identifier> identifier, Owning_Ptr<Type> type, Source_Info const& source_info);
+
+        Owning_Ptr<Vertex_Input_Param> clone() const;
+
+    private:
+        virtual Vertex_Input_Param* _clone() const override;
     };
 
     struct Function_Declaration: public Declaration {
         anton::Array<Owning_Ptr<Function_Param>> params;
         anton::Array<Owning_Ptr<Function_Attribute>> attributes;
-        Owning_Ptr<Identifier> name;
+        Owning_Ptr<Identifier> identifier;
         Owning_Ptr<Type> return_type;
         Statement_List body;
 
-        Function_Declaration(anton::Array<Owning_Ptr<Function_Attribute>>&& attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> name,
-                             anton::Array<Owning_Ptr<Function_Param>>&& params, Statement_List body, Source_Info const& source_info)
-            : Declaration(source_info, AST_Node_Type::function_declaration), params(ANTON_MOV(params)), attributes(ANTON_MOV(attributes)),
-              name(ANTON_MOV(name)), return_type(ANTON_MOV(return_type)), body(ANTON_MOV(body)) {}
+        Function_Declaration(anton::Array<Owning_Ptr<Function_Attribute>> attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> identifier,
+                             anton::Array<Owning_Ptr<Function_Param>> params, Statement_List body, Source_Info const& source_info);
+
+        Owning_Ptr<Function_Declaration> clone() const;
+
+    private:
+        virtual Function_Declaration* _clone() const override;
     };
 
     constexpr anton::String_View stringify(Stage_Type type) {
@@ -457,19 +541,27 @@ namespace vush {
     struct Pass_Stage_Declaration: public Declaration {
         anton::Array<Owning_Ptr<Function_Param>> params;
         anton::Array<Owning_Ptr<Function_Attribute>> attributes;
+        Statement_List body;
         Owning_Ptr<Identifier> pass;
         Owning_Ptr<Type> return_type;
-        Statement_List body;
         Stage_Type stage;
 
-        Pass_Stage_Declaration(anton::Array<Owning_Ptr<Function_Attribute>>&& attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> pass,
-                               Stage_Type stage, anton::Array<Owning_Ptr<Function_Param>>&& params, Statement_List body, Source_Info const& source_info)
-            : Declaration(source_info, AST_Node_Type::pass_stage_declaration), params(ANTON_MOV(params)), attributes(ANTON_MOV(attributes)),
-              pass(ANTON_MOV(pass)), return_type(ANTON_MOV(return_type)), body(ANTON_MOV(body)), stage(ANTON_MOV(stage)) {}
+        Pass_Stage_Declaration(anton::Array<Owning_Ptr<Function_Attribute>> attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> pass,
+                               Stage_Type stage, anton::Array<Owning_Ptr<Function_Param>> params, Statement_List body, Source_Info const& source_info);
+
+        Owning_Ptr<Pass_Stage_Declaration> clone() const;
+
+    private:
+        virtual Pass_Stage_Declaration* _clone() const override;
     };
 
     struct Expression: public AST_Node {
         using AST_Node::AST_Node;
+
+        Owning_Ptr<Expression> clone() const;
+
+    private:
+        virtual Expression* _clone() const override = 0;
     };
 
     struct Expression_If: public Expression {
@@ -477,24 +569,35 @@ namespace vush {
         Owning_Ptr<Expression> true_expr;
         Owning_Ptr<Expression> false_expr;
 
-        Expression_If(Owning_Ptr<Expression> condition, Owning_Ptr<Expression> true_expr, Owning_Ptr<Expression> false_expr, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::expression_if), condition(ANTON_MOV(condition)), true_expr(ANTON_MOV(true_expr)),
-              false_expr(ANTON_MOV(false_expr)) {}
+        Expression_If(Owning_Ptr<Expression> condition, Owning_Ptr<Expression> true_expr, Owning_Ptr<Expression> false_expr, Source_Info const& source_info);
+
+        Owning_Ptr<Expression_If> clone() const;
+
+    private:
+        virtual Expression_If* _clone() const override;
     };
 
     struct Identifier_Expression: public Expression {
         Owning_Ptr<Identifier> identifier;
 
-        Identifier_Expression(Owning_Ptr<Identifier> identifier, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::identifier_expression), identifier(ANTON_MOV(identifier)) {}
+        Identifier_Expression(Owning_Ptr<Identifier> identifier, Source_Info const& source_info);
+
+        Owning_Ptr<Identifier_Expression> clone() const;
+
+    private:
+        virtual Identifier_Expression* _clone() const override;
     };
 
     struct Assignment_Expression: public Expression {
         Owning_Ptr<Expression> lhs;
         Owning_Ptr<Expression> rhs;
 
-        Assignment_Expression(Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::assignment_expression), lhs(ANTON_MOV(lhs)), rhs(ANTON_MOV(rhs)) {}
+        Assignment_Expression(Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info);
+
+        Owning_Ptr<Assignment_Expression> clone() const;
+
+    private:
+        virtual Assignment_Expression* _clone() const override;
     };
 
     enum struct Arithmetic_Assignment_Type {
@@ -516,8 +619,12 @@ namespace vush {
         Arithmetic_Assignment_Type type;
 
         Arithmetic_Assignment_Expression(Arithmetic_Assignment_Type type, Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs,
-                                         Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::arithmetic_assignment_expression), lhs(ANTON_MOV(lhs)), rhs(ANTON_MOV(rhs)), type(ANTON_MOV(type)) {}
+                                         Source_Info const& source_info);
+
+        Owning_Ptr<Arithmetic_Assignment_Expression> clone() const;
+
+    private:
+        virtual Arithmetic_Assignment_Expression* _clone() const override;
     };
 
     struct Elvis_Expr: public Expression {
@@ -525,9 +632,12 @@ namespace vush {
         Owning_Ptr<Expression> true_expr;
         Owning_Ptr<Expression> false_expr;
 
-        Elvis_Expr(Owning_Ptr<Expression> condition, Owning_Ptr<Expression> true_expr, Owning_Ptr<Expression> false_expr, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::elvis_expr), condition(ANTON_MOV(condition)), true_expr(ANTON_MOV(true_expr)),
-              false_expr(ANTON_MOV(false_expr)) {}
+        Elvis_Expr(Owning_Ptr<Expression> condition, Owning_Ptr<Expression> true_expr, Owning_Ptr<Expression> false_expr, Source_Info const& source_info);
+
+        Owning_Ptr<Elvis_Expr> clone() const;
+
+    private:
+        virtual Elvis_Expr* _clone() const override;
     };
 
     enum struct Binary_Expr_Type {
@@ -557,8 +667,12 @@ namespace vush {
         Owning_Ptr<Expression> rhs;
         Binary_Expr_Type type;
 
-        Binary_Expr(Binary_Expr_Type type, Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::binary_expr), lhs(ANTON_MOV(lhs)), rhs(ANTON_MOV(rhs)), type(type) {}
+        Binary_Expr(Binary_Expr_Type type, Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info);
+
+        Owning_Ptr<Binary_Expr> clone() const;
+
+    private:
+        virtual Binary_Expr* _clone() const override;
     };
 
     enum struct Unary_Type {
@@ -572,81 +686,103 @@ namespace vush {
         Owning_Ptr<Expression> expression;
         Unary_Type type;
 
-        Unary_Expression(Unary_Type type, Owning_Ptr<Expression> expression, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::unary_expression), expression(ANTON_MOV(expression)), type(type) {}
+        Unary_Expression(Unary_Type type, Owning_Ptr<Expression> expression, Source_Info const& source_info);
+
+        Owning_Ptr<Unary_Expression> clone() const;
+
+    private:
+        virtual Unary_Expression* _clone() const override;
     };
 
     struct Prefix_Inc_Expr: public Expression {
         Owning_Ptr<Expression> expression;
 
-        Prefix_Inc_Expr(Owning_Ptr<Expression> expression, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::prefix_inc_expr), expression(ANTON_MOV(expression)) {}
+        Prefix_Inc_Expr(Owning_Ptr<Expression> expression, Source_Info const& source_info);
+
+        Owning_Ptr<Prefix_Inc_Expr> clone() const;
+
+    private:
+        virtual Prefix_Inc_Expr* _clone() const override;
     };
 
     struct Prefix_Dec_Expr: public Expression {
         Owning_Ptr<Expression> expression;
 
-        Prefix_Dec_Expr(Owning_Ptr<Expression> expression, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::prefix_dec_expr), expression(ANTON_MOV(expression)) {}
-    };
+        Prefix_Dec_Expr(Owning_Ptr<Expression> expression, Source_Info const& source_info);
 
-    struct Argument_List: public AST_Node {
-        anton::Array<Owning_Ptr<Expression>> arguments;
+        Owning_Ptr<Prefix_Dec_Expr> clone() const;
 
-        Argument_List(): AST_Node({}, AST_Node_Type::argument_list) {}
-
-        void append(Owning_Ptr<Expression> argument) {
-            arguments.emplace_back(ANTON_MOV(argument));
-        }
-
-        i64 size() const {
-            return arguments.size();
-        }
+    private:
+        virtual Prefix_Dec_Expr* _clone() const override;
     };
 
     struct Function_Call_Expression: public Expression {
         Owning_Ptr<Identifier> identifier;
-        Owning_Ptr<Argument_List> arg_list;
+        anton::Array<Owning_Ptr<Expression>> arguments;
 
-        Function_Call_Expression(Owning_Ptr<Identifier> identifier, Owning_Ptr<Argument_List> arg_list, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::function_call_expression), identifier(ANTON_MOV(identifier)), arg_list(ANTON_MOV(arg_list)) {}
+        Function_Call_Expression(Owning_Ptr<Identifier> identifier, anton::Array<Owning_Ptr<Expression>> arguments, Source_Info const& source_info);
+
+        Owning_Ptr<Function_Call_Expression> clone() const;
+
+    private:
+        virtual Function_Call_Expression* _clone() const override;
     };
 
     struct Member_Access_Expression: public Expression {
         Owning_Ptr<Expression> base;
         Owning_Ptr<Identifier> member;
 
-        Member_Access_Expression(Owning_Ptr<Expression> base, Owning_Ptr<Identifier> member, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::member_access_expression), base(ANTON_MOV(base)), member(ANTON_MOV(member)) {}
+        Member_Access_Expression(Owning_Ptr<Expression> base, Owning_Ptr<Identifier> member, Source_Info const& source_info);
+
+        Owning_Ptr<Member_Access_Expression> clone() const;
+
+    private:
+        virtual Member_Access_Expression* _clone() const override;
     };
 
     struct Array_Access_Expression: public Expression {
         Owning_Ptr<Expression> base;
         Owning_Ptr<Expression> index;
 
-        Array_Access_Expression(Owning_Ptr<Expression> base, Owning_Ptr<Expression> index, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::array_access_expression), base(ANTON_MOV(base)), index(ANTON_MOV(index)) {}
+        Array_Access_Expression(Owning_Ptr<Expression> base, Owning_Ptr<Expression> index, Source_Info const& source_info);
+
+        Owning_Ptr<Array_Access_Expression> clone() const;
+
+    private:
+        virtual Array_Access_Expression* _clone() const override;
     };
 
     struct Postfix_Inc_Expr: public Expression {
         Owning_Ptr<Expression> expression;
 
-        Postfix_Inc_Expr(Owning_Ptr<Expression> expression, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::postfix_inc_expr), expression(ANTON_MOV(expression)) {}
+        Postfix_Inc_Expr(Owning_Ptr<Expression> expression, Source_Info const& source_info);
+
+        Owning_Ptr<Postfix_Inc_Expr> clone() const;
+
+    private:
+        virtual Postfix_Inc_Expr* _clone() const override;
     };
 
     struct Postfix_Dec_Expr: public Expression {
         Owning_Ptr<Expression> expression;
 
-        Postfix_Dec_Expr(Owning_Ptr<Expression> expression, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::postfix_dec_expr), expression(ANTON_MOV(expression)) {}
+        Postfix_Dec_Expr(Owning_Ptr<Expression> expression, Source_Info const& source_info);
+
+        Owning_Ptr<Postfix_Dec_Expr> clone() const;
+
+    private:
+        virtual Postfix_Dec_Expr* _clone() const override;
     };
 
     struct Paren_Expr: public Expression {
         Owning_Ptr<Expression> expression;
 
-        Paren_Expr(Owning_Ptr<Expression> expression, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::paren_expr), expression(ANTON_MOV(expression)) {}
+        Paren_Expr(Owning_Ptr<Expression> expression, Source_Info const& source_info);
+
+        Owning_Ptr<Paren_Expr> clone() const;
+
+    private:
+        virtual Paren_Expr* _clone() const override;
     };
 
     struct Reinterpret_Expr: public Expression {
@@ -654,21 +790,34 @@ namespace vush {
         Owning_Ptr<Expression> source;
         Owning_Ptr<Expression> index;
 
-        Reinterpret_Expr(Owning_Ptr<Type> target_type, Owning_Ptr<Expression> source, Owning_Ptr<Expression> index, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::reinterpret_expr), target_type(ANTON_MOV(target_type)), source(ANTON_MOV(source)),
-              index(ANTON_MOV(index)) {}
+        Reinterpret_Expr(Owning_Ptr<Type> target_type, Owning_Ptr<Expression> source, Owning_Ptr<Expression> index, Source_Info const& source_info);
+
+        Owning_Ptr<Reinterpret_Expr> clone() const;
+
+    private:
+        virtual Reinterpret_Expr* _clone() const override;
     };
 
     struct String_Literal: public Expression {
         anton::String value;
 
-        String_Literal(anton::String value, Source_Info const& source_info): Expression(source_info, AST_Node_Type::string_literal), value(ANTON_MOV(value)) {}
+        String_Literal(anton::String value, Source_Info const& source_info);
+
+        Owning_Ptr<String_Literal> clone() const;
+
+    private:
+        virtual String_Literal* _clone() const override;
     };
 
     struct Bool_Literal: public Expression {
         bool value;
 
-        Bool_Literal(bool value, Source_Info const& source_info): Expression(source_info, AST_Node_Type::bool_literal), value(value) {}
+        Bool_Literal(bool value, Source_Info const& source_info);
+
+        Owning_Ptr<Bool_Literal> clone() const;
+
+    private:
+        virtual Bool_Literal* _clone() const override;
     };
 
     enum struct Integer_Literal_Type { i32, u32 };
@@ -679,8 +828,12 @@ namespace vush {
         Integer_Literal_Type type;
         Integer_Literal_Base base;
 
-        Integer_Literal(anton::String value, Integer_Literal_Type type, Integer_Literal_Base base, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::integer_literal), value(ANTON_MOV(value)), type(type), base(base) {}
+        Integer_Literal(anton::String value, Integer_Literal_Type type, Integer_Literal_Base base, Source_Info const& source_info);
+
+        Owning_Ptr<Integer_Literal> clone() const;
+
+    private:
+        virtual Integer_Literal* _clone() const override;
     };
 
     enum struct Float_Literal_Type { f32, f64 };
@@ -689,53 +842,80 @@ namespace vush {
         anton::String value;
         Float_Literal_Type type;
 
-        Float_Literal(anton::String value, Float_Literal_Type type, Source_Info const& source_info)
-            : Expression(source_info, AST_Node_Type::float_literal), value(ANTON_MOV(value)), type(type) {}
+        Float_Literal(anton::String value, Float_Literal_Type type, Source_Info const& source_info);
+
+        Owning_Ptr<Float_Literal> clone() const;
+
+    private:
+        virtual Float_Literal* _clone() const override;
     };
 
     struct Statement: public AST_Node {
         using AST_Node::AST_Node;
+
+        Owning_Ptr<Statement> clone() const;
+
+    private:
+        virtual Statement* _clone() const override = 0;
     };
 
     struct Block_Statement: public Statement {
         Statement_List statements;
 
-        Block_Statement(Statement_List statements, Source_Info const& source_info)
-            : Statement(source_info, AST_Node_Type::block_statement), statements(ANTON_MOV(statements)) {}
+        Block_Statement(Statement_List statements, Source_Info const& source_info);
+
+        Owning_Ptr<Block_Statement> clone() const;
+
+    private:
+        virtual Block_Statement* _clone() const override;
     };
 
-    // false_statement might be If_Statement ('else if' case), Block_Statement or nullptr (else branch missing)
     struct If_Statement: public Statement {
         Owning_Ptr<Expression> condition;
         Statement_List true_statements;
         Statement_List false_statements;
 
-        If_Statement(Owning_Ptr<Expression> condition, Statement_List true_statements, Statement_List false_statements, Source_Info const& source_info)
-            : Statement(source_info, AST_Node_Type::if_statement), condition(ANTON_MOV(condition)), true_statements(ANTON_MOV(true_statements)),
-              false_statements(ANTON_MOV(false_statements)) {}
+        If_Statement(Owning_Ptr<Expression> condition, Statement_List true_statements, Statement_List false_statements, Source_Info const& source_info);
+
+        Owning_Ptr<If_Statement> clone() const;
+
+    private:
+        virtual If_Statement* _clone() const override;
     };
 
     struct Case_Statement: public Statement {
         Owning_Ptr<Expression> condition;
         Statement_List statements;
 
-        Case_Statement(Owning_Ptr<Expression> condition, Statement_List statements, Source_Info const& source_info)
-            : Statement(source_info, AST_Node_Type::case_statement), condition(ANTON_MOV(condition)), statements(ANTON_MOV(statements)) {}
+        Case_Statement(Owning_Ptr<Expression> condition, Statement_List statements, Source_Info const& source_info);
+
+        Owning_Ptr<Case_Statement> clone() const;
+
+    private:
+        virtual Case_Statement* _clone() const override;
     };
 
     struct Default_Case_Statement: public Statement {
         Statement_List statements;
 
-        Default_Case_Statement(Statement_List statements, Source_Info const& source_info)
-            : Statement(source_info, AST_Node_Type::default_case_statement), statements(ANTON_MOV(statements)) {}
+        Default_Case_Statement(Statement_List statements, Source_Info const& source_info);
+
+        Owning_Ptr<Default_Case_Statement> clone() const;
+
+    private:
+        virtual Default_Case_Statement* _clone() const override;
     };
 
     struct Switch_Statement: public Statement {
         Statement_List cases;
         Owning_Ptr<Expression> match_expr;
 
-        Switch_Statement(Owning_Ptr<Expression> match_expr, Statement_List cases, Source_Info const& source_info)
-            : Statement(source_info, AST_Node_Type::switch_statement), cases(ANTON_MOV(cases)), match_expr(ANTON_MOV(match_expr)) {}
+        Switch_Statement(Owning_Ptr<Expression> match_expr, Statement_List cases, Source_Info const& source_info);
+
+        Owning_Ptr<Switch_Statement> clone() const;
+
+    private:
+        virtual Switch_Statement* _clone() const override;
     };
 
     struct For_Statement: public Statement {
@@ -745,58 +925,96 @@ namespace vush {
         Statement_List statements;
 
         For_Statement(Owning_Ptr<Variable_Declaration> declaration, Owning_Ptr<Expression> condition, Owning_Ptr<Expression> post_expression,
-                      Statement_List statements, Source_Info const& source_info)
-            : Statement(source_info, AST_Node_Type::for_statement), declaration(ANTON_MOV(declaration)), condition(ANTON_MOV(condition)),
-              post_expression(ANTON_MOV(post_expression)), statements(ANTON_MOV(statements)) {}
+                      Statement_List statements, Source_Info const& source_info);
+
+        Owning_Ptr<For_Statement> clone() const;
+
+    private:
+        virtual For_Statement* _clone() const override;
     };
 
     struct While_Statement: public Statement {
         Owning_Ptr<Expression> condition;
         Statement_List statements;
 
-        While_Statement(Owning_Ptr<Expression> condition, Statement_List statements, Source_Info const& source_info)
-            : Statement(source_info, AST_Node_Type::while_statement), condition(ANTON_MOV(condition)), statements(ANTON_MOV(statements)) {}
+        While_Statement(Owning_Ptr<Expression> condition, Statement_List statements, Source_Info const& source_info);
+
+        Owning_Ptr<While_Statement> clone() const;
+
+    private:
+        virtual While_Statement* _clone() const override;
     };
 
     struct Do_While_Statement: public Statement {
         Owning_Ptr<Expression> condition;
         Statement_List statements;
 
-        Do_While_Statement(Owning_Ptr<Expression> condition, Statement_List statements, Source_Info const& source_info)
-            : Statement(source_info, AST_Node_Type::do_while_statement), condition(ANTON_MOV(condition)), statements(ANTON_MOV(statements)) {}
+        Do_While_Statement(Owning_Ptr<Expression> condition, Statement_List statements, Source_Info const& source_info);
+
+        Owning_Ptr<Do_While_Statement> clone() const;
+
+    private:
+        virtual Do_While_Statement* _clone() const override;
     };
 
     // return_expr may be nullptr
     struct Return_Statement: public Statement {
         Owning_Ptr<Expression> return_expr;
 
-        Return_Statement(Owning_Ptr<Expression> return_expr, Source_Info const& source_info)
-            : Statement(source_info, AST_Node_Type::return_statement), return_expr(ANTON_MOV(return_expr)) {}
+        Return_Statement(Owning_Ptr<Expression> return_expr, Source_Info const& source_info);
+
+        Owning_Ptr<Return_Statement> clone() const;
+
+    private:
+        virtual Return_Statement* _clone() const override;
     };
 
     struct Break_Statement: public Statement {
-        Break_Statement(Source_Info const& source_info): Statement(source_info, AST_Node_Type::break_statement) {}
+        Break_Statement(Source_Info const& source_info);
+
+        Owning_Ptr<Break_Statement> clone() const;
+
+    private:
+        virtual Break_Statement* _clone() const override;
     };
 
     struct Continue_Statement: public Statement {
-        Continue_Statement(Source_Info const& source_info): Statement(source_info, AST_Node_Type::continue_statement) {}
+        Continue_Statement(Source_Info const& source_info);
+
+        Owning_Ptr<Continue_Statement> clone() const;
+
+    private:
+        virtual Continue_Statement* _clone() const override;
     };
 
     struct Discard_Statement: public Statement {
-        Discard_Statement(Source_Info const& source_info): Statement(source_info, AST_Node_Type::discard_statement) {}
+        Discard_Statement(Source_Info const& source_info);
+
+        Owning_Ptr<Discard_Statement> clone() const;
+
+    private:
+        virtual Discard_Statement* _clone() const override;
     };
 
     struct Declaration_Statement: public Statement {
         Owning_Ptr<Declaration> declaration;
 
-        Declaration_Statement(Owning_Ptr<Declaration> declaration, Source_Info const& source_info)
-            : Statement(source_info, AST_Node_Type::declaration_statement), declaration(ANTON_MOV(declaration)) {}
+        Declaration_Statement(Owning_Ptr<Declaration> declaration, Source_Info const& source_info);
+
+        Owning_Ptr<Declaration_Statement> clone() const;
+
+    private:
+        virtual Declaration_Statement* _clone() const override;
     };
 
     struct Expression_Statement: public Statement {
-        Owning_Ptr<Expression> expr;
+        Owning_Ptr<Expression> expression;
 
-        Expression_Statement(Owning_Ptr<Expression> expression, Source_Info const& source_info)
-            : Statement(source_info, AST_Node_Type::expression_statement), expr(ANTON_MOV(expression)) {}
+        Expression_Statement(Owning_Ptr<Expression> expression, Source_Info const& source_info);
+
+        Owning_Ptr<Expression_Statement> clone() const;
+
+    private:
+        virtual Expression_Statement* _clone() const override;
     };
 } // namespace vush
