@@ -1138,12 +1138,16 @@ namespace vush {
 
             case AST_Node_Type::variable_declaration: {
                 Variable_Declaration& n = (Variable_Declaration&)node;
-                walk_nodes_and_aggregate_function_calls(function_calls, *n.initializer);
+                if(n.initializer) {
+                    walk_nodes_and_aggregate_function_calls(function_calls, *n.initializer);
+                }
             } break;
 
             case AST_Node_Type::constant_declaration: {
                 Constant_Declaration& n = (Constant_Declaration&)node;
-                walk_nodes_and_aggregate_function_calls(function_calls, *n.initializer);
+                if(n.initializer) {
+                    walk_nodes_and_aggregate_function_calls(function_calls, *n.initializer);
+                }
             } break;
 
             case AST_Node_Type::function_declaration: {
@@ -1326,12 +1330,16 @@ namespace vush {
         switch(node->node_type) {
             case AST_Node_Type::variable_declaration: {
                 Owning_Ptr<Variable_Declaration>& n = (Owning_Ptr<Variable_Declaration>&)node;
-                replace_identifier_expressions(n->initializer, replacements);
+                if(n->initializer) {
+                    replace_identifier_expressions(n->initializer, replacements);
+                }
             } break;
 
             case AST_Node_Type::constant_declaration: {
                 Owning_Ptr<Constant_Declaration>& n = (Owning_Ptr<Constant_Declaration>&)node;
-                replace_identifier_expressions(n->initializer, replacements);
+                if(n->initializer) {
+                    replace_identifier_expressions(n->initializer, replacements);
+                }
             } break;
 
             case AST_Node_Type::function_declaration: {
@@ -1527,26 +1535,6 @@ namespace vush {
         }
     }
 
-    static Owning_Ptr<Function_Declaration> instantiate_function(Function_Declaration& fn_template, Function_Call_Expression const& fn) {
-        Owning_Ptr<Function_Declaration> instance = fn_template.clone();
-        // Build replacements table
-        anton::Array<Replacement_Rule> replacements;
-        for(i64 i = 0; i < instance->params.size(); ++i) {
-            Ordinary_Function_Param& param = (Ordinary_Function_Param&)*instance->params[i];
-            if(is_unsized_array(*param.type)) {
-                Identifier_Expression& argument = (Identifier_Expression&)*fn.arguments[i];
-                ANTON_ASSERT(argument.node_type == AST_Node_Type::identifier_expression, "unsized array argument is not an identifier expression");
-                anton::String& fn_name = instance->identifier->value;
-                fn_name += "_";
-                fn_name += argument.identifier->value;
-                replacements.emplace_back(param.identifier->value, &argument);
-            }
-        }
-
-        replace_identifier_expressions(instance, replacements);
-        return instance;
-    }
-
     // perform_function_instantiations
     // Searches the entire ast for Function_Call_Expression nodes that have unsized array arguments
     // and creates instances of the corresponding functions with those parameters removed and
@@ -1562,7 +1550,7 @@ namespace vush {
     static void perform_function_instantiations(Context& ctx, Declaration_List& ast) {
         anton::Array<Owning_Ptr<Function_Declaration>> functions;
         anton::Array<Function_Call_Expression*> function_calls;
-        for(i64 i = 0; i < ast.size();) {
+        for(i64 i = 0; i < ast.size(); ++i) {
             Owning_Ptr<AST_Node>& node = ast[i];
             if(node->node_type == AST_Node_Type::function_declaration || node->node_type == AST_Node_Type::pass_stage_declaration) {
                 walk_nodes_and_aggregate_function_calls(function_calls, *node);
@@ -1570,10 +1558,24 @@ namespace vush {
 
             if(node->node_type == AST_Node_Type::function_declaration) {
                 Owning_Ptr<Function_Declaration>& fn = (Owning_Ptr<Function_Declaration>&)node;
-                functions.emplace_back(ANTON_MOV(fn));
-                ast.erase(ast.begin() + i, ast.begin() + i + 1);
-            } else {
-                ++i;
+                // Only functions with unsized array parameters must be removed and instantiated.
+                // Check whether the function has anu unsized array parameters.
+                bool requires_instantiation = false;
+                for(auto& parameter: fn->params) {
+                    Ordinary_Function_Param& param = (Ordinary_Function_Param&)*parameter;
+                    if(is_unsized_array(*param.type)) {
+                        requires_instantiation = true;
+                        break;
+                    }
+                }
+
+                if(requires_instantiation) {
+                    // Pull the function out of the ast into a different storage.
+                    // We don't want it to be codegened later on, but we need it for instantiation.
+                    functions.emplace_back(ANTON_MOV(fn));
+                    ast.erase(ast.begin() + i, ast.begin() + i + 1);
+                    --i;
+                }
             }
         }
 
@@ -1587,17 +1589,70 @@ namespace vush {
             }
 
             Function_Declaration& fn_template = (Function_Declaration&)*symbol;
-            // Guard against multiple instantiations
-            // u64 const signature_hash = hash_function_signature(fn_template);
-            // auto iter = instantiated_functions.find(signature_hash);
-            // if(iter != instantiated_functions.end()) {
-            //     continue;
-            // }
+            anton::String stringified_signature = stringify_type(*fn_template.return_type) + fn_template.identifier->value;
+            anton::String instance_name = fn_template.identifier->value;
+            // Check whether the function requires instantiation, aka has any unsized array parameters.
+            // Stringify the signature and generate instance name.
+            bool requires_instantiation = false;
+            for(i64 i = 0; i < fn_template.params.size(); ++i) {
+                Ordinary_Function_Param& param = (Ordinary_Function_Param&)*fn_template.params[i];
+                stringified_signature += stringify_type(*param.type);
+                if(is_unsized_array(*param.type)) {
+                    ANTON_ASSERT(function_call.arguments[i]->node_type == AST_Node_Type::identifier_expression,
+                                 "unsized array argument must be an identifier expression");
+                    Identifier_Expression& expr = (Identifier_Expression&)*function_call.arguments[i];
+                    instance_name += "_";
+                    instance_name += expr.identifier->value;
+                    requires_instantiation = true;
+                }
+            }
 
-            Owning_Ptr<Function_Declaration> instance = instantiate_function(fn_template, function_call);
+            if(!requires_instantiation) {
+                continue;
+            }
+
             // Rename the function call
-            function_call.identifier->value = instance->identifier->value;
-            // Remove the unsized array parameters and arguments
+            function_call.identifier->value = instance_name;
+
+            // Guard against multiple instantiations
+            u64 const signature_hash = anton::hash(stringified_signature);
+            auto iter = instantiated_functions.find(signature_hash);
+            if(iter != instantiated_functions.end()) {
+                // Function already instantiated.
+                // Remove the unsized array arguments from the function call.
+                for(i64 i = 0, j = 0; i < fn_template.params.size(); ++i) {
+                    Ordinary_Function_Param& param = (Ordinary_Function_Param&)*fn_template.params[i];
+                    if(is_unsized_array(*param.type)) {
+                        auto arg_begin = function_call.arguments.begin();
+                        function_call.arguments.erase(arg_begin + j, arg_begin + j + 1);
+                    } else {
+                        ++j;
+                    }
+                }
+
+                continue;
+            }
+
+            instantiated_functions.emplace(signature_hash);
+
+            Owning_Ptr<Function_Declaration> instance = fn_template.clone();
+            // Rename the instance
+            instance->identifier->value = instance_name;
+            // Build replacements table
+            anton::Array<Replacement_Rule> replacements;
+            for(i64 i = 0; i < instance->params.size(); ++i) {
+                Ordinary_Function_Param& param = (Ordinary_Function_Param&)*instance->params[i];
+                if(is_unsized_array(*param.type)) {
+                    ANTON_ASSERT(function_call.arguments[i]->node_type == AST_Node_Type::identifier_expression,
+                                 "unsized array argument must be an identifier expression");
+                    Identifier_Expression* argument = (Identifier_Expression*)function_call.arguments[i].get();
+                    replacements.emplace_back(param.identifier->value, argument);
+                }
+            }
+
+            replace_identifier_expressions(instance, replacements);
+
+            // Remove the unsized array parameters and arguments from the instance and the function call
             for(i64 i = 0; i < instance->params.size();) {
                 Ordinary_Function_Param& param = (Ordinary_Function_Param&)*instance->params[i];
                 if(is_unsized_array(*param.type)) {
@@ -1627,14 +1682,13 @@ namespace vush {
         for(auto& node: ast) {
             if(node->node_type == AST_Node_Type::pass_stage_declaration) {
                 Pass_Stage_Declaration& fn = (Pass_Stage_Declaration&)*node;
-                for(i64 i = 0; i < fn.params.size();) {
+                for(i64 i = 0; i < fn.params.size(); ++i) {
                     if(fn.params[i]->node_type == AST_Node_Type::sourced_function_param) {
                         Sourced_Function_Param& param = (Sourced_Function_Param&)*fn.params[i];
                         if(is_unsized_array(*param.type) || is_opaque_type(*param.type)) {
                             auto param_begin = fn.params.begin();
                             fn.params.erase(param_begin + i, param_begin + i + 1);
-                        } else {
-                            ++i;
+                            --i;
                         }
                     }
                 }
