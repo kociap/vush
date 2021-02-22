@@ -755,7 +755,11 @@ namespace vush {
     }
 
     Array_Type* Array_Type::_clone() const {
-        return new Array_Type(base->clone(), size->clone(), source_info);
+        if(size) {
+            return new Array_Type(base->clone(), size->clone(), source_info);
+        } else {
+            return new Array_Type(base->clone(), nullptr, source_info);
+        }
     }
 
     Owning_Ptr<Declaration> Declaration::clone() const {
@@ -880,7 +884,11 @@ namespace vush {
     }
 
     Function_Param_If* Function_Param_If::_clone() const {
-        return new Function_Param_If(condition->clone(), true_param->clone(), false_param->clone(), source_info);
+        if(false_param) {
+            return new Function_Param_If(condition->clone(), true_param->clone(), false_param->clone(), source_info);
+        } else {
+            return new Function_Param_If(condition->clone(), true_param->clone(), nullptr, source_info);
+        }
     }
 
     Ordinary_Function_Param::Ordinary_Function_Param(Owning_Ptr<Identifier> identifier, Owning_Ptr<Type> type, Source_Info const& source_info)
@@ -1282,7 +1290,11 @@ namespace vush {
     }
 
     Return_Statement* Return_Statement::_clone() const {
-        return new Return_Statement(return_expr->clone(), source_info);
+        if(return_expr) {
+            return new Return_Statement(return_expr->clone(), source_info);
+        } else {
+            return new Return_Statement(nullptr, source_info);
+        }
     }
 
     Break_Statement::Break_Statement(Source_Info const& source_info): Statement(source_info, AST_Node_Type::break_statement) {}
