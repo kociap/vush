@@ -364,6 +364,7 @@ namespace vush {
     struct Variable_Declaration: public Declaration {
         Owning_Ptr<Type> type;
         Owning_Ptr<Identifier> identifier;
+        // nullptr when the declaration does not have an initializer
         Owning_Ptr<Expression> initializer;
 
         Variable_Declaration(Owning_Ptr<Type> type, Owning_Ptr<Identifier> identifier, Owning_Ptr<Expression> initializer, Source_Info const& source_info);
@@ -377,6 +378,7 @@ namespace vush {
     struct Constant_Declaration: public Declaration {
         Owning_Ptr<Type> type;
         Owning_Ptr<Identifier> identifier;
+        // nullptr when the declaration does not have an initializer
         Owning_Ptr<Expression> initializer;
 
         Constant_Declaration(Owning_Ptr<Type> type, Owning_Ptr<Identifier> identifier, Owning_Ptr<Expression> initializer, Source_Info const& source_info);

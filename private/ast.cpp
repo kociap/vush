@@ -800,7 +800,11 @@ namespace vush {
     }
 
     Variable_Declaration* Variable_Declaration::_clone() const {
-        return new Variable_Declaration(type->clone(), identifier->clone(), initializer->clone(), source_info);
+        if(initializer) {
+            return new Variable_Declaration(type->clone(), identifier->clone(), initializer->clone(), source_info);
+        } else {
+            return new Variable_Declaration(type->clone(), identifier->clone(), nullptr, source_info);
+        }
     }
 
     Constant_Declaration::Constant_Declaration(Owning_Ptr<Type> type, Owning_Ptr<Identifier> identifier, Owning_Ptr<Expression> initializer,
@@ -813,7 +817,11 @@ namespace vush {
     }
 
     Constant_Declaration* Constant_Declaration::_clone() const {
-        return new Constant_Declaration(type->clone(), identifier->clone(), initializer->clone(), source_info);
+        if(initializer) {
+            return new Constant_Declaration(type->clone(), identifier->clone(), initializer->clone(), source_info);
+        } else {
+            return new Constant_Declaration(type->clone(), identifier->clone(), nullptr, source_info);
+        }
     }
 
     Struct_Member::Struct_Member(Owning_Ptr<Type> type, Owning_Ptr<Identifier> identifier, Owning_Ptr<Expression> initializer, Interpolation interpolation,
