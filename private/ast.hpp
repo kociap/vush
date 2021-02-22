@@ -463,6 +463,7 @@ namespace vush {
     struct Function_Param_If: public Function_Param {
         Owning_Ptr<Expression> condition;
         Owning_Ptr<Function_Param> true_param;
+        // nullptr when else branch is not defined
         Owning_Ptr<Function_Param> false_param;
 
         Function_Param_If(Owning_Ptr<Expression> condition, Owning_Ptr<Function_Param> true_param, Owning_Ptr<Function_Param> false_param,
@@ -564,6 +565,7 @@ namespace vush {
         virtual Expression* _clone() const override = 0;
     };
 
+    // Both true_expr and false_expr are never nullptr
     struct Expression_If: public Expression {
         Owning_Ptr<Expression> condition;
         Owning_Ptr<Expression> true_expr;
