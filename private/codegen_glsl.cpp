@@ -1818,6 +1818,7 @@ namespace vush {
                         out += u8"(";
 
                         // Write arguments
+                        i64 i = 0;
                         for(auto& param: stage->params) {
                             ANTON_ASSERT(param->node_type == AST_Node_Type::sourced_function_param, u8"invalid parameter type");
                             Sourced_Function_Param* const node = (Sourced_Function_Param*)param.get();
@@ -1827,7 +1828,11 @@ namespace vush {
                             anton::String_View bind_string = iter->value.bind;
                             anton::Expected<anton::String, anton::String> res = format_bind_string(bind_string, data);
                             if(res) {
+                                if (i > 0) {
+                                    out += u8", ";
+                                }
                                 out += res.value();
+                                i++;
                             } else {
                                 return {anton::expected_error, ANTON_MOV(res.error())};
                             }
