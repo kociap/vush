@@ -40,6 +40,12 @@ namespace vush {
             delete _pointer;
         }
 
+        // Allow upcasting
+        template<typename U, anton::enable_if<anton::is_convertible<T*, U*>, int> = 0>
+        [[nodiscard]] operator Owning_Ptr<U> &() & {
+            return reinterpret_cast<Owning_Ptr<U>&>(*this);
+        }
+
         [[nodiscard]] operator bool() const {
             return _pointer;
         }

@@ -2,6 +2,7 @@
 
 #include <anton/algorithm.hpp>
 #include <anton/filesystem.hpp>
+#include <anton/flat_hash_set.hpp>
 #include <anton/iterators.hpp>
 #include <anton/string_stream.hpp>
 #include <codegen.hpp>
@@ -1123,6 +1124,524 @@ namespace vush {
         return {anton::expected_value};
     }
 
+    // walk_nodes_and_aggregate_function_calls
+    //
+    static void walk_nodes_and_aggregate_function_calls(anton::Array<Function_Call_Expression*>& function_calls, AST_Node& node) {
+        switch(node.node_type) {
+            case AST_Node_Type::function_call_expression: {
+                Function_Call_Expression& n = (Function_Call_Expression&)node;
+                for(auto& arg: n.arguments) {
+                    walk_nodes_and_aggregate_function_calls(function_calls, *arg);
+                }
+                function_calls.emplace_back(&n);
+            } break;
+
+            case AST_Node_Type::variable_declaration: {
+                Variable_Declaration& n = (Variable_Declaration&)node;
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.initializer);
+            } break;
+
+            case AST_Node_Type::constant_declaration: {
+                Constant_Declaration& n = (Constant_Declaration&)node;
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.initializer);
+            } break;
+
+            case AST_Node_Type::function_declaration: {
+                Function_Declaration& n = (Function_Declaration&)node;
+                for(auto& statement: n.body) {
+                    walk_nodes_and_aggregate_function_calls(function_calls, *statement);
+                }
+            } break;
+
+            case AST_Node_Type::pass_stage_declaration: {
+                Pass_Stage_Declaration& n = (Pass_Stage_Declaration&)node;
+                for(auto& statement: n.body) {
+                    walk_nodes_and_aggregate_function_calls(function_calls, *statement);
+                }
+            } break;
+
+            case AST_Node_Type::assignment_expression: {
+                Assignment_Expression& n = (Assignment_Expression&)node;
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.lhs);
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.rhs);
+            } break;
+
+            case AST_Node_Type::arithmetic_assignment_expression: {
+                Arithmetic_Assignment_Expression& n = (Arithmetic_Assignment_Expression&)node;
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.lhs);
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.rhs);
+            } break;
+
+            case AST_Node_Type::elvis_expr: {
+                Elvis_Expr& n = (Elvis_Expr&)node;
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.condition);
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.true_expr);
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.false_expr);
+            } break;
+
+            case AST_Node_Type::binary_expr: {
+                Binary_Expr& n = (Binary_Expr&)node;
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.lhs);
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.rhs);
+            } break;
+
+            case AST_Node_Type::unary_expression: {
+                Unary_Expression& n = (Unary_Expression&)node;
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.expression);
+            } break;
+
+            case AST_Node_Type::prefix_inc_expr: {
+                Prefix_Inc_Expr& n = (Prefix_Inc_Expr&)node;
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.expression);
+            } break;
+
+            case AST_Node_Type::prefix_dec_expr: {
+                Prefix_Dec_Expr& n = (Prefix_Dec_Expr&)node;
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.expression);
+            } break;
+
+            case AST_Node_Type::array_access_expression: {
+                Array_Access_Expression& n = (Array_Access_Expression&)node;
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.base);
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.index);
+            } break;
+
+            case AST_Node_Type::postfix_inc_expr: {
+                Postfix_Inc_Expr& n = (Postfix_Inc_Expr&)node;
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.expression);
+            } break;
+
+            case AST_Node_Type::postfix_dec_expr: {
+                Postfix_Dec_Expr& n = (Postfix_Dec_Expr&)node;
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.expression);
+            } break;
+
+            case AST_Node_Type::paren_expr: {
+                Paren_Expr& n = (Paren_Expr&)node;
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.expression);
+            } break;
+
+            case AST_Node_Type::reinterpret_expr: {
+                Reinterpret_Expr& n = (Reinterpret_Expr&)node;
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.index);
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.source);
+            } break;
+
+            case AST_Node_Type::block_statement: {
+                Block_Statement& n = (Block_Statement&)node;
+                for(auto& statement: n.statements) {
+                    walk_nodes_and_aggregate_function_calls(function_calls, *statement);
+                }
+            } break;
+
+            case AST_Node_Type::if_statement: {
+                If_Statement& n = (If_Statement&)node;
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.condition);
+                for(auto& statement: n.true_statements) {
+                    walk_nodes_and_aggregate_function_calls(function_calls, *statement);
+                }
+
+                for(auto& statement: n.false_statements) {
+                    walk_nodes_and_aggregate_function_calls(function_calls, *statement);
+                }
+            } break;
+
+            case AST_Node_Type::case_statement: {
+                Case_Statement& n = (Case_Statement&)node;
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.condition);
+                for(auto& statement: n.statements) {
+                    walk_nodes_and_aggregate_function_calls(function_calls, *statement);
+                }
+            } break;
+
+            case AST_Node_Type::default_case_statement: {
+                Default_Case_Statement& n = (Default_Case_Statement&)node;
+                for(auto& statement: n.statements) {
+                    walk_nodes_and_aggregate_function_calls(function_calls, *statement);
+                }
+            } break;
+
+            case AST_Node_Type::switch_statement: {
+                Switch_Statement& n = (Switch_Statement&)node;
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.match_expr);
+                for(auto& case_statement: n.cases) {
+                    walk_nodes_and_aggregate_function_calls(function_calls, *case_statement);
+                }
+            } break;
+
+            case AST_Node_Type::for_statement: {
+                For_Statement& n = (For_Statement&)node;
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.declaration);
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.condition);
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.post_expression);
+                for(auto& statement: n.statements) {
+                    walk_nodes_and_aggregate_function_calls(function_calls, *statement);
+                }
+            } break;
+
+            case AST_Node_Type::while_statement: {
+                While_Statement& n = (While_Statement&)node;
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.condition);
+                for(auto& statement: n.statements) {
+                    walk_nodes_and_aggregate_function_calls(function_calls, *statement);
+                }
+            } break;
+
+            case AST_Node_Type::do_while_statement: {
+                Do_While_Statement& n = (Do_While_Statement&)node;
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.condition);
+                for(auto& statement: n.statements) {
+                    walk_nodes_and_aggregate_function_calls(function_calls, *statement);
+                }
+            } break;
+
+            case AST_Node_Type::return_statement: {
+                Return_Statement& n = (Return_Statement&)node;
+                if(n.return_expr) {
+                    walk_nodes_and_aggregate_function_calls(function_calls, *n.return_expr);
+                }
+            } break;
+
+            case AST_Node_Type::declaration_statement: {
+                Declaration_Statement& n = (Declaration_Statement&)node;
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.declaration);
+            } break;
+
+            case AST_Node_Type::expression_statement: {
+                Expression_Statement& n = (Expression_Statement&)node;
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.expression);
+            } break;
+
+            default:
+                break;
+        }
+    }
+
+    struct Replacement_Rule {
+        anton::String_View identifier;
+        Expression* replacement;
+    };
+
+    static void replace_identifier_expressions(Owning_Ptr<AST_Node>& node, anton::Slice<Replacement_Rule const> replacements) {
+        switch(node->node_type) {
+            case AST_Node_Type::variable_declaration: {
+                Owning_Ptr<Variable_Declaration>& n = (Owning_Ptr<Variable_Declaration>&)node;
+                replace_identifier_expressions(n->initializer, replacements);
+            } break;
+
+            case AST_Node_Type::constant_declaration: {
+                Owning_Ptr<Constant_Declaration>& n = (Owning_Ptr<Constant_Declaration>&)node;
+                replace_identifier_expressions(n->initializer, replacements);
+            } break;
+
+            case AST_Node_Type::function_declaration: {
+                Owning_Ptr<Function_Declaration>& n = (Owning_Ptr<Function_Declaration>&)node;
+                for(auto& statement: n->body) {
+                    replace_identifier_expressions(statement, replacements);
+                }
+            } break;
+
+            case AST_Node_Type::pass_stage_declaration: {
+                Owning_Ptr<Pass_Stage_Declaration>& n = (Owning_Ptr<Pass_Stage_Declaration>&)node;
+                for(auto& statement: n->body) {
+                    replace_identifier_expressions(statement, replacements);
+                }
+            } break;
+
+            case AST_Node_Type::identifier_expression: {
+                Owning_Ptr<Identifier_Expression>& n = (Owning_Ptr<Identifier_Expression>&)node;
+                anton::String_View identifier = n->identifier->value;
+                auto iter = anton::find_if(replacements.begin(), replacements.end(),
+                                           [identifier](Replacement_Rule const& rule) { return rule.identifier == identifier; });
+                if(iter != replacements.end()) {
+                    node = iter->replacement->clone();
+                }
+            } break;
+
+            case AST_Node_Type::assignment_expression: {
+                Owning_Ptr<Assignment_Expression>& n = (Owning_Ptr<Assignment_Expression>&)node;
+                replace_identifier_expressions(n->lhs, replacements);
+                replace_identifier_expressions(n->rhs, replacements);
+            } break;
+
+            case AST_Node_Type::arithmetic_assignment_expression: {
+                Owning_Ptr<Arithmetic_Assignment_Expression>& n = (Owning_Ptr<Arithmetic_Assignment_Expression>&)node;
+                replace_identifier_expressions(n->lhs, replacements);
+                replace_identifier_expressions(n->rhs, replacements);
+            } break;
+
+            case AST_Node_Type::elvis_expr: {
+                Owning_Ptr<Elvis_Expr>& n = (Owning_Ptr<Elvis_Expr>&)node;
+                replace_identifier_expressions(n->condition, replacements);
+                replace_identifier_expressions(n->true_expr, replacements);
+                replace_identifier_expressions(n->false_expr, replacements);
+            } break;
+
+            case AST_Node_Type::binary_expr: {
+                Owning_Ptr<Binary_Expr>& n = (Owning_Ptr<Binary_Expr>&)node;
+                replace_identifier_expressions(n->lhs, replacements);
+                replace_identifier_expressions(n->rhs, replacements);
+            } break;
+
+            case AST_Node_Type::unary_expression: {
+                Owning_Ptr<Unary_Expression>& n = (Owning_Ptr<Unary_Expression>&)node;
+                replace_identifier_expressions(n->expression, replacements);
+            } break;
+
+            case AST_Node_Type::prefix_inc_expr: {
+                Owning_Ptr<Prefix_Inc_Expr>& n = (Owning_Ptr<Prefix_Inc_Expr>&)node;
+                replace_identifier_expressions(n->expression, replacements);
+            } break;
+
+            case AST_Node_Type::prefix_dec_expr: {
+                Owning_Ptr<Prefix_Dec_Expr>& n = (Owning_Ptr<Prefix_Dec_Expr>&)node;
+                replace_identifier_expressions(n->expression, replacements);
+            } break;
+
+            case AST_Node_Type::member_access_expression: {
+                Owning_Ptr<Member_Access_Expression>& n = (Owning_Ptr<Member_Access_Expression>&)node;
+                replace_identifier_expressions(n->base, replacements);
+            } break;
+
+            case AST_Node_Type::array_access_expression: {
+                Owning_Ptr<Array_Access_Expression>& n = (Owning_Ptr<Array_Access_Expression>&)node;
+                replace_identifier_expressions(n->base, replacements);
+                replace_identifier_expressions(n->index, replacements);
+            } break;
+
+            case AST_Node_Type::function_call_expression: {
+                Owning_Ptr<Function_Call_Expression>& n = (Owning_Ptr<Function_Call_Expression>&)node;
+                for(auto& arg: n->arguments) {
+                    replace_identifier_expressions(arg, replacements);
+                }
+            } break;
+
+            case AST_Node_Type::postfix_inc_expr: {
+                Owning_Ptr<Postfix_Inc_Expr>& n = (Owning_Ptr<Postfix_Inc_Expr>&)node;
+                replace_identifier_expressions(n->expression, replacements);
+            } break;
+
+            case AST_Node_Type::postfix_dec_expr: {
+                Owning_Ptr<Postfix_Dec_Expr>& n = (Owning_Ptr<Postfix_Dec_Expr>&)node;
+                replace_identifier_expressions(n->expression, replacements);
+            } break;
+
+            case AST_Node_Type::paren_expr: {
+                Owning_Ptr<Paren_Expr>& n = (Owning_Ptr<Paren_Expr>&)node;
+                replace_identifier_expressions(n->expression, replacements);
+            } break;
+
+            case AST_Node_Type::reinterpret_expr: {
+                Owning_Ptr<Reinterpret_Expr>& n = (Owning_Ptr<Reinterpret_Expr>&)node;
+                replace_identifier_expressions(n->index, replacements);
+                replace_identifier_expressions(n->source, replacements);
+            } break;
+
+            case AST_Node_Type::block_statement: {
+                Owning_Ptr<Block_Statement>& n = (Owning_Ptr<Block_Statement>&)node;
+                for(auto& statement: n->statements) {
+                    replace_identifier_expressions(statement, replacements);
+                }
+            } break;
+
+            case AST_Node_Type::if_statement: {
+                Owning_Ptr<If_Statement>& n = (Owning_Ptr<If_Statement>&)node;
+                replace_identifier_expressions(n->condition, replacements);
+                for(auto& statement: n->true_statements) {
+                    replace_identifier_expressions(statement, replacements);
+                }
+
+                for(auto& statement: n->false_statements) {
+                    replace_identifier_expressions(statement, replacements);
+                }
+            } break;
+
+            case AST_Node_Type::case_statement: {
+                Owning_Ptr<Case_Statement>& n = (Owning_Ptr<Case_Statement>&)node;
+                replace_identifier_expressions(n->condition, replacements);
+                for(auto& statement: n->statements) {
+                    replace_identifier_expressions(statement, replacements);
+                }
+            } break;
+
+            case AST_Node_Type::default_case_statement: {
+                Owning_Ptr<Default_Case_Statement>& n = (Owning_Ptr<Default_Case_Statement>&)node;
+                for(auto& statement: n->statements) {
+                    replace_identifier_expressions(statement, replacements);
+                }
+            } break;
+
+            case AST_Node_Type::switch_statement: {
+                Owning_Ptr<Switch_Statement>& n = (Owning_Ptr<Switch_Statement>&)node;
+                replace_identifier_expressions(n->match_expr, replacements);
+                for(auto& case_statement: n->cases) {
+                    replace_identifier_expressions(case_statement, replacements);
+                }
+            } break;
+
+            case AST_Node_Type::for_statement: {
+                Owning_Ptr<For_Statement>& n = (Owning_Ptr<For_Statement>&)node;
+                replace_identifier_expressions(n->declaration, replacements);
+                replace_identifier_expressions(n->condition, replacements);
+                replace_identifier_expressions(n->post_expression, replacements);
+                for(auto& statement: n->statements) {
+                    replace_identifier_expressions(statement, replacements);
+                }
+            } break;
+
+            case AST_Node_Type::while_statement: {
+                Owning_Ptr<While_Statement>& n = (Owning_Ptr<While_Statement>&)node;
+                replace_identifier_expressions(n->condition, replacements);
+                for(auto& statement: n->statements) {
+                    replace_identifier_expressions(statement, replacements);
+                }
+            } break;
+
+            case AST_Node_Type::do_while_statement: {
+                Owning_Ptr<Do_While_Statement>& n = (Owning_Ptr<Do_While_Statement>&)node;
+                replace_identifier_expressions(n->condition, replacements);
+                for(auto& statement: n->statements) {
+                    replace_identifier_expressions(statement, replacements);
+                }
+            } break;
+
+            case AST_Node_Type::return_statement: {
+                Owning_Ptr<Return_Statement>& n = (Owning_Ptr<Return_Statement>&)node;
+                if(n->return_expr) {
+                    replace_identifier_expressions(n->return_expr, replacements);
+                }
+            } break;
+
+            case AST_Node_Type::declaration_statement: {
+                Owning_Ptr<Declaration_Statement>& n = (Owning_Ptr<Declaration_Statement>&)node;
+                replace_identifier_expressions(n->declaration, replacements);
+            } break;
+
+            case AST_Node_Type::expression_statement: {
+                Owning_Ptr<Expression_Statement>& n = (Owning_Ptr<Expression_Statement>&)node;
+                replace_identifier_expressions(n->expression, replacements);
+            } break;
+
+            default:
+                break;
+        }
+    }
+
+    static Owning_Ptr<Function_Declaration> instantiate_function(Function_Declaration& fn_template, Function_Call_Expression const& fn) {
+        Owning_Ptr<Function_Declaration> instance = fn_template.clone();
+        // Build replacements table
+        anton::Array<Replacement_Rule> replacements;
+        for(i64 i = 0; i < instance->params.size(); ++i) {
+            Ordinary_Function_Param& param = (Ordinary_Function_Param&)*instance->params[i];
+            if(is_unsized_array(*param.type)) {
+                Identifier_Expression& argument = (Identifier_Expression&)*fn.arguments[i];
+                ANTON_ASSERT(argument.node_type == AST_Node_Type::identifier_expression, "unsized array argument is not an identifier expression");
+                anton::String& fn_name = instance->identifier->value;
+                fn_name += "_";
+                fn_name += argument.identifier->value;
+                replacements.emplace_back(param.identifier->value, &argument);
+            }
+        }
+
+        replace_identifier_expressions(instance, replacements);
+        return instance;
+    }
+
+    // perform_function_instantiations
+    // Searches the entire ast for Function_Call_Expression nodes that have unsized array arguments
+    // and creates instances of the corresponding functions with those parameters removed and
+    // all corresponding identifiers replaced.
+    // Removes unsized array arguments from the Function_Call_Expression nodes.
+    //
+    // IMPORTANT:
+    // This function performs 2 transformations on the ast that do NOT preserve the symbol table:
+    //  - Original functions are removed from the ast and replaced with instantiations.
+    //  - Unsized array parameters are removed from the instantiated functions.
+    // After calling this function it is not safe to lookup symbols anymore!
+    //
+    static void perform_function_instantiations(Context& ctx, Declaration_List& ast) {
+        anton::Array<Owning_Ptr<Function_Declaration>> functions;
+        anton::Array<Function_Call_Expression*> function_calls;
+        for(i64 i = 0; i < ast.size();) {
+            Owning_Ptr<AST_Node>& node = ast[i];
+            if(node->node_type == AST_Node_Type::function_declaration || node->node_type == AST_Node_Type::pass_stage_declaration) {
+                walk_nodes_and_aggregate_function_calls(function_calls, *node);
+            }
+
+            if(node->node_type == AST_Node_Type::function_declaration) {
+                Owning_Ptr<Function_Declaration>& fn = (Owning_Ptr<Function_Declaration>&)node;
+                functions.emplace_back(ANTON_MOV(fn));
+                ast.erase(ast.begin() + i, ast.begin() + i + 1);
+            } else {
+                ++i;
+            }
+        }
+
+        anton::Flat_Hash_Set<u64> instantiated_functions;
+        for(i64 i = 0; i < function_calls.size(); ++i) {
+            Function_Call_Expression& function_call = *function_calls[i];
+            Symbol* symbol = find_symbol(ctx, function_call.identifier->value);
+            // Builtin types do not have a symbol, but their constructors still produce function calls
+            if(!symbol || symbol->node_type != Symbol_Type::function_declaration) {
+                continue;
+            }
+
+            Function_Declaration& fn_template = (Function_Declaration&)*symbol;
+            // Guard against multiple instantiations
+            // u64 const signature_hash = hash_function_signature(fn_template);
+            // auto iter = instantiated_functions.find(signature_hash);
+            // if(iter != instantiated_functions.end()) {
+            //     continue;
+            // }
+
+            Owning_Ptr<Function_Declaration> instance = instantiate_function(fn_template, function_call);
+            // Rename the function call
+            function_call.identifier->value = instance->identifier->value;
+            // Remove the unsized array parameters and arguments
+            for(i64 i = 0; i < instance->params.size();) {
+                Ordinary_Function_Param& param = (Ordinary_Function_Param&)*instance->params[i];
+                if(is_unsized_array(*param.type)) {
+                    auto arg_begin = function_call.arguments.begin();
+                    function_call.arguments.erase(arg_begin + i, arg_begin + i + 1);
+                    auto param_begin = instance->params.begin();
+                    instance->params.erase(param_begin + i, param_begin + i + 1);
+                } else {
+                    ++i;
+                }
+            }
+
+            walk_nodes_and_aggregate_function_calls(function_calls, *instance);
+            ast.emplace_back(ANTON_MOV(instance));
+        }
+    }
+
+    // remove_unsized_array_and_opaque_parameters_from_stages
+    // Removes unsized array and opaque parameters from stage declarations.
+    //
+    // IMPORTANT:
+    // This function performs a transformation on the ast that does NOT preserve the symbol table:
+    //  - Unsized array and opaque parameters are removed from the stage declarations.
+    // After calling this function it is not safe to lookup symbols anymore!
+    //
+    void remove_unsized_array_and_opaque_parameters_from_stages(Declaration_List& ast) {
+        for(auto& node: ast) {
+            if(node->node_type == AST_Node_Type::pass_stage_declaration) {
+                Pass_Stage_Declaration& fn = (Pass_Stage_Declaration&)*node;
+                for(i64 i = 0; i < fn.params.size();) {
+                    if(fn.params[i]->node_type == AST_Node_Type::sourced_function_param) {
+                        Sourced_Function_Param& param = (Sourced_Function_Param&)*fn.params[i];
+                        if(is_unsized_array(*param.type) || is_opaque_type(*param.type)) {
+                            auto param_begin = fn.params.begin();
+                            fn.params.erase(param_begin + i, param_begin + i + 1);
+                        } else {
+                            ++i;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // build_ast_from_sources
     // Parse sources, process imports and declaration ifs, build top-level symbol table, validate functions, fold constants, extract settings
     //
@@ -1162,6 +1681,9 @@ namespace vush {
         if(anton::Expected<void, anton::String> res = process_functions(ctx, ast); !res) {
             return {anton::expected_error, ANTON_MOV(res.error())};
         }
+
+        perform_function_instantiations(ctx, ast);
+        remove_unsized_array_and_opaque_parameters_from_stages(ast);
 
         return {anton::expected_value, ANTON_MOV(ast)};
     }
