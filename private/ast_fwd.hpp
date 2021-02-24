@@ -12,9 +12,15 @@ namespace vush {
     struct Declaration;
     struct Statement;
     struct Expression;
+    struct Identifier;
+    struct Type;
+    struct Function_Param;
+    struct Function_Declaration;
+    struct Pass_Stage_Declaration;
     struct String_Literal;
     struct Integer_Literal;
 
     using Declaration_List = anton::Array<Owning_Ptr<Declaration>>;
     using Statement_List = anton::Array<Owning_Ptr<Statement>>;
+    using Parameter_List = anton::Array<Owning_Ptr<Function_Param>>;
 } // namespace vush

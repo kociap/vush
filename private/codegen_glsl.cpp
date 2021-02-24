@@ -14,8 +14,6 @@ namespace vush {
     struct Codegen_Context {
         Context const& ctx;
         Format_Options format;
-        anton::String_View current_pass;
-        Stage_Type current_stage;
         i64 indent;
     };
 
@@ -206,7 +204,7 @@ namespace vush {
         }
     }
 
-    static void stringify(anton::String& out, AST_Node& ast_node, Codegen_Context& ctx) {
+    static void stringify(anton::String& out, AST_Node const& ast_node, Codegen_Context& ctx) {
         switch(ast_node.node_type) {
             case AST_Node_Type::identifier: {
                 Identifier& node = (Identifier&)ast_node;
@@ -805,7 +803,7 @@ namespace vush {
         }
     }
 
-    static void stringify_function_forward_decl(anton::String& out, Function_Declaration& node, Codegen_Context& ctx) {
+    static void stringify_function_forward_decl(anton::String& out, Function_Declaration const& node, Codegen_Context& ctx) {
         stringify(out, *node.return_type, ctx);
         out += u8" ";
         stringify(out, *node.identifier, ctx);
@@ -820,30 +818,6 @@ namespace vush {
         }
         out += u8");\n";
     }
-
-    struct Sourced_Data {
-        Type* type;
-        Identifier* name;
-        Identifier* source;
-    };
-
-    struct Sourced_Data_Buffers {
-        anton::Array<Sourced_Data> all;
-        anton::Array<Sourced_Data> variables;
-        anton::Array<Sourced_Data> opaque_variables;
-        anton::Array<Sourced_Data> unsized_variables;
-    };
-
-    struct Pass_Context {
-        anton::String name;
-        // Maps source name to sourced params and globals
-        anton::Flat_Hash_Map<anton::String, Sourced_Data_Buffers> sourced_data;
-        Pass_Stage_Declaration* vertex_stage = nullptr;
-        Pass_Stage_Declaration* fragment_stage = nullptr;
-        Pass_Stage_Declaration* compute_stage = nullptr;
-    };
-
-    // TODO: Arrays in vertex inputs/fragment outputs are illegal (for now). Add error handling.
 
     struct Member_Info {
         anton::String name;
@@ -954,410 +928,14 @@ namespace vush {
         return {anton::expected_value, ANTON_MOV(out)};
     }
 
-    struct Layout_Info {
-        i64 alignment;
-        i64 size;
-    };
-
-    [[nodiscard]] static Layout_Info calculate_type_layout_info(Context const& ctx, Type const& type) {
-        ANTON_ASSERT(type.node_type == AST_Node_Type::builtin_type || type.node_type == AST_Node_Type::user_defined_type ||
-                         type.node_type == AST_Node_Type::array_type,
-                     u8"unknown ast node type");
-        if(type.node_type == AST_Node_Type::builtin_type) {
-            Builtin_Type const& t = (Builtin_Type const&)type;
-            switch(t.type) {
-                case Builtin_GLSL_Type::glsl_void:
-                    return {0, 0};
-
-                case Builtin_GLSL_Type::glsl_bool:
-                case Builtin_GLSL_Type::glsl_int:
-                case Builtin_GLSL_Type::glsl_uint:
-                case Builtin_GLSL_Type::glsl_float:
-                    return {4, 4};
-
-                case Builtin_GLSL_Type::glsl_double:
-                    return {8, 8};
-
-                case Builtin_GLSL_Type::glsl_vec2:
-                case Builtin_GLSL_Type::glsl_bvec2:
-                case Builtin_GLSL_Type::glsl_ivec2:
-                case Builtin_GLSL_Type::glsl_uvec2:
-                    return {8, 8};
-
-                case Builtin_GLSL_Type::glsl_vec3:
-                case Builtin_GLSL_Type::glsl_vec4:
-                case Builtin_GLSL_Type::glsl_bvec3:
-                case Builtin_GLSL_Type::glsl_bvec4:
-                case Builtin_GLSL_Type::glsl_ivec3:
-                case Builtin_GLSL_Type::glsl_ivec4:
-                case Builtin_GLSL_Type::glsl_uvec3:
-                case Builtin_GLSL_Type::glsl_uvec4:
-                    return {16, 16};
-
-                case Builtin_GLSL_Type::glsl_dvec2:
-                    return {16, 16};
-
-                case Builtin_GLSL_Type::glsl_dvec3:
-                case Builtin_GLSL_Type::glsl_dvec4:
-                    return {32, 32};
-
-                case Builtin_GLSL_Type::glsl_mat2:
-                case Builtin_GLSL_Type::glsl_mat2x3:
-                case Builtin_GLSL_Type::glsl_mat2x4:
-                    return {16, 32};
-
-                case Builtin_GLSL_Type::glsl_mat3x2:
-                case Builtin_GLSL_Type::glsl_mat3:
-                case Builtin_GLSL_Type::glsl_mat3x4:
-                    return {16, 48};
-
-                case Builtin_GLSL_Type::glsl_mat4x2:
-                case Builtin_GLSL_Type::glsl_mat4x3:
-                case Builtin_GLSL_Type::glsl_mat4:
-                    return {16, 64};
-
-                case Builtin_GLSL_Type::glsl_dmat2:
-                    return {16, 32};
-
-                case Builtin_GLSL_Type::glsl_dmat2x3:
-                case Builtin_GLSL_Type::glsl_dmat2x4:
-                    return {32, 64};
-
-                case Builtin_GLSL_Type::glsl_dmat3x2:
-                    return {16, 48};
-
-                case Builtin_GLSL_Type::glsl_dmat3:
-                case Builtin_GLSL_Type::glsl_dmat3x4:
-                    return {32, 96};
-
-                case Builtin_GLSL_Type::glsl_dmat4x2:
-                    return {16, 64};
-
-                case Builtin_GLSL_Type::glsl_dmat4x3:
-                case Builtin_GLSL_Type::glsl_dmat4:
-                    return {32, 128};
-
-                case Builtin_GLSL_Type::glsl_sampler1D:
-                case Builtin_GLSL_Type::glsl_texture1D:
-                case Builtin_GLSL_Type::glsl_image1D:
-                case Builtin_GLSL_Type::glsl_sampler1DShadow:
-                case Builtin_GLSL_Type::glsl_sampler1DArray:
-                case Builtin_GLSL_Type::glsl_texture1DArray:
-                case Builtin_GLSL_Type::glsl_image1DArray:
-                case Builtin_GLSL_Type::glsl_sampler1DArrayShadow:
-                case Builtin_GLSL_Type::glsl_sampler2D:
-                case Builtin_GLSL_Type::glsl_texture2D:
-                case Builtin_GLSL_Type::glsl_image2D:
-                case Builtin_GLSL_Type::glsl_sampler2DShadow:
-                case Builtin_GLSL_Type::glsl_sampler2DArray:
-                case Builtin_GLSL_Type::glsl_texture2DArray:
-                case Builtin_GLSL_Type::glsl_image2DArray:
-                case Builtin_GLSL_Type::glsl_sampler2DArrayShadow:
-                case Builtin_GLSL_Type::glsl_sampler2DMS:
-                case Builtin_GLSL_Type::glsl_texture2DMS:
-                case Builtin_GLSL_Type::glsl_image2DMS:
-                case Builtin_GLSL_Type::glsl_sampler2DMSArray:
-                case Builtin_GLSL_Type::glsl_texture2DMSArray:
-                case Builtin_GLSL_Type::glsl_image2DMSArray:
-                case Builtin_GLSL_Type::glsl_sampler2DRect:
-                case Builtin_GLSL_Type::glsl_texture2DRect:
-                case Builtin_GLSL_Type::glsl_image2DRect:
-                case Builtin_GLSL_Type::glsl_sampler2DRectShadow:
-                case Builtin_GLSL_Type::glsl_sampler3D:
-                case Builtin_GLSL_Type::glsl_texture3D:
-                case Builtin_GLSL_Type::glsl_image3D:
-                case Builtin_GLSL_Type::glsl_samplerCube:
-                case Builtin_GLSL_Type::glsl_textureCube:
-                case Builtin_GLSL_Type::glsl_imageCube:
-                case Builtin_GLSL_Type::glsl_samplerCubeShadow:
-                case Builtin_GLSL_Type::glsl_samplerCubeArray:
-                case Builtin_GLSL_Type::glsl_textureCubeArray:
-                case Builtin_GLSL_Type::glsl_imageCubeArray:
-                case Builtin_GLSL_Type::glsl_samplerCubeArrayShadow:
-                case Builtin_GLSL_Type::glsl_samplerBuffer:
-                case Builtin_GLSL_Type::glsl_textureBuffer:
-                case Builtin_GLSL_Type::glsl_imageBuffer:
-                case Builtin_GLSL_Type::glsl_subpassInput:
-                case Builtin_GLSL_Type::glsl_subpassInputMS:
-                case Builtin_GLSL_Type::glsl_isampler1D:
-                case Builtin_GLSL_Type::glsl_itexture1D:
-                case Builtin_GLSL_Type::glsl_iimage1D:
-                case Builtin_GLSL_Type::glsl_isampler1DArray:
-                case Builtin_GLSL_Type::glsl_itexture1DArray:
-                case Builtin_GLSL_Type::glsl_iimage1DArray:
-                case Builtin_GLSL_Type::glsl_isampler2D:
-                case Builtin_GLSL_Type::glsl_itexture2D:
-                case Builtin_GLSL_Type::glsl_iimage2D:
-                case Builtin_GLSL_Type::glsl_isampler2DArray:
-                case Builtin_GLSL_Type::glsl_itexture2DArray:
-                case Builtin_GLSL_Type::glsl_iimage2DArray:
-                case Builtin_GLSL_Type::glsl_isampler2DMS:
-                case Builtin_GLSL_Type::glsl_itexture2DMS:
-                case Builtin_GLSL_Type::glsl_iimage2DMS:
-                case Builtin_GLSL_Type::glsl_isampler2DMSArray:
-                case Builtin_GLSL_Type::glsl_itexture2DMSArray:
-                case Builtin_GLSL_Type::glsl_iimage2DMSArray:
-                case Builtin_GLSL_Type::glsl_isampler2DRect:
-                case Builtin_GLSL_Type::glsl_itexture2DRect:
-                case Builtin_GLSL_Type::glsl_iimage2DRect:
-                case Builtin_GLSL_Type::glsl_isampler3D:
-                case Builtin_GLSL_Type::glsl_itexture3D:
-                case Builtin_GLSL_Type::glsl_iimage3D:
-                case Builtin_GLSL_Type::glsl_isamplerCube:
-                case Builtin_GLSL_Type::glsl_itextureCube:
-                case Builtin_GLSL_Type::glsl_iimageCube:
-                case Builtin_GLSL_Type::glsl_isamplerCubeArray:
-                case Builtin_GLSL_Type::glsl_itextureCubeArray:
-                case Builtin_GLSL_Type::glsl_iimageCubeArray:
-                case Builtin_GLSL_Type::glsl_isamplerBuffer:
-                case Builtin_GLSL_Type::glsl_itextureBuffer:
-                case Builtin_GLSL_Type::glsl_iimageBuffer:
-                case Builtin_GLSL_Type::glsl_isubpassInput:
-                case Builtin_GLSL_Type::glsl_isubpassInputMS:
-                case Builtin_GLSL_Type::glsl_usampler1D:
-                case Builtin_GLSL_Type::glsl_utexture1D:
-                case Builtin_GLSL_Type::glsl_uimage1D:
-                case Builtin_GLSL_Type::glsl_usampler1DArray:
-                case Builtin_GLSL_Type::glsl_utexture1DArray:
-                case Builtin_GLSL_Type::glsl_uimage1DArray:
-                case Builtin_GLSL_Type::glsl_usampler2D:
-                case Builtin_GLSL_Type::glsl_utexture2D:
-                case Builtin_GLSL_Type::glsl_uimage2D:
-                case Builtin_GLSL_Type::glsl_usampler2DArray:
-                case Builtin_GLSL_Type::glsl_utexture2DArray:
-                case Builtin_GLSL_Type::glsl_uimage2DArray:
-                case Builtin_GLSL_Type::glsl_usampler2DMS:
-                case Builtin_GLSL_Type::glsl_utexture2DMS:
-                case Builtin_GLSL_Type::glsl_uimage2DMS:
-                case Builtin_GLSL_Type::glsl_usampler2DMSArray:
-                case Builtin_GLSL_Type::glsl_utexture2DMSArray:
-                case Builtin_GLSL_Type::glsl_uimage2DMSArray:
-                case Builtin_GLSL_Type::glsl_usampler2DRect:
-                case Builtin_GLSL_Type::glsl_utexture2DRect:
-                case Builtin_GLSL_Type::glsl_uimage2DRect:
-                case Builtin_GLSL_Type::glsl_usampler3D:
-                case Builtin_GLSL_Type::glsl_utexture3D:
-                case Builtin_GLSL_Type::glsl_uimage3D:
-                case Builtin_GLSL_Type::glsl_usamplerCube:
-                case Builtin_GLSL_Type::glsl_utextureCube:
-                case Builtin_GLSL_Type::glsl_uimageCube:
-                case Builtin_GLSL_Type::glsl_usamplerCubeArray:
-                case Builtin_GLSL_Type::glsl_utextureCubeArray:
-                case Builtin_GLSL_Type::glsl_uimageCubeArray:
-                case Builtin_GLSL_Type::glsl_usamplerBuffer:
-                case Builtin_GLSL_Type::glsl_utextureBuffer:
-                case Builtin_GLSL_Type::glsl_uimageBuffer:
-                case Builtin_GLSL_Type::glsl_usubpassInput:
-                case Builtin_GLSL_Type::glsl_usubpassInputMS:
-                case Builtin_GLSL_Type::glsl_sampler:
-                case Builtin_GLSL_Type::glsl_samplerShadow:
-                    return {0, 0};
-            }
-        } else if(type.node_type == AST_Node_Type::user_defined_type) {
-            User_Defined_Type const& t = (User_Defined_Type const&)type;
-            Symbol const* symbol = find_symbol(ctx, t.name);
-            Struct_Decl const* struct_decl = (Struct_Decl const*)symbol;
-            i64 max_alignment = 0;
-            i64 offset = 0;
-            for(auto& member: struct_decl->members) {
-                Layout_Info const info = calculate_type_layout_info(ctx, *member->type);
-                max_alignment = anton::math::max(max_alignment, info.alignment);
-                // Realign offset if necessary
-                i64 const misalignment = offset % info.alignment;
-                if(misalignment != 0) {
-                    offset += info.alignment - misalignment;
-                }
-                offset += info.size;
-            }
-            // Round the alignment up to a multiple of vec4's alignment
-            i64 const alignment = ((max_alignment + 15) / 16) * 16;
-            return {alignment, offset};
-        } else if(type.node_type == AST_Node_Type::array_type) {
-            Array_Type const& t = (Array_Type const&)type;
-            i64 array_size = 0;
-            if(!is_unsized_array(t)) {
-                array_size = anton::str_to_i64(t.size->value);
-            }
-            Layout_Info const info = calculate_type_layout_info(ctx, *t.base);
-            // Round the alignment up to a multiple of vec4's alignment
-            i64 const alignment = ((info.alignment + 15) / 16) * 16;
-            // If the adjusted alignment forces padding, add
-            i64 const misalignment = info.size % alignment;
-            i64 size = info.size;
-            if(misalignment != 0) {
-                size += alignment - misalignment;
-            }
-            return {alignment, size * array_size};
-        } else {
-            ANTON_UNREACHABLE();
-        }
-    }
-
-    anton::Expected<anton::Array<Pass_Data>, anton::String> generate_glsl(Context const& ctx, Declaration_List& declarations, Format_Options const& format,
-                                                                          anton::Slice<Extension const> const extensions,
-                                                                          anton::Slice<Pass_Settings const> const settings) {
-        // TODO: Move all validation, transformations and aggregation into vush.cpp
-
-        anton::Array<Declaration*> structs_and_consts;
-        anton::Array<Declaration*> functions;
-        anton::Array<Pass_Context> passes;
-
-        for(auto& decl: declarations) {
-            switch(decl->node_type) {
-                case AST_Node_Type::struct_decl:
-                case AST_Node_Type::constant_declaration: {
-                    structs_and_consts.emplace_back(decl.get());
-                } break;
-
-                case AST_Node_Type::function_declaration: {
-                    functions.emplace_back(decl.get());
-                } break;
-
-                case AST_Node_Type::pass_stage_declaration: {
-                    Pass_Stage_Declaration* pass_decl = (Pass_Stage_Declaration*)decl.get();
-                    Pass_Context* pass =
-                        anton::find_if(passes.begin(), passes.end(), [pass_decl](Pass_Context const& v) { return v.name == pass_decl->pass->value; });
-                    if(pass == passes.end()) {
-                        Pass_Context& v = passes.emplace_back(Pass_Context{pass_decl->pass->value, {}});
-                        pass = &v;
-                    }
-
-                    // Ensure there is only 1 stage of each type
-                    switch(pass_decl->stage) {
-                        case Stage_Type::vertex: {
-                            if(pass->vertex_stage) {
-                                Source_Info const& src1 = pass_decl->source_info;
-                                Source_Info const& src2 = pass->vertex_stage->source_info;
-                                return {anton::expected_error, format_duplicate_pass_stage_error(src1, src2, pass->name, Stage_Type::vertex)};
-                            }
-
-                            pass->vertex_stage = pass_decl;
-                        } break;
-
-                        case Stage_Type::fragment: {
-                            if(pass->fragment_stage) {
-                                Source_Info const& src1 = pass_decl->source_info;
-                                Source_Info const& src2 = pass->vertex_stage->source_info;
-                                return {anton::expected_error, format_duplicate_pass_stage_error(src1, src2, pass->name, Stage_Type::fragment)};
-                            }
-
-                            pass->fragment_stage = pass_decl;
-                        } break;
-
-                        case Stage_Type::compute: {
-                            if(pass->compute_stage) {
-                                Source_Info const& src1 = pass_decl->source_info;
-                                Source_Info const& src2 = pass->vertex_stage->source_info;
-                                return {anton::expected_error, format_duplicate_pass_stage_error(src1, src2, pass->name, Stage_Type::compute)};
-                            }
-
-                            pass->compute_stage = pass_decl;
-                        } break;
-                    }
-
-                    for(auto& param: pass_decl->params) {
-                        if(param->node_type == AST_Node_Type::sourced_function_param) {
-                            Sourced_Function_Param* sourced_param = (Sourced_Function_Param*)param.get();
-                            auto iter = pass->sourced_data.find_or_emplace(sourced_param->source->value);
-                            Sourced_Data data{sourced_param->type.get(), sourced_param->identifier.get(), sourced_param->source.get()};
-                            iter->value.all.emplace_back(data);
-                        }
-                    }
-                } break;
-
-                default:
-                    break;
-            }
-        }
-
-        for(Pass_Context& pass: passes) {
-            // Validate that a pass has a vertex stage and optionally fragment stage or a compute stage
-            if(!pass.compute_stage) {
-                if(!pass.vertex_stage) {
-                    return {anton::expected_error, format_missing_vertex_stage_error(pass.name)};
-                }
-            } else {
-                if(pass.vertex_stage || pass.fragment_stage) {
-                    return {anton::expected_error, format_vertex_and_compute_stages_error(pass.name)};
-                }
-            }
-
-            // Remove duplicates, validate there is no different-type-same-name sourced data, optimize layout
-            for(auto& [source_name, data]: pass.sourced_data) {
-                // TODO: Use stable sort to preserve the order and report duplicates in the correct order.
-                anton::quick_sort(data.all.begin(), data.all.end(), [](Sourced_Data const& lhs, Sourced_Data const& rhs) {
-                    anton::String const& lhs_str = lhs.name->value;
-                    anton::String const& rhs_str = rhs.name->value;
-                    return anton::compare(lhs_str, rhs_str) == -1;
-                });
-
-                // Ensure there are no name duplicates with different types
-                for(auto i = data.all.begin(), j = data.all.begin() + 1, end = data.all.end(); j != end; ++i, ++j) {
-                    anton::String const i_type = stringify_type(*i->type);
-                    anton::String const j_type = stringify_type(*j->type);
-                    if(i->name->value == j->name->value && i_type != j_type) {
-                        Source_Info const& src = j->name->source_info;
-                        return {anton::expected_error,
-                                build_error_message(src.file_path, src.line, src.column, u8"duplicate sourced parameter name with a different type")};
-                    }
-                }
-
-                // Remove type duplicates
-                auto end = anton::unique(data.all.begin(), data.all.end(), [](Sourced_Data const& lhs, Sourced_Data const& rhs) {
-                    anton::String const i_type = stringify_type(*lhs.type);
-                    anton::String const j_type = stringify_type(*rhs.type);
-                    return i_type == j_type && lhs.name->value == rhs.name->value;
-                });
-
-                data.all.erase(end, data.all.end());
-
-                // Copy Sourced_Data to specialized buffers
-                for(auto i = data.all.begin(), end = data.all.end(); i != end; ++i) {
-                    bool const opaque = is_opaque_type(*i->type);
-                    bool const unsized = is_unsized_array(*i->type);
-                    if(!opaque && !unsized) {
-                        data.variables.emplace_back(*i);
-                    } else if(opaque && !unsized) {
-                        data.opaque_variables.emplace_back(*i);
-                    } else {
-                        data.unsized_variables.emplace_back(*i);
-                    }
-                }
-
-                // Optimize layout of variables
-                i64 const variables_count = data.variables.size();
-                anton::Array<Layout_Info> layout_info{anton::reserve, variables_count};
-                for(Sourced_Data const& d: data.variables) {
-                    Layout_Info info = calculate_type_layout_info(ctx, *d.type);
-                    layout_info.emplace_back(info);
-                }
-                // Create a permutation that will sort by alignment
-                anton::Array<i64> indices{variables_count, 0};
-                anton::fill_with_consecutive(indices.begin(), indices.end(), 0);
-                anton::quick_sort(indices.begin(), indices.end(),
-                                  [&layout_info](i64 const lhs, i64 const rhs) { return layout_info[lhs].alignment > layout_info[rhs].alignment; });
-                // Apply the permutation
-                {
-                    anton::Array<Sourced_Data> perm_data{variables_count};
-                    anton::Array<Layout_Info> perm_layout_info{variables_count};
-                    for(i64 i = 0; i < variables_count; ++i) {
-                        i64 const index = indices[i];
-                        perm_data[i] = data.variables[index];
-                        perm_layout_info[i] = layout_info[index];
-                    }
-                    data.variables = ANTON_MOV(perm_data);
-                    layout_info = ANTON_MOV(perm_layout_info);
-                }
-            }
-        }
-
+    anton::Expected<anton::Array<Pass_Data>, anton::String> generate_glsl(Context const& ctx, Format_Options const& format, Codegen_Data const& data) {
         Codegen_Context codegen_ctx{ctx};
         codegen_ctx.format = format;
         codegen_ctx.indent = 0;
 
         anton::String stringified_extensions;
-        if(extensions.size() > 0) {
-            for(Extension const& extension: extensions) {
+        if(data.extensions.size() > 0) {
+            for(Extension const& extension: data.extensions) {
                 stringified_extensions += u8"#extension ";
                 stringified_extensions += extension.name;
                 stringified_extensions += u8": ";
@@ -1381,8 +959,8 @@ namespace vush {
         }
 
         anton::String stringified_structs_and_consts;
-        if(structs_and_consts.size() > 0) {
-            for(Declaration* decl: structs_and_consts) {
+        if(data.structs_and_constants.size() > 0) {
+            for(Declaration const* const decl: data.structs_and_constants) {
                 stringify(stringified_structs_and_consts, *decl, codegen_ctx);
             }
 
@@ -1390,23 +968,23 @@ namespace vush {
         }
 
         anton::String stringified_functions;
-        if(functions.size() > 0) {
-            for(Declaration* decl: functions) {
-                stringify_function_forward_decl(stringified_functions, (Function_Declaration&)*decl, codegen_ctx);
+        if(data.functions.size() > 0) {
+            for(Function_Declaration const* const decl: data.functions) {
+                stringify_function_forward_decl(stringified_functions, *decl, codegen_ctx);
             }
 
             stringified_functions += u8"\n";
         }
 
-        for(Declaration* decl: functions) {
-            stringify(stringified_functions, (Function_Declaration&)*decl, codegen_ctx);
+        for(Function_Declaration const* const decl: data.functions) {
+            stringify(stringified_functions, *decl, codegen_ctx);
             stringified_functions += u8"\n";
         }
 
         anton::Array<Pass_Data> pass_data;
-        for(Pass_Context& pass: passes) {
+        for(Pass_Context const& pass: data.passes) {
             Pass_Settings const* const this_pass_settings =
-                anton::find_if(settings.begin(), settings.end(), [&pass](Pass_Settings const& settings) { return settings.pass_name == pass.name; });
+                anton::find_if(data.settings.begin(), data.settings.end(), [&pass](Pass_Settings const& settings) { return settings.pass_name == pass.name; });
             anton::Flat_Hash_Map<anton::String, Source_Definition> source_definitions;
             for(auto [key, value]: pass.sourced_data) {
                 // We have to make a lot of string copies so that we can expose the variables in the public api
@@ -1462,8 +1040,8 @@ namespace vush {
             }
 
             for(Pass_Stage_Declaration* stage: stages) {
-                codegen_ctx.current_pass = stage->pass->value;
-                codegen_ctx.current_stage = stage->stage;
+                anton::String_View const current_pass = stage->pass->value;
+                Stage_Type const current_stage = stage->stage;
 
                 anton::String out = anton::String("#version 460 core\n#pragma shader_stage(") + stringify(stage->stage) + ")\n\n";
                 // write the common part
@@ -1783,23 +1361,23 @@ namespace vush {
 
                         // Write arguments
                         i64 i = 0;
-                        for(auto& param: stage->params) {
+                        for(auto const& param: stage->params) {
                             ANTON_ASSERT(param->node_type == AST_Node_Type::sourced_function_param, u8"invalid parameter type");
-                            Sourced_Function_Param* const node = (Sourced_Function_Param*)param.get();
-                            auto iter = source_definitions.find(node->source->value);
+                            Sourced_Function_Param const& node = (Sourced_Function_Param const&)*param;
+                            auto iter = source_definitions.find(node.source->value);
                             ANTON_ASSERT(iter != source_definitions.end(), u8"sourced parameter doesn't have an existing source");
-                            Sourced_Data data{node->type.get(), node->identifier.get(), node->source.get()};
+                            Sourced_Data data{node.type.get(), node.identifier.get(), node.source.get()};
                             anton::String_View bind_string = iter->value.bind;
                             anton::Expected<anton::String, anton::String> res = format_bind_string(bind_string, data);
-                            if(res) {
-                                if (i > 0) {
-                                    out += u8", ";
-                                }
-                                out += res.value();
-                                i++;
-                            } else {
+                            if(!res) {
                                 return {anton::expected_error, ANTON_MOV(res.error())};
                             }
+
+                            if(i > 0) {
+                                out += u8", ";
+                            }
+                            out += res.value();
+                            ++i;
                         }
 
                         out += u8");\n";
@@ -1809,14 +1387,13 @@ namespace vush {
                 }
 
                 // TODO: We don't have to search because we're processing a single pass
-                auto i = anton::find_if(pass_data.begin(), pass_data.end(),
-                                        [cur_pass = codegen_ctx.current_pass](Pass_Data const& v) { return v.name == cur_pass; });
+                auto i = anton::find_if(pass_data.begin(), pass_data.end(), [current_pass](Pass_Data const& v) { return v.name == current_pass; });
                 if(i == pass_data.end()) {
-                    Pass_Data& v = pass_data.emplace_back(Pass_Data{anton::String{codegen_ctx.current_pass}, {}});
+                    Pass_Data& v = pass_data.emplace_back(Pass_Data{anton::String{current_pass}, {}});
                     i = &v;
                 }
 
-                i->files.emplace_back(GLSL_File{ANTON_MOV(out), codegen_ctx.current_stage});
+                i->files.emplace_back(GLSL_File{ANTON_MOV(out), current_stage});
             }
         }
 

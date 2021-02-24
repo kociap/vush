@@ -3,7 +3,12 @@
 #include <chrono>
 #include <iostream>
 
-static anton::Expected<vush::Source_Definition, anton::String> source_definition_cb(vush::Source_Definition_Context const&) {
+static anton::Expected<vush::Source_Definition, anton::String> source_definition_cb(vush::Source_Definition_Context const& sdc) {
+    std::cout << "SOURCE CALLBACK\n";
+    std::cout << sdc.pass_name.data() << "::" << sdc.source_name.data() << '\n';
+    for(auto const& var: sdc.unsized_variables) {
+        std::cout << var.type.data() << ' ' << var.name.data() << '\n';
+    }
     return {anton::expected_value, anton::String{}, anton::String{}};
 }
 
@@ -18,7 +23,7 @@ int main() {
     config.defines = ANTON_MOV(constant_defines);
     config.import_directories = ANTON_MOV(import_directories);
     config.extensions = ANTON_MOV(extensions);
-    config.source_name = u8"C:/Users/An0num0us/Documents/vush2/build/shaders/diffuse.vush";
+    config.source_name = u8"C:/Users/An0num0us/Documents/vush2/build/shaders/test3.vush";
     config.source_definition_cb = source_definition_cb;
     auto t1 = std::chrono::high_resolution_clock::now();
     anton::Expected<vush::Build_Result, anton::String> result = vush::compile_to_glsl(config);
