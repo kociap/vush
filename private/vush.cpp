@@ -1010,7 +1010,7 @@ namespace vush {
                 anton::Expected<Source_Request_Result, anton::String> source_request_res =
                     ctx.source_request_cb(node->path->value, ctx.source_request_user_data);
                 if(!source_request_res) {
-                    return {anton::expected_error, format_source_import_failed(ctx, *node, source_request_res.error())};
+                    return {anton::expected_error, format_source_import_failed(ctx, node->source_info, source_request_res.error())};
                 }
 
                 Source_Request_Result& request_res = source_request_res.value();
@@ -1810,8 +1810,8 @@ namespace vush {
                     switch(pass_decl->stage) {
                         case Stage_Type::vertex: {
                             if(pass->vertex_stage) {
-                                Source_Info const& src1 = pass_decl->source_info;
-                                Source_Info const& src2 = pass->vertex_stage->source_info;
+                                Source_Info const& src1 = pass->vertex_stage->source_info;
+                                Source_Info const& src2 = pass_decl->source_info;
                                 return {anton::expected_error, format_duplicate_pass_stage_error(src1, src2, pass->name, Stage_Type::vertex)};
                             }
 
@@ -1820,8 +1820,8 @@ namespace vush {
 
                         case Stage_Type::fragment: {
                             if(pass->fragment_stage) {
-                                Source_Info const& src1 = pass_decl->source_info;
-                                Source_Info const& src2 = pass->vertex_stage->source_info;
+                                Source_Info const& src1 = pass->vertex_stage->source_info;
+                                Source_Info const& src2 = pass_decl->source_info;
                                 return {anton::expected_error, format_duplicate_pass_stage_error(src1, src2, pass->name, Stage_Type::fragment)};
                             }
 
@@ -1830,8 +1830,8 @@ namespace vush {
 
                         case Stage_Type::compute: {
                             if(pass->compute_stage) {
-                                Source_Info const& src1 = pass_decl->source_info;
-                                Source_Info const& src2 = pass->vertex_stage->source_info;
+                                Source_Info const& src1 = pass->vertex_stage->source_info;
+                                Source_Info const& src2 = pass_decl->source_info;
                                 return {anton::expected_error, format_duplicate_pass_stage_error(src1, src2, pass->name, Stage_Type::compute)};
                             }
 
@@ -1845,8 +1845,7 @@ namespace vush {
                         if(node->node_type == AST_Node_Type::sourced_function_param) {
                             Sourced_Function_Param& param = (Sourced_Function_Param&)*node;
                             auto iter = pass->sourced_data.find_or_emplace(param.source->value);
-                            Sourced_Data data{param.type.get(), param.identifier.get(), param.source.get()};
-                            iter->value.all.emplace_back(data);
+                            iter->value.all.emplace_back(&param);
                             if(is_unsized_array(*param.type) || is_opaque_type(*param.type)) {
                                 sourced_params.emplace_back(ANTON_MOV((Owning_Ptr<Sourced_Function_Param>&)params[i]));
                                 auto begin = params.begin();
@@ -2011,53 +2010,54 @@ namespace vush {
                 }
             }
 
-            // Remove duplicates, validate there is no different-type-same-name sourced data, optimize layout
+            // Remove duplicates, validate there is no different-type-same-name sourced parameters, optimize layout
             for(auto& [source_name, data]: pass.sourced_data) {
                 // TODO: Use stable sort to preserve the order and report duplicates in the correct order.
-                anton::quick_sort(data.all.begin(), data.all.end(), [](Sourced_Data const& lhs, Sourced_Data const& rhs) {
-                    anton::String const& lhs_str = lhs.name->value;
-                    anton::String const& rhs_str = rhs.name->value;
+                anton::quick_sort(data.all.begin(), data.all.end(), [](Sourced_Function_Param const* lhs, Sourced_Function_Param const* rhs) {
+                    anton::String const& lhs_str = lhs->identifier->value;
+                    anton::String const& rhs_str = rhs->identifier->value;
                     return anton::compare(lhs_str, rhs_str) == -1;
                 });
 
                 // Ensure there are no name duplicates with different types
                 for(auto i = data.all.begin(), j = data.all.begin() + 1, end = data.all.end(); j != end; ++i, ++j) {
-                    anton::String const i_type = stringify_type(*i->type);
-                    anton::String const j_type = stringify_type(*j->type);
-                    if(i->name->value == j->name->value && i_type != j_type) {
-                        Source_Info const& src = j->name->source_info;
-                        return {anton::expected_error,
-                                build_error_message(src.file_path, src.line, src.column, u8"duplicate sourced parameter name with a different type")};
+                    Sourced_Function_Param const& i_param = **i;
+                    Sourced_Function_Param const& j_param = **j;
+                    anton::String const i_type = stringify_type(*i_param.type);
+                    anton::String const j_type = stringify_type(*j_param.type);
+                    if(i_param.identifier->value == j_param.identifier->value && i_type != j_type) {
+                        return {anton::expected_error, format_duplicate_sourced_parameter(ctx, i_param.source_info, i_param.type->source_info,
+                                                                                          j_param.source_info, j_param.type->source_info)};
                     }
                 }
 
                 // Remove type duplicates
-                auto end = anton::unique(data.all.begin(), data.all.end(), [](Sourced_Data const& lhs, Sourced_Data const& rhs) {
-                    anton::String const i_type = stringify_type(*lhs.type);
-                    anton::String const j_type = stringify_type(*rhs.type);
-                    return i_type == j_type && lhs.name->value == rhs.name->value;
+                auto end = anton::unique(data.all.begin(), data.all.end(), [](Sourced_Function_Param const* lhs, Sourced_Function_Param const* rhs) {
+                    anton::String const i_type = stringify_type(*lhs->type);
+                    anton::String const j_type = stringify_type(*rhs->type);
+                    return i_type == j_type && lhs->identifier->value == rhs->identifier->value;
                 });
 
                 data.all.erase(end, data.all.end());
 
-                // Copy Sourced_Data to specialized buffers
-                for(auto i = data.all.begin(), end = data.all.end(); i != end; ++i) {
-                    bool const opaque = is_opaque_type(*i->type);
-                    bool const unsized = is_unsized_array(*i->type);
+                // Copy Sourced_Function_Param's to specialized buffers
+                for(Sourced_Function_Param const* const p: data.all) {
+                    bool const opaque = is_opaque_type(*p->type);
+                    bool const unsized = is_unsized_array(*p->type);
                     if(!opaque && !unsized) {
-                        data.variables.emplace_back(*i);
+                        data.variables.emplace_back(p);
                     } else if(opaque && !unsized) {
-                        data.opaque_variables.emplace_back(*i);
+                        data.opaque_variables.emplace_back(p);
                     } else {
-                        data.unsized_variables.emplace_back(*i);
+                        data.unsized_variables.emplace_back(p);
                     }
                 }
 
                 // Optimize the layout of the variables
                 i64 const variables_count = data.variables.size();
                 anton::Array<Layout_Info> layout_info{anton::reserve, variables_count};
-                for(Sourced_Data const& d: data.variables) {
-                    Layout_Info info = calculate_type_layout_info(ctx, *d.type);
+                for(Sourced_Function_Param const* p: data.variables) {
+                    Layout_Info info = calculate_type_layout_info(ctx, *p->type);
                     layout_info.emplace_back(info);
                 }
                 // Create a permutation that will sort by alignment
@@ -2067,7 +2067,7 @@ namespace vush {
                                   [&layout_info](i64 const lhs, i64 const rhs) { return layout_info[lhs].alignment > layout_info[rhs].alignment; });
                 // Apply the permutation
                 {
-                    anton::Array<Sourced_Data> perm_data{variables_count};
+                    anton::Array<Sourced_Function_Param const*> perm_data{variables_count};
                     anton::Array<Layout_Info> perm_layout_info{variables_count};
                     for(i64 i = 0; i < variables_count; ++i) {
                         i64 const index = indices[i];

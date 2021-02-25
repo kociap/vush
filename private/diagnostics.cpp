@@ -52,6 +52,11 @@ namespace vush {
         print_underline(out, padding, underline);
     }
 
+    static anton::String_View get_source_bit(anton::String const& source, Source_Info const& src_info) {
+        anton::String_View const source_bit{source.data() + src_info.start_offset, source.data() + src_info.end_offset};
+        return source_bit;
+    }
+
     [[nodiscard]] static anton::String format_diagnostic_location(Source_Info const& info) {
         return anton::String{info.file_path} + u8":" + anton::to_string(info.line + 1) + u8":" + anton::to_string(info.column + 1) + u8": ";
     }
@@ -72,22 +77,19 @@ namespace vush {
     anton::String format_undefined_symbol(Context const& ctx, Source_Info const& symbol) {
         auto iter = ctx.source_registry.find(symbol.file_path);
         anton::String const& source = iter->value;
-        anton::String_View const symbol_name{source.data() + symbol.start_offset, source.data() + symbol.end_offset};
         anton::String message = format_diagnostic_location(symbol);
         message += u8"error: undefined symbol '";
-        message += symbol_name;
+        message += get_source_bit(source, symbol);
         message += u8"'\n";
         print_source_snippet(message, source, symbol);
         return message;
     }
 
     anton::String format_called_symbol_does_not_name_function(Context const& ctx, Source_Info const& symbol) {
-        auto iter = ctx.source_registry.find(symbol.file_path);
-        anton::String const& source = iter->value;
-        anton::String_View const symbol_name{source.data() + symbol.start_offset, source.data() + symbol.end_offset};
+        anton::String const& source = ctx.source_registry.find(symbol.file_path)->value;
         anton::String message = format_diagnostic_location(symbol);
         message += u8"error: called symbol '";
-        message += symbol_name;
+        message += get_source_bit(source, symbol);
         message += u8"' does not name a function\n";
         print_source_snippet(message, source, symbol);
         return message;
@@ -142,10 +144,13 @@ namespace vush {
         return message;
     }
 
-    anton::String format_duplicate_pass_stage_error(Source_Info const& duplicate, Source_Info const& previous, anton::String const& pass_name,
+    anton::String format_duplicate_pass_stage_error(Source_Info const& first, Source_Info const& second, anton::String const& pass_name,
                                                     Stage_Type const& stage) {
-        anton::String message = format_diagnostic_location(duplicate) + u8"error: duplicate " + stringify(stage) + u8" stage in pass '" + pass_name + "'\n";
-        message += format_diagnostic_location(previous) + u8" note: previous definition is here";
+        anton::String message = format_diagnostic_location(second) + u8"error: duplicate " + stringify(stage) + u8" stage in pass '" + pass_name + "'\n";
+        message += format_diagnostic_location(first);
+        message += u8"first definition found here:\n";
+        message += format_diagnostic_location(second);
+        message += u8"second definition found here:\n";
         return message;
     }
 
@@ -165,21 +170,39 @@ namespace vush {
 
     anton::String format_compute_return_type_must_be_void(Context const& ctx, Source_Info const& return_type) {
         anton::String message = format_diagnostic_location(return_type);
-        message += u8"error: the return type of compute stage must be void\n";
+        message += u8"error: the return type of the compute stage must be void\n";
         auto iter = ctx.source_registry.find(return_type.file_path);
         anton::String const& source = iter->value;
         print_source_snippet(message, source, return_type);
         return message;
     }
 
-    anton::String format_source_import_failed(Context const& ctx, Import_Decl const& import_decl, anton::String_View const source_callback_message) {
-        Source_Info const& string_src_info = import_decl.path->source_info;
-        anton::String message = format_diagnostic_location(string_src_info);
+    anton::String format_source_import_failed(Context const& ctx, Source_Info const& import_info, anton::String_View const source_callback_message) {
+        anton::String message = format_diagnostic_location(import_info);
         message += u8"error: source import failed with the following error: ";
         message += source_callback_message;
-        auto iter = ctx.source_registry.find(string_src_info.file_path);
-        anton::String const& source = iter->value;
-        print_source_snippet(message, source, string_src_info);
+        anton::String const& source = ctx.source_registry.find(import_info.file_path)->value;
+        print_source_snippet(message, source, import_info);
+        return message;
+    }
+
+    anton::String format_duplicate_sourced_parameter(Context const& ctx, Source_Info const& first, Source_Info const& first_type, Source_Info const& second,
+                                                     Source_Info const& second_type) {
+        anton::String message = format_diagnostic_location(second);
+        message += u8"error: duplicate sourced parameter name with a different type\n";
+        anton::String const& first_source = ctx.source_registry.find(first.file_path)->value;
+        message += format_diagnostic_location(first);
+        message += u8"first definition with type '";
+        message += get_source_bit(first_source, first_type);
+        message += u8"' found here\n";
+        print_source_snippet(message, first_source, first);
+        message += '\n';
+        anton::String const& second_source = ctx.source_registry.find(second.file_path)->value;
+        message += format_diagnostic_location(second);
+        message += u8"second definition with type '";
+        message += get_source_bit(second_source, second_type);
+        message += u8"' found here\n";
+        print_source_snippet(message, second_source, second);
         return message;
     }
 } // namespace vush

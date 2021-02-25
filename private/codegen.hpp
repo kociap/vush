@@ -6,17 +6,11 @@
 #include <vush/vush.hpp>
 
 namespace vush {
-    struct Sourced_Data {
-        Type* type;
-        Identifier* name;
-        Identifier* source;
-    };
-
     struct Sourced_Data_Buffers {
-        anton::Array<Sourced_Data> all;
-        anton::Array<Sourced_Data> variables;
-        anton::Array<Sourced_Data> opaque_variables;
-        anton::Array<Sourced_Data> unsized_variables;
+        anton::Array<Sourced_Function_Param const*> all;
+        anton::Array<Sourced_Function_Param const*> variables;
+        anton::Array<Sourced_Function_Param const*> opaque_variables;
+        anton::Array<Sourced_Function_Param const*> unsized_variables;
     };
 
     struct Pass_Context {

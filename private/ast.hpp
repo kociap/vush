@@ -478,8 +478,8 @@ namespace vush {
     };
 
     struct Ordinary_Function_Param: public Function_Param {
-        Owning_Ptr<Identifier> identifier;
         Owning_Ptr<Type> type;
+        Owning_Ptr<Identifier> identifier;
 
         Ordinary_Function_Param(Owning_Ptr<Identifier> identifier, Owning_Ptr<Type> type, Source_Info const& source_info);
 
@@ -490,8 +490,8 @@ namespace vush {
     };
 
     struct Sourced_Function_Param: public Function_Param {
-        Owning_Ptr<Identifier> identifier;
         Owning_Ptr<Type> type;
+        Owning_Ptr<Identifier> identifier;
         Owning_Ptr<Identifier> source;
 
         Sourced_Function_Param(Owning_Ptr<Identifier> identifier, Owning_Ptr<Type> type, Owning_Ptr<Identifier> source, Source_Info const& source_info);
@@ -503,8 +503,8 @@ namespace vush {
     };
 
     struct Vertex_Input_Param: public Function_Param {
-        Owning_Ptr<Identifier> identifier;
         Owning_Ptr<Type> type;
+        Owning_Ptr<Identifier> identifier;
 
         Vertex_Input_Param(Owning_Ptr<Identifier> identifier, Owning_Ptr<Type> type, Source_Info const& source_info);
 

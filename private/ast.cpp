@@ -900,7 +900,7 @@ namespace vush {
     }
 
     Ordinary_Function_Param::Ordinary_Function_Param(Owning_Ptr<Identifier> identifier, Owning_Ptr<Type> type, Source_Info const& source_info)
-        : Function_Param(source_info, AST_Node_Type::ordinary_function_param), identifier(ANTON_MOV(identifier)), type(ANTON_MOV(type)) {}
+        : Function_Param(source_info, AST_Node_Type::ordinary_function_param), type(ANTON_MOV(type)), identifier(ANTON_MOV(identifier)) {}
 
     Owning_Ptr<Ordinary_Function_Param> Ordinary_Function_Param::clone() const {
         return Owning_Ptr{_clone()};
@@ -912,7 +912,7 @@ namespace vush {
 
     Sourced_Function_Param::Sourced_Function_Param(Owning_Ptr<Identifier> identifier, Owning_Ptr<Type> type, Owning_Ptr<Identifier> source,
                                                    Source_Info const& source_info)
-        : Function_Param(source_info, AST_Node_Type::sourced_function_param), identifier(ANTON_MOV(identifier)), type(ANTON_MOV(type)),
+        : Function_Param(source_info, AST_Node_Type::sourced_function_param), type(ANTON_MOV(type)), identifier(ANTON_MOV(identifier)),
           source(ANTON_MOV(source)) {}
 
     Owning_Ptr<Sourced_Function_Param> Sourced_Function_Param::clone() const {
@@ -924,7 +924,7 @@ namespace vush {
     }
 
     Vertex_Input_Param::Vertex_Input_Param(Owning_Ptr<Identifier> identifier, Owning_Ptr<Type> type, Source_Info const& source_info)
-        : Function_Param(source_info, AST_Node_Type::vertex_input_param), identifier(ANTON_MOV(identifier)), type(ANTON_MOV(type)) {}
+        : Function_Param(source_info, AST_Node_Type::vertex_input_param), type(ANTON_MOV(type)), identifier(ANTON_MOV(identifier)) {}
 
     Owning_Ptr<Vertex_Input_Param> Vertex_Input_Param::clone() const {
         return Owning_Ptr{_clone()};

@@ -15,6 +15,9 @@ namespace vush {
     struct Identifier;
     struct Type;
     struct Function_Param;
+    struct Ordinary_Function_Param;
+    struct Sourced_Function_Param;
+    struct Vertex_Input_Param;
     struct Function_Declaration;
     struct Pass_Stage_Declaration;
     struct String_Literal;

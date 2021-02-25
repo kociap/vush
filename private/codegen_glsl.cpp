@@ -858,7 +858,7 @@ namespace vush {
         _explode_type(_explode_type, ctx, type, name_components, Interpolation::none, false, member_info);
     }
 
-    static anton::Expected<anton::String, anton::String> format_bind_string(anton::String_View string, Sourced_Data const& symbol) {
+    static anton::Expected<anton::String, anton::String> format_bind_string(anton::String_View string, Identifier const& identifier, Type const& type) {
         anton::String out;
         auto iter1 = string.bytes_begin();
         auto iter2 = string.bytes_begin();
@@ -908,9 +908,9 @@ namespace vush {
             }
 
             if(property_name == u8"name") {
-                out += symbol.name->value;
+                out += identifier.value;
             } else if(property_name == u8"type") {
-                out += stringify_type(*symbol.type);
+                out += stringify_type(type);
             } else {
                 return {anton::expected_error, anton::String(u8"error: unknown property name in bind string")};
             }
@@ -1024,12 +1024,11 @@ namespace vush {
                     } break;
 
                     case AST_Node_Type::sourced_function_param: {
-                        Sourced_Function_Param* const node = (Sourced_Function_Param*)param.get();
-                        auto iter = source_definitions.find(node->source->value);
+                        Sourced_Function_Param const& node = (Sourced_Function_Param const&)*param;
+                        auto iter = source_definitions.find(node.source->value);
                         ANTON_ASSERT(iter != source_definitions.end(), u8"sourced parameter doesn't have an existing source");
-                        Sourced_Data data{node->type.get(), node->identifier.get(), node->source.get()};
                         anton::String_View bind_string = iter->value.bind;
-                        anton::Expected<anton::String, anton::String> res = format_bind_string(bind_string, data);
+                        anton::Expected<anton::String, anton::String> res = format_bind_string(bind_string, *node.identifier, *node.type);
                         if(res) {
                             arguments.emplace_back(ANTON_MOV(res.value()));
                         } else {
@@ -1124,12 +1123,11 @@ namespace vush {
 
         // Generate parameters
         for(i64 i = has_prev_stage_input; i < stage.params.size(); ++i) {
-            Sourced_Function_Param const& param = (Sourced_Function_Param const&)*stage.params[i];
-            auto iter = source_definitions.find(param.source->value);
+            Sourced_Function_Param const& node = (Sourced_Function_Param const&)*stage.params[i];
+            auto iter = source_definitions.find(node.source->value);
             ANTON_ASSERT(iter != source_definitions.end(), u8"sourced parameter doesn't have an existing source");
-            Sourced_Data data{param.type.get(), param.identifier.get(), param.source.get()};
             anton::String_View bind_string = iter->value.bind;
-            anton::Expected<anton::String, anton::String> res = format_bind_string(bind_string, data);
+            anton::Expected<anton::String, anton::String> res = format_bind_string(bind_string, *node.identifier, *node.type);
             if(res) {
                 arguments.emplace_back(ANTON_MOV(res.value()));
             } else {
@@ -1270,9 +1268,8 @@ namespace vush {
             Sourced_Function_Param const& node = (Sourced_Function_Param const&)*stage.params[i];
             auto iter = source_definitions.find(node.source->value);
             ANTON_ASSERT(iter != source_definitions.end(), u8"sourced parameter doesn't have an existing source");
-            Sourced_Data data{node.type.get(), node.identifier.get(), node.source.get()};
             anton::String_View bind_string = iter->value.bind;
-            anton::Expected<anton::String, anton::String> res = format_bind_string(bind_string, data);
+            anton::Expected<anton::String, anton::String> res = format_bind_string(bind_string, *node.identifier, *node.type);
             if(!res) {
                 return {anton::expected_error, ANTON_MOV(res.error())};
             }
@@ -1349,21 +1346,21 @@ namespace vush {
                 // We have to make a lot of string copies so that we can expose the variables in the public api
 
                 anton::Array<Sourced_Variable> variables{anton::reserve, value.variables.size()};
-                for(Sourced_Data const& data: value.variables) {
-                    anton::String type = stringify_type(*data.type);
-                    variables.emplace_back(data.name->value, ANTON_MOV(type));
+                for(Sourced_Function_Param const* const data: value.variables) {
+                    anton::String type = stringify_type(*data->type);
+                    variables.emplace_back(data->identifier->value, ANTON_MOV(type));
                 }
 
                 anton::Array<Sourced_Variable> opaque_variables{anton::reserve, value.opaque_variables.size()};
-                for(Sourced_Data const& data: value.opaque_variables) {
-                    anton::String type = stringify_type(*data.type);
-                    opaque_variables.emplace_back(data.name->value, ANTON_MOV(type));
+                for(Sourced_Function_Param const* const data: value.opaque_variables) {
+                    anton::String type = stringify_type(*data->type);
+                    opaque_variables.emplace_back(data->identifier->value, ANTON_MOV(type));
                 }
 
                 anton::Array<Sourced_Variable> unsized_variables{anton::reserve, value.unsized_variables.size()};
-                for(Sourced_Data const& data: value.unsized_variables) {
-                    anton::String type = stringify_type(*data.type);
-                    unsized_variables.emplace_back(data.name->value, ANTON_MOV(type));
+                for(Sourced_Function_Param const* const data: value.unsized_variables) {
+                    anton::String type = stringify_type(*data->type);
+                    unsized_variables.emplace_back(data->identifier->value, ANTON_MOV(type));
                 }
 
                 anton::Slice<Setting_Key_Value const> skv;
