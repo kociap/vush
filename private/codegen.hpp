@@ -30,5 +30,5 @@ namespace vush {
         anton::Slice<Declaration const* const> structs_and_constants;
     };
 
-    anton::Expected<anton::Array<Pass_Data>, anton::String> generate_glsl(Context const& ctx, Format_Options const& format, Codegen_Data const& data);
+    anton::Expected<anton::Array<Pass_Data>, anton::String> generate_glsl(Context const& ctx, Codegen_Data const& data);
 } // namespace vush

@@ -13,7 +13,6 @@
 namespace vush {
     struct Codegen_Context {
         Context const& ctx;
-        Format_Options format;
         i64 indent;
     };
 
@@ -584,74 +583,65 @@ namespace vush {
             case AST_Node_Type::binary_expr: {
                 Binary_Expr& node = (Binary_Expr&)ast_node;
                 stringify(out, *node.lhs, ctx);
-                if(ctx.format.space_around_operators) {
-                    out += u8" ";
-                }
-
                 switch(node.type) {
                     case Binary_Expr_Type::logic_or:
-                        out += u8"||";
+                        out += u8" || ";
                         break;
                     case Binary_Expr_Type::logic_xor:
-                        out += u8"^^";
+                        out += u8" ^^ ";
                         break;
                     case Binary_Expr_Type::logic_and:
-                        out += u8"&&";
+                        out += u8" && ";
                         break;
                     case Binary_Expr_Type::equal:
-                        out += u8"==";
+                        out += u8" == ";
                         break;
                     case Binary_Expr_Type::unequal:
-                        out += u8"!=";
+                        out += u8" != ";
                         break;
                     case Binary_Expr_Type::greater_than:
-                        out += u8">";
+                        out += u8" > ";
                         break;
                     case Binary_Expr_Type::less_than:
-                        out += u8"<";
+                        out += u8" < ";
                         break;
                     case Binary_Expr_Type::greater_equal:
-                        out += u8">=";
+                        out += u8" >= ";
                         break;
                     case Binary_Expr_Type::less_equal:
-                        out += u8"<=";
+                        out += u8" <= ";
                         break;
                     case Binary_Expr_Type::bit_or:
-                        out += u8"|";
+                        out += u8" | ";
                         break;
                     case Binary_Expr_Type::bit_xor:
-                        out += u8"^";
+                        out += u8" ^ ";
                         break;
                     case Binary_Expr_Type::bit_and:
-                        out += u8"&";
+                        out += u8" & ";
                         break;
                     case Binary_Expr_Type::lshift:
-                        out += u8"<<";
+                        out += u8" << ";
                         break;
                     case Binary_Expr_Type::rshift:
-                        out += u8">>";
+                        out += u8" >> ";
                         break;
                     case Binary_Expr_Type::add:
-                        out += u8"+";
+                        out += u8" + ";
                         break;
                     case Binary_Expr_Type::sub:
-                        out += u8"-";
+                        out += u8" - ";
                         break;
                     case Binary_Expr_Type::mul:
-                        out += u8"*";
+                        out += u8" * ";
                         break;
                     case Binary_Expr_Type::div:
-                        out += u8"/";
+                        out += u8" / ";
                         break;
                     case Binary_Expr_Type::mod:
-                        out += u8"%";
+                        out += u8" % ";
                         break;
                 }
-
-                if(ctx.format.space_around_operators) {
-                    out += u8" ";
-                }
-
                 stringify(out, *node.rhs, ctx);
                 return;
             }
@@ -1287,8 +1277,8 @@ namespace vush {
         return {anton::expected_value, ANTON_MOV(out)};
     }
 
-    anton::Expected<anton::Array<Pass_Data>, anton::String> generate_glsl(Context const& ctx, Format_Options const& format, Codegen_Data const& data) {
-        Codegen_Context codegen_ctx{ctx, format, 0};
+    anton::Expected<anton::Array<Pass_Data>, anton::String> generate_glsl(Context const& ctx, Codegen_Data const& data) {
+        Codegen_Context codegen_ctx{ctx, 0};
         anton::String stringified_extensions;
         if(data.extensions.size() > 0) {
             for(Extension const& extension: data.extensions) {

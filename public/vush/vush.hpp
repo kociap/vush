@@ -13,10 +13,6 @@ namespace vush {
         i32 value;
     };
 
-    struct Format_Options {
-        bool space_around_operators = true;
-    };
-
     enum struct Extension_Behaviour { require, enable, warn, disable };
 
     struct Extension {
@@ -61,7 +57,6 @@ namespace vush {
         anton::Array<anton::String> import_directories;
         anton::Array<Constant_Define> defines;
         anton::Array<Extension> extensions;
-        Format_Options format;
         source_definition_callback source_definition_cb = nullptr;
         void* source_definition_user_data = nullptr;
     };

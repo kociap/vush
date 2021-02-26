@@ -2122,7 +2122,7 @@ namespace vush {
         }
 
         Codegen_Data codegen_data{config.extensions, settings, passes, functions, structs_and_constants};
-        anton::Expected<anton::Array<Pass_Data>, anton::String> codegen_res = generate_glsl(ctx, config.format, codegen_data);
+        anton::Expected<anton::Array<Pass_Data>, anton::String> codegen_res = generate_glsl(ctx, codegen_data);
         if(!codegen_res) {
             return {anton::expected_error, ANTON_MOV(codegen_res.error())};
         }
