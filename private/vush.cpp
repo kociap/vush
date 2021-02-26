@@ -433,7 +433,6 @@ namespace vush {
     }
 
     static anton::Expected<void, anton::String> process_expression(Context& ctx, Owning_Ptr<Expression>& expression) {
-        // TODO: Add other expression types
         switch(expression->node_type) {
             case AST_Node_Type::integer_literal: {
                 Owning_Ptr<Integer_Literal>& node = (Owning_Ptr<Integer_Literal>&)expression;
@@ -2012,8 +2011,8 @@ namespace vush {
 
             // Remove duplicates, validate there is no different-type-same-name sourced parameters, optimize layout
             for(auto& [source_name, data]: pass.sourced_data) {
-                // TODO: Use stable sort to preserve the order and report duplicates in the correct order.
-                anton::quick_sort(data.all.begin(), data.all.end(), [](Sourced_Function_Param const* lhs, Sourced_Function_Param const* rhs) {
+                // We use stable sort to preserve the order and report duplicates in the correct order
+                anton::merge_sort(data.all.begin(), data.all.end(), [](Sourced_Function_Param const* lhs, Sourced_Function_Param const* rhs) {
                     anton::String const& lhs_str = lhs->identifier->value;
                     anton::String const& rhs_str = rhs->identifier->value;
                     return anton::compare(lhs_str, rhs_str) == -1;
