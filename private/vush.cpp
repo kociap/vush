@@ -1068,7 +1068,7 @@ namespace vush {
                 case AST_Node_Type::struct_decl: {
                     Struct_Decl& node = static_cast<Struct_Decl&>(*ast_node);
                     if(node.members.size() == 0) {
-                        return {anton::expected_error, format_empty_struct(node.source_info)};
+                        return {anton::expected_error, format_empty_struct(ctx, node.source_info)};
                     }
 
                     ctx.symbols[0].emplace(node.identifier->value, &node);
@@ -1780,7 +1780,8 @@ namespace vush {
     // Does not fill the specialized Sourced_Data buffers in Pass_Context's, i.e. variables, opaque_variables and unsized_variables.
     // Performs validation of stages ensuring there are no duplicate stages.
     //
-    [[nodiscard]] static anton::Expected<void, anton::String> aggregate(Declaration_List& ast, anton::Array<Declaration*>& structs_and_constants,
+    [[nodiscard]] static anton::Expected<void, anton::String> aggregate(Context const& ctx, Declaration_List& ast,
+                                                                        anton::Array<Declaration*>& structs_and_constants,
                                                                         anton::Array<Function_Declaration*>& functions, anton::Array<Pass_Context>& passes,
                                                                         anton::Array<Owning_Ptr<Sourced_Function_Param>>& sourced_params) {
         for(auto& node: ast) {
@@ -1811,7 +1812,7 @@ namespace vush {
                             if(pass->vertex_stage) {
                                 Source_Info const& src1 = pass->vertex_stage->source_info;
                                 Source_Info const& src2 = pass_decl->source_info;
-                                return {anton::expected_error, format_duplicate_pass_stage_error(src1, src2, pass->name, Stage_Type::vertex)};
+                                return {anton::expected_error, format_duplicate_pass_stage_error(ctx, src1, src2, pass->name, Stage_Type::vertex)};
                             }
 
                             pass->vertex_stage = pass_decl;
@@ -1821,7 +1822,7 @@ namespace vush {
                             if(pass->fragment_stage) {
                                 Source_Info const& src1 = pass->vertex_stage->source_info;
                                 Source_Info const& src2 = pass_decl->source_info;
-                                return {anton::expected_error, format_duplicate_pass_stage_error(src1, src2, pass->name, Stage_Type::fragment)};
+                                return {anton::expected_error, format_duplicate_pass_stage_error(ctx, src1, src2, pass->name, Stage_Type::fragment)};
                             }
 
                             pass->fragment_stage = pass_decl;
@@ -1831,7 +1832,7 @@ namespace vush {
                             if(pass->compute_stage) {
                                 Source_Info const& src1 = pass->vertex_stage->source_info;
                                 Source_Info const& src2 = pass_decl->source_info;
-                                return {anton::expected_error, format_duplicate_pass_stage_error(src1, src2, pass->name, Stage_Type::compute)};
+                                return {anton::expected_error, format_duplicate_pass_stage_error(ctx, src1, src2, pass->name, Stage_Type::compute)};
                             }
 
                             pass->compute_stage = pass_decl;
@@ -2001,11 +2002,11 @@ namespace vush {
             // Validate that a pass has either a compute stage or a vertex stage and optionally a fragment stage
             if(!pass.compute_stage) {
                 if(!pass.vertex_stage) {
-                    return {anton::expected_error, format_missing_vertex_stage_error(pass.name)};
+                    return {anton::expected_error, format_missing_vertex_stage_error(ctx, pass.name)};
                 }
             } else {
                 if(pass.vertex_stage || pass.fragment_stage) {
-                    return {anton::expected_error, format_vertex_and_compute_stages_error(pass.name)};
+                    return {anton::expected_error, format_vertex_and_compute_stages_error(ctx, pass.name)};
                 }
             }
 
@@ -2088,6 +2089,7 @@ namespace vush {
         ctx.source_request_user_data = user_data;
         ctx.source_definition_cb = config.source_definition_cb;
         ctx.source_definition_user_data = config.source_definition_user_data;
+        ctx.extended_diagnostics = config.extended_diagnostics;
         // Add global scope
         ctx.symbols.emplace_back();
         // Create symbols for the constant defines passed via config
@@ -2113,7 +2115,7 @@ namespace vush {
         anton::Array<Declaration*> structs_and_constants;
         anton::Array<Pass_Context> passes;
         anton::Array<Owning_Ptr<Sourced_Function_Param>> sourced_params;
-        if(anton::Expected<void, anton::String> res = aggregate(ast, structs_and_constants, functions, passes, sourced_params); !res) {
+        if(anton::Expected<void, anton::String> res = aggregate(ctx, ast, structs_and_constants, functions, passes, sourced_params); !res) {
             return {anton::expected_error, ANTON_MOV(res.error())};
         }
 

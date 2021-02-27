@@ -59,6 +59,9 @@ namespace vush {
         anton::Array<Extension> extensions;
         source_definition_callback source_definition_cb = nullptr;
         void* source_definition_user_data = nullptr;
+        // Whether to provide extended diagnostic messages that include more thorough explanation
+        // of the error and source code snippets with the exact location highlighted
+        bool extended_diagnostics = true;
     };
 
     enum struct Stage_Type {
