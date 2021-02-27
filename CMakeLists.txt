@@ -3,8 +3,6 @@ include(FetchContent)
 
 project(vush)
 
-option(VUSH_BUILD_STANDALONE "build standalone compiler executable" OFF)
-
 string(FIND "${CMAKE_CXX_COMPILER}" "clang++" VUSH_COMPILER_CLANGPP)
 if(VUSH_COMPILER_CLANGPP GREATER -1)
     set(VUSH_COMPILER_CLANGPP ON)
@@ -60,11 +58,3 @@ target_sources(vush
     "${CMAKE_CURRENT_SOURCE_DIR}/public/vush/types.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/public/vush/vush.hpp"
 )
-
-# if(VUSH_BUILD_STANDALONE)
-if(ON)
-    add_executable(vush_standalone "private/main.cpp")
-    set_target_properties(vush_standalone PROPERTIES CXX_STANDARD 17 CXX_EXTENSIONS OFF)
-    target_compile_options(vush_standalone PRIVATE ${VUSH_COMPILE_FLAGS})
-    target_link_libraries(vush_standalone PRIVATE vush)
-endif()
