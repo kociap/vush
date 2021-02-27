@@ -2157,7 +2157,7 @@ namespace vush {
     }
 
     static anton::Expected<Source_Request_Result, anton::String> file_read_callback(anton::String const& path, void* user_data) {
-        anton::Slice<anton::String const>& import_directories = *reinterpret_cast<anton::Slice<anton::String const>*>(user_data);
+        anton::Slice<anton::String const> const& import_directories = *(anton::Slice<anton::String const> const*)user_data;
         anton::Expected<anton::String, anton::String> res = resolve_import_path(path, import_directories);
         if(!res) {
             return {anton::expected_error, ANTON_MOV(res.error())};
@@ -2177,8 +2177,7 @@ namespace vush {
         return {anton::expected_value, Source_Request_Result{ANTON_MOV(res.value()), ANTON_MOV(file_contents)}};
     }
 
-    anton::Expected<Build_Result, anton::String> compile_to_glsl(Configuration const& config) {
-        anton::Slice<anton::String const> import_directories{config.import_directories};
-        return compile_to_glsl(config, file_read_callback, &import_directories);
+    anton::Expected<Build_Result, anton::String> compile_to_glsl(Configuration const& config, anton::Slice<anton::String const> const& import_directories) {
+        return compile_to_glsl(config, file_read_callback, (void*)&import_directories);
     }
 } // namespace vush

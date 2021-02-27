@@ -6,6 +6,12 @@
 static anton::Expected<vush::Source_Definition, anton::String> source_definition_cb(vush::Source_Definition_Context const& sdc) {
     std::cout << "SOURCE CALLBACK\n";
     std::cout << sdc.pass_name.data() << "::" << sdc.source_name.data() << '\n';
+    for(auto const& var: sdc.variables) {
+        std::cout << var.type.data() << ' ' << var.name.data() << '\n';
+    }
+    for(auto const& var: sdc.opaque_variables) {
+        std::cout << var.type.data() << ' ' << var.name.data() << '\n';
+    }
     for(auto const& var: sdc.unsized_variables) {
         std::cout << var.type.data() << ' ' << var.name.data() << '\n';
     }
@@ -21,12 +27,11 @@ int main() {
                                              vush::Extension{anton::String{u8"GL_EXT_nonuniform_qualifier"}, vush::Extension_Behaviour::require}};
     vush::Configuration config;
     config.defines = ANTON_MOV(constant_defines);
-    config.import_directories = ANTON_MOV(import_directories);
     config.extensions = ANTON_MOV(extensions);
-    config.source_name = u8"C:/Users/An0num0us/Documents/vush2/build/shaders/test3.vush";
+    config.source_name = u8"C:/Users/An0num0us/Documents/vush2/build/shaders/diffuse.vush";
     config.source_definition_cb = source_definition_cb;
     auto t1 = std::chrono::high_resolution_clock::now();
-    anton::Expected<vush::Build_Result, anton::String> result = vush::compile_to_glsl(config);
+    anton::Expected<vush::Build_Result, anton::String> result = vush::compile_to_glsl(config, import_directories);
     auto t2 = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count();
     std::cout << "execution time " << duration << "ns\n";

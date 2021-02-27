@@ -54,7 +54,6 @@ namespace vush {
 
     struct Configuration {
         anton::String source_name;
-        anton::Array<anton::String> import_directories;
         anton::Array<Constant_Define> defines;
         anton::Array<Extension> extensions;
         source_definition_callback source_definition_cb = nullptr;
@@ -95,7 +94,6 @@ namespace vush {
     // compile_to_glsl
     // Compiles given vush shader to glsl shader.
     // Uses the callback to request sources.
-    // Does not use import_directories.
     //
     // Returns compiled glsl files or error message.
     //
@@ -108,5 +106,5 @@ namespace vush {
     //
     // Returns compiled glsl files or error message.
     //
-    anton::Expected<Build_Result, anton::String> compile_to_glsl(Configuration const& config);
+    anton::Expected<Build_Result, anton::String> compile_to_glsl(Configuration const& config, anton::Slice<anton::String const> const& import_directories);
 } // namespace vush
