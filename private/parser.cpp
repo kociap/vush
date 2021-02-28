@@ -1085,6 +1085,11 @@ namespace vush {
         Statement_List try_statement_list() {
             Statement_List statements;
             while(true) {
+                // Match empty statement ';'
+                if(_lexer.match(token_semicolon)) {
+                    continue;
+                }
+
                 if(Owning_Ptr block_statement = try_block_statement()) {
                     statements.emplace_back(ANTON_MOV(block_statement));
                     continue;
