@@ -1338,19 +1338,15 @@ namespace vush {
                 anton::Array<Sourced_Variable> variables{anton::reserve, value.variables.size()};
                 for(Sourced_Function_Param const* const data: value.variables) {
                     anton::String type = stringify_type(*data->type);
-                    variables.emplace_back(data->identifier->value, ANTON_MOV(type));
+                    bool const unsized = is_unsized_array(*data->type);
+                    variables.emplace_back(data->identifier->value, ANTON_MOV(type), unsized);
                 }
 
-                anton::Array<Sourced_Variable> opaque_variables{anton::reserve, value.opaque_variables.size()};
+                anton::Array<Sourced_Opaque_Variable> opaque_variables{anton::reserve, value.opaque_variables.size()};
                 for(Sourced_Function_Param const* const data: value.opaque_variables) {
                     anton::String type = stringify_type(*data->type);
-                    opaque_variables.emplace_back(data->identifier->value, ANTON_MOV(type));
-                }
-
-                anton::Array<Sourced_Variable> unsized_variables{anton::reserve, value.unsized_variables.size()};
-                for(Sourced_Function_Param const* const data: value.unsized_variables) {
-                    anton::String type = stringify_type(*data->type);
-                    unsized_variables.emplace_back(data->identifier->value, ANTON_MOV(type));
+                    bool const unsized = is_unsized_array(*data->type);
+                    opaque_variables.emplace_back(data->identifier->value, ANTON_MOV(type), unsized);
                 }
 
                 anton::Slice<Setting_Key_Value const> skv;
@@ -1358,7 +1354,7 @@ namespace vush {
                     skv = this_pass_settings->settings;
                 }
 
-                Source_Definition_Context src_def_ctx{pass.name, key, skv, variables, opaque_variables, unsized_variables, ctx.source_definition_user_data};
+                Source_Definition_Context src_def_ctx{pass.name, key, skv, variables, opaque_variables, ctx.source_definition_user_data};
                 anton::Expected<Source_Definition, anton::String> result = ctx.source_definition_cb(src_def_ctx);
                 if(result) {
                     source_definitions.emplace(key, ANTON_MOV(result.value()));

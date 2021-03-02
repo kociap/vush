@@ -10,7 +10,6 @@ namespace vush {
         anton::Array<Sourced_Function_Param const*> all;
         anton::Array<Sourced_Function_Param const*> variables;
         anton::Array<Sourced_Function_Param const*> opaque_variables;
-        anton::Array<Sourced_Function_Param const*> unsized_variables;
     };
 
     struct Pass_Context {

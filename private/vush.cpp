@@ -2043,13 +2043,10 @@ namespace vush {
                 // Copy Sourced_Function_Param's to specialized buffers
                 for(Sourced_Function_Param const* const p: data.all) {
                     bool const opaque = is_opaque_type(*p->type);
-                    bool const unsized = is_unsized_array(*p->type);
-                    if(!opaque && !unsized) {
+                    if(!opaque) {
                         data.variables.emplace_back(p);
-                    } else if(opaque && !unsized) {
-                        data.opaque_variables.emplace_back(p);
                     } else {
-                        data.unsized_variables.emplace_back(p);
+                        data.opaque_variables.emplace_back(p);
                     }
                 }
 

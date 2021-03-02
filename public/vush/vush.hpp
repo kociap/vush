@@ -23,6 +23,13 @@ namespace vush {
     struct Sourced_Variable {
         anton::String name;
         anton::String type;
+        bool unsized;
+    };
+
+    struct Sourced_Opaque_Variable {
+        anton::String name;
+        anton::String type;
+        bool unsized;
     };
 
     struct Source_Definition {
@@ -45,8 +52,7 @@ namespace vush {
         anton::String_View source_name;
         anton::Slice<Setting_Key_Value const> settings;
         anton::Slice<Sourced_Variable const> variables;
-        anton::Slice<Sourced_Variable const> opaque_variables;
-        anton::Slice<Sourced_Variable const> unsized_variables;
+        anton::Slice<Sourced_Opaque_Variable const> opaque_variables;
         void* user_data;
     };
 
