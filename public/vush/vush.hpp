@@ -29,6 +29,7 @@ namespace vush {
     struct Sourced_Opaque_Variable {
         anton::String name;
         anton::String type;
+        anton::String image_qualifier;
         bool unsized;
     };
 

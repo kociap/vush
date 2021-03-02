@@ -16,6 +16,7 @@ namespace vush {
     struct Type;
     struct Function_Param;
     struct Ordinary_Function_Param;
+    struct Image_Layout_Qualifier;
     struct Sourced_Function_Param;
     struct Vertex_Input_Param;
     struct Function_Declaration;

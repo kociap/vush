@@ -1339,14 +1339,20 @@ namespace vush {
                 for(Sourced_Function_Param const* const data: value.variables) {
                     anton::String type = stringify_type(*data->type);
                     bool const unsized = is_unsized_array(*data->type);
-                    variables.emplace_back(data->identifier->value, ANTON_MOV(type), unsized);
+                    Sourced_Variable variable{data->identifier->value, ANTON_MOV(type), unsized};
+                    variables.emplace_back(ANTON_MOV(variable));
                 }
 
                 anton::Array<Sourced_Opaque_Variable> opaque_variables{anton::reserve, value.opaque_variables.size()};
                 for(Sourced_Function_Param const* const data: value.opaque_variables) {
                     anton::String type = stringify_type(*data->type);
                     bool const unsized = is_unsized_array(*data->type);
-                    opaque_variables.emplace_back(data->identifier->value, ANTON_MOV(type), unsized);
+                    anton::String image_layout;
+                    if(data->image_layout) {
+                        image_layout = anton::String{stringify(data->image_layout->type)};
+                    }
+                    Sourced_Opaque_Variable variable{data->identifier->value, ANTON_MOV(type), ANTON_MOV(image_layout), unsized};
+                    opaque_variables.emplace_back(ANTON_MOV(variable));
                 }
 
                 anton::Slice<Setting_Key_Value const> skv;

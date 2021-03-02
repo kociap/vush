@@ -697,6 +697,89 @@ namespace vush {
         return type.node_type == AST_Node_Type::array_type && static_cast<Array_Type const&>(type).size;
     }
 
+    anton::String_View stringify(Image_Layout_Type type) {
+        switch(type) {
+            case Image_Layout_Type::rgba32f:
+                return u8"rgba32f";
+            case Image_Layout_Type::rgba16f:
+                return u8"rgba16f";
+            case Image_Layout_Type::rg32f:
+                return u8"rg32f";
+            case Image_Layout_Type::rg16f:
+                return u8"rg16f";
+            case Image_Layout_Type::r11f_g11f_b10f:
+                return u8"r11f_g11f_b10f";
+            case Image_Layout_Type::r32f:
+                return u8"r32f";
+            case Image_Layout_Type::r16f:
+                return u8"r16f";
+            case Image_Layout_Type::rgba16:
+                return u8"rgba16";
+            case Image_Layout_Type::rgb10_a2:
+                return u8"rgb10_a2";
+            case Image_Layout_Type::rgba8:
+                return u8"rgba8";
+            case Image_Layout_Type::rg16:
+                return u8"rg16";
+            case Image_Layout_Type::rg8:
+                return u8"rg8";
+            case Image_Layout_Type::r16:
+                return u8"r16";
+            case Image_Layout_Type::r8:
+                return u8"r8";
+            case Image_Layout_Type::rgba16_snorm:
+                return u8"rgba16_snorm";
+            case Image_Layout_Type::rgba8_snorm:
+                return u8"rgba8_snorm";
+            case Image_Layout_Type::rg16_snorm:
+                return u8"rg16_snorm";
+            case Image_Layout_Type::rg8_snorm:
+                return u8"rg8_snorm";
+            case Image_Layout_Type::r16_snorm:
+                return u8"r16_snorm";
+            case Image_Layout_Type::r8_snorm:
+                return u8"r8_snorm";
+            case Image_Layout_Type::rgba32i:
+                return u8"rgba32i";
+            case Image_Layout_Type::rgba16i:
+                return u8"rgba16i";
+            case Image_Layout_Type::rgba8i:
+                return u8"rgba8i";
+            case Image_Layout_Type::rg32i:
+                return u8"rg32i";
+            case Image_Layout_Type::rg16i:
+                return u8"rg16i";
+            case Image_Layout_Type::rg8i:
+                return u8"rg8i";
+            case Image_Layout_Type::r32i:
+                return u8"r32i";
+            case Image_Layout_Type::r16i:
+                return u8"r16i";
+            case Image_Layout_Type::r8i:
+                return u8"r8i";
+            case Image_Layout_Type::rgba32ui:
+                return u8"rgba32ui";
+            case Image_Layout_Type::rgba16ui:
+                return u8"rgba16ui";
+            case Image_Layout_Type::rgb10_a2ui:
+                return u8"rgb10_a2ui";
+            case Image_Layout_Type::rgba8ui:
+                return u8"rgba8ui";
+            case Image_Layout_Type::rg32ui:
+                return u8"rg32ui";
+            case Image_Layout_Type::rg16ui:
+                return u8"rg16ui";
+            case Image_Layout_Type::rg8ui:
+                return u8"rg8ui";
+            case Image_Layout_Type::r32ui:
+                return u8"r32ui";
+            case Image_Layout_Type::r16ui:
+                return u8"r16ui";
+            case Image_Layout_Type::r8ui:
+                return u8"r8ui";
+        }
+    }
+
     template<typename T>
     anton::Array<Owning_Ptr<T>> clone(anton::Array<Owning_Ptr<T>> const& array) {
         anton::Array<Owning_Ptr<T>> copy{anton::reserve, array.size()};
@@ -910,17 +993,33 @@ namespace vush {
         return new Ordinary_Function_Param(identifier->clone(), type->clone(), source_info);
     }
 
+    Owning_Ptr<Layout_Qualifier> Layout_Qualifier::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Image_Layout_Qualifier::Image_Layout_Qualifier(Image_Layout_Type type, Source_Info const& source_info)
+        : Layout_Qualifier(source_info, AST_Node_Type::image_layout_qualifier), type(type) {}
+
+    Owning_Ptr<Image_Layout_Qualifier> Image_Layout_Qualifier::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Image_Layout_Qualifier* Image_Layout_Qualifier::_clone() const {
+        return new Image_Layout_Qualifier(type, source_info);
+    }
+
     Sourced_Function_Param::Sourced_Function_Param(Owning_Ptr<Identifier> identifier, Owning_Ptr<Type> type, Owning_Ptr<Identifier> source,
-                                                   Source_Info const& source_info)
+                                                   Owning_Ptr<Image_Layout_Qualifier> image_layout, Source_Info const& source_info)
         : Function_Param(source_info, AST_Node_Type::sourced_function_param), type(ANTON_MOV(type)), identifier(ANTON_MOV(identifier)),
-          source(ANTON_MOV(source)) {}
+          source(ANTON_MOV(source)), image_layout(ANTON_MOV(image_layout)) {}
 
     Owning_Ptr<Sourced_Function_Param> Sourced_Function_Param::clone() const {
         return Owning_Ptr{_clone()};
     }
 
     Sourced_Function_Param* Sourced_Function_Param::_clone() const {
-        return new Sourced_Function_Param(identifier->clone(), type->clone(), source->clone(), source_info);
+        Owning_Ptr<Image_Layout_Qualifier> _image_layout = image_layout ? image_layout->clone() : nullptr;
+        return new Sourced_Function_Param(identifier->clone(), type->clone(), source->clone(), ANTON_MOV(_image_layout), source_info);
     }
 
     Vertex_Input_Param::Vertex_Input_Param(Owning_Ptr<Identifier> identifier, Owning_Ptr<Type> type, Source_Info const& source_info)

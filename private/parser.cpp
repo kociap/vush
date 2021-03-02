@@ -815,6 +815,61 @@ namespace vush {
             return nullptr;
         }
 
+        Owning_Ptr<Image_Layout_Qualifier> try_image_layout_qualifier() {
+            Image_Layout_Type qualifiers[] = {Image_Layout_Type::rgba32f,
+                                              Image_Layout_Type::rgba16f,
+                                              Image_Layout_Type::rg32f,
+                                              Image_Layout_Type::rg16f,
+                                              Image_Layout_Type::r11f_g11f_b10f,
+                                              Image_Layout_Type::r32f,
+                                              Image_Layout_Type::r16f,
+                                              Image_Layout_Type::rgba16,
+                                              Image_Layout_Type::rgb10_a2,
+                                              Image_Layout_Type::rgba8,
+                                              Image_Layout_Type::rg16,
+                                              Image_Layout_Type::rg8,
+                                              Image_Layout_Type::r16,
+                                              Image_Layout_Type::r8,
+                                              Image_Layout_Type::rgba16_snorm,
+                                              Image_Layout_Type::rgba8_snorm,
+                                              Image_Layout_Type::rg16_snorm,
+                                              Image_Layout_Type::rg8_snorm,
+                                              Image_Layout_Type::r16_snorm,
+                                              Image_Layout_Type::r8_snorm,
+                                              Image_Layout_Type::rgba32i,
+                                              Image_Layout_Type::rgba16i,
+                                              Image_Layout_Type::rgba8i,
+                                              Image_Layout_Type::rg32i,
+                                              Image_Layout_Type::rg16i,
+                                              Image_Layout_Type::rg8i,
+                                              Image_Layout_Type::r32i,
+                                              Image_Layout_Type::r16i,
+                                              Image_Layout_Type::r8i,
+                                              Image_Layout_Type::rgba32ui,
+                                              Image_Layout_Type::rgba16ui,
+                                              Image_Layout_Type::rgb10_a2ui,
+                                              Image_Layout_Type::rgba8ui,
+                                              Image_Layout_Type::rg32ui,
+                                              Image_Layout_Type::rg16ui,
+                                              Image_Layout_Type::rg8ui,
+                                              Image_Layout_Type::r32ui,
+                                              Image_Layout_Type::r16ui,
+                                              Image_Layout_Type::r8ui};
+
+            Lexer_State const state_backup = _lexer.get_current_state();
+            constexpr i64 array_size = sizeof(qualifiers) / sizeof(Image_Layout_Type);
+            for(i64 i = 0; i < array_size; ++i) {
+                anton::String_View const str = stringify(qualifiers[i]);
+                if(_lexer.match(str, true)) {
+                    Lexer_State const end_state = _lexer.get_current_state_no_skip();
+                    Source_Info const src = src_info(state_backup, end_state);
+                    return Owning_Ptr{new Image_Layout_Qualifier(qualifiers[i], src)};
+                }
+            }
+
+            return nullptr;
+        }
+
         Owning_Ptr<Pass_Stage_Declaration> try_pass_stage_declaration() {
             Lexer_State const state_backup = _lexer.get_current_state();
             anton::Array<Owning_Ptr<Function_Attribute>> attributes;
@@ -978,6 +1033,8 @@ namespace vush {
                 return param_if;
             }
 
+            Owning_Ptr image_layout = try_image_layout_qualifier();
+
             Owning_Ptr parameter_type = try_type();
             if(!parameter_type) {
                 set_error(u8"expected parameter type");
@@ -992,6 +1049,7 @@ namespace vush {
                 return nullptr;
             }
 
+            // TODO: Move validation into vush.cpp
             if(_lexer.match(kw_from, true)) {
                 if(!allow_sourced_params) {
                     set_error(u8"illegal sourced parameter declaration");
@@ -1006,13 +1064,20 @@ namespace vush {
                 } else if(Owning_Ptr source = try_identifier()) {
                     Lexer_State const end_state = _lexer.get_current_state_no_skip();
                     Source_Info const src = src_info(state_backup, end_state);
-                    return Owning_Ptr{new Sourced_Function_Param(ANTON_MOV(identifier), ANTON_MOV(parameter_type), ANTON_MOV(source), src)};
+                    return Owning_Ptr{
+                        new Sourced_Function_Param(ANTON_MOV(identifier), ANTON_MOV(parameter_type), ANTON_MOV(source), ANTON_MOV(image_layout), src)};
                 } else {
                     set_error(u8"expected parameter source after 'from'");
                     _lexer.restore_state(state_backup);
                     return nullptr;
                 }
             } else {
+                if(image_layout) {
+                    set_error(u8"illegal qualifier");
+                    _lexer.restore_state(state_backup);
+                    return nullptr;
+                }
+
                 Lexer_State const end_state = _lexer.get_current_state_no_skip();
                 Source_Info const src = src_info(state_backup, end_state);
                 return Owning_Ptr{new Ordinary_Function_Param(ANTON_MOV(identifier), ANTON_MOV(parameter_type), src)};

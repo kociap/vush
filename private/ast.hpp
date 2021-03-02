@@ -21,6 +21,7 @@ namespace vush {
         workgroup_attribute,
         function_param_if,
         ordinary_function_param,
+        image_layout_qualifier,
         sourced_function_param,
         vertex_input_param,
         function_declaration,
@@ -489,12 +490,79 @@ namespace vush {
         virtual Ordinary_Function_Param* _clone() const override;
     };
 
+    struct Layout_Qualifier: public AST_Node {
+        using AST_Node::AST_Node;
+
+        Owning_Ptr<Layout_Qualifier> clone() const;
+
+    private:
+        virtual Layout_Qualifier* _clone() const override = 0;
+    };
+
+    enum struct Image_Layout_Type {
+        rgba32f,
+        rgba16f,
+        rg32f,
+        rg16f,
+        r11f_g11f_b10f,
+        r32f,
+        r16f,
+        rgba16,
+        rgb10_a2,
+        rgba8,
+        rg16,
+        rg8,
+        r16,
+        r8,
+        rgba16_snorm,
+        rgba8_snorm,
+        rg16_snorm,
+        rg8_snorm,
+        r16_snorm,
+        r8_snorm,
+        rgba32i,
+        rgba16i,
+        rgba8i,
+        rg32i,
+        rg16i,
+        rg8i,
+        r32i,
+        r16i,
+        r8i,
+        rgba32ui,
+        rgba16ui,
+        rgb10_a2ui,
+        rgba8ui,
+        rg32ui,
+        rg16ui,
+        rg8ui,
+        r32ui,
+        r16ui,
+        r8ui,
+    };
+
+    [[nodiscard]] anton::String_View stringify(Image_Layout_Type type);
+
+    struct Image_Layout_Qualifier: public Layout_Qualifier {
+        Image_Layout_Type type;
+
+        Image_Layout_Qualifier(Image_Layout_Type type, Source_Info const& source_info);
+
+        Owning_Ptr<Image_Layout_Qualifier> clone() const;
+
+    private:
+        virtual Image_Layout_Qualifier* _clone() const override;
+    };
+
     struct Sourced_Function_Param: public Function_Param {
         Owning_Ptr<Type> type;
         Owning_Ptr<Identifier> identifier;
         Owning_Ptr<Identifier> source;
+        // nullptr if the qualifier is not present
+        Owning_Ptr<Image_Layout_Qualifier> image_layout;
 
-        Sourced_Function_Param(Owning_Ptr<Identifier> identifier, Owning_Ptr<Type> type, Owning_Ptr<Identifier> source, Source_Info const& source_info);
+        Sourced_Function_Param(Owning_Ptr<Identifier> identifier, Owning_Ptr<Type> type, Owning_Ptr<Identifier> source,
+                               Owning_Ptr<Image_Layout_Qualifier> image_layout, Source_Info const& source_info);
 
         Owning_Ptr<Sourced_Function_Param> clone() const;
 
