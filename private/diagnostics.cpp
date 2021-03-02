@@ -133,7 +133,7 @@ namespace vush {
         anton::String message = format_diagnostic_location(src);
         message += u8"ordinary parameters are not allowed on ";
         message += stringify(stage);
-        message += u8" stage";
+        message += u8" stage\n";
         if(ctx.extended_diagnostics) {
             anton::String const& source = ctx.source_registry.find(src.file_path)->value;
             print_source_snippet(message, source, src);
@@ -145,7 +145,7 @@ namespace vush {
         anton::String message = format_diagnostic_location(src);
         message += u8"vertex input parameters are not allowed on ";
         message += stringify(stage);
-        message += u8" stage";
+        message += u8" stage\n";
         if(ctx.extended_diagnostics) {
             anton::String const& source = ctx.source_registry.find(src.file_path)->value;
             print_source_snippet(message, source, src);
