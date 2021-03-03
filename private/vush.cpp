@@ -710,7 +710,20 @@ namespace vush {
                 return {anton::expected_value};
             }
 
-                // TODO: Add reinterpret_expr
+            case AST_Node_Type::reinterpret_expr: {
+                Owning_Ptr<Reinterpret_Expr>& node = (Owning_Ptr<Reinterpret_Expr>&)expression;
+                anton::Expected<void, anton::String> index_res = process_expression(ctx, node->index);
+                if(!index_res) {
+                    return {anton::expected_error, ANTON_MOV(index_res.error())};
+                }
+
+                anton::Expected<void, anton::String> source_res = process_expression(ctx, node->source);
+                if(!source_res) {
+                    return {anton::expected_error, ANTON_MOV(source_res.error())};
+                }
+
+                return {anton::expected_value};
+            }
 
             default:
                 return {anton::expected_value};
