@@ -1356,7 +1356,7 @@ namespace vush {
                 }
 
                 anton::Slice<Setting_Key_Value const> skv;
-                if(this_pass_settings) {
+                if(this_pass_settings != data.settings.end()) {
                     skv = this_pass_settings->settings;
                 }
 
