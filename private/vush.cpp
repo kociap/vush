@@ -943,66 +943,68 @@ namespace vush {
         return {anton::expected_value};
     }
 
-    // process_functions
-    // Validates function attributes, processes parameter lists and function bodies resolving any compiletime ifs.
+    // process_function
+    // Validates function attributes, processes the parameter list and function body resolving any compiletime ifs.
     // Does not add any symbols to the top level scope.
     //
-    static anton::Expected<void, anton::String> process_functions(Context& ctx, Declaration_List& ast) {
-        for(auto& ast_node: ast) {
-            if(ast_node->node_type == AST_Node_Type::function_declaration) {
-                Function_Declaration& fn = static_cast<Function_Declaration&>(*ast_node);
-                if(anton::Expected<void, anton::String> res = validate_function_attributes(ctx, fn); !res) {
-                    return res;
-                }
-
-                // Push new scope for the function body and parameters
-                push_scope(ctx);
-                if(anton::Expected<void, anton::String> res = process_fn_param_list(ctx, fn); !res) {
-                    return res;
-                }
-
-                if(anton::Expected<void, anton::String> res = process_statements(ctx, fn.body); !res) {
-                    return res;
-                }
-
-                pop_scope(ctx);
-            } else if(ast_node->node_type == AST_Node_Type::pass_stage_declaration) {
-                Pass_Stage_Declaration& fn = static_cast<Pass_Stage_Declaration&>(*ast_node);
-                // Validate the return types
-                switch(fn.stage) {
-                    case Stage_Type::compute: {
-                        // Return type of a compute stage must always be void
-                        Type& return_type = *fn.return_type;
-                        bool const return_type_is_void =
-                            return_type.node_type == AST_Node_Type::builtin_type && ((Builtin_Type&)return_type).type == Builtin_GLSL_Type::glsl_void;
-                        if(!return_type_is_void) {
-                            Source_Info const& src = return_type.source_info;
-                            return {anton::expected_error, format_compute_return_type_must_be_void(ctx, src)};
-                        }
-                    } break;
-
-                    default:
-                        // TODO: Add symbol lookup to ensure the return types actually exist
-                        break;
-                }
-
-                if(anton::Expected<void, anton::String> res = validate_function_attributes(ctx, fn); !res) {
-                    return res;
-                }
-
-                // Push new scope for the function body and parameters
-                push_scope(ctx);
-                if(anton::Expected<void, anton::String> res = process_fn_param_list(ctx, fn); !res) {
-                    return res;
-                }
-
-                if(anton::Expected<void, anton::String> res = process_statements(ctx, fn.body); !res) {
-                    return res;
-                }
-
-                pop_scope(ctx);
-            }
+    static anton::Expected<void, anton::String> process_function(Context& ctx, Function_Declaration& fn) {
+        if(anton::Expected<void, anton::String> res = validate_function_attributes(ctx, fn); !res) {
+            return res;
         }
+
+        // Push new scope for the function body and parameters
+        push_scope(ctx);
+        if(anton::Expected<void, anton::String> res = process_fn_param_list(ctx, fn); !res) {
+            return res;
+        }
+
+        if(anton::Expected<void, anton::String> res = process_statements(ctx, fn.body); !res) {
+            return res;
+        }
+
+        pop_scope(ctx);
+
+        return {anton::expected_value};
+    }
+
+    // process_function
+    // Validates function attributes, processes the parameter list and function body resolving any compiletime ifs.
+    // Does not add any symbols to the top level scope.
+    //
+    static anton::Expected<void, anton::String> process_function(Context& ctx, Pass_Stage_Declaration& fn) {
+        // Validate the return types
+        switch(fn.stage) {
+            case Stage_Type::compute: {
+                // Return type of a compute stage must always be void
+                Type& return_type = *fn.return_type;
+                bool const return_type_is_void =
+                    return_type.node_type == AST_Node_Type::builtin_type && ((Builtin_Type&)return_type).type == Builtin_GLSL_Type::glsl_void;
+                if(!return_type_is_void) {
+                    Source_Info const& src = return_type.source_info;
+                    return {anton::expected_error, format_compute_return_type_must_be_void(ctx, src)};
+                }
+            } break;
+
+            default:
+                // TODO: Add symbol lookup to ensure the return types actually exist
+                break;
+        }
+
+        if(anton::Expected<void, anton::String> res = validate_function_attributes(ctx, fn); !res) {
+            return res;
+        }
+
+        // Push new scope for the function body and parameters
+        push_scope(ctx);
+        if(anton::Expected<void, anton::String> res = process_fn_param_list(ctx, fn); !res) {
+            return res;
+        }
+
+        if(anton::Expected<void, anton::String> res = process_statements(ctx, fn.body); !res) {
+            return res;
+        }
+
+        pop_scope(ctx);
 
         return {anton::expected_value};
     }
@@ -1074,27 +1076,24 @@ namespace vush {
         return {anton::expected_value};
     }
 
-    static void gather_settings(Declaration_List& ast, anton::Array<Pass_Settings>& settings) {
-        for(auto& ast_node: ast) {
-            if(ast_node->node_type == AST_Node_Type::settings_decl) {
-                Settings_Decl& decl = static_cast<Settings_Decl&>(*ast_node);
-                Pass_Settings* pass_iter = anton::find_if(settings.begin(), settings.end(),
-                                                          [&pass_name = decl.pass_name->value](Pass_Settings const& v) { return v.pass_name == pass_name; });
-                if(pass_iter == settings.end()) {
-                    Pass_Settings& v = settings.emplace_back(Pass_Settings{decl.pass_name->value, {}});
-                    pass_iter = &v;
-                }
+    static void gather_settings(anton::Array<Pass_Settings>& settings, anton::Slice<Owning_Ptr<Settings_Decl> const> setting_declarations) {
+        for(auto& declaration: setting_declarations) {
+            Pass_Settings* pass_iter = anton::find_if(
+                settings.begin(), settings.end(), [&pass_name = declaration->pass_name->value](Pass_Settings const& v) { return v.pass_name == pass_name; });
+            if(pass_iter == settings.end()) {
+                Pass_Settings& v = settings.emplace_back(Pass_Settings{declaration->pass_name->value, {}});
+                pass_iter = &v;
+            }
 
-                anton::Array<Setting_Key_Value>& pass_settings = pass_iter->settings;
-                // N^2 loop to overwrite duplicates in the order of occurence
-                for(Setting_Key_Value const& kv_new: decl.settings) {
-                    auto end = pass_settings.end();
-                    auto i = anton::find_if(pass_settings.begin(), end, [&kv_new](Setting_Key_Value const& v) { return kv_new.key == v.key; });
-                    if(i != end) {
-                        i->value = kv_new.value;
-                    } else {
-                        pass_settings.emplace_back(kv_new);
-                    }
+            anton::Array<Setting_Key_Value>& pass_settings = pass_iter->settings;
+            // N^2 loop to overwrite duplicates in the order of occurence
+            for(Setting_Key_Value const& kv_new: declaration->settings) {
+                auto end = pass_settings.end();
+                auto i = anton::find_if(pass_settings.begin(), end, [&kv_new](Setting_Key_Value const& v) { return kv_new.key == v.key; });
+                if(i != end) {
+                    i->value = kv_new.value;
+                } else {
+                    pass_settings.emplace_back(kv_new);
                 }
             }
         }
@@ -1554,137 +1553,130 @@ namespace vush {
     }
 
     // perform_function_instantiations
-    // Searches the entire ast for Function_Call_Expression nodes that have unsized array arguments
+    // Searches all passes for Function_Call_Expression nodes that have unsized array arguments
     // and creates instances of the corresponding functions with those parameters removed and
     // all corresponding identifiers replaced.
     // Removes unsized array arguments from the Function_Call_Expression nodes.
     //
     // IMPORTANT:
     // This function performs 2 transformations on the ast that do NOT preserve the symbol table:
-    //  - Original functions are removed from the ast and replaced with instantiations.
-    //  - Unsized array parameters are removed from the instantiated functions.
+    //  - functions (instances) with symbols (the unsized arguments) that are undefined are created.
+    //  - function call expressions are renamed, but the corresponding functions are not added
+    //    to the symbol table.
     // After calling this function it is not safe to lookup non-global or function symbols anymore!
     //
-    static void perform_function_instantiations(Context& ctx, Declaration_List& ast) {
-        anton::Array<Owning_Ptr<Function_Declaration>> functions;
+    static void perform_function_instantiations(Context& ctx, anton::Slice<Pass_Context> const passes,
+                                                anton::Array<Owning_Ptr<Function_Declaration>>& functions) {
         anton::Array<Function_Call_Expression*> function_calls;
-        for(i64 i = 0; i < ast.size(); ++i) {
-            Owning_Ptr<AST_Node>& node = ast[i];
-            if(node->node_type == AST_Node_Type::function_declaration || node->node_type == AST_Node_Type::pass_stage_declaration) {
-                walk_nodes_and_aggregate_function_calls(function_calls, *node);
+        anton::Flat_Hash_Set<u64> instantiated_functions;
+        for(Pass_Context& pass: passes) {
+            if(pass.vertex_stage) {
+                walk_nodes_and_aggregate_function_calls(function_calls, *pass.vertex_stage);
             }
 
-            if(node->node_type == AST_Node_Type::function_declaration) {
-                Owning_Ptr<Function_Declaration>& fn = (Owning_Ptr<Function_Declaration>&)node;
-                // Only functions with unsized array parameters must be removed and instantiated.
-                // Check whether the function has anu unsized array parameters.
+            if(pass.fragment_stage) {
+                walk_nodes_and_aggregate_function_calls(function_calls, *pass.fragment_stage);
+            }
+
+            if(pass.compute_stage) {
+                walk_nodes_and_aggregate_function_calls(function_calls, *pass.compute_stage);
+            }
+
+            for(i64 i = 0; i < function_calls.size(); ++i) {
+                Function_Call_Expression& function_call = *function_calls[i];
+                Symbol* symbol = find_symbol(ctx, function_call.identifier->value);
+                // Builtin types do not have a symbol, but their constructors still produce function calls.
+                // Builtin functions do not have a symbol.
+                if(!symbol || symbol->node_type != Symbol_Type::function_declaration) {
+                    continue;
+                }
+
+                Function_Declaration& fn_template = (Function_Declaration&)*symbol;
+                anton::String stringified_signature = stringify_type(*fn_template.return_type) + fn_template.identifier->value;
+                anton::String instance_name = fn_template.identifier->value;
+                // Check whether the function requires instantiation, aka has any unsized array parameters.
+                // Stringify the signature and generate instance name.
                 bool requires_instantiation = false;
-                for(auto& parameter: fn->params) {
-                    Ordinary_Function_Param& param = (Ordinary_Function_Param&)*parameter;
+                for(i64 i = 0; i < fn_template.params.size(); ++i) {
+                    Ordinary_Function_Param& param = (Ordinary_Function_Param&)*fn_template.params[i];
+                    stringified_signature += stringify_type(*param.type);
                     if(is_unsized_array(*param.type)) {
+                        ANTON_ASSERT(function_call.arguments[i]->node_type == AST_Node_Type::identifier_expression,
+                                     "unsized array argument must be an identifier expression");
+                        Identifier_Expression& expr = (Identifier_Expression&)*function_call.arguments[i];
+                        instance_name += "_";
+                        instance_name += expr.identifier->value;
                         requires_instantiation = true;
-                        break;
                     }
                 }
 
-                if(requires_instantiation) {
-                    // Pull the function out of the ast into a different storage.
-                    // We don't want it to be codegened later on, but we need it for instantiation.
-                    functions.emplace_back(ANTON_MOV(fn));
-                    ast.erase(ast.begin() + i, ast.begin() + i + 1);
-                    --i;
+                if(!requires_instantiation) {
+                    pass.functions.emplace_back(&fn_template);
+                    continue;
                 }
-            }
-        }
 
-        anton::Flat_Hash_Set<u64> instantiated_functions;
-        for(i64 i = 0; i < function_calls.size(); ++i) {
-            Function_Call_Expression& function_call = *function_calls[i];
-            Symbol* symbol = find_symbol(ctx, function_call.identifier->value);
-            // Builtin types do not have a symbol, but their constructors still produce function calls
-            if(!symbol || symbol->node_type != Symbol_Type::function_declaration) {
-                continue;
-            }
+                // Rename the function call
+                function_call.identifier->value = instance_name;
 
-            Function_Declaration& fn_template = (Function_Declaration&)*symbol;
-            anton::String stringified_signature = stringify_type(*fn_template.return_type) + fn_template.identifier->value;
-            anton::String instance_name = fn_template.identifier->value;
-            // Check whether the function requires instantiation, aka has any unsized array parameters.
-            // Stringify the signature and generate instance name.
-            bool requires_instantiation = false;
-            for(i64 i = 0; i < fn_template.params.size(); ++i) {
-                Ordinary_Function_Param& param = (Ordinary_Function_Param&)*fn_template.params[i];
-                stringified_signature += stringify_type(*param.type);
-                if(is_unsized_array(*param.type)) {
-                    ANTON_ASSERT(function_call.arguments[i]->node_type == AST_Node_Type::identifier_expression,
-                                 "unsized array argument must be an identifier expression");
-                    Identifier_Expression& expr = (Identifier_Expression&)*function_call.arguments[i];
-                    instance_name += "_";
-                    instance_name += expr.identifier->value;
-                    requires_instantiation = true;
+                // Guard against multiple instantiations
+                u64 const signature_hash = anton::hash(stringified_signature);
+                auto iter = instantiated_functions.find(signature_hash);
+                if(iter != instantiated_functions.end()) {
+                    // Function already instantiated.
+                    // Remove the unsized array arguments from the function call.
+                    for(i64 i = 0, j = 0; i < fn_template.params.size(); ++i) {
+                        Ordinary_Function_Param& param = (Ordinary_Function_Param&)*fn_template.params[i];
+                        if(is_unsized_array(*param.type)) {
+                            auto arg_begin = function_call.arguments.begin();
+                            function_call.arguments.erase(arg_begin + j, arg_begin + j + 1);
+                        } else {
+                            ++j;
+                        }
+                    }
+
+                    continue;
                 }
-            }
 
-            if(!requires_instantiation) {
-                continue;
-            }
+                instantiated_functions.emplace(signature_hash);
 
-            // Rename the function call
-            function_call.identifier->value = instance_name;
+                Owning_Ptr<Function_Declaration> instance = fn_template.clone();
+                // Rename the instance
+                instance->identifier->value = instance_name;
+                // Build replacements table
+                anton::Array<Replacement_Rule> replacements;
+                for(i64 i = 0; i < instance->params.size(); ++i) {
+                    Ordinary_Function_Param& param = (Ordinary_Function_Param&)*instance->params[i];
+                    if(is_unsized_array(*param.type)) {
+                        ANTON_ASSERT(function_call.arguments[i]->node_type == AST_Node_Type::identifier_expression,
+                                     "unsized array argument must be an identifier expression");
+                        Identifier_Expression* argument = (Identifier_Expression*)function_call.arguments[i].get();
+                        replacements.emplace_back(param.identifier->value, argument);
+                    }
+                }
 
-            // Guard against multiple instantiations
-            u64 const signature_hash = anton::hash(stringified_signature);
-            auto iter = instantiated_functions.find(signature_hash);
-            if(iter != instantiated_functions.end()) {
-                // Function already instantiated.
-                // Remove the unsized array arguments from the function call.
-                for(i64 i = 0, j = 0; i < fn_template.params.size(); ++i) {
-                    Ordinary_Function_Param& param = (Ordinary_Function_Param&)*fn_template.params[i];
+                replace_identifier_expressions(instance, replacements);
+
+                // Remove the unsized array parameters and arguments from the instance and the function call
+                for(i64 i = 0; i < instance->params.size();) {
+                    Ordinary_Function_Param& param = (Ordinary_Function_Param&)*instance->params[i];
                     if(is_unsized_array(*param.type)) {
                         auto arg_begin = function_call.arguments.begin();
-                        function_call.arguments.erase(arg_begin + j, arg_begin + j + 1);
+                        function_call.arguments.erase(arg_begin + i, arg_begin + i + 1);
+                        auto param_begin = instance->params.begin();
+                        instance->params.erase(param_begin + i, param_begin + i + 1);
                     } else {
-                        ++j;
+                        ++i;
                     }
                 }
 
-                continue;
+                walk_nodes_and_aggregate_function_calls(function_calls, *instance);
+                pass.functions.emplace_back(instance.get());
+                functions.emplace_back(ANTON_MOV(instance));
             }
 
-            instantiated_functions.emplace(signature_hash);
-
-            Owning_Ptr<Function_Declaration> instance = fn_template.clone();
-            // Rename the instance
-            instance->identifier->value = instance_name;
-            // Build replacements table
-            anton::Array<Replacement_Rule> replacements;
-            for(i64 i = 0; i < instance->params.size(); ++i) {
-                Ordinary_Function_Param& param = (Ordinary_Function_Param&)*instance->params[i];
-                if(is_unsized_array(*param.type)) {
-                    ANTON_ASSERT(function_call.arguments[i]->node_type == AST_Node_Type::identifier_expression,
-                                 "unsized array argument must be an identifier expression");
-                    Identifier_Expression* argument = (Identifier_Expression*)function_call.arguments[i].get();
-                    replacements.emplace_back(param.identifier->value, argument);
-                }
-            }
-
-            replace_identifier_expressions(instance, replacements);
-
-            // Remove the unsized array parameters and arguments from the instance and the function call
-            for(i64 i = 0; i < instance->params.size();) {
-                Ordinary_Function_Param& param = (Ordinary_Function_Param&)*instance->params[i];
-                if(is_unsized_array(*param.type)) {
-                    auto arg_begin = function_call.arguments.begin();
-                    function_call.arguments.erase(arg_begin + i, arg_begin + i + 1);
-                    auto param_begin = instance->params.begin();
-                    instance->params.erase(param_begin + i, param_begin + i + 1);
-                } else {
-                    ++i;
-                }
-            }
-
-            walk_nodes_and_aggregate_function_calls(function_calls, *instance);
-            ast.emplace_back(ANTON_MOV(instance));
+            function_calls.clear();
+            // Passes are independent
+            instantiated_functions.clear();
         }
     }
 
@@ -1742,11 +1734,53 @@ namespace vush {
         }
     }
 
-    // build_ast_from_sources
-    // Parse sources, process imports and declaration ifs, validate functions, fold constants, extract settings
+    // partition_ast
+    // Moves nodes based on their type into arrays.
     //
-    [[nodiscard]] static anton::Expected<Declaration_List, anton::String> build_ast_from_sources(Context& ctx, anton::String const& path,
-                                                                                                 anton::Array<Pass_Settings>& settings) {
+    static void partition_ast(Declaration_List& ast, anton::Array<Owning_Ptr<Pass_Stage_Declaration>>& stages,
+                              anton::Array<Owning_Ptr<Function_Declaration>>& functions, anton::Array<Owning_Ptr<Declaration>>& structs_and_constants,
+                              anton::Array<Owning_Ptr<Settings_Decl>>& settings) {
+        for(auto& ast_node: ast) {
+            switch(ast_node->node_type) {
+                case AST_Node_Type::struct_decl:
+                case AST_Node_Type::constant_declaration: {
+                    Owning_Ptr<Declaration>& node = (Owning_Ptr<Declaration>&)ast_node;
+                    structs_and_constants.emplace_back(ANTON_MOV(node));
+                } break;
+
+                case AST_Node_Type::function_declaration: {
+                    Owning_Ptr<Function_Declaration>& node = (Owning_Ptr<Function_Declaration>&)ast_node;
+                    functions.emplace_back(ANTON_MOV(node));
+                } break;
+
+                case AST_Node_Type::pass_stage_declaration: {
+                    Owning_Ptr<Pass_Stage_Declaration>& node = (Owning_Ptr<Pass_Stage_Declaration>&)ast_node;
+                    stages.emplace_back(ANTON_MOV(node));
+                } break;
+
+                case AST_Node_Type::settings_decl: {
+                    Owning_Ptr<Settings_Decl>& node = (Owning_Ptr<Settings_Decl>&)ast_node;
+                    settings.emplace_back(ANTON_MOV(node));
+                }
+
+                default:
+                    break;
+            }
+        }
+    }
+
+    struct AST_Build_Result {
+        anton::Array<Pass_Settings> settings;
+        anton::Array<Owning_Ptr<Pass_Stage_Declaration>> stages;
+        anton::Array<Owning_Ptr<Function_Declaration>> functions;
+        anton::Array<Owning_Ptr<Declaration>> structs_and_constants;
+    };
+
+    // build_ast_from_sources
+    // Parse sources, process imports and declaration ifs, validate functions, fold constants, extract settings.
+    // Builds top-level symbol table.
+    //
+    [[nodiscard]] static anton::Expected<AST_Build_Result, anton::String> build_ast_from_sources(Context& ctx, anton::String const& path) {
         // Create symbols for the builtin glsl variables
         anton::Array<Owning_Ptr<Declaration>> builtin_variables;
         populate_builtin_glsl_variables(ctx, builtin_variables);
@@ -1778,108 +1812,122 @@ namespace vush {
             return {anton::expected_error, ANTON_MOV(res.error())};
         }
 
-        gather_settings(ast, settings);
-
         if(anton::Expected<void, anton::String> res = process_objects_and_populate_symbol_table(ctx, ast); !res) {
             return {anton::expected_error, ANTON_MOV(res.error())};
         }
 
-        if(anton::Expected<void, anton::String> res = process_functions(ctx, ast); !res) {
-            return {anton::expected_error, ANTON_MOV(res.error())};
-        }
+        AST_Build_Result result;
+        anton::Array<Owning_Ptr<Settings_Decl>> settings;
+        partition_ast(ast, result.stages, result.functions, result.structs_and_constants, settings);
+        gather_settings(result.settings, settings);
 
-        perform_function_instantiations(ctx, ast);
-
-        return {anton::expected_value, ANTON_MOV(ast)};
-    }
-
-    // aggregate
-    // Aggregates data for codegen and extracts unsized and opaque Sourced_Function_Param out of stages.
-    // Does not fill the specialized Sourced_Data buffers in Pass_Context's, i.e. variables, opaque_variables and unsized_variables.
-    // Performs validation of stages ensuring there are no duplicate stages.
-    //
-    [[nodiscard]] static anton::Expected<void, anton::String> aggregate(Context const& ctx, Declaration_List& ast,
-                                                                        anton::Array<Declaration*>& structs_and_constants,
-                                                                        anton::Array<Function_Declaration*>& functions, anton::Array<Pass_Context>& passes,
-                                                                        anton::Array<Owning_Ptr<Sourced_Function_Param>>& sourced_params) {
-        for(auto& node: ast) {
-            switch(node->node_type) {
-                case AST_Node_Type::struct_decl:
-                case AST_Node_Type::constant_declaration: {
-                    Declaration* decl = node.get();
-                    structs_and_constants.emplace_back(decl);
-                } break;
-
-                case AST_Node_Type::function_declaration: {
-                    Function_Declaration* fn = (Function_Declaration*)node.get();
-                    functions.emplace_back(fn);
-                } break;
-
-                case AST_Node_Type::pass_stage_declaration: {
-                    Pass_Stage_Declaration* pass_decl = (Pass_Stage_Declaration*)node.get();
-                    Pass_Context* pass =
-                        anton::find_if(passes.begin(), passes.end(), [pass_decl](Pass_Context const& v) { return v.name == pass_decl->pass->value; });
-                    if(pass == passes.end()) {
-                        Pass_Context& v = passes.emplace_back(Pass_Context{pass_decl->pass->value, {}});
-                        pass = &v;
-                    }
-
-                    // Ensure there is only 1 stage of each type
-                    switch(pass_decl->stage) {
-                        case Stage_Type::vertex: {
-                            if(pass->vertex_stage) {
-                                Source_Info const& src1 = pass->vertex_stage->source_info;
-                                Source_Info const& src2 = pass_decl->source_info;
-                                return {anton::expected_error, format_duplicate_pass_stage_error(ctx, src1, src2, pass->name, Stage_Type::vertex)};
-                            }
-
-                            pass->vertex_stage = pass_decl;
-                        } break;
-
-                        case Stage_Type::fragment: {
-                            if(pass->fragment_stage) {
-                                Source_Info const& src1 = pass->vertex_stage->source_info;
-                                Source_Info const& src2 = pass_decl->source_info;
-                                return {anton::expected_error, format_duplicate_pass_stage_error(ctx, src1, src2, pass->name, Stage_Type::fragment)};
-                            }
-
-                            pass->fragment_stage = pass_decl;
-                        } break;
-
-                        case Stage_Type::compute: {
-                            if(pass->compute_stage) {
-                                Source_Info const& src1 = pass->vertex_stage->source_info;
-                                Source_Info const& src2 = pass_decl->source_info;
-                                return {anton::expected_error, format_duplicate_pass_stage_error(ctx, src1, src2, pass->name, Stage_Type::compute)};
-                            }
-
-                            pass->compute_stage = pass_decl;
-                        } break;
-                    }
-
-                    Parameter_List& params = pass_decl->params;
-                    for(i64 i = 0; i < params.size(); ++i) {
-                        Owning_Ptr<Function_Param>& node = params[i];
-                        if(node->node_type == AST_Node_Type::sourced_function_param) {
-                            Sourced_Function_Param& param = (Sourced_Function_Param&)*node;
-                            auto iter = pass->sourced_data.find_or_emplace(param.source->value);
-                            iter->value.all.emplace_back(&param);
-                            if(is_unsized_array(*param.type) || is_opaque_type(*param.type)) {
-                                sourced_params.emplace_back(ANTON_MOV((Owning_Ptr<Sourced_Function_Param>&)params[i]));
-                                auto begin = params.begin();
-                                params.erase(begin + i, begin + i + 1);
-                                --i;
-                            }
-                        }
-                    }
-                } break;
-
-                default:
-                    break;
+        for(auto& fn: result.functions) {
+            anton::Expected<void, anton::String> res = process_function(ctx, *fn);
+            if(!res) {
+                return {anton::expected_error, ANTON_MOV(res.error())};
             }
         }
 
-        return {anton::expected_value};
+        for(auto& fn: result.stages) {
+            anton::Expected<void, anton::String> res = process_function(ctx, *fn);
+            if(!res) {
+                return {anton::expected_error, ANTON_MOV(res.error())};
+            }
+        }
+
+        return {anton::expected_value, ANTON_MOV(result)};
+    }
+
+    [[nodiscard]] static anton::Expected<anton::Array<Pass_Context>, anton::String>
+    build_pass_contexts(Context& ctx, anton::Slice<Owning_Ptr<Pass_Stage_Declaration> const> const stage_declarations) {
+        anton::Array<Pass_Context> passes;
+        for(auto const& stage_declaration: stage_declarations) {
+            Pass_Context* pass =
+                anton::find_if(passes.begin(), passes.end(), [&stage_declaration](Pass_Context const& v) { return v.name == stage_declaration->pass->value; });
+            if(pass == passes.end()) {
+                Pass_Context& v = passes.emplace_back(Pass_Context{stage_declaration->pass->value, {}, nullptr, nullptr, nullptr, {}, {}});
+                pass = &v;
+            }
+
+            // Ensure there is only 1 stage of each type
+            switch(stage_declaration->stage) {
+                case Stage_Type::vertex: {
+                    if(pass->vertex_stage) {
+                        Source_Info const& src1 = pass->vertex_stage->source_info;
+                        Source_Info const& src2 = stage_declaration->source_info;
+                        return {anton::expected_error, format_duplicate_pass_stage_error(ctx, src1, src2, pass->name, Stage_Type::vertex)};
+                    }
+
+                    pass->vertex_stage = stage_declaration.get();
+                } break;
+
+                case Stage_Type::fragment: {
+                    if(pass->fragment_stage) {
+                        Source_Info const& src1 = pass->vertex_stage->source_info;
+                        Source_Info const& src2 = stage_declaration->source_info;
+                        return {anton::expected_error, format_duplicate_pass_stage_error(ctx, src1, src2, pass->name, Stage_Type::fragment)};
+                    }
+
+                    pass->fragment_stage = stage_declaration.get();
+                } break;
+
+                case Stage_Type::compute: {
+                    if(pass->compute_stage) {
+                        Source_Info const& src1 = pass->vertex_stage->source_info;
+                        Source_Info const& src2 = stage_declaration->source_info;
+                        return {anton::expected_error, format_duplicate_pass_stage_error(ctx, src1, src2, pass->name, Stage_Type::compute)};
+                    }
+
+                    pass->compute_stage = stage_declaration.get();
+                } break;
+            }
+        }
+
+        return {anton::expected_value, ANTON_MOV(passes)};
+    }
+
+    // extract_sourced_parameters
+    // Removes unsized and opaque sourced parameters from the parameter list of all Pass_Stage_Declarations of all passes
+    // and moves them to a different storage.
+    //
+    // Returns:
+    // Array of the extracted unsized and opaque sourced parameters.
+    //
+    [[nodiscard]] static anton::Array<Owning_Ptr<Sourced_Function_Param>> extract_sourced_parameters(anton::Slice<Pass_Context> const passes) {
+        auto extract = [](anton::Array<Owning_Ptr<Sourced_Function_Param>>& sourced_params, Pass_Context& pass, Pass_Stage_Declaration& stage_declaration) {
+            Parameter_List& params = stage_declaration.params;
+            for(i64 i = 0; i < params.size(); ++i) {
+                Owning_Ptr<Function_Param>& node = params[i];
+                if(node->node_type == AST_Node_Type::sourced_function_param) {
+                    Sourced_Function_Param& param = (Sourced_Function_Param&)*node;
+                    auto iter = pass.sourced_data.find_or_emplace(param.source->value);
+                    iter->value.all.emplace_back(&param);
+                    if(is_unsized_array(*param.type) || is_opaque_type(*param.type)) {
+                        sourced_params.emplace_back(ANTON_MOV((Owning_Ptr<Sourced_Function_Param>&)node));
+                        auto begin = params.begin();
+                        params.erase(begin + i, begin + i + 1);
+                        --i;
+                    }
+                }
+            }
+        };
+
+        anton::Array<Owning_Ptr<Sourced_Function_Param>> sourced_params;
+        for(Pass_Context& pass: passes) {
+            if(pass.vertex_stage) {
+                extract(sourced_params, pass, *pass.vertex_stage);
+            }
+
+            if(pass.fragment_stage) {
+                extract(sourced_params, pass, *pass.fragment_stage);
+            }
+
+            if(pass.compute_stage) {
+                extract(sourced_params, pass, *pass.compute_stage);
+            }
+        }
+
+        return sourced_params;
     }
 
     struct Layout_Info {
@@ -2108,7 +2156,7 @@ namespace vush {
         // Add global scope
         ctx.symbols.emplace_back();
         // Create symbols for the constant defines passed via config
-        anton::Array<Owning_Ptr<Declaration>> constant_decls;
+        anton::Array<Owning_Ptr<Declaration>> constant_defines;
         for(Constant_Define const& define: config.defines) {
             Constant_Declaration* decl = new Constant_Declaration(Owning_Ptr{new Builtin_Type(Builtin_GLSL_Type::glsl_int, {config.source_name, 0, 0, 0})},
                                                                   Owning_Ptr{new Identifier(anton::String(define.name), {config.source_name, 0, 0, 0})},
@@ -2116,39 +2164,54 @@ namespace vush {
                                                                                                  Integer_Literal_Base::dec, {config.source_name, 0, 0, 0})},
                                                                   {config.source_name, 0, 0, 0});
             ctx.symbols[0].emplace(define.name, decl);
-            constant_decls.emplace_back(decl);
+            constant_defines.emplace_back(decl);
         }
 
-        anton::Array<Pass_Settings> settings;
-        anton::Expected<Declaration_List, anton::String> build_res = build_ast_from_sources(ctx, config.source_name, settings);
+        anton::Expected<AST_Build_Result, anton::String> build_res = build_ast_from_sources(ctx, config.source_name);
         if(!build_res) {
             return {anton::expected_error, ANTON_MOV(build_res.error())};
         }
 
-        Declaration_List& ast = build_res.value();
-        anton::Array<Function_Declaration*> functions;
-        anton::Array<Declaration*> structs_and_constants;
-        anton::Array<Pass_Context> passes;
-        anton::Array<Owning_Ptr<Sourced_Function_Param>> sourced_params;
-        if(anton::Expected<void, anton::String> res = aggregate(ctx, ast, structs_and_constants, functions, passes, sourced_params); !res) {
-            return {anton::expected_error, ANTON_MOV(res.error())};
+        AST_Build_Result& ast = build_res.value();
+        anton::Expected<anton::Array<Pass_Context>, anton::String> pass_build_res = build_pass_contexts(ctx, ast.stages);
+        if(!pass_build_res) {
+            return {anton::expected_error, ANTON_MOV(pass_build_res.error())};
         }
+
+        anton::Array<Pass_Context>& passes = pass_build_res.value();
+        // BREAKS THE SYMBOL TABLE!
+        // Make sure everything that requires the symbol table is done at this point.
+        perform_function_instantiations(ctx, passes, ast.functions);
+
+        // TODO: Temporary
+        // Copy structs and constants over to each pass regardless of whether they are used or not.
+        for(Pass_Context& pass: passes) {
+            for(auto& node: ast.structs_and_constants) {
+                pass.structs_and_constants.emplace_back(node.get());
+            }
+        }
+
+        // We want to remove the sourced parameters from all passes so that they are not
+        // passed down to codegen which doesn't know about them!.
+        // Store the sourced parameters so that they are valid until we generate glsl
+        // because the pointers are referenced by Pass_Context's sourced_data.
+        [[maybe_unused]] anton::Array<Owning_Ptr<Sourced_Function_Param>> const sourced_params = extract_sourced_parameters(passes);
 
         if(anton::Expected<void, anton::String> res = validate_and_optimize_passes(ctx, passes); !res) {
             return {anton::expected_error, ANTON_MOV(res.error())};
         }
 
-        Codegen_Data codegen_data{config.extensions, settings, passes, functions, structs_and_constants};
+        Codegen_Data codegen_data{config.extensions, ast.settings, passes};
         anton::Expected<anton::Array<Pass_Data>, anton::String> codegen_res = generate_glsl(ctx, codegen_data);
         if(!codegen_res) {
             return {anton::expected_error, ANTON_MOV(codegen_res.error())};
         }
 
-        return {anton::expected_value, Build_Result{ANTON_MOV(settings), ANTON_MOV(codegen_res.value())}};
+        return {anton::expected_value, Build_Result{ANTON_MOV(ast.settings), ANTON_MOV(codegen_res.value())}};
     }
 
-    static anton::Expected<anton::String, anton::String> resolve_import_path(anton::String const& import_path,
-                                                                             anton::Slice<anton::String const> const import_directories) {
+    [[nodiscard]] static anton::Expected<anton::String, anton::String> resolve_import_path(anton::String const& import_path,
+                                                                                           anton::Slice<anton::String const> const import_directories) {
         bool found = false;
         anton::String out_path;
         for(anton::String const& path: import_directories) {
@@ -2171,7 +2234,7 @@ namespace vush {
         }
     }
 
-    static anton::Expected<Source_Request_Result, anton::String> file_read_callback(anton::String const& path, void* user_data) {
+    [[nodiscard]] static anton::Expected<Source_Request_Result, anton::String> file_read_callback(anton::String const& path, void* user_data) {
         anton::Slice<anton::String const> const& import_directories = *(anton::Slice<anton::String const> const*)user_data;
         anton::Expected<anton::String, anton::String> res = resolve_import_path(path, import_directories);
         if(!res) {

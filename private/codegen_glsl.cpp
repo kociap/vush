@@ -1304,29 +1304,6 @@ namespace vush {
             stringified_extensions += U'\n';
         }
 
-        anton::String stringified_structs_and_consts;
-        if(data.structs_and_constants.size() > 0) {
-            for(Declaration const* const decl: data.structs_and_constants) {
-                stringify(stringified_structs_and_consts, *decl, codegen_ctx);
-            }
-
-            stringified_structs_and_consts += u8"\n";
-        }
-
-        anton::String stringified_functions;
-        if(data.functions.size() > 0) {
-            for(Function_Declaration const* const decl: data.functions) {
-                stringify_function_forward_decl(stringified_functions, *decl, codegen_ctx);
-            }
-
-            stringified_functions += u8"\n";
-
-            for(Function_Declaration const* const decl: data.functions) {
-                stringify(stringified_functions, *decl, codegen_ctx);
-                stringified_functions += u8"\n";
-            }
-        }
-
         anton::Array<Pass_Data> pass_datas;
         for(Pass_Context const& pass: data.passes) {
             Pass_Settings const* const this_pass_settings =
@@ -1370,9 +1347,36 @@ namespace vush {
             }
 
             anton::String stringified_sources;
-            for(auto [source, def]: source_definitions) {
-                stringified_sources += def.declaration;
-                stringified_sources += U'\n';
+            if(source_definitions.size() > 0) {
+                for(auto [source, def]: source_definitions) {
+                    stringified_sources += def.declaration;
+                    stringified_sources += U'\n';
+                }
+
+                stringified_sources += u8"\n";
+            }
+
+            anton::String stringified_functions;
+            if(pass.functions.size() > 0) {
+                for(Function_Declaration const* const decl: pass.functions) {
+                    stringify_function_forward_decl(stringified_functions, *decl, codegen_ctx);
+                }
+
+                stringified_functions += u8"\n";
+
+                for(Function_Declaration const* const decl: pass.functions) {
+                    stringify(stringified_functions, *decl, codegen_ctx);
+                    stringified_functions += u8"\n";
+                }
+            }
+
+            anton::String stringified_structs_and_consts;
+            if(pass.structs_and_constants.size() > 0) {
+                for(Declaration const* const decl: pass.structs_and_constants) {
+                    stringify(stringified_structs_and_consts, *decl, codegen_ctx);
+                }
+
+                stringified_structs_and_consts += u8"\n";
             }
 
             Pass_Data& pass_data = pass_datas.emplace_back(Pass_Data{pass.name, {}});
