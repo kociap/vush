@@ -8,12 +8,13 @@ namespace vush {
     enum struct Stage_Type;
     struct Source_Info;
     struct AST_Node;
-    struct Import_Decl;
+    struct Import_Declaration;
     struct Declaration;
     struct Statement;
     struct Expression;
     struct Identifier;
     struct Type;
+    struct Function_Attribute;
     struct Function_Param;
     struct Ordinary_Function_Param;
     struct Image_Layout_Qualifier;
@@ -27,4 +28,5 @@ namespace vush {
     using Declaration_List = anton::Array<Owning_Ptr<Declaration>>;
     using Statement_List = anton::Array<Owning_Ptr<Statement>>;
     using Parameter_List = anton::Array<Owning_Ptr<Function_Param>>;
+    using Attribute_List = anton::Array<Owning_Ptr<Function_Attribute>>;
 } // namespace vush

@@ -676,7 +676,7 @@ namespace vush {
             return anton::String(sv);
         } else if(type.node_type == AST_Node_Type::user_defined_type) {
             User_Defined_Type const& t = static_cast<User_Defined_Type const&>(type);
-            return t.name;
+            return t.identifier;
         } else {
             Array_Type const& t = static_cast<Array_Type const&>(type);
             anton::String str = stringify_type(*t.base);
@@ -819,15 +819,15 @@ namespace vush {
         return new Builtin_Type(type, source_info);
     }
 
-    User_Defined_Type::User_Defined_Type(anton::String name, Source_Info const& source_info)
-        : Type(source_info, AST_Node_Type::user_defined_type), name(ANTON_MOV(name)) {}
+    User_Defined_Type::User_Defined_Type(anton::String identifier, Source_Info const& source_info)
+        : Type(source_info, AST_Node_Type::user_defined_type), identifier(ANTON_MOV(identifier)) {}
 
     Owning_Ptr<User_Defined_Type> User_Defined_Type::clone() const {
         return Owning_Ptr{_clone()};
     }
 
     User_Defined_Type* User_Defined_Type::_clone() const {
-        return new User_Defined_Type(name, source_info);
+        return new User_Defined_Type(identifier, source_info);
     }
 
     Array_Type::Array_Type(Owning_Ptr<Type> base, Owning_Ptr<Integer_Literal> size, Source_Info const& source_info)
@@ -862,15 +862,15 @@ namespace vush {
         return new Declaration_If(condition->clone(), vush::clone(true_declarations), vush::clone(false_declarations), source_info);
     }
 
-    Import_Decl::Import_Decl(Owning_Ptr<String_Literal> path, Source_Info const& source_info)
-        : Declaration(source_info, AST_Node_Type::import_decl), path(ANTON_MOV(path)) {}
+    Import_Declaration::Import_Declaration(Owning_Ptr<String_Literal> path, Source_Info const& source_info)
+        : Declaration(source_info, AST_Node_Type::import_declaration), path(ANTON_MOV(path)) {}
 
-    Owning_Ptr<Import_Decl> Import_Decl::clone() const {
+    Owning_Ptr<Import_Declaration> Import_Declaration::clone() const {
         return Owning_Ptr{_clone()};
     }
 
-    Import_Decl* Import_Decl::_clone() const {
-        return new Import_Decl(path->clone(), source_info);
+    Import_Declaration* Import_Declaration::_clone() const {
+        return new Import_Declaration(path->clone(), source_info);
     }
 
     Variable_Declaration::Variable_Declaration(Owning_Ptr<Type> type, Owning_Ptr<Identifier> identifier, Owning_Ptr<Expression> initializer,
@@ -920,29 +920,29 @@ namespace vush {
         return new Struct_Member(type->clone(), identifier->clone(), initializer->clone(), interpolation, invariant, source_info);
     }
 
-    Struct_Decl::Struct_Decl(Owning_Ptr<Identifier> identifier, anton::Array<Owning_Ptr<Struct_Member>> members, Source_Info const& source_info)
-        : Declaration(source_info, AST_Node_Type::struct_decl), members(ANTON_MOV(members)), identifier(ANTON_MOV(identifier)) {}
+    Struct_Declaration::Struct_Declaration(Owning_Ptr<Identifier> identifier, anton::Array<Owning_Ptr<Struct_Member>> members, Source_Info const& source_info)
+        : Declaration(source_info, AST_Node_Type::struct_declaration), members(ANTON_MOV(members)), identifier(ANTON_MOV(identifier)) {}
 
-    Owning_Ptr<Struct_Decl> Struct_Decl::clone() const {
+    Owning_Ptr<Struct_Declaration> Struct_Declaration::clone() const {
         return Owning_Ptr{_clone()};
     }
 
-    Struct_Decl* Struct_Decl::_clone() const {
-        return new Struct_Decl(identifier->clone(), vush::clone(members), source_info);
+    Struct_Declaration* Struct_Declaration::_clone() const {
+        return new Struct_Declaration(identifier->clone(), vush::clone(members), source_info);
     }
 
-    Settings_Decl::Settings_Decl(Owning_Ptr<Identifier> pass_name, Source_Info const& source_info)
-        : Declaration(source_info, AST_Node_Type::settings_decl), pass_name(ANTON_MOV(pass_name)) {}
+    Settings_Declaration::Settings_Declaration(Owning_Ptr<Identifier> pass_name, Source_Info const& source_info)
+        : Declaration(source_info, AST_Node_Type::settings_declaration), pass_name(ANTON_MOV(pass_name)) {}
 
-    Settings_Decl::Settings_Decl(Owning_Ptr<Identifier> pass_name, anton::Array<Setting_Key_Value> settings, Source_Info const& source_info)
-        : Declaration(source_info, AST_Node_Type::settings_decl), pass_name(ANTON_MOV(pass_name)), settings(ANTON_MOV(settings)) {}
+    Settings_Declaration::Settings_Declaration(Owning_Ptr<Identifier> pass_name, anton::Array<Setting_Key_Value> settings, Source_Info const& source_info)
+        : Declaration(source_info, AST_Node_Type::settings_declaration), pass_name(ANTON_MOV(pass_name)), settings(ANTON_MOV(settings)) {}
 
-    Owning_Ptr<Settings_Decl> Settings_Decl::clone() const {
+    Owning_Ptr<Settings_Declaration> Settings_Declaration::clone() const {
         return Owning_Ptr{_clone()};
     }
 
-    Settings_Decl* Settings_Decl::_clone() const {
-        return new Settings_Decl(pass_name->clone(), settings, source_info);
+    Settings_Declaration* Settings_Declaration::_clone() const {
+        return new Settings_Declaration(pass_name->clone(), settings, source_info);
     }
 
     Owning_Ptr<Function_Attribute> Function_Attribute::clone() const {
@@ -1033,9 +1033,8 @@ namespace vush {
         return new Vertex_Input_Param(identifier->clone(), type->clone(), source_info);
     }
 
-    Function_Declaration::Function_Declaration(anton::Array<Owning_Ptr<Function_Attribute>> attributes, Owning_Ptr<Type> return_type,
-                                               Owning_Ptr<Identifier> identifier, anton::Array<Owning_Ptr<Function_Param>> params, Statement_List body,
-                                               Source_Info const& source_info)
+    Function_Declaration::Function_Declaration(Attribute_List attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> identifier,
+                                               Parameter_List params, Statement_List body, Source_Info const& source_info)
         : Declaration(source_info, AST_Node_Type::function_declaration), params(ANTON_MOV(params)), attributes(ANTON_MOV(attributes)),
           identifier(ANTON_MOV(identifier)), return_type(ANTON_MOV(return_type)), body(ANTON_MOV(body)) {}
 
@@ -1048,18 +1047,17 @@ namespace vush {
                                         source_info);
     }
 
-    Pass_Stage_Declaration::Pass_Stage_Declaration(anton::Array<Owning_Ptr<Function_Attribute>> attributes, Owning_Ptr<Type> return_type,
-                                                   Owning_Ptr<Identifier> pass, Stage_Type stage, anton::Array<Owning_Ptr<Function_Param>> params,
-                                                   Statement_List body, Source_Info const& source_info)
+    Pass_Stage_Declaration::Pass_Stage_Declaration(Attribute_List attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> pass_name,
+                                                   Stage_Type stage_type, Parameter_List params, Statement_List body, Source_Info const& source_info)
         : Declaration(source_info, AST_Node_Type::pass_stage_declaration), params(ANTON_MOV(params)), attributes(ANTON_MOV(attributes)), body(ANTON_MOV(body)),
-          pass(ANTON_MOV(pass)), return_type(ANTON_MOV(return_type)), stage(ANTON_MOV(stage)) {}
+          pass_name(ANTON_MOV(pass_name)), return_type(ANTON_MOV(return_type)), stage_type(ANTON_MOV(stage_type)) {}
 
     Owning_Ptr<Pass_Stage_Declaration> Pass_Stage_Declaration::clone() const {
         return Owning_Ptr{_clone()};
     }
 
     Pass_Stage_Declaration* Pass_Stage_Declaration::_clone() const {
-        return new Pass_Stage_Declaration(vush::clone(attributes), return_type->clone(), pass->clone(), stage, vush::clone(params), vush::clone(body),
+        return new Pass_Stage_Declaration(vush::clone(attributes), return_type->clone(), pass_name->clone(), stage_type, vush::clone(params), vush::clone(body),
                                           source_info);
     }
 
@@ -1067,17 +1065,17 @@ namespace vush {
         return Owning_Ptr{_clone()};
     }
 
-    Expression_If::Expression_If(Owning_Ptr<Expression> condition, Owning_Ptr<Expression> true_expr, Owning_Ptr<Expression> false_expr,
+    Expression_If::Expression_If(Owning_Ptr<Expression> condition, Owning_Ptr<Expression> true_expression, Owning_Ptr<Expression> false_expression,
                                  Source_Info const& source_info)
-        : Expression(source_info, AST_Node_Type::expression_if), condition(ANTON_MOV(condition)), true_expr(ANTON_MOV(true_expr)),
-          false_expr(ANTON_MOV(false_expr)) {}
+        : Expression(source_info, AST_Node_Type::expression_if), condition(ANTON_MOV(condition)), true_expression(ANTON_MOV(true_expression)),
+          false_expression(ANTON_MOV(false_expression)) {}
 
     Owning_Ptr<Expression_If> Expression_If::clone() const {
         return Owning_Ptr{_clone()};
     }
 
     Expression_If* Expression_If::_clone() const {
-        return new Expression_If(condition->clone(), true_expr->clone(), false_expr->clone(), source_info);
+        return new Expression_If(condition->clone(), true_expression->clone(), false_expression->clone(), source_info);
     }
 
     Identifier_Expression::Identifier_Expression(Owning_Ptr<Identifier> identifier, Source_Info const& source_info)
@@ -1114,28 +1112,28 @@ namespace vush {
         return new Arithmetic_Assignment_Expression(type, lhs->clone(), rhs->clone(), source_info);
     }
 
-    Elvis_Expr::Elvis_Expr(Owning_Ptr<Expression> condition, Owning_Ptr<Expression> true_expr, Owning_Ptr<Expression> false_expr,
-                           Source_Info const& source_info)
-        : Expression(source_info, AST_Node_Type::elvis_expr), condition(ANTON_MOV(condition)), true_expr(ANTON_MOV(true_expr)),
-          false_expr(ANTON_MOV(false_expr)) {}
+    Elvis_Expression::Elvis_Expression(Owning_Ptr<Expression> condition, Owning_Ptr<Expression> true_expression, Owning_Ptr<Expression> false_expression,
+                                       Source_Info const& source_info)
+        : Expression(source_info, AST_Node_Type::elvis_expression), condition(ANTON_MOV(condition)), true_expression(ANTON_MOV(true_expression)),
+          false_expression(ANTON_MOV(false_expression)) {}
 
-    Owning_Ptr<Elvis_Expr> Elvis_Expr::clone() const {
+    Owning_Ptr<Elvis_Expression> Elvis_Expression::clone() const {
         return Owning_Ptr{_clone()};
     }
 
-    Elvis_Expr* Elvis_Expr::_clone() const {
-        return new Elvis_Expr(condition->clone(), true_expr->clone(), false_expr->clone(), source_info);
+    Elvis_Expression* Elvis_Expression::_clone() const {
+        return new Elvis_Expression(condition->clone(), true_expression->clone(), false_expression->clone(), source_info);
     }
 
-    Binary_Expr::Binary_Expr(Binary_Expr_Type type, Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info)
-        : Expression(source_info, AST_Node_Type::binary_expr), lhs(ANTON_MOV(lhs)), rhs(ANTON_MOV(rhs)), type(type) {}
+    Binary_Expression::Binary_Expression(Binary_Expression_Type type, Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info)
+        : Expression(source_info, AST_Node_Type::binary_expression), lhs(ANTON_MOV(lhs)), rhs(ANTON_MOV(rhs)), type(type) {}
 
-    Owning_Ptr<Binary_Expr> Binary_Expr::clone() const {
+    Owning_Ptr<Binary_Expression> Binary_Expression::clone() const {
         return Owning_Ptr{_clone()};
     }
 
-    Binary_Expr* Binary_Expr::_clone() const {
-        return new Binary_Expr(type, lhs->clone(), rhs->clone(), source_info);
+    Binary_Expression* Binary_Expression::_clone() const {
+        return new Binary_Expression(type, lhs->clone(), rhs->clone(), source_info);
     }
 
     Unary_Expression::Unary_Expression(Unary_Type type, Owning_Ptr<Expression> expression, Source_Info const& source_info)
@@ -1149,31 +1147,31 @@ namespace vush {
         return new Unary_Expression(type, expression->clone(), source_info);
     }
 
-    Prefix_Inc_Expr::Prefix_Inc_Expr(Owning_Ptr<Expression> expression, Source_Info const& source_info)
-        : Expression(source_info, AST_Node_Type::prefix_inc_expr), expression(ANTON_MOV(expression)) {}
+    Prefix_Increment_Expression::Prefix_Increment_Expression(Owning_Ptr<Expression> expression, Source_Info const& source_info)
+        : Expression(source_info, AST_Node_Type::prefix_increment_expression), expression(ANTON_MOV(expression)) {}
 
-    Owning_Ptr<Prefix_Inc_Expr> Prefix_Inc_Expr::clone() const {
+    Owning_Ptr<Prefix_Increment_Expression> Prefix_Increment_Expression::clone() const {
         return Owning_Ptr{_clone()};
     }
 
-    Prefix_Inc_Expr* Prefix_Inc_Expr::_clone() const {
-        return new Prefix_Inc_Expr(expression->clone(), source_info);
+    Prefix_Increment_Expression* Prefix_Increment_Expression::_clone() const {
+        return new Prefix_Increment_Expression(expression->clone(), source_info);
     }
 
-    Prefix_Dec_Expr::Prefix_Dec_Expr(Owning_Ptr<Expression> expression, Source_Info const& source_info)
-        : Expression(source_info, AST_Node_Type::prefix_dec_expr), expression(ANTON_MOV(expression)) {}
+    Prefix_Decrement_Expression::Prefix_Decrement_Expression(Owning_Ptr<Expression> expression, Source_Info const& source_info)
+        : Expression(source_info, AST_Node_Type::prefix_decrement_expression), expression(ANTON_MOV(expression)) {}
 
-    Owning_Ptr<Prefix_Dec_Expr> Prefix_Dec_Expr::clone() const {
+    Owning_Ptr<Prefix_Decrement_Expression> Prefix_Decrement_Expression::clone() const {
         return Owning_Ptr{_clone()};
     }
 
-    Prefix_Dec_Expr* Prefix_Dec_Expr::_clone() const {
-        return new Prefix_Dec_Expr(expression->clone(), source_info);
+    Prefix_Decrement_Expression* Prefix_Decrement_Expression::_clone() const {
+        return new Prefix_Decrement_Expression(expression->clone(), source_info);
     }
 
     Function_Call_Expression::Function_Call_Expression(Owning_Ptr<Identifier> identifier, anton::Array<Owning_Ptr<Expression>> arguments,
                                                        Source_Info const& source_info)
-        : Expression(source_info, AST_Node_Type::function_call_expression), identifier(ANTON_MOV(identifier)), arguments(ANTON_MOV(arguments)) {}
+        : Expression(source_info, AST_Node_Type::function_call_expression), arguments(ANTON_MOV(arguments)), identifier(ANTON_MOV(identifier)) {}
 
     Owning_Ptr<Function_Call_Expression> Function_Call_Expression::clone() const {
         return Owning_Ptr{_clone()};
@@ -1205,49 +1203,50 @@ namespace vush {
         return new Array_Access_Expression(base->clone(), index->clone(), source_info);
     }
 
-    Postfix_Inc_Expr::Postfix_Inc_Expr(Owning_Ptr<Expression> expression, Source_Info const& source_info)
-        : Expression(source_info, AST_Node_Type::postfix_inc_expr), expression(ANTON_MOV(expression)) {}
+    Postfix_Increment_Expression::Postfix_Increment_Expression(Owning_Ptr<Expression> expression, Source_Info const& source_info)
+        : Expression(source_info, AST_Node_Type::postfix_increment_expression), expression(ANTON_MOV(expression)) {}
 
-    Owning_Ptr<Postfix_Inc_Expr> Postfix_Inc_Expr::clone() const {
+    Owning_Ptr<Postfix_Increment_Expression> Postfix_Increment_Expression::clone() const {
         return Owning_Ptr{_clone()};
     }
 
-    Postfix_Inc_Expr* Postfix_Inc_Expr::_clone() const {
-        return new Postfix_Inc_Expr(expression->clone(), source_info);
+    Postfix_Increment_Expression* Postfix_Increment_Expression::_clone() const {
+        return new Postfix_Increment_Expression(expression->clone(), source_info);
     }
 
-    Postfix_Dec_Expr::Postfix_Dec_Expr(Owning_Ptr<Expression> expression, Source_Info const& source_info)
-        : Expression(source_info, AST_Node_Type::postfix_dec_expr), expression(ANTON_MOV(expression)) {}
+    Postfix_Decrement_Expression::Postfix_Decrement_Expression(Owning_Ptr<Expression> expression, Source_Info const& source_info)
+        : Expression(source_info, AST_Node_Type::postfix_decrement_expression), expression(ANTON_MOV(expression)) {}
 
-    Owning_Ptr<Postfix_Dec_Expr> Postfix_Dec_Expr::clone() const {
+    Owning_Ptr<Postfix_Decrement_Expression> Postfix_Decrement_Expression::clone() const {
         return Owning_Ptr{_clone()};
     }
 
-    Postfix_Dec_Expr* Postfix_Dec_Expr::_clone() const {
-        return new Postfix_Dec_Expr(expression->clone(), source_info);
+    Postfix_Decrement_Expression* Postfix_Decrement_Expression::_clone() const {
+        return new Postfix_Decrement_Expression(expression->clone(), source_info);
     }
 
-    Paren_Expr::Paren_Expr(Owning_Ptr<Expression> expression, Source_Info const& source_info)
-        : Expression(source_info, AST_Node_Type::paren_expr), expression(ANTON_MOV(expression)) {}
+    Parenthesised_Expression::Parenthesised_Expression(Owning_Ptr<Expression> expression, Source_Info const& source_info)
+        : Expression(source_info, AST_Node_Type::parenthesised_expression), expression(ANTON_MOV(expression)) {}
 
-    Owning_Ptr<Paren_Expr> Paren_Expr::clone() const {
+    Owning_Ptr<Parenthesised_Expression> Parenthesised_Expression::clone() const {
         return Owning_Ptr{_clone()};
     }
 
-    Paren_Expr* Paren_Expr::_clone() const {
-        return new Paren_Expr(expression->clone(), source_info);
+    Parenthesised_Expression* Parenthesised_Expression::_clone() const {
+        return new Parenthesised_Expression(expression->clone(), source_info);
     }
 
-    Reinterpret_Expr::Reinterpret_Expr(Owning_Ptr<Type> target_type, Owning_Ptr<Expression> source, Owning_Ptr<Expression> index,
-                                       Source_Info const& source_info)
-        : Expression(source_info, AST_Node_Type::reinterpret_expr), target_type(ANTON_MOV(target_type)), source(ANTON_MOV(source)), index(ANTON_MOV(index)) {}
+    Reinterpret_Expression::Reinterpret_Expression(Owning_Ptr<Type> target_type, Owning_Ptr<Expression> source, Owning_Ptr<Expression> index,
+                                                   Source_Info const& source_info)
+        : Expression(source_info, AST_Node_Type::reinterpret_expression), target_type(ANTON_MOV(target_type)), source(ANTON_MOV(source)),
+          index(ANTON_MOV(index)) {}
 
-    Owning_Ptr<Reinterpret_Expr> Reinterpret_Expr::clone() const {
+    Owning_Ptr<Reinterpret_Expression> Reinterpret_Expression::clone() const {
         return Owning_Ptr{_clone()};
     }
 
-    Reinterpret_Expr* Reinterpret_Expr::_clone() const {
-        return new Reinterpret_Expr(target_type->clone(), source->clone(), index->clone(), source_info);
+    Reinterpret_Expression* Reinterpret_Expression::_clone() const {
+        return new Reinterpret_Expression(target_type->clone(), source->clone(), index->clone(), source_info);
     }
 
     String_Literal::String_Literal(anton::String value, Source_Info const& source_info)
@@ -1343,15 +1342,15 @@ namespace vush {
         return new Default_Case_Statement(vush::clone(statements), source_info);
     }
 
-    Switch_Statement::Switch_Statement(Owning_Ptr<Expression> match_expr, Statement_List cases, Source_Info const& source_info)
-        : Statement(source_info, AST_Node_Type::switch_statement), cases(ANTON_MOV(cases)), match_expr(ANTON_MOV(match_expr)) {}
+    Switch_Statement::Switch_Statement(Owning_Ptr<Expression> match_expression, Statement_List cases, Source_Info const& source_info)
+        : Statement(source_info, AST_Node_Type::switch_statement), cases(ANTON_MOV(cases)), match_expression(ANTON_MOV(match_expression)) {}
 
     Owning_Ptr<Switch_Statement> Switch_Statement::clone() const {
         return Owning_Ptr{_clone()};
     }
 
     Switch_Statement* Switch_Statement::_clone() const {
-        return new Switch_Statement(match_expr->clone(), vush::clone(cases), source_info);
+        return new Switch_Statement(match_expression->clone(), vush::clone(cases), source_info);
     }
 
     For_Statement::For_Statement(Owning_Ptr<Variable_Declaration> declaration, Owning_Ptr<Expression> condition, Owning_Ptr<Expression> post_expression,
@@ -1389,16 +1388,16 @@ namespace vush {
         return new Do_While_Statement(condition->clone(), vush::clone(statements), source_info);
     }
 
-    Return_Statement::Return_Statement(Owning_Ptr<Expression> return_expr, Source_Info const& source_info)
-        : Statement(source_info, AST_Node_Type::return_statement), return_expr(ANTON_MOV(return_expr)) {}
+    Return_Statement::Return_Statement(Owning_Ptr<Expression> return_expression, Source_Info const& source_info)
+        : Statement(source_info, AST_Node_Type::return_statement), return_expression(ANTON_MOV(return_expression)) {}
 
     Owning_Ptr<Return_Statement> Return_Statement::clone() const {
         return Owning_Ptr{_clone()};
     }
 
     Return_Statement* Return_Statement::_clone() const {
-        if(return_expr) {
-            return new Return_Statement(return_expr->clone(), source_info);
+        if(return_expression) {
+            return new Return_Statement(return_expression->clone(), source_info);
         } else {
             return new Return_Statement(nullptr, source_info);
         }

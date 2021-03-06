@@ -32,17 +32,17 @@ namespace vush {
         switch(type.node_type) {
             case AST_Node_Type::user_defined_type: {
                 User_Defined_Type& t = (User_Defined_Type&)type;
-                out += t.name;
+                out += t.identifier;
                 out += u8"(";
                 // We made sure that the symbol exists during validation stage
-                Symbol const* symbol = find_symbol(codegen_ctx.ctx, t.name);
-                Struct_Decl const& struct_decl = (Struct_Decl const&)*symbol;
-                for(i64 i = 0; i < struct_decl.members.size(); ++i) {
+                Symbol const* symbol = find_symbol(codegen_ctx.ctx, t.identifier);
+                Struct_Declaration const& struct_declaration = (Struct_Declaration const&)*symbol;
+                for(i64 i = 0; i < struct_declaration.members.size(); ++i) {
                     if(i != 0) {
                         out += u8", ";
                     }
 
-                    auto& member = struct_decl.members[i];
+                    auto& member = struct_declaration.members[i];
                     stringify_type_reinterpret(out, *member->type, codegen_ctx, reinterpret_ctx);
                 }
                 out += u8")";
@@ -219,7 +219,7 @@ namespace vush {
 
             case AST_Node_Type::user_defined_type: {
                 User_Defined_Type& node = (User_Defined_Type&)ast_node;
-                out += node.name;
+                out += node.identifier;
                 return;
             }
 
@@ -259,8 +259,8 @@ namespace vush {
                 return;
             }
 
-            case AST_Node_Type::struct_decl: {
-                Struct_Decl& node = (Struct_Decl&)ast_node;
+            case AST_Node_Type::struct_declaration: {
+                Struct_Declaration& node = (Struct_Declaration&)ast_node;
                 out += u8"struct ";
                 stringify(out, *node.identifier, ctx);
                 out += u8" {\n";
@@ -371,7 +371,7 @@ namespace vush {
                 Switch_Statement& node = (Switch_Statement&)ast_node;
                 write_indent(out, ctx.indent);
                 out += u8"switch(";
-                stringify(out, *node.match_expr, ctx);
+                stringify(out, *node.match_expression, ctx);
                 out += u8") {\n";
                 for(auto& switch_node: node.cases) {
                     write_indent(out, ctx.indent + 1);
@@ -473,9 +473,9 @@ namespace vush {
                 Return_Statement& node = (Return_Statement&)ast_node;
                 write_indent(out, ctx.indent);
                 out += u8"return";
-                if(node.return_expr) {
+                if(node.return_expression) {
                     out += u8" ";
-                    stringify(out, *node.return_expr, ctx);
+                    stringify(out, *node.return_expression, ctx);
                 }
                 out += u8";\n";
                 return;
@@ -570,75 +570,75 @@ namespace vush {
                 return;
             }
 
-            case AST_Node_Type::elvis_expr: {
-                Elvis_Expr& node = (Elvis_Expr&)ast_node;
+            case AST_Node_Type::elvis_expression: {
+                Elvis_Expression& node = (Elvis_Expression&)ast_node;
                 stringify(out, *node.condition, ctx);
                 out += u8" ? ";
-                stringify(out, *node.true_expr, ctx);
+                stringify(out, *node.true_expression, ctx);
                 out += u8" : ";
-                stringify(out, *node.false_expr, ctx);
+                stringify(out, *node.false_expression, ctx);
                 return;
             }
 
-            case AST_Node_Type::binary_expr: {
-                Binary_Expr& node = (Binary_Expr&)ast_node;
+            case AST_Node_Type::binary_expression: {
+                Binary_Expression& node = (Binary_Expression&)ast_node;
                 stringify(out, *node.lhs, ctx);
                 switch(node.type) {
-                    case Binary_Expr_Type::logic_or:
+                    case Binary_Expression_Type::logic_or:
                         out += u8" || ";
                         break;
-                    case Binary_Expr_Type::logic_xor:
+                    case Binary_Expression_Type::logic_xor:
                         out += u8" ^^ ";
                         break;
-                    case Binary_Expr_Type::logic_and:
+                    case Binary_Expression_Type::logic_and:
                         out += u8" && ";
                         break;
-                    case Binary_Expr_Type::equal:
+                    case Binary_Expression_Type::equal:
                         out += u8" == ";
                         break;
-                    case Binary_Expr_Type::unequal:
+                    case Binary_Expression_Type::unequal:
                         out += u8" != ";
                         break;
-                    case Binary_Expr_Type::greater_than:
+                    case Binary_Expression_Type::greater_than:
                         out += u8" > ";
                         break;
-                    case Binary_Expr_Type::less_than:
+                    case Binary_Expression_Type::less_than:
                         out += u8" < ";
                         break;
-                    case Binary_Expr_Type::greater_equal:
+                    case Binary_Expression_Type::greater_equal:
                         out += u8" >= ";
                         break;
-                    case Binary_Expr_Type::less_equal:
+                    case Binary_Expression_Type::less_equal:
                         out += u8" <= ";
                         break;
-                    case Binary_Expr_Type::bit_or:
+                    case Binary_Expression_Type::bit_or:
                         out += u8" | ";
                         break;
-                    case Binary_Expr_Type::bit_xor:
+                    case Binary_Expression_Type::bit_xor:
                         out += u8" ^ ";
                         break;
-                    case Binary_Expr_Type::bit_and:
+                    case Binary_Expression_Type::bit_and:
                         out += u8" & ";
                         break;
-                    case Binary_Expr_Type::lshift:
+                    case Binary_Expression_Type::lshift:
                         out += u8" << ";
                         break;
-                    case Binary_Expr_Type::rshift:
+                    case Binary_Expression_Type::rshift:
                         out += u8" >> ";
                         break;
-                    case Binary_Expr_Type::add:
+                    case Binary_Expression_Type::add:
                         out += u8" + ";
                         break;
-                    case Binary_Expr_Type::sub:
+                    case Binary_Expression_Type::sub:
                         out += u8" - ";
                         break;
-                    case Binary_Expr_Type::mul:
+                    case Binary_Expression_Type::mul:
                         out += u8" * ";
                         break;
-                    case Binary_Expr_Type::div:
+                    case Binary_Expression_Type::div:
                         out += u8" / ";
                         break;
-                    case Binary_Expr_Type::mod:
+                    case Binary_Expression_Type::mod:
                         out += u8" % ";
                         break;
                 }
@@ -668,15 +668,15 @@ namespace vush {
                 return;
             }
 
-            case AST_Node_Type::prefix_inc_expr: {
-                Prefix_Inc_Expr& node = (Prefix_Inc_Expr&)ast_node;
+            case AST_Node_Type::prefix_increment_expression: {
+                Prefix_Increment_Expression& node = (Prefix_Increment_Expression&)ast_node;
                 out += u8"++";
                 stringify(out, *node.expression, ctx);
                 return;
             }
 
-            case AST_Node_Type::prefix_dec_expr: {
-                Prefix_Dec_Expr& node = (Prefix_Dec_Expr&)ast_node;
+            case AST_Node_Type::prefix_decrement_expression: {
+                Prefix_Decrement_Expression& node = (Prefix_Decrement_Expression&)ast_node;
                 out += u8"--";
                 stringify(out, *node.expression, ctx);
                 return;
@@ -715,15 +715,15 @@ namespace vush {
                 return;
             }
 
-            case AST_Node_Type::postfix_inc_expr: {
-                Postfix_Inc_Expr& node = (Postfix_Inc_Expr&)ast_node;
+            case AST_Node_Type::postfix_increment_expression: {
+                Postfix_Increment_Expression& node = (Postfix_Increment_Expression&)ast_node;
                 stringify(out, *node.expression, ctx);
                 out += u8"++";
                 return;
             }
 
-            case AST_Node_Type::postfix_dec_expr: {
-                Postfix_Dec_Expr& node = (Postfix_Dec_Expr&)ast_node;
+            case AST_Node_Type::postfix_decrement_expression: {
+                Postfix_Decrement_Expression& node = (Postfix_Decrement_Expression&)ast_node;
                 stringify(out, *node.expression, ctx);
                 out += u8"--";
                 return;
@@ -735,16 +735,16 @@ namespace vush {
                 return;
             }
 
-            case AST_Node_Type::paren_expr: {
-                Paren_Expr& node = (Paren_Expr&)ast_node;
+            case AST_Node_Type::parenthesised_expression: {
+                Parenthesised_Expression& node = (Parenthesised_Expression&)ast_node;
                 out += u8"(";
                 stringify(out, *node.expression, ctx);
                 out += u8")";
                 return;
             }
 
-            case AST_Node_Type::reinterpret_expr: {
-                Reinterpret_Expr& node = (Reinterpret_Expr&)ast_node;
+            case AST_Node_Type::reinterpret_expression: {
+                Reinterpret_Expression& node = (Reinterpret_Expression&)ast_node;
                 // TODO: Validate source is a float array
                 // TODO: Validate target type
                 Reinterpret_Context reinterpret_ctx;
@@ -821,10 +821,10 @@ namespace vush {
             ANTON_ASSERT(type.node_type == AST_Node_Type::builtin_type || type.node_type == AST_Node_Type::user_defined_type, "unknown ast node type");
             if(type.node_type == AST_Node_Type::user_defined_type) {
                 User_Defined_Type const& node = (User_Defined_Type const&)type;
-                Symbol const* symbol = find_symbol(ctx, node.name);
+                Symbol const* symbol = find_symbol(ctx, node.identifier);
                 ANTON_ASSERT(symbol, "undefined symbol");
-                Struct_Decl const* struct_decl = (Struct_Decl const*)symbol;
-                for(auto& member: struct_decl->members) {
+                Struct_Declaration const* struct_declaration = (Struct_Declaration const*)symbol;
+                for(auto& member: struct_declaration->members) {
                     name_components.emplace_back(member->identifier->value);
                     Interpolation const interpolation = (member->interpolation != Interpolation::none ? member->interpolation : parent_interpolation);
                     bool const invariant = (parent_invariant ? parent_invariant : member->invariant);
@@ -916,7 +916,7 @@ namespace vush {
     static anton::Expected<anton::String, anton::String>
     generate_vertex_stage(Context const& ctx, Codegen_Context& codegen_ctx, Pass_Stage_Declaration const& stage,
                           anton::Flat_Hash_Map<anton::String, Source_Definition> const& source_definitions) {
-        anton::String const& pass_name = stage.pass->value;
+        anton::String const& pass_name = stage.pass_name->value;
         anton::String out;
         // Stringify the stage function
         stringify(out, *stage.return_type, codegen_ctx);
@@ -1067,7 +1067,7 @@ namespace vush {
     static anton::Expected<anton::String, anton::String>
     generate_fragment_stage(Context const& ctx, Codegen_Context& codegen_ctx, Pass_Stage_Declaration const& stage,
                             anton::Flat_Hash_Map<anton::String, Source_Definition> const& source_definitions) {
-        anton::String const& pass_name = stage.pass->value;
+        anton::String const& pass_name = stage.pass_name->value;
         anton::String out;
         // Stringify the stage function
         stringify(out, *stage.return_type, codegen_ctx);
@@ -1198,7 +1198,7 @@ namespace vush {
     static anton::Expected<anton::String, anton::String>
     generate_compute_stage(Codegen_Context& codegen_ctx, Pass_Stage_Declaration const& stage,
                            anton::Flat_Hash_Map<anton::String, Source_Definition> const& source_definitions) {
-        anton::String const& pass_name = stage.pass->value;
+        anton::String const& pass_name = stage.pass_name->value;
         anton::String out;
         // Stringify the stage function
         stringify(out, *stage.return_type, codegen_ctx);

@@ -29,14 +29,14 @@ namespace vush {
                 return {anton::expected_value, symbol->node_type == Symbol_Type::constant_declaration};
             }
 
-            case AST_Node_Type::paren_expr: {
-                Paren_Expr& expr = (Paren_Expr&)expression;
+            case AST_Node_Type::parenthesised_expression: {
+                Parenthesised_Expression& expr = (Parenthesised_Expression&)expression;
                 anton::Expected<bool, anton::String> res = is_compiletime_evaluable(ctx, *expr.expression);
                 return res;
             }
 
-            case AST_Node_Type::binary_expr: {
-                Binary_Expr& expr = (Binary_Expr&)expression;
+            case AST_Node_Type::binary_expression: {
+                Binary_Expression& expr = (Binary_Expression&)expression;
                 anton::Expected<bool, anton::String> lhs_res = is_compiletime_evaluable(ctx, *expr.lhs);
                 if(!lhs_res) {
                     return lhs_res;
@@ -113,15 +113,15 @@ namespace vush {
                 return evaluate_const_expr(ctx, *decl->initializer);
             }
 
-            case AST_Node_Type::paren_expr: {
-                Paren_Expr& expr = (Paren_Expr&)expression;
+            case AST_Node_Type::parenthesised_expression: {
+                Parenthesised_Expression& expr = (Parenthesised_Expression&)expression;
                 return evaluate_const_expr(ctx, *expr.expression);
             }
 
-            case AST_Node_Type::binary_expr: {
-                Binary_Expr& expr = (Binary_Expr&)expression;
+            case AST_Node_Type::binary_expression: {
+                Binary_Expression& expr = (Binary_Expression&)expression;
                 switch(expr.type) {
-                    case Binary_Expr_Type::logic_or: {
+                    case Binary_Expression_Type::logic_or: {
                         anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                         if(!lhs_res) {
                             return lhs_res;
@@ -150,7 +150,7 @@ namespace vush {
                         return {anton::expected_value, e};
                     }
 
-                    case Binary_Expr_Type::logic_xor: {
+                    case Binary_Expression_Type::logic_xor: {
                         anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                         if(!lhs_res) {
                             return lhs_res;
@@ -179,7 +179,7 @@ namespace vush {
                         return {anton::expected_value, e};
                     }
 
-                    case Binary_Expr_Type::logic_and: {
+                    case Binary_Expression_Type::logic_and: {
                         anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                         if(!lhs_res) {
                             return lhs_res;
@@ -208,7 +208,7 @@ namespace vush {
                         return {anton::expected_value, e};
                     }
 
-                    case Binary_Expr_Type::equal: {
+                    case Binary_Expression_Type::equal: {
                         anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                         if(!lhs_res) {
                             return lhs_res;
@@ -256,7 +256,7 @@ namespace vush {
                         }
                     }
 
-                    case Binary_Expr_Type::unequal: {
+                    case Binary_Expression_Type::unequal: {
                         anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                         if(!lhs_res) {
                             return lhs_res;
@@ -304,7 +304,7 @@ namespace vush {
                         }
                     }
 
-                    case Binary_Expr_Type::greater_than: {
+                    case Binary_Expression_Type::greater_than: {
                         anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                         if(!lhs_res) {
                             return lhs_res;
@@ -352,7 +352,7 @@ namespace vush {
                         }
                     }
 
-                    case Binary_Expr_Type::greater_equal: {
+                    case Binary_Expression_Type::greater_equal: {
                         anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                         if(!lhs_res) {
                             return lhs_res;
@@ -400,7 +400,7 @@ namespace vush {
                         }
                     }
 
-                    case Binary_Expr_Type::less_than: {
+                    case Binary_Expression_Type::less_than: {
                         anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                         if(!lhs_res) {
                             return lhs_res;
@@ -448,7 +448,7 @@ namespace vush {
                         }
                     }
 
-                    case Binary_Expr_Type::less_equal: {
+                    case Binary_Expression_Type::less_equal: {
                         anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                         if(!lhs_res) {
                             return lhs_res;
@@ -496,13 +496,13 @@ namespace vush {
                         }
                     }
 
-                        // case Binary_Expr_Type::bit_or_expr: {}
+                        // case Binary_Expression_Type::bit_or_expr: {}
 
-                        // case Binary_Expr_Type::bit_xor_expr: {}
+                        // case Binary_Expression_Type::bit_xor_expr: {}
 
-                        // case Binary_Expr_Type::bit_and_expr: {}
+                        // case Binary_Expression_Type::bit_and_expr: {}
 
-                    case Binary_Expr_Type::lshift: {
+                    case Binary_Expression_Type::lshift: {
                         anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                         if(!lhs_res) {
                             return {anton::expected_error, ANTON_MOV(lhs_res.error())};
@@ -546,7 +546,7 @@ namespace vush {
                         return {anton::expected_value, e};
                     }
 
-                    case Binary_Expr_Type::rshift: {
+                    case Binary_Expression_Type::rshift: {
                         anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                         if(!lhs_res) {
                             return lhs_res;
@@ -606,7 +606,7 @@ namespace vush {
                         return {anton::expected_value, e};
                     }
 
-                    case Binary_Expr_Type::add: {
+                    case Binary_Expression_Type::add: {
                         anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                         if(!lhs_res) {
                             return lhs_res;
@@ -657,7 +657,7 @@ namespace vush {
                         }
                     }
 
-                    case Binary_Expr_Type::sub: {
+                    case Binary_Expression_Type::sub: {
                         anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                         if(!lhs_res) {
                             return lhs_res;
@@ -708,7 +708,7 @@ namespace vush {
                         }
                     }
 
-                    case Binary_Expr_Type::mul: {
+                    case Binary_Expression_Type::mul: {
                         anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                         if(!lhs_res) {
                             return lhs_res;
@@ -759,7 +759,7 @@ namespace vush {
                         }
                     }
 
-                    case Binary_Expr_Type::div: {
+                    case Binary_Expression_Type::div: {
                         anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                         if(!lhs_res) {
                             return lhs_res;
@@ -810,7 +810,7 @@ namespace vush {
                         }
                     }
 
-                    case Binary_Expr_Type::mod: {
+                    case Binary_Expression_Type::mod: {
                         anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                         if(!lhs_res) {
                             return lhs_res;

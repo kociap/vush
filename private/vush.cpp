@@ -23,7 +23,7 @@ namespace vush {
     //  - all sourced parameters are of non-opaque types or are sized arrays of non-opaque types
     //
     static anton::Expected<void, anton::String> process_fn_param_list(Context& ctx, Function_Declaration& function) {
-        anton::Array<Owning_Ptr<Function_Param>>& params = function.params;
+        Parameter_List& params = function.params;
         for(i64 i = 0; i < params.size();) {
             // If the node is a prameter if, we replace it with the contents of one of the branches.
             // We do not advance in that case in order to check the replaced node.
@@ -87,7 +87,7 @@ namespace vush {
     }
 
     static anton::Expected<void, anton::String> process_fn_param_list(Context& ctx, Pass_Stage_Declaration& function) {
-        anton::Array<Owning_Ptr<Function_Param>>& params = function.params;
+        Parameter_List& params = function.params;
         for(i64 i = 0; i < params.size();) {
             // If the node is a prameter if, we replace it with the contents of one of the branches.
             // We do not advance in that case in order to check the replaced node.
@@ -121,7 +121,7 @@ namespace vush {
             }
         }
 
-        switch(function.stage) {
+        switch(function.stage_type) {
             case Stage_Type::vertex: {
                 for(auto& param: params) {
                     if(param->node_type == AST_Node_Type::ordinary_function_param) {
@@ -227,7 +227,7 @@ namespace vush {
     }
 
     static anton::Expected<void, anton::String> validate_function_attributes([[maybe_unused]] Context& ctx, Pass_Stage_Declaration const& fn) {
-        switch(fn.stage) {
+        switch(fn.stage_type) {
             case Stage_Type::compute: {
                 bool has_workgroup = false;
                 for(auto& attribute: fn.attributes) {
@@ -520,19 +520,19 @@ namespace vush {
                 return {anton::expected_value};
             }
 
-            case AST_Node_Type::elvis_expr: {
-                Owning_Ptr<Elvis_Expr>& node = (Owning_Ptr<Elvis_Expr>&)expression;
+            case AST_Node_Type::elvis_expression: {
+                Owning_Ptr<Elvis_Expression>& node = (Owning_Ptr<Elvis_Expression>&)expression;
                 anton::Expected<void, anton::String> condition_res = process_expression(ctx, node->condition);
                 if(!condition_res) {
                     return condition_res;
                 }
 
-                anton::Expected<void, anton::String> true_expr_res = process_expression(ctx, node->true_expr);
+                anton::Expected<void, anton::String> true_expr_res = process_expression(ctx, node->true_expression);
                 if(!true_expr_res) {
                     return true_expr_res;
                 }
 
-                anton::Expected<void, anton::String> false_expr_res = process_expression(ctx, node->false_expr);
+                anton::Expected<void, anton::String> false_expr_res = process_expression(ctx, node->false_expression);
                 if(!false_expr_res) {
                     return false_expr_res;
                 }
@@ -550,8 +550,8 @@ namespace vush {
                 return {anton::expected_value};
             }
 
-            case AST_Node_Type::prefix_inc_expr: {
-                Owning_Ptr<Prefix_Inc_Expr>& node = (Owning_Ptr<Prefix_Inc_Expr>&)expression;
+            case AST_Node_Type::prefix_increment_expression: {
+                Owning_Ptr<Prefix_Increment_Expression>& node = (Owning_Ptr<Prefix_Increment_Expression>&)expression;
                 anton::Expected<void, anton::String> res = process_expression(ctx, node->expression);
                 if(!res) {
                     return res;
@@ -560,8 +560,8 @@ namespace vush {
                 return {anton::expected_value};
             }
 
-            case AST_Node_Type::prefix_dec_expr: {
-                Owning_Ptr<Prefix_Dec_Expr>& node = (Owning_Ptr<Prefix_Dec_Expr>&)expression;
+            case AST_Node_Type::prefix_decrement_expression: {
+                Owning_Ptr<Prefix_Decrement_Expression>& node = (Owning_Ptr<Prefix_Decrement_Expression>&)expression;
                 anton::Expected<void, anton::String> res = process_expression(ctx, node->expression);
                 if(!res) {
                     return res;
@@ -570,8 +570,8 @@ namespace vush {
                 return {anton::expected_value};
             }
 
-            case AST_Node_Type::postfix_inc_expr: {
-                Owning_Ptr<Postfix_Inc_Expr>& node = (Owning_Ptr<Postfix_Inc_Expr>&)expression;
+            case AST_Node_Type::postfix_increment_expression: {
+                Owning_Ptr<Postfix_Increment_Expression>& node = (Owning_Ptr<Postfix_Increment_Expression>&)expression;
                 anton::Expected<void, anton::String> res = process_expression(ctx, node->expression);
                 if(!res) {
                     return res;
@@ -580,8 +580,8 @@ namespace vush {
                 return {anton::expected_value};
             }
 
-            case AST_Node_Type::postfix_dec_expr: {
-                Owning_Ptr<Postfix_Dec_Expr>& node = (Owning_Ptr<Postfix_Dec_Expr>&)expression;
+            case AST_Node_Type::postfix_decrement_expression: {
+                Owning_Ptr<Postfix_Decrement_Expression>& node = (Owning_Ptr<Postfix_Decrement_Expression>&)expression;
                 anton::Expected<void, anton::String> res = process_expression(ctx, node->expression);
                 if(!res) {
                     return res;
@@ -615,7 +615,7 @@ namespace vush {
                     return {anton::expected_error, format_undefined_symbol(ctx, node->identifier->source_info)};
                 }
 
-                if(symbol->node_type != Symbol_Type::struct_decl && symbol->node_type != Symbol_Type::function_declaration) {
+                if(symbol->node_type != Symbol_Type::struct_declaration && symbol->node_type != Symbol_Type::function_declaration) {
                     // Not a user defined type constructor call and not a function call
                     return {anton::expected_error, format_called_symbol_does_not_name_function(ctx, node->identifier->source_info)};
                 }
@@ -650,8 +650,8 @@ namespace vush {
                 return {anton::expected_value};
             }
 
-            case AST_Node_Type::paren_expr: {
-                Owning_Ptr<Paren_Expr>& node = (Owning_Ptr<Paren_Expr>&)expression;
+            case AST_Node_Type::parenthesised_expression: {
+                Owning_Ptr<Parenthesised_Expression>& node = (Owning_Ptr<Parenthesised_Expression>&)expression;
                 anton::Expected<void, anton::String> res = process_expression(ctx, node->expression);
                 if(!res) {
                     return res;
@@ -660,8 +660,8 @@ namespace vush {
                 return {anton::expected_value};
             }
 
-            case AST_Node_Type::binary_expr: {
-                Owning_Ptr<Binary_Expr>& node = (Owning_Ptr<Binary_Expr>&)expression;
+            case AST_Node_Type::binary_expression: {
+                Owning_Ptr<Binary_Expression>& node = (Owning_Ptr<Binary_Expression>&)expression;
                 if(anton::Expected<void, anton::String> lhs = process_expression(ctx, node->lhs); !lhs) {
                     return lhs;
                 }
@@ -696,22 +696,22 @@ namespace vush {
                 }
 
                 if(result.value().as_boolean()) {
-                    expression = ANTON_MOV(node->true_expr);
+                    expression = ANTON_MOV(node->true_expression);
                 } else {
-                    if(node->false_expr->node_type == AST_Node_Type::expression_if) {
-                        anton::Expected<void, anton::String> res = process_expression(ctx, node->false_expr);
+                    if(node->false_expression->node_type == AST_Node_Type::expression_if) {
+                        anton::Expected<void, anton::String> res = process_expression(ctx, node->false_expression);
                         if(!res) {
                             return res;
                         }
                     }
 
-                    expression = ANTON_MOV(node->false_expr);
+                    expression = ANTON_MOV(node->false_expression);
                 }
                 return {anton::expected_value};
             }
 
-            case AST_Node_Type::reinterpret_expr: {
-                Owning_Ptr<Reinterpret_Expr>& node = (Owning_Ptr<Reinterpret_Expr>&)expression;
+            case AST_Node_Type::reinterpret_expression: {
+                Owning_Ptr<Reinterpret_Expression>& node = (Owning_Ptr<Reinterpret_Expression>&)expression;
                 anton::Expected<void, anton::String> index_res = process_expression(ctx, node->index);
                 if(!index_res) {
                     return {anton::expected_error, ANTON_MOV(index_res.error())};
@@ -877,7 +877,7 @@ namespace vush {
 
                 case AST_Node_Type::switch_statement: {
                     Switch_Statement& node = (Switch_Statement&)*statements[i];
-                    anton::Expected<void, anton::String> switch_expr_res = process_expression(ctx, node.match_expr);
+                    anton::Expected<void, anton::String> switch_expr_res = process_expression(ctx, node.match_expression);
                     if(!switch_expr_res) {
                         return switch_expr_res;
                     }
@@ -916,8 +916,8 @@ namespace vush {
 
                 case AST_Node_Type::return_statement: {
                     Return_Statement& node = (Return_Statement&)*statements[i];
-                    if(node.return_expr) {
-                        anton::Expected<void, anton::String> res = process_expression(ctx, node.return_expr);
+                    if(node.return_expression) {
+                        anton::Expected<void, anton::String> res = process_expression(ctx, node.return_expression);
                         if(!res) {
                             return res;
                         }
@@ -973,7 +973,7 @@ namespace vush {
     //
     static anton::Expected<void, anton::String> process_function(Context& ctx, Pass_Stage_Declaration& fn) {
         // Validate the return types
-        switch(fn.stage) {
+        switch(fn.stage_type) {
             case Stage_Type::compute: {
                 // Return type of a compute stage must always be void
                 Type& return_type = *fn.return_type;
@@ -1016,9 +1016,9 @@ namespace vush {
         // TODO: Currently constants cannot be used in declaration ifs because they are not added to the symbol table as
         //       we process the ast. Should we allow constants in declaration ifs?
         for(i64 i = 0; i < ast.size();) {
-            bool const should_advance = ast[i]->node_type != AST_Node_Type::import_decl && ast[i]->node_type != AST_Node_Type::declaration_if;
-            if(ast[i]->node_type == AST_Node_Type::import_decl) {
-                Owning_Ptr<Import_Decl> node{static_cast<Import_Decl*>(ast[i].release())};
+            bool const should_advance = ast[i]->node_type != AST_Node_Type::import_declaration && ast[i]->node_type != AST_Node_Type::declaration_if;
+            if(ast[i]->node_type == AST_Node_Type::import_declaration) {
+                Owning_Ptr<Import_Declaration> node{static_cast<Import_Declaration*>(ast[i].release())};
                 ast.erase(ast.begin() + i, ast.begin() + i + 1);
 
                 anton::Expected<Source_Request_Result, anton::String> source_request_res =
@@ -1076,7 +1076,7 @@ namespace vush {
         return {anton::expected_value};
     }
 
-    static void gather_settings(anton::Array<Pass_Settings>& settings, anton::Slice<Owning_Ptr<Settings_Decl> const> setting_declarations) {
+    static void gather_settings(anton::Array<Pass_Settings>& settings, anton::Slice<Owning_Ptr<Settings_Declaration> const> setting_declarations) {
         for(auto& declaration: setting_declarations) {
             Pass_Settings* pass_iter = anton::find_if(
                 settings.begin(), settings.end(), [&pass_name = declaration->pass_name->value](Pass_Settings const& v) { return v.pass_name == pass_name; });
@@ -1102,8 +1102,8 @@ namespace vush {
     static anton::Expected<void, anton::String> process_objects_and_populate_symbol_table(Context& ctx, Declaration_List& ast) {
         for(auto& ast_node: ast) {
             switch(ast_node->node_type) {
-                case AST_Node_Type::struct_decl: {
-                    Struct_Decl& node = static_cast<Struct_Decl&>(*ast_node);
+                case AST_Node_Type::struct_declaration: {
+                    Struct_Declaration& node = static_cast<Struct_Declaration&>(*ast_node);
                     if(node.members.size() == 0) {
                         return {anton::expected_error, format_empty_struct(ctx, node.source_info)};
                     }
@@ -1193,15 +1193,15 @@ namespace vush {
                 walk_nodes_and_aggregate_function_calls(function_calls, *n.rhs);
             } break;
 
-            case AST_Node_Type::elvis_expr: {
-                Elvis_Expr& n = (Elvis_Expr&)node;
+            case AST_Node_Type::elvis_expression: {
+                Elvis_Expression& n = (Elvis_Expression&)node;
                 walk_nodes_and_aggregate_function_calls(function_calls, *n.condition);
-                walk_nodes_and_aggregate_function_calls(function_calls, *n.true_expr);
-                walk_nodes_and_aggregate_function_calls(function_calls, *n.false_expr);
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.true_expression);
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.false_expression);
             } break;
 
-            case AST_Node_Type::binary_expr: {
-                Binary_Expr& n = (Binary_Expr&)node;
+            case AST_Node_Type::binary_expression: {
+                Binary_Expression& n = (Binary_Expression&)node;
                 walk_nodes_and_aggregate_function_calls(function_calls, *n.lhs);
                 walk_nodes_and_aggregate_function_calls(function_calls, *n.rhs);
             } break;
@@ -1211,13 +1211,13 @@ namespace vush {
                 walk_nodes_and_aggregate_function_calls(function_calls, *n.expression);
             } break;
 
-            case AST_Node_Type::prefix_inc_expr: {
-                Prefix_Inc_Expr& n = (Prefix_Inc_Expr&)node;
+            case AST_Node_Type::prefix_increment_expression: {
+                Prefix_Increment_Expression& n = (Prefix_Increment_Expression&)node;
                 walk_nodes_and_aggregate_function_calls(function_calls, *n.expression);
             } break;
 
-            case AST_Node_Type::prefix_dec_expr: {
-                Prefix_Dec_Expr& n = (Prefix_Dec_Expr&)node;
+            case AST_Node_Type::prefix_decrement_expression: {
+                Prefix_Decrement_Expression& n = (Prefix_Decrement_Expression&)node;
                 walk_nodes_and_aggregate_function_calls(function_calls, *n.expression);
             } break;
 
@@ -1227,23 +1227,23 @@ namespace vush {
                 walk_nodes_and_aggregate_function_calls(function_calls, *n.index);
             } break;
 
-            case AST_Node_Type::postfix_inc_expr: {
-                Postfix_Inc_Expr& n = (Postfix_Inc_Expr&)node;
+            case AST_Node_Type::postfix_increment_expression: {
+                Postfix_Increment_Expression& n = (Postfix_Increment_Expression&)node;
                 walk_nodes_and_aggregate_function_calls(function_calls, *n.expression);
             } break;
 
-            case AST_Node_Type::postfix_dec_expr: {
-                Postfix_Dec_Expr& n = (Postfix_Dec_Expr&)node;
+            case AST_Node_Type::postfix_decrement_expression: {
+                Postfix_Decrement_Expression& n = (Postfix_Decrement_Expression&)node;
                 walk_nodes_and_aggregate_function_calls(function_calls, *n.expression);
             } break;
 
-            case AST_Node_Type::paren_expr: {
-                Paren_Expr& n = (Paren_Expr&)node;
+            case AST_Node_Type::parenthesised_expression: {
+                Parenthesised_Expression& n = (Parenthesised_Expression&)node;
                 walk_nodes_and_aggregate_function_calls(function_calls, *n.expression);
             } break;
 
-            case AST_Node_Type::reinterpret_expr: {
-                Reinterpret_Expr& n = (Reinterpret_Expr&)node;
+            case AST_Node_Type::reinterpret_expression: {
+                Reinterpret_Expression& n = (Reinterpret_Expression&)node;
                 walk_nodes_and_aggregate_function_calls(function_calls, *n.index);
                 walk_nodes_and_aggregate_function_calls(function_calls, *n.source);
             } break;
@@ -1284,7 +1284,7 @@ namespace vush {
 
             case AST_Node_Type::switch_statement: {
                 Switch_Statement& n = (Switch_Statement&)node;
-                walk_nodes_and_aggregate_function_calls(function_calls, *n.match_expr);
+                walk_nodes_and_aggregate_function_calls(function_calls, *n.match_expression);
                 for(auto& case_statement: n.cases) {
                     walk_nodes_and_aggregate_function_calls(function_calls, *case_statement);
                 }
@@ -1318,8 +1318,8 @@ namespace vush {
 
             case AST_Node_Type::return_statement: {
                 Return_Statement& n = (Return_Statement&)node;
-                if(n.return_expr) {
-                    walk_nodes_and_aggregate_function_calls(function_calls, *n.return_expr);
+                if(n.return_expression) {
+                    walk_nodes_and_aggregate_function_calls(function_calls, *n.return_expression);
                 }
             } break;
 
@@ -1395,15 +1395,15 @@ namespace vush {
                 replace_identifier_expressions(n->rhs, replacements);
             } break;
 
-            case AST_Node_Type::elvis_expr: {
-                Owning_Ptr<Elvis_Expr>& n = (Owning_Ptr<Elvis_Expr>&)node;
+            case AST_Node_Type::elvis_expression: {
+                Owning_Ptr<Elvis_Expression>& n = (Owning_Ptr<Elvis_Expression>&)node;
                 replace_identifier_expressions(n->condition, replacements);
-                replace_identifier_expressions(n->true_expr, replacements);
-                replace_identifier_expressions(n->false_expr, replacements);
+                replace_identifier_expressions(n->true_expression, replacements);
+                replace_identifier_expressions(n->false_expression, replacements);
             } break;
 
-            case AST_Node_Type::binary_expr: {
-                Owning_Ptr<Binary_Expr>& n = (Owning_Ptr<Binary_Expr>&)node;
+            case AST_Node_Type::binary_expression: {
+                Owning_Ptr<Binary_Expression>& n = (Owning_Ptr<Binary_Expression>&)node;
                 replace_identifier_expressions(n->lhs, replacements);
                 replace_identifier_expressions(n->rhs, replacements);
             } break;
@@ -1413,13 +1413,13 @@ namespace vush {
                 replace_identifier_expressions(n->expression, replacements);
             } break;
 
-            case AST_Node_Type::prefix_inc_expr: {
-                Owning_Ptr<Prefix_Inc_Expr>& n = (Owning_Ptr<Prefix_Inc_Expr>&)node;
+            case AST_Node_Type::prefix_increment_expression: {
+                Owning_Ptr<Prefix_Increment_Expression>& n = (Owning_Ptr<Prefix_Increment_Expression>&)node;
                 replace_identifier_expressions(n->expression, replacements);
             } break;
 
-            case AST_Node_Type::prefix_dec_expr: {
-                Owning_Ptr<Prefix_Dec_Expr>& n = (Owning_Ptr<Prefix_Dec_Expr>&)node;
+            case AST_Node_Type::prefix_decrement_expression: {
+                Owning_Ptr<Prefix_Decrement_Expression>& n = (Owning_Ptr<Prefix_Decrement_Expression>&)node;
                 replace_identifier_expressions(n->expression, replacements);
             } break;
 
@@ -1441,23 +1441,23 @@ namespace vush {
                 }
             } break;
 
-            case AST_Node_Type::postfix_inc_expr: {
-                Owning_Ptr<Postfix_Inc_Expr>& n = (Owning_Ptr<Postfix_Inc_Expr>&)node;
+            case AST_Node_Type::postfix_increment_expression: {
+                Owning_Ptr<Postfix_Increment_Expression>& n = (Owning_Ptr<Postfix_Increment_Expression>&)node;
                 replace_identifier_expressions(n->expression, replacements);
             } break;
 
-            case AST_Node_Type::postfix_dec_expr: {
-                Owning_Ptr<Postfix_Dec_Expr>& n = (Owning_Ptr<Postfix_Dec_Expr>&)node;
+            case AST_Node_Type::postfix_decrement_expression: {
+                Owning_Ptr<Postfix_Decrement_Expression>& n = (Owning_Ptr<Postfix_Decrement_Expression>&)node;
                 replace_identifier_expressions(n->expression, replacements);
             } break;
 
-            case AST_Node_Type::paren_expr: {
-                Owning_Ptr<Paren_Expr>& n = (Owning_Ptr<Paren_Expr>&)node;
+            case AST_Node_Type::parenthesised_expression: {
+                Owning_Ptr<Parenthesised_Expression>& n = (Owning_Ptr<Parenthesised_Expression>&)node;
                 replace_identifier_expressions(n->expression, replacements);
             } break;
 
-            case AST_Node_Type::reinterpret_expr: {
-                Owning_Ptr<Reinterpret_Expr>& n = (Owning_Ptr<Reinterpret_Expr>&)node;
+            case AST_Node_Type::reinterpret_expression: {
+                Owning_Ptr<Reinterpret_Expression>& n = (Owning_Ptr<Reinterpret_Expression>&)node;
                 replace_identifier_expressions(n->index, replacements);
                 replace_identifier_expressions(n->source, replacements);
             } break;
@@ -1498,7 +1498,7 @@ namespace vush {
 
             case AST_Node_Type::switch_statement: {
                 Owning_Ptr<Switch_Statement>& n = (Owning_Ptr<Switch_Statement>&)node;
-                replace_identifier_expressions(n->match_expr, replacements);
+                replace_identifier_expressions(n->match_expression, replacements);
                 for(auto& case_statement: n->cases) {
                     replace_identifier_expressions(case_statement, replacements);
                 }
@@ -1532,8 +1532,8 @@ namespace vush {
 
             case AST_Node_Type::return_statement: {
                 Owning_Ptr<Return_Statement>& n = (Owning_Ptr<Return_Statement>&)node;
-                if(n->return_expr) {
-                    replace_identifier_expressions(n->return_expr, replacements);
+                if(n->return_expression) {
+                    replace_identifier_expressions(n->return_expression, replacements);
                 }
             } break;
 
@@ -1739,10 +1739,10 @@ namespace vush {
     //
     static void partition_ast(Declaration_List& ast, anton::Array<Owning_Ptr<Pass_Stage_Declaration>>& stages,
                               anton::Array<Owning_Ptr<Function_Declaration>>& functions, anton::Array<Owning_Ptr<Declaration>>& structs_and_constants,
-                              anton::Array<Owning_Ptr<Settings_Decl>>& settings) {
+                              anton::Array<Owning_Ptr<Settings_Declaration>>& settings) {
         for(auto& ast_node: ast) {
             switch(ast_node->node_type) {
-                case AST_Node_Type::struct_decl:
+                case AST_Node_Type::struct_declaration:
                 case AST_Node_Type::constant_declaration: {
                     Owning_Ptr<Declaration>& node = (Owning_Ptr<Declaration>&)ast_node;
                     structs_and_constants.emplace_back(ANTON_MOV(node));
@@ -1758,8 +1758,8 @@ namespace vush {
                     stages.emplace_back(ANTON_MOV(node));
                 } break;
 
-                case AST_Node_Type::settings_decl: {
-                    Owning_Ptr<Settings_Decl>& node = (Owning_Ptr<Settings_Decl>&)ast_node;
+                case AST_Node_Type::settings_declaration: {
+                    Owning_Ptr<Settings_Declaration>& node = (Owning_Ptr<Settings_Declaration>&)ast_node;
                     settings.emplace_back(ANTON_MOV(node));
                 }
 
@@ -1817,7 +1817,7 @@ namespace vush {
         }
 
         AST_Build_Result result;
-        anton::Array<Owning_Ptr<Settings_Decl>> settings;
+        anton::Array<Owning_Ptr<Settings_Declaration>> settings;
         partition_ast(ast, result.stages, result.functions, result.structs_and_constants, settings);
         gather_settings(result.settings, settings);
 
@@ -1842,15 +1842,15 @@ namespace vush {
     build_pass_contexts(Context& ctx, anton::Slice<Owning_Ptr<Pass_Stage_Declaration> const> const stage_declarations) {
         anton::Array<Pass_Context> passes;
         for(auto const& stage_declaration: stage_declarations) {
-            Pass_Context* pass =
-                anton::find_if(passes.begin(), passes.end(), [&stage_declaration](Pass_Context const& v) { return v.name == stage_declaration->pass->value; });
+            anton::String const& pass_name = stage_declaration->pass_name->value;
+            Pass_Context* pass = anton::find_if(passes.begin(), passes.end(), [&pass_name](Pass_Context const& v) { return v.name == pass_name; });
             if(pass == passes.end()) {
-                Pass_Context& v = passes.emplace_back(Pass_Context{stage_declaration->pass->value, {}, nullptr, nullptr, nullptr, {}, {}});
+                Pass_Context& v = passes.emplace_back(Pass_Context{pass_name, {}, nullptr, nullptr, nullptr, {}, {}});
                 pass = &v;
             }
 
             // Ensure there is only 1 stage of each type
-            switch(stage_declaration->stage) {
+            switch(stage_declaration->stage_type) {
                 case Stage_Type::vertex: {
                     if(pass->vertex_stage) {
                         Source_Info const& src1 = pass->vertex_stage->source_info;
@@ -2018,11 +2018,11 @@ namespace vush {
             }
         } else if(type.node_type == AST_Node_Type::user_defined_type) {
             User_Defined_Type const& t = (User_Defined_Type const&)type;
-            Symbol const* symbol = find_symbol(ctx, t.name);
-            Struct_Decl const* struct_decl = (Struct_Decl const*)symbol;
+            Symbol const* symbol = find_symbol(ctx, t.identifier);
+            Struct_Declaration const* struct_declaration = (Struct_Declaration const*)symbol;
             i64 max_alignment = 0;
             i64 offset = 0;
-            for(auto& member: struct_decl->members) {
+            for(auto& member: struct_declaration->members) {
                 Layout_Info const info = calculate_type_layout_info(ctx, *member->type);
                 max_alignment = anton::math::max(max_alignment, info.alignment);
                 // Realign offset if necessary

@@ -12,12 +12,12 @@ namespace vush {
         user_defined_type,
         array_type,
         declaration_if,
-        import_decl,
+        import_declaration,
         variable_declaration,
         constant_declaration,
         struct_member,
-        struct_decl,
-        settings_decl,
+        struct_declaration,
+        settings_declaration,
         workgroup_attribute,
         function_param_if,
         ordinary_function_param,
@@ -30,18 +30,18 @@ namespace vush {
         identifier_expression,
         assignment_expression,
         arithmetic_assignment_expression,
-        elvis_expr,
-        binary_expr,
+        elvis_expression,
+        binary_expression,
         unary_expression,
-        prefix_inc_expr,
-        prefix_dec_expr,
+        prefix_increment_expression,
+        prefix_decrement_expression,
         function_call_expression,
         member_access_expression,
         array_access_expression,
-        postfix_inc_expr,
-        postfix_dec_expr,
-        paren_expr,
-        reinterpret_expr,
+        postfix_increment_expression,
+        postfix_decrement_expression,
+        parenthesised_expression,
+        reinterpret_expression,
         string_literal,
         bool_literal,
         integer_literal,
@@ -280,9 +280,9 @@ namespace vush {
     };
 
     struct User_Defined_Type: public Type {
-        anton::String name;
+        anton::String identifier;
 
-        User_Defined_Type(anton::String name, Source_Info const& source_info);
+        User_Defined_Type(anton::String identifier, Source_Info const& source_info);
 
         [[nodiscard]] Owning_Ptr<User_Defined_Type> clone() const;
 
@@ -331,15 +331,15 @@ namespace vush {
         [[nodiscard]] virtual Declaration_If* _clone() const override;
     };
 
-    struct Import_Decl: public Declaration {
+    struct Import_Declaration: public Declaration {
         Owning_Ptr<String_Literal> path;
 
-        Import_Decl(Owning_Ptr<String_Literal> path, Source_Info const& source_info);
+        Import_Declaration(Owning_Ptr<String_Literal> path, Source_Info const& source_info);
 
-        [[nodiscard]] Owning_Ptr<Import_Decl> clone() const;
+        [[nodiscard]] Owning_Ptr<Import_Declaration> clone() const;
 
     private:
-        [[nodiscard]] virtual Import_Decl* _clone() const override;
+        [[nodiscard]] virtual Import_Declaration* _clone() const override;
     };
 
     enum struct Interpolation {
@@ -407,29 +407,29 @@ namespace vush {
         [[nodiscard]] virtual Struct_Member* _clone() const override;
     };
 
-    struct Struct_Decl: public Declaration {
+    struct Struct_Declaration: public Declaration {
         anton::Array<Owning_Ptr<Struct_Member>> members;
         Owning_Ptr<Identifier> identifier;
 
-        Struct_Decl(Owning_Ptr<Identifier> identifier, anton::Array<Owning_Ptr<Struct_Member>> members, Source_Info const& source_info);
+        Struct_Declaration(Owning_Ptr<Identifier> identifier, anton::Array<Owning_Ptr<Struct_Member>> members, Source_Info const& source_info);
 
-        [[nodiscard]] Owning_Ptr<Struct_Decl> clone() const;
+        [[nodiscard]] Owning_Ptr<Struct_Declaration> clone() const;
 
     private:
-        [[nodiscard]] virtual Struct_Decl* _clone() const override;
+        [[nodiscard]] virtual Struct_Declaration* _clone() const override;
     };
 
-    struct Settings_Decl: public Declaration {
+    struct Settings_Declaration: public Declaration {
         Owning_Ptr<Identifier> pass_name;
         anton::Array<Setting_Key_Value> settings;
 
-        Settings_Decl(Owning_Ptr<Identifier> pass_name, Source_Info const& source_info);
-        Settings_Decl(Owning_Ptr<Identifier> pass_name, anton::Array<Setting_Key_Value> settings, Source_Info const& source_info);
+        Settings_Declaration(Owning_Ptr<Identifier> pass_name, Source_Info const& source_info);
+        Settings_Declaration(Owning_Ptr<Identifier> pass_name, anton::Array<Setting_Key_Value> settings, Source_Info const& source_info);
 
-        [[nodiscard]] Owning_Ptr<Settings_Decl> clone() const;
+        [[nodiscard]] Owning_Ptr<Settings_Declaration> clone() const;
 
     private:
-        [[nodiscard]] virtual Settings_Decl* _clone() const override;
+        [[nodiscard]] virtual Settings_Declaration* _clone() const override;
     };
 
     struct Function_Attribute: public AST_Node {
@@ -583,14 +583,14 @@ namespace vush {
     };
 
     struct Function_Declaration: public Declaration {
-        anton::Array<Owning_Ptr<Function_Param>> params;
-        anton::Array<Owning_Ptr<Function_Attribute>> attributes;
+        Parameter_List params;
+        Attribute_List attributes;
         Owning_Ptr<Identifier> identifier;
         Owning_Ptr<Type> return_type;
         Statement_List body;
 
-        Function_Declaration(anton::Array<Owning_Ptr<Function_Attribute>> attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> identifier,
-                             anton::Array<Owning_Ptr<Function_Param>> params, Statement_List body, Source_Info const& source_info);
+        Function_Declaration(Attribute_List attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> identifier, Parameter_List params,
+                             Statement_List body, Source_Info const& source_info);
 
         [[nodiscard]] Owning_Ptr<Function_Declaration> clone() const;
 
@@ -610,15 +610,15 @@ namespace vush {
     }
 
     struct Pass_Stage_Declaration: public Declaration {
-        anton::Array<Owning_Ptr<Function_Param>> params;
-        anton::Array<Owning_Ptr<Function_Attribute>> attributes;
+        Parameter_List params;
+        Attribute_List attributes;
         Statement_List body;
-        Owning_Ptr<Identifier> pass;
+        Owning_Ptr<Identifier> pass_name;
         Owning_Ptr<Type> return_type;
-        Stage_Type stage;
+        Stage_Type stage_type;
 
-        Pass_Stage_Declaration(anton::Array<Owning_Ptr<Function_Attribute>> attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> pass,
-                               Stage_Type stage, anton::Array<Owning_Ptr<Function_Param>> params, Statement_List body, Source_Info const& source_info);
+        Pass_Stage_Declaration(Attribute_List attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> pass_name, Stage_Type stage_type,
+                               Parameter_List params, Statement_List body, Source_Info const& source_info);
 
         [[nodiscard]] Owning_Ptr<Pass_Stage_Declaration> clone() const;
 
@@ -635,13 +635,15 @@ namespace vush {
         [[nodiscard]] virtual Expression* _clone() const override = 0;
     };
 
-    // Both true_expr and false_expr are never nullptr
     struct Expression_If: public Expression {
         Owning_Ptr<Expression> condition;
-        Owning_Ptr<Expression> true_expr;
-        Owning_Ptr<Expression> false_expr;
+        // Never nullptr
+        Owning_Ptr<Expression> true_expression;
+        // Never nullptr
+        Owning_Ptr<Expression> false_expression;
 
-        Expression_If(Owning_Ptr<Expression> condition, Owning_Ptr<Expression> true_expr, Owning_Ptr<Expression> false_expr, Source_Info const& source_info);
+        Expression_If(Owning_Ptr<Expression> condition, Owning_Ptr<Expression> true_expression, Owning_Ptr<Expression> false_expression,
+                      Source_Info const& source_info);
 
         [[nodiscard]] Owning_Ptr<Expression_If> clone() const;
 
@@ -699,20 +701,21 @@ namespace vush {
         [[nodiscard]] virtual Arithmetic_Assignment_Expression* _clone() const override;
     };
 
-    struct Elvis_Expr: public Expression {
+    struct Elvis_Expression: public Expression {
         Owning_Ptr<Expression> condition;
-        Owning_Ptr<Expression> true_expr;
-        Owning_Ptr<Expression> false_expr;
+        Owning_Ptr<Expression> true_expression;
+        Owning_Ptr<Expression> false_expression;
 
-        Elvis_Expr(Owning_Ptr<Expression> condition, Owning_Ptr<Expression> true_expr, Owning_Ptr<Expression> false_expr, Source_Info const& source_info);
+        Elvis_Expression(Owning_Ptr<Expression> condition, Owning_Ptr<Expression> true_expression, Owning_Ptr<Expression> false_expression,
+                         Source_Info const& source_info);
 
-        [[nodiscard]] Owning_Ptr<Elvis_Expr> clone() const;
+        [[nodiscard]] Owning_Ptr<Elvis_Expression> clone() const;
 
     private:
-        [[nodiscard]] virtual Elvis_Expr* _clone() const override;
+        [[nodiscard]] virtual Elvis_Expression* _clone() const override;
     };
 
-    enum struct Binary_Expr_Type {
+    enum struct Binary_Expression_Type {
         logic_or,
         logic_xor,
         logic_and,
@@ -734,17 +737,17 @@ namespace vush {
         mod,
     };
 
-    struct Binary_Expr: public Expression {
+    struct Binary_Expression: public Expression {
         Owning_Ptr<Expression> lhs;
         Owning_Ptr<Expression> rhs;
-        Binary_Expr_Type type;
+        Binary_Expression_Type type;
 
-        Binary_Expr(Binary_Expr_Type type, Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info);
+        Binary_Expression(Binary_Expression_Type type, Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info);
 
-        [[nodiscard]] Owning_Ptr<Binary_Expr> clone() const;
+        [[nodiscard]] Owning_Ptr<Binary_Expression> clone() const;
 
     private:
-        [[nodiscard]] virtual Binary_Expr* _clone() const override;
+        [[nodiscard]] virtual Binary_Expression* _clone() const override;
     };
 
     enum struct Unary_Type {
@@ -766,31 +769,31 @@ namespace vush {
         [[nodiscard]] virtual Unary_Expression* _clone() const override;
     };
 
-    struct Prefix_Inc_Expr: public Expression {
+    struct Prefix_Increment_Expression: public Expression {
         Owning_Ptr<Expression> expression;
 
-        Prefix_Inc_Expr(Owning_Ptr<Expression> expression, Source_Info const& source_info);
+        Prefix_Increment_Expression(Owning_Ptr<Expression> expression, Source_Info const& source_info);
 
-        [[nodiscard]] Owning_Ptr<Prefix_Inc_Expr> clone() const;
+        [[nodiscard]] Owning_Ptr<Prefix_Increment_Expression> clone() const;
 
     private:
-        [[nodiscard]] virtual Prefix_Inc_Expr* _clone() const override;
+        [[nodiscard]] virtual Prefix_Increment_Expression* _clone() const override;
     };
 
-    struct Prefix_Dec_Expr: public Expression {
+    struct Prefix_Decrement_Expression: public Expression {
         Owning_Ptr<Expression> expression;
 
-        Prefix_Dec_Expr(Owning_Ptr<Expression> expression, Source_Info const& source_info);
+        Prefix_Decrement_Expression(Owning_Ptr<Expression> expression, Source_Info const& source_info);
 
-        [[nodiscard]] Owning_Ptr<Prefix_Dec_Expr> clone() const;
+        [[nodiscard]] Owning_Ptr<Prefix_Decrement_Expression> clone() const;
 
     private:
-        [[nodiscard]] virtual Prefix_Dec_Expr* _clone() const override;
+        [[nodiscard]] virtual Prefix_Decrement_Expression* _clone() const override;
     };
 
     struct Function_Call_Expression: public Expression {
-        Owning_Ptr<Identifier> identifier;
         anton::Array<Owning_Ptr<Expression>> arguments;
+        Owning_Ptr<Identifier> identifier;
 
         Function_Call_Expression(Owning_Ptr<Identifier> identifier, anton::Array<Owning_Ptr<Expression>> arguments, Source_Info const& source_info);
 
@@ -824,50 +827,50 @@ namespace vush {
         [[nodiscard]] virtual Array_Access_Expression* _clone() const override;
     };
 
-    struct Postfix_Inc_Expr: public Expression {
+    struct Postfix_Increment_Expression: public Expression {
         Owning_Ptr<Expression> expression;
 
-        Postfix_Inc_Expr(Owning_Ptr<Expression> expression, Source_Info const& source_info);
+        Postfix_Increment_Expression(Owning_Ptr<Expression> expression, Source_Info const& source_info);
 
-        [[nodiscard]] Owning_Ptr<Postfix_Inc_Expr> clone() const;
+        [[nodiscard]] Owning_Ptr<Postfix_Increment_Expression> clone() const;
 
     private:
-        [[nodiscard]] virtual Postfix_Inc_Expr* _clone() const override;
+        [[nodiscard]] virtual Postfix_Increment_Expression* _clone() const override;
     };
 
-    struct Postfix_Dec_Expr: public Expression {
+    struct Postfix_Decrement_Expression: public Expression {
         Owning_Ptr<Expression> expression;
 
-        Postfix_Dec_Expr(Owning_Ptr<Expression> expression, Source_Info const& source_info);
+        Postfix_Decrement_Expression(Owning_Ptr<Expression> expression, Source_Info const& source_info);
 
-        [[nodiscard]] Owning_Ptr<Postfix_Dec_Expr> clone() const;
+        [[nodiscard]] Owning_Ptr<Postfix_Decrement_Expression> clone() const;
 
     private:
-        [[nodiscard]] virtual Postfix_Dec_Expr* _clone() const override;
+        [[nodiscard]] virtual Postfix_Decrement_Expression* _clone() const override;
     };
 
-    struct Paren_Expr: public Expression {
+    struct Parenthesised_Expression: public Expression {
         Owning_Ptr<Expression> expression;
 
-        Paren_Expr(Owning_Ptr<Expression> expression, Source_Info const& source_info);
+        Parenthesised_Expression(Owning_Ptr<Expression> expression, Source_Info const& source_info);
 
-        [[nodiscard]] Owning_Ptr<Paren_Expr> clone() const;
+        [[nodiscard]] Owning_Ptr<Parenthesised_Expression> clone() const;
 
     private:
-        [[nodiscard]] virtual Paren_Expr* _clone() const override;
+        [[nodiscard]] virtual Parenthesised_Expression* _clone() const override;
     };
 
-    struct Reinterpret_Expr: public Expression {
+    struct Reinterpret_Expression: public Expression {
         Owning_Ptr<Type> target_type;
         Owning_Ptr<Expression> source;
         Owning_Ptr<Expression> index;
 
-        Reinterpret_Expr(Owning_Ptr<Type> target_type, Owning_Ptr<Expression> source, Owning_Ptr<Expression> index, Source_Info const& source_info);
+        Reinterpret_Expression(Owning_Ptr<Type> target_type, Owning_Ptr<Expression> source, Owning_Ptr<Expression> index, Source_Info const& source_info);
 
-        [[nodiscard]] Owning_Ptr<Reinterpret_Expr> clone() const;
+        [[nodiscard]] Owning_Ptr<Reinterpret_Expression> clone() const;
 
     private:
-        [[nodiscard]] virtual Reinterpret_Expr* _clone() const override;
+        [[nodiscard]] virtual Reinterpret_Expression* _clone() const override;
     };
 
     struct String_Literal: public Expression {
@@ -980,9 +983,9 @@ namespace vush {
 
     struct Switch_Statement: public Statement {
         Statement_List cases;
-        Owning_Ptr<Expression> match_expr;
+        Owning_Ptr<Expression> match_expression;
 
-        Switch_Statement(Owning_Ptr<Expression> match_expr, Statement_List cases, Source_Info const& source_info);
+        Switch_Statement(Owning_Ptr<Expression> match_expression, Statement_List cases, Source_Info const& source_info);
 
         [[nodiscard]] Owning_Ptr<Switch_Statement> clone() const;
 
@@ -1029,11 +1032,11 @@ namespace vush {
         [[nodiscard]] virtual Do_While_Statement* _clone() const override;
     };
 
-    // return_expr may be nullptr
     struct Return_Statement: public Statement {
-        Owning_Ptr<Expression> return_expr;
+        // May be nullptr when the return statement doesn't return anything
+        Owning_Ptr<Expression> return_expression;
 
-        Return_Statement(Owning_Ptr<Expression> return_expr, Source_Info const& source_info);
+        Return_Statement(Owning_Ptr<Expression> return_expression, Source_Info const& source_info);
 
         [[nodiscard]] Owning_Ptr<Return_Statement> clone() const;
 
