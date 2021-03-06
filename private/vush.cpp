@@ -1074,8 +1074,33 @@ namespace vush {
         return {anton::expected_value};
     }
 
-    static anton::Expected<void, anton::String> process_objects_and_settings_and_populate_symbol_table(Context& ctx, Declaration_List& ast,
-                                                                                                       anton::Array<Pass_Settings>& settings) {
+    static void gather_settings(Declaration_List& ast, anton::Array<Pass_Settings>& settings) {
+        for(auto& ast_node: ast) {
+            if(ast_node->node_type == AST_Node_Type::settings_decl) {
+                Settings_Decl& decl = static_cast<Settings_Decl&>(*ast_node);
+                Pass_Settings* pass_iter = anton::find_if(settings.begin(), settings.end(),
+                                                          [&pass_name = decl.pass_name->value](Pass_Settings const& v) { return v.pass_name == pass_name; });
+                if(pass_iter == settings.end()) {
+                    Pass_Settings& v = settings.emplace_back(Pass_Settings{decl.pass_name->value, {}});
+                    pass_iter = &v;
+                }
+
+                anton::Array<Setting_Key_Value>& pass_settings = pass_iter->settings;
+                // N^2 loop to overwrite duplicates in the order of occurence
+                for(Setting_Key_Value const& kv_new: decl.settings) {
+                    auto end = pass_settings.end();
+                    auto i = anton::find_if(pass_settings.begin(), end, [&kv_new](Setting_Key_Value const& v) { return kv_new.key == v.key; });
+                    if(i != end) {
+                        i->value = kv_new.value;
+                    } else {
+                        pass_settings.emplace_back(kv_new);
+                    }
+                }
+            }
+        }
+    }
+
+    static anton::Expected<void, anton::String> process_objects_and_populate_symbol_table(Context& ctx, Declaration_List& ast) {
         for(auto& ast_node: ast) {
             switch(ast_node->node_type) {
                 case AST_Node_Type::struct_decl: {
@@ -1107,28 +1132,6 @@ namespace vush {
                 case AST_Node_Type::function_declaration: {
                     Function_Declaration& node = static_cast<Function_Declaration&>(*ast_node);
                     ctx.symbols[0].emplace(node.identifier->value, &node);
-                } break;
-
-                case AST_Node_Type::settings_decl: {
-                    Settings_Decl& decl = static_cast<Settings_Decl&>(*ast_node);
-                    Pass_Settings* pass_iter = anton::find_if(
-                        settings.begin(), settings.end(), [&pass_name = decl.pass_name->value](Pass_Settings const& v) { return v.pass_name == pass_name; });
-                    if(pass_iter == settings.end()) {
-                        Pass_Settings& v = settings.emplace_back(Pass_Settings{decl.pass_name->value, {}});
-                        pass_iter = &v;
-                    }
-
-                    anton::Array<Setting_Key_Value>& pass_settings = pass_iter->settings;
-                    // N^2 loop to overwrite duplicates in the order of occurence
-                    for(Setting_Key_Value const& kv_new: decl.settings) {
-                        auto end = pass_settings.end();
-                        auto i = anton::find_if(pass_settings.begin(), end, [&kv_new](Setting_Key_Value const& v) { return kv_new.key == v.key; });
-                        if(i != end) {
-                            i->value = kv_new.value;
-                        } else {
-                            pass_settings.emplace_back(kv_new);
-                        }
-                    }
                 } break;
 
                 default:
@@ -1775,7 +1778,9 @@ namespace vush {
             return {anton::expected_error, ANTON_MOV(res.error())};
         }
 
-        if(anton::Expected<void, anton::String> res = process_objects_and_settings_and_populate_symbol_table(ctx, ast, settings); !res) {
+        gather_settings(ast, settings);
+
+        if(anton::Expected<void, anton::String> res = process_objects_and_populate_symbol_table(ctx, ast); !res) {
             return {anton::expected_error, ANTON_MOV(res.error())};
         }
 
