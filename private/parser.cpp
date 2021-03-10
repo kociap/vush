@@ -918,7 +918,7 @@ namespace vush {
                 }
             }
 
-            auto param_list = try_function_param_list(true);
+            auto param_list = try_function_param_list();
             if(!param_list) {
                 _lexer.restore_state(state_backup);
                 return nullptr;
@@ -967,7 +967,7 @@ namespace vush {
                 return nullptr;
             }
 
-            auto param_list = try_function_param_list(false);
+            auto param_list = try_function_param_list();
             if(!param_list) {
                 _lexer.restore_state(state_backup);
                 return nullptr;
@@ -995,7 +995,7 @@ namespace vush {
                 new Function_Declaration(ANTON_MOV(attributes), ANTON_MOV(return_type), ANTON_MOV(name), ANTON_MOV(param_list.value()), ANTON_MOV(body), src)};
         }
 
-        anton::Optional<Parameter_List> try_function_param_list(bool const allow_sourced_params) {
+        anton::Optional<Parameter_List> try_function_param_list() {
             Lexer_State const state_backup = _lexer.get_current_state();
             if(!_lexer.match(token_paren_open)) {
                 set_error(u8"expected '('");
@@ -1010,7 +1010,8 @@ namespace vush {
             Parameter_List param_list;
             // Match parameters
             do {
-                if(Owning_Ptr param = try_function_param(allow_sourced_params)) {
+                Owning_Ptr param = try_function_param();
+                if(param) {
                     param_list.emplace_back(ANTON_MOV(param));
                 } else {
                     _lexer.restore_state(state_backup);
@@ -1027,9 +1028,9 @@ namespace vush {
             return ANTON_MOV(param_list);
         }
 
-        Owning_Ptr<Function_Param> try_function_param(bool const allow_sourced_params) {
+        Owning_Ptr<Function_Param> try_function_param() {
             Lexer_State const state_backup = _lexer.get_current_state();
-            if(Owning_Ptr param_if = try_function_param_if(allow_sourced_params)) {
+            if(Owning_Ptr param_if = try_function_param_if()) {
                 return param_if;
             }
 
@@ -1049,14 +1050,7 @@ namespace vush {
                 return nullptr;
             }
 
-            // TODO: Move validation into vush.cpp
             if(_lexer.match(kw_from, true)) {
-                if(!allow_sourced_params) {
-                    set_error(u8"illegal sourced parameter declaration");
-                    _lexer.restore_state(state_backup);
-                    return nullptr;
-                }
-
                 if(_lexer.match(kw_in, true)) {
                     Lexer_State const end_state = _lexer.get_current_state_no_skip();
                     Source_Info const src = src_info(state_backup, end_state);
@@ -1072,6 +1066,7 @@ namespace vush {
                     return nullptr;
                 }
             } else {
+                // TODO: Move validation into vush.cpp
                 if(image_layout) {
                     set_error(u8"illegal qualifier");
                     _lexer.restore_state(state_backup);
@@ -1084,7 +1079,7 @@ namespace vush {
             }
         }
 
-        Owning_Ptr<Function_Param_If> try_function_param_if(bool const allow_sourced_params) {
+        Owning_Ptr<Function_Param_If> try_function_param_if() {
             Lexer_State const state_backup = _lexer.get_current_state();
             if(!_lexer.match(kw_if, true)) {
                 set_error(u8"expected 'if'");
@@ -1104,7 +1099,7 @@ namespace vush {
                 return nullptr;
             }
 
-            Owning_Ptr true_param = try_function_param(allow_sourced_params);
+            Owning_Ptr true_param = try_function_param();
             if(!true_param) {
                 _lexer.restore_state(state_backup);
                 return nullptr;
@@ -1117,7 +1112,7 @@ namespace vush {
             }
 
             if(_lexer.match(kw_else, true)) {
-                if(Owning_Ptr param_if = try_function_param_if(allow_sourced_params)) {
+                if(Owning_Ptr param_if = try_function_param_if()) {
                     return Owning_Ptr{
                         new Function_Param_If(ANTON_MOV(condition), ANTON_MOV(true_param), ANTON_MOV(param_if), src_info(state_backup, state_backup))};
                 } else {
@@ -1127,7 +1122,7 @@ namespace vush {
                         return nullptr;
                     }
 
-                    Owning_Ptr false_param = try_function_param(allow_sourced_params);
+                    Owning_Ptr false_param = try_function_param();
                     if(!false_param) {
                         _lexer.restore_state(state_backup);
                         return nullptr;
