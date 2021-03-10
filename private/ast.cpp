@@ -5,6 +5,20 @@ namespace vush {
         return static_cast<i32>(type) >= static_cast<i32>(Builtin_GLSL_Type::glsl_sampler1D);
     }
 
+    bool is_image_type(Builtin_GLSL_Type const type) {
+        return type == Builtin_GLSL_Type::glsl_image1D || type == Builtin_GLSL_Type::glsl_image1DArray || type == Builtin_GLSL_Type::glsl_image2D ||
+               type == Builtin_GLSL_Type::glsl_image2DArray || type == Builtin_GLSL_Type::glsl_image2DMS || type == Builtin_GLSL_Type::glsl_image2DMSArray ||
+               type == Builtin_GLSL_Type::glsl_image2DRect || type == Builtin_GLSL_Type::glsl_image3D || type == Builtin_GLSL_Type::glsl_imageCube ||
+               type == Builtin_GLSL_Type::glsl_imageCubeArray || type == Builtin_GLSL_Type::glsl_imageBuffer || type == Builtin_GLSL_Type::glsl_iimage1D ||
+               type == Builtin_GLSL_Type::glsl_iimage1DArray || type == Builtin_GLSL_Type::glsl_iimage2D || type == Builtin_GLSL_Type::glsl_iimage2DArray ||
+               type == Builtin_GLSL_Type::glsl_iimage2DMS || type == Builtin_GLSL_Type::glsl_iimage2DMSArray || type == Builtin_GLSL_Type::glsl_iimage2DRect ||
+               type == Builtin_GLSL_Type::glsl_iimage3D || type == Builtin_GLSL_Type::glsl_iimageCube || type == Builtin_GLSL_Type::glsl_iimageCubeArray ||
+               type == Builtin_GLSL_Type::glsl_iimageBuffer || type == Builtin_GLSL_Type::glsl_uimage1D || type == Builtin_GLSL_Type::glsl_uimage1DArray ||
+               type == Builtin_GLSL_Type::glsl_uimage2D || type == Builtin_GLSL_Type::glsl_uimage2DArray || type == Builtin_GLSL_Type::glsl_uimage2DMS ||
+               type == Builtin_GLSL_Type::glsl_uimage2DMSArray || type == Builtin_GLSL_Type::glsl_uimage2DRect || type == Builtin_GLSL_Type::glsl_uimage3D ||
+               type == Builtin_GLSL_Type::glsl_uimageCube || type == Builtin_GLSL_Type::glsl_uimageCubeArray || type == Builtin_GLSL_Type::glsl_uimageBuffer;
+    }
+
     anton::Optional<Builtin_GLSL_Type> enumify_builtin_glsl_type(anton::String_View const type) {
         static constexpr anton::String_View builtin_types_strings[] = {
             "void",
@@ -666,6 +680,14 @@ namespace vush {
         }
     }
 
+    bool is_unsized_array(Type const& type) {
+        return type.node_type == AST_Node_Type::array_type && !static_cast<Array_Type const&>(type).size;
+    }
+
+    bool is_sized_array(Type const& type) {
+        return type.node_type == AST_Node_Type::array_type && static_cast<Array_Type const&>(type).size;
+    }
+
     anton::String stringify_type(Type const& type) {
         ANTON_ASSERT(type.node_type == AST_Node_Type::builtin_type || type.node_type == AST_Node_Type::user_defined_type ||
                          type.node_type == AST_Node_Type::array_type,
@@ -689,12 +711,22 @@ namespace vush {
         }
     }
 
-    bool is_unsized_array(Type const& type) {
-        return type.node_type == AST_Node_Type::array_type && !static_cast<Array_Type const&>(type).size;
-    }
+    bool is_image_type(Type const& type) {
+        ANTON_ASSERT(type.node_type == AST_Node_Type::builtin_type || type.node_type == AST_Node_Type::user_defined_type ||
+                         type.node_type == AST_Node_Type::array_type,
+                     u8"unknown ast node type");
 
-    bool is_sized_array(Type const& type) {
-        return type.node_type == AST_Node_Type::array_type && static_cast<Array_Type const&>(type).size;
+        if(type.node_type == AST_Node_Type::user_defined_type) {
+            return false;
+        }
+
+        if(type.node_type == AST_Node_Type::builtin_type) {
+            Builtin_Type const& t = (Builtin_Type const&)type;
+            return is_image_type(t.type);
+        }
+
+        Array_Type const& t = (Array_Type const&)type;
+        return is_image_type(*t.base);
     }
 
     anton::String_View stringify(Image_Layout_Type type) {
@@ -778,6 +810,14 @@ namespace vush {
             case Image_Layout_Type::r8ui:
                 return u8"r8ui";
         }
+    }
+
+    bool is_sourced_parameter(Function_Parameter const& parameter) {
+        return parameter.source;
+    }
+
+    bool is_vertex_input_parameter(Function_Parameter const& parameter) {
+        return parameter.source && parameter.source->value == u8"in";
     }
 
     template<typename T>
@@ -961,13 +1001,13 @@ namespace vush {
         return new Workgroup_Attribute(x->clone(), y->clone(), z->clone(), source_info);
     }
 
-    Owning_Ptr<Function_Param> Function_Param::clone() const {
+    Owning_Ptr<Function_Parameter_Node> Function_Parameter_Node::clone() const {
         return Owning_Ptr{_clone()};
     }
 
-    Function_Param_If::Function_Param_If(Owning_Ptr<Expression> condition, Owning_Ptr<Function_Param> true_param, Owning_Ptr<Function_Param> false_param,
-                                         Source_Info const& source_info)
-        : Function_Param(source_info, AST_Node_Type::function_param_if), condition(ANTON_MOV(condition)), true_param(ANTON_MOV(true_param)),
+    Function_Param_If::Function_Param_If(Owning_Ptr<Expression> condition, Owning_Ptr<Function_Parameter_Node> true_param,
+                                         Owning_Ptr<Function_Parameter_Node> false_param, Source_Info const& source_info)
+        : Function_Parameter_Node(source_info, AST_Node_Type::function_param_if), condition(ANTON_MOV(condition)), true_param(ANTON_MOV(true_param)),
           false_param(ANTON_MOV(false_param)) {}
 
     Owning_Ptr<Function_Param_If> Function_Param_If::clone() const {
@@ -980,17 +1020,6 @@ namespace vush {
         } else {
             return new Function_Param_If(condition->clone(), true_param->clone(), nullptr, source_info);
         }
-    }
-
-    Ordinary_Function_Param::Ordinary_Function_Param(Owning_Ptr<Identifier> identifier, Owning_Ptr<Type> type, Source_Info const& source_info)
-        : Function_Param(source_info, AST_Node_Type::ordinary_function_param), type(ANTON_MOV(type)), identifier(ANTON_MOV(identifier)) {}
-
-    Owning_Ptr<Ordinary_Function_Param> Ordinary_Function_Param::clone() const {
-        return Owning_Ptr{_clone()};
-    }
-
-    Ordinary_Function_Param* Ordinary_Function_Param::_clone() const {
-        return new Ordinary_Function_Param(identifier->clone(), type->clone(), source_info);
     }
 
     Owning_Ptr<Layout_Qualifier> Layout_Qualifier::clone() const {
@@ -1008,29 +1037,19 @@ namespace vush {
         return new Image_Layout_Qualifier(type, source_info);
     }
 
-    Sourced_Function_Param::Sourced_Function_Param(Owning_Ptr<Identifier> identifier, Owning_Ptr<Type> type, Owning_Ptr<Identifier> source,
-                                                   Owning_Ptr<Image_Layout_Qualifier> image_layout, Source_Info const& source_info)
-        : Function_Param(source_info, AST_Node_Type::sourced_function_param), type(ANTON_MOV(type)), identifier(ANTON_MOV(identifier)),
+    Function_Parameter::Function_Parameter(Owning_Ptr<Identifier> identifier, Owning_Ptr<Type> type, Owning_Ptr<Identifier> source,
+                                           Owning_Ptr<Image_Layout_Qualifier> image_layout, Source_Info const& source_info)
+        : Function_Parameter_Node(source_info, AST_Node_Type::function_parameter), type(ANTON_MOV(type)), identifier(ANTON_MOV(identifier)),
           source(ANTON_MOV(source)), image_layout(ANTON_MOV(image_layout)) {}
 
-    Owning_Ptr<Sourced_Function_Param> Sourced_Function_Param::clone() const {
+    Owning_Ptr<Function_Parameter> Function_Parameter::clone() const {
         return Owning_Ptr{_clone()};
     }
 
-    Sourced_Function_Param* Sourced_Function_Param::_clone() const {
+    Function_Parameter* Function_Parameter::_clone() const {
         Owning_Ptr<Image_Layout_Qualifier> _image_layout = image_layout ? image_layout->clone() : nullptr;
-        return new Sourced_Function_Param(identifier->clone(), type->clone(), source->clone(), ANTON_MOV(_image_layout), source_info);
-    }
-
-    Vertex_Input_Param::Vertex_Input_Param(Owning_Ptr<Identifier> identifier, Owning_Ptr<Type> type, Source_Info const& source_info)
-        : Function_Param(source_info, AST_Node_Type::vertex_input_param), type(ANTON_MOV(type)), identifier(ANTON_MOV(identifier)) {}
-
-    Owning_Ptr<Vertex_Input_Param> Vertex_Input_Param::clone() const {
-        return Owning_Ptr{_clone()};
-    }
-
-    Vertex_Input_Param* Vertex_Input_Param::_clone() const {
-        return new Vertex_Input_Param(identifier->clone(), type->clone(), source_info);
+        Owning_Ptr<Identifier> _source = source ? source->clone() : nullptr;
+        return new Function_Parameter(identifier->clone(), type->clone(), ANTON_MOV(_source), ANTON_MOV(_image_layout), source_info);
     }
 
     Function_Declaration::Function_Declaration(Attribute_List attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> identifier,

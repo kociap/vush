@@ -58,29 +58,27 @@ namespace vush {
         }
 
         for(auto& param: params) {
-            ANTON_ASSERT(param->node_type == AST_Node_Type::ordinary_function_param || param->node_type == AST_Node_Type::sourced_function_param ||
-                             param->node_type == AST_Node_Type::vertex_input_param,
-                         u8"unknown parameter type");
-            if(param->node_type == AST_Node_Type::ordinary_function_param) {
-                Ordinary_Function_Param& node = (Ordinary_Function_Param&)*param;
-                add_symbol(ctx, node.identifier->value, &node);
-
-                // TODO: Remove unsized array parameters from parameter list because they are global. We have them to only provide a symbol.
-                // if(is_unsized_array(type)) {
-                // }
-
-            } else if(param->node_type == AST_Node_Type::sourced_function_param) {
-                Source_Info const& src = param->source_info;
+            ANTON_ASSERT(param->node_type == AST_Node_Type::function_parameter, u8"unknown parameter type");
+            Function_Parameter& p = (Function_Parameter&)*param;
+            if(is_sourced_parameter(p)) {
+                Source_Info const& src = p.source_info;
                 return {anton::expected_error,
                         build_error_message(src.file_path, src.line, src.column, u8"sourced parameters are not allowed on ordinary functions")};
-            } else if(param->node_type == AST_Node_Type::vertex_input_param) {
-                Source_Info const& src = param->source_info;
+            }
+
+            if(is_vertex_input_parameter(p)) {
+                Source_Info const& src = p.source_info;
                 return {anton::expected_error,
                         build_error_message(src.file_path, src.line, src.column, u8"vertex input parameters are not allowed on ordinary functions")};
-            } else {
-                Source_Info const& src = param->source_info;
-                return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"unknown parameter type")};
             }
+
+            if(p.image_layout) {
+                Source_Info const& qualifier_src = p.image_layout->source_info;
+                Source_Info const& p_identifier_src = p.identifier->source_info;
+                return {anton::expected_error, format_illegal_image_layout_qualifier_on_non_sourced_parameter(ctx, qualifier_src, p_identifier_src)};
+            }
+
+            add_symbol(ctx, p.identifier->value, &p);
         }
 
         return {anton::expected_value};
@@ -124,86 +122,123 @@ namespace vush {
         switch(function.stage_type) {
             case Stage_Type::vertex: {
                 for(auto& param: params) {
-                    if(param->node_type == AST_Node_Type::ordinary_function_param) {
-                        Source_Info const& src = param->source_info;
+                    ANTON_ASSERT(param->node_type == AST_Node_Type::function_parameter, u8"unknown parameter type");
+                    Function_Parameter& p = (Function_Parameter&)*param;
+                    if(!is_sourced_parameter(p)) {
+                        Source_Info const& src = p.source_info;
                         return {anton::expected_error, format_ordinary_parameter_not_allowed_on_stage(ctx, src, Stage_Type::vertex)};
-                    } else if(param->node_type == AST_Node_Type::sourced_function_param) {
-                        Sourced_Function_Param& node = (Sourced_Function_Param&)*param;
-                        add_symbol(ctx, node.identifier->value, &node);
-                    } else if(param->node_type == AST_Node_Type::vertex_input_param) {
-                        Vertex_Input_Param& node = (Vertex_Input_Param&)*param;
-                        add_symbol(ctx, node.identifier->value, &node);
+                    }
 
-                        Type& type = *node.type;
+                    if(is_vertex_input_parameter(p)) {
+                        Type& type = *p.type;
+                        // Vertex input parameters must not be opaque types
+                        if(is_opaque_type(type)) {
+                            Source_Info const& src = type.source_info;
+                            return {anton::expected_error,
+                                    build_error_message(src.file_path, src.line, src.column, u8"vertex input parameters must not be opaque types")};
+                        }
+
                         // Vertex input parameters must not be arrays (we do not support them yet)
                         if(type.node_type == AST_Node_Type::array_type) {
                             Source_Info const& src = type.source_info;
                             return {anton::expected_error,
                                     build_error_message(src.file_path, src.line, src.column, u8"vertex input parameters must not be arrays")};
                         }
-                    } else {
-                        Source_Info const& src = param->source_info;
-                        return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"unknown parameter type")};
                     }
+
+                    if(p.image_layout) {
+                        Type& type = *p.type;
+                        if(is_image_type(type)) {
+                            Source_Info const& qualifier_src = p.image_layout->source_info;
+                            Source_Info const& type_src = type.source_info;
+                            return {anton::expected_error, format_illegal_image_layout_qualifier_on_non_image_type(ctx, qualifier_src, type_src)};
+                        }
+                    }
+
+                    add_symbol(ctx, p.identifier->value, &p);
                 }
             } break;
 
             case Stage_Type::fragment: {
-                if(params.size() > 0) {
-                    bool const has_ordinary_parameter = params[0]->node_type == AST_Node_Type::ordinary_function_param;
-                    if(has_ordinary_parameter) {
-                        Ordinary_Function_Param& node = (Ordinary_Function_Param&)*params[0];
-                        add_symbol(ctx, node.identifier->value, &node);
+                bool const has_ordinary_parameter = params.size() > 0 && !is_sourced_parameter((Function_Parameter const&)*params[0]);
+                if(has_ordinary_parameter) {
+                    Function_Parameter& p = (Function_Parameter&)*params[0];
 
-                        // TODO: Is this validation correct?
-                        Type& type = *node.type;
-                        // Sourced parameters that are arrays must be sized
-                        if(is_unsized_array(type)) {
-                            Source_Info const& src = type.source_info;
-                            return {anton::expected_error,
-                                    build_error_message(src.file_path, src.line, src.column, u8"stage input parameters must not be unsized arrays")};
-                        }
+                    add_symbol(ctx, p.identifier->value, &p);
 
-                        // Sourced parameters must not be opaque
-                        if(is_opaque_type(type)) {
-                            Source_Info const& src = type.source_info;
-                            return {anton::expected_error,
-                                    build_error_message(src.file_path, src.line, src.column,
-                                                        u8"stage input parameters must be of non-opaque type (non-opaque builtin type or user "
-                                                        u8"defined type) or an array of non-opaque type")};
+                    // TODO: Is this validation correct?
+                    Type& type = *p.type;
+                    // Stage input parameters that are arrays must be sized
+                    if(is_unsized_array(type)) {
+                        Source_Info const& src = type.source_info;
+                        return {anton::expected_error,
+                                build_error_message(src.file_path, src.line, src.column, u8"stage input parameters must not be unsized arrays")};
+                    }
+
+                    // Stage input parameters must not be opaque
+                    if(is_opaque_type(type)) {
+                        Source_Info const& src = type.source_info;
+                        return {anton::expected_error,
+                                build_error_message(src.file_path, src.line, src.column,
+                                                    u8"stage input parameters must be of non-opaque type (non-opaque builtin type or user "
+                                                    u8"defined type) or an array of non-opaque type")};
+                    }
+
+                    if(p.image_layout) {
+                        Source_Info const& qualifier_src = p.image_layout->source_info;
+                        Source_Info const& p_identifier_src = p.identifier->source_info;
+                        return {anton::expected_error, format_illegal_image_layout_qualifier_on_non_sourced_parameter(ctx, qualifier_src, p_identifier_src)};
+                    }
+                }
+
+                for(i64 i = has_ordinary_parameter; i < params.size(); ++i) {
+                    Function_Parameter& p = (Function_Parameter&)*params[i];
+                    if(is_vertex_input_parameter(p)) {
+                        Source_Info const& src = p.source_info;
+                        return {anton::expected_error, format_vertex_input_not_allowed_on_stage(ctx, src, Stage_Type::fragment)};
+                    }
+
+                    if(!is_sourced_parameter(p)) {
+                        Source_Info const& src = p.source_info;
+                        return {anton::expected_error, format_ordinary_parameter_not_allowed_on_stage(ctx, src, Stage_Type::fragment)};
+                    }
+
+                    if(p.image_layout) {
+                        Type& type = *p.type;
+                        if(is_image_type(type)) {
+                            Source_Info const& qualifier_src = p.image_layout->source_info;
+                            Source_Info const& type_src = type.source_info;
+                            return {anton::expected_error, format_illegal_image_layout_qualifier_on_non_image_type(ctx, qualifier_src, type_src)};
                         }
                     }
 
-                    for(i64 i = has_ordinary_parameter; i < params.size(); ++i) {
-                        auto& param = params[i];
-                        Source_Info const& src = param->source_info;
-                        if(param->node_type == AST_Node_Type::sourced_function_param) {
-                            Sourced_Function_Param& node = (Sourced_Function_Param&)*param;
-                            add_symbol(ctx, node.identifier->value, &node);
-                        } else if(param->node_type == AST_Node_Type::ordinary_function_param) {
-                            return {anton::expected_error, format_ordinary_parameter_not_allowed_on_stage(ctx, src, Stage_Type::fragment)};
-                        } else if(param->node_type == AST_Node_Type::vertex_input_param) {
-                            return {anton::expected_error, format_vertex_input_not_allowed_on_stage(ctx, src, Stage_Type::fragment)};
-                        } else {
-                            return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"unknown parameter type")};
-                        }
-                    }
+                    add_symbol(ctx, p.identifier->value, &p);
                 }
             } break;
 
             case Stage_Type::compute: {
                 for(auto& param: params) {
-                    Source_Info const& src = param->source_info;
-                    if(param->node_type == AST_Node_Type::ordinary_function_param) {
-                        return {anton::expected_error, format_ordinary_parameter_not_allowed_on_stage(ctx, src, Stage_Type::compute)};
-                    } else if(param->node_type == AST_Node_Type::sourced_function_param) {
-                        Sourced_Function_Param& node = (Sourced_Function_Param&)*param;
-                        add_symbol(ctx, node.identifier->value, &node);
-                    } else if(param->node_type == AST_Node_Type::vertex_input_param) {
-                        return {anton::expected_error, format_vertex_input_not_allowed_on_stage(ctx, src, Stage_Type::compute)};
-                    } else {
-                        return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"unknown parameter type")};
+                    Function_Parameter& p = (Function_Parameter&)*param;
+                    if(is_vertex_input_parameter(p)) {
+                        Source_Info const& src = p.source_info;
+                        return {anton::expected_error, format_vertex_input_not_allowed_on_stage(ctx, src, Stage_Type::fragment)};
                     }
+
+                    if(!is_sourced_parameter(p)) {
+                        Source_Info const& src = p.source_info;
+                        return {anton::expected_error, format_ordinary_parameter_not_allowed_on_stage(ctx, src, Stage_Type::fragment)};
+                    }
+
+                    if(p.image_layout) {
+                        Type& type = *p.type;
+                        if(is_image_type(type)) {
+                            Source_Info const& qualifier_src = p.image_layout->source_info;
+                            Source_Info const& type_src = type.source_info;
+                            return {anton::expected_error, format_illegal_image_layout_qualifier_on_non_image_type(ctx, qualifier_src, type_src)};
+                        }
+                    }
+
+                    add_symbol(ctx, p.identifier->value, &p);
                 }
             } break;
         }
@@ -1598,9 +1633,9 @@ namespace vush {
                 // Stringify the signature and generate instance name.
                 bool requires_instantiation = false;
                 for(i64 i = 0; i < fn_template.params.size(); ++i) {
-                    Ordinary_Function_Param& param = (Ordinary_Function_Param&)*fn_template.params[i];
-                    stringified_signature += stringify_type(*param.type);
-                    if(is_unsized_array(*param.type)) {
+                    Function_Parameter& p = (Function_Parameter&)*fn_template.params[i];
+                    stringified_signature += stringify_type(*p.type);
+                    if(is_unsized_array(*p.type)) {
                         ANTON_ASSERT(function_call.arguments[i]->node_type == AST_Node_Type::identifier_expression,
                                      "unsized array argument must be an identifier expression");
                         Identifier_Expression& expr = (Identifier_Expression&)*function_call.arguments[i];
@@ -1625,8 +1660,8 @@ namespace vush {
                     // Function already instantiated.
                     // Remove the unsized array arguments from the function call.
                     for(i64 i = 0, j = 0; i < fn_template.params.size(); ++i) {
-                        Ordinary_Function_Param& param = (Ordinary_Function_Param&)*fn_template.params[i];
-                        if(is_unsized_array(*param.type)) {
+                        Function_Parameter& p = (Function_Parameter&)*fn_template.params[i];
+                        if(is_unsized_array(*p.type)) {
                             auto arg_begin = function_call.arguments.begin();
                             function_call.arguments.erase(arg_begin + j, arg_begin + j + 1);
                         } else {
@@ -1645,12 +1680,12 @@ namespace vush {
                 // Build replacements table
                 anton::Array<Replacement_Rule> replacements;
                 for(i64 i = 0; i < instance->params.size(); ++i) {
-                    Ordinary_Function_Param& param = (Ordinary_Function_Param&)*instance->params[i];
-                    if(is_unsized_array(*param.type)) {
+                    Function_Parameter& p = (Function_Parameter&)*instance->params[i];
+                    if(is_unsized_array(*p.type)) {
                         ANTON_ASSERT(function_call.arguments[i]->node_type == AST_Node_Type::identifier_expression,
                                      "unsized array argument must be an identifier expression");
                         Identifier_Expression* argument = (Identifier_Expression*)function_call.arguments[i].get();
-                        replacements.emplace_back(param.identifier->value, argument);
+                        replacements.emplace_back(p.identifier->value, argument);
                     }
                 }
 
@@ -1658,8 +1693,8 @@ namespace vush {
 
                 // Remove the unsized array parameters and arguments from the instance and the function call
                 for(i64 i = 0; i < instance->params.size();) {
-                    Ordinary_Function_Param& param = (Ordinary_Function_Param&)*instance->params[i];
-                    if(is_unsized_array(*param.type)) {
+                    Function_Parameter& p = (Function_Parameter&)*instance->params[i];
+                    if(is_unsized_array(*p.type)) {
                         auto arg_begin = function_call.arguments.begin();
                         function_call.arguments.erase(arg_begin + i, arg_begin + i + 1);
                         auto param_begin = instance->params.begin();
@@ -1893,17 +1928,16 @@ namespace vush {
     // Returns:
     // Array of the extracted unsized and opaque sourced parameters.
     //
-    [[nodiscard]] static anton::Array<Owning_Ptr<Sourced_Function_Param>> extract_sourced_parameters(anton::Slice<Pass_Context> const passes) {
-        auto extract = [](anton::Array<Owning_Ptr<Sourced_Function_Param>>& sourced_params, Pass_Context& pass, Pass_Stage_Declaration& stage_declaration) {
+    [[nodiscard]] static anton::Array<Owning_Ptr<Function_Parameter>> extract_sourced_parameters(anton::Slice<Pass_Context> const passes) {
+        auto extract = [](anton::Array<Owning_Ptr<Function_Parameter>>& sourced_params, Pass_Context& pass, Pass_Stage_Declaration& stage_declaration) {
             Parameter_List& params = stage_declaration.params;
             for(i64 i = 0; i < params.size(); ++i) {
-                Owning_Ptr<Function_Param>& node = params[i];
-                if(node->node_type == AST_Node_Type::sourced_function_param) {
-                    Sourced_Function_Param& param = (Sourced_Function_Param&)*node;
-                    auto iter = pass.sourced_data.find_or_emplace(param.source->value);
-                    iter->value.all.emplace_back(&param);
-                    if(is_unsized_array(*param.type) || is_opaque_type(*param.type)) {
-                        sourced_params.emplace_back(ANTON_MOV((Owning_Ptr<Sourced_Function_Param>&)node));
+                Function_Parameter& p = (Function_Parameter&)*params[i];
+                if(is_sourced_parameter(p) && !is_vertex_input_parameter(p)) {
+                    auto iter = pass.sourced_data.find_or_emplace(p.source->value);
+                    iter->value.all.emplace_back(&p);
+                    if(is_unsized_array(*p.type) || is_opaque_type(*p.type)) {
+                        sourced_params.emplace_back(ANTON_MOV((Owning_Ptr<Function_Parameter>&)params[i]));
                         auto begin = params.begin();
                         params.erase(begin + i, begin + i + 1);
                         --i;
@@ -1912,7 +1946,7 @@ namespace vush {
             }
         };
 
-        anton::Array<Owning_Ptr<Sourced_Function_Param>> sourced_params;
+        anton::Array<Owning_Ptr<Function_Parameter>> sourced_params;
         for(Pass_Context& pass: passes) {
             if(pass.vertex_stage) {
                 extract(sourced_params, pass, *pass.vertex_stage);
@@ -2079,7 +2113,7 @@ namespace vush {
             // Remove duplicates, validate there is no different-type-same-name sourced parameters, optimize layout
             for(auto& [source_name, data]: pass.sourced_data) {
                 // We use stable sort to preserve the order and report duplicates in the correct order
-                anton::merge_sort(data.all.begin(), data.all.end(), [](Sourced_Function_Param const* lhs, Sourced_Function_Param const* rhs) {
+                anton::merge_sort(data.all.begin(), data.all.end(), [](Function_Parameter const* lhs, Function_Parameter const* rhs) {
                     anton::String const& lhs_str = lhs->identifier->value;
                     anton::String const& rhs_str = rhs->identifier->value;
                     return anton::compare(lhs_str, rhs_str) == -1;
@@ -2087,8 +2121,8 @@ namespace vush {
 
                 // Ensure there are no name duplicates with different types
                 for(auto i = data.all.begin(), j = data.all.begin() + 1, end = data.all.end(); j != end; ++i, ++j) {
-                    Sourced_Function_Param const& i_param = **i;
-                    Sourced_Function_Param const& j_param = **j;
+                    Function_Parameter const& i_param = **i;
+                    Function_Parameter const& j_param = **j;
                     anton::String const i_type = stringify_type(*i_param.type);
                     anton::String const j_type = stringify_type(*j_param.type);
                     if(i_param.identifier->value == j_param.identifier->value && i_type != j_type) {
@@ -2098,7 +2132,7 @@ namespace vush {
                 }
 
                 // Remove type duplicates
-                auto end = anton::unique(data.all.begin(), data.all.end(), [](Sourced_Function_Param const* lhs, Sourced_Function_Param const* rhs) {
+                auto end = anton::unique(data.all.begin(), data.all.end(), [](Function_Parameter const* lhs, Function_Parameter const* rhs) {
                     anton::String const i_type = stringify_type(*lhs->type);
                     anton::String const j_type = stringify_type(*rhs->type);
                     return i_type == j_type && lhs->identifier->value == rhs->identifier->value;
@@ -2106,8 +2140,8 @@ namespace vush {
 
                 data.all.erase(end, data.all.end());
 
-                // Copy Sourced_Function_Param's to specialized buffers
-                for(Sourced_Function_Param const* const p: data.all) {
+                // Copy sourced Function_Parameter's to specialized buffers
+                for(Function_Parameter const* const p: data.all) {
                     bool const opaque = is_opaque_type(*p->type);
                     if(!opaque) {
                         data.variables.emplace_back(p);
@@ -2119,7 +2153,7 @@ namespace vush {
                 // Optimize the layout of the variables
                 i64 const variables_count = data.variables.size();
                 anton::Array<Layout_Info> layout_info{anton::reserve, variables_count};
-                for(Sourced_Function_Param const* p: data.variables) {
+                for(Function_Parameter const* p: data.variables) {
                     Layout_Info info = calculate_type_layout_info(ctx, *p->type);
                     layout_info.emplace_back(info);
                 }
@@ -2130,7 +2164,7 @@ namespace vush {
                                   [&layout_info](i64 const lhs, i64 const rhs) { return layout_info[lhs].alignment > layout_info[rhs].alignment; });
                 // Apply the permutation
                 {
-                    anton::Array<Sourced_Function_Param const*> perm_data{variables_count};
+                    anton::Array<Function_Parameter const*> perm_data{variables_count};
                     anton::Array<Layout_Info> perm_layout_info{variables_count};
                     for(i64 i = 0; i < variables_count; ++i) {
                         i64 const index = indices[i];
@@ -2195,7 +2229,7 @@ namespace vush {
         // passed down to codegen which doesn't know about them!.
         // Store the sourced parameters so that they are valid until we generate glsl
         // because the pointers are referenced by Pass_Context's sourced_data.
-        [[maybe_unused]] anton::Array<Owning_Ptr<Sourced_Function_Param>> const sourced_params = extract_sourced_parameters(passes);
+        [[maybe_unused]] anton::Array<Owning_Ptr<Function_Parameter>> const sourced_params = extract_sourced_parameters(passes);
 
         if(anton::Expected<void, anton::String> res = validate_and_optimize_passes(ctx, passes); !res) {
             return {anton::expected_error, ANTON_MOV(res.error())};

@@ -301,24 +301,8 @@ namespace vush {
                 return;
             }
 
-            case AST_Node_Type::ordinary_function_param: {
-                Ordinary_Function_Param& node = (Ordinary_Function_Param&)ast_node;
-                stringify(out, *node.type, ctx);
-                out += u8" ";
-                stringify(out, *node.identifier, ctx);
-                return;
-            }
-
-            case AST_Node_Type::sourced_function_param: {
-                Sourced_Function_Param& node = (Sourced_Function_Param&)ast_node;
-                stringify(out, *node.type, ctx);
-                out += u8" ";
-                stringify(out, *node.identifier, ctx);
-                return;
-            }
-
-            case AST_Node_Type::vertex_input_param: {
-                Vertex_Input_Param& node = (Vertex_Input_Param&)ast_node;
+            case AST_Node_Type::function_parameter: {
+                Function_Parameter& node = (Function_Parameter&)ast_node;
                 stringify(out, *node.type, ctx);
                 out += u8" ";
                 stringify(out, *node.identifier, ctx);
@@ -945,15 +929,15 @@ namespace vush {
         {
             anton::Array<Member_Info> members_info;
             for(auto& param: stage.params) {
-                if(param->node_type == AST_Node_Type::vertex_input_param) {
-                    Owning_Ptr<Vertex_Input_Param>& node = (Owning_Ptr<Vertex_Input_Param>&)param;
-                    explode_type(ctx, *node->type, members_info);
+                Function_Parameter& p = (Function_Parameter&)*param;
+                if(is_vertex_input_parameter(p)) {
+                    explode_type(ctx, *p.type, members_info);
                     i64 location = 0;
                     for(Member_Info const& m: members_info) {
                         anton::String location_str = anton::to_string(location);
                         anton::String_View type_str = stringify(m.type);
                         // We attach parameter names to the vertex inputs
-                        anton::String const& param_name = node->identifier->value;
+                        anton::String const& param_name = p.identifier->value;
                         out += anton::format(u8"layout(location = {}) in {} _pass_{}_{}{};\n", location_str, type_str, pass_name, param_name, m.name);
                         location += m.location_slots;
                     }
@@ -989,45 +973,36 @@ namespace vush {
             i64 param_index = 0;
             anton::Array<Member_Info> members_info;
             for(auto& param: stage.params) {
-                ANTON_ASSERT(param->node_type == AST_Node_Type::vertex_input_param || param->node_type == AST_Node_Type::sourced_function_param,
-                             u8"invalid parameter type");
-                switch(param->node_type) {
-                    case AST_Node_Type::vertex_input_param: {
-                        Vertex_Input_Param* const node = (Vertex_Input_Param*)param.get();
+                Function_Parameter& p = (Function_Parameter&)*param;
+                ANTON_ASSERT(is_sourced_parameter(p), u8"all parameters must be sourced");
+                if(is_vertex_input_parameter(p)) {
+                    write_indent(out, codegen_ctx.indent);
+                    stringify(out, *p.type, codegen_ctx);
+                    anton::String arg_name = "arg" + anton::to_string(param_index);
+                    out += u8" ";
+                    out += arg_name;
+                    out += u8";\n";
+
+                    explode_type(ctx, *p.type, members_info);
+                    // write vertex input assignments
+                    for(Member_Info const& m: members_info) {
                         write_indent(out, codegen_ctx.indent);
-                        stringify(out, *node->type, codegen_ctx);
-                        anton::String arg_name = "arg" + anton::to_string(param_index);
-                        out += u8" ";
-                        out += arg_name;
-                        out += u8";\n";
-
-                        explode_type(ctx, *node->type, members_info);
-                        // write vertex input assignments
-                        for(Member_Info const& m: members_info) {
-                            write_indent(out, codegen_ctx.indent);
-                            anton::String const& param_name = node->identifier->value;
-                            out += anton::format(u8"{}{} = _pass_{}_{}{};\n", arg_name, m.accessor, pass_name, param_name, m.name);
-                        }
-                        members_info.clear();
-                        arguments.emplace_back(ANTON_MOV(arg_name));
-                        param_index += 1;
-                    } break;
-
-                    case AST_Node_Type::sourced_function_param: {
-                        Sourced_Function_Param const& node = (Sourced_Function_Param const&)*param;
-                        auto iter = source_definitions.find(node.source->value);
-                        ANTON_ASSERT(iter != source_definitions.end(), u8"sourced parameter doesn't have an existing source");
-                        anton::String_View bind_string = iter->value.bind;
-                        anton::Expected<anton::String, anton::String> res = format_bind_string(bind_string, *node.identifier, *node.type);
-                        if(res) {
-                            arguments.emplace_back(ANTON_MOV(res.value()));
-                        } else {
-                            return {anton::expected_error, ANTON_MOV(res.error())};
-                        }
-                    } break;
-
-                    default:
-                        ANTON_UNREACHABLE();
+                        anton::String const& param_name = p.identifier->value;
+                        out += anton::format(u8"{}{} = _pass_{}_{}{};\n", arg_name, m.accessor, pass_name, param_name, m.name);
+                    }
+                    members_info.clear();
+                    arguments.emplace_back(ANTON_MOV(arg_name));
+                    param_index += 1;
+                } else {
+                    auto iter = source_definitions.find(p.source->value);
+                    ANTON_ASSERT(iter != source_definitions.end(), u8"sourced parameter doesn't have an existing source");
+                    anton::String_View bind_string = iter->value.bind;
+                    anton::Expected<anton::String, anton::String> res = format_bind_string(bind_string, *p.identifier, *p.type);
+                    if(res) {
+                        arguments.emplace_back(ANTON_MOV(res.value()));
+                    } else {
+                        return {anton::expected_error, ANTON_MOV(res.error())};
+                    }
                 }
             }
         }
@@ -1092,19 +1067,19 @@ namespace vush {
         out += u8"}\n\n";
 
         anton::Array<anton::String> arguments;
-        bool const has_prev_stage_input = stage.params.size() > 0 && stage.params[0]->node_type == AST_Node_Type::ordinary_function_param;
+        bool const has_prev_stage_input = stage.params.size() > 0 && !is_sourced_parameter((Function_Parameter const&)*stage.params[0]);
         // Write input from the previous stage if the first parameter is an ordinary parameter
         if(has_prev_stage_input) {
-            Ordinary_Function_Param const& param = (Ordinary_Function_Param const&)*stage.params[0];
+            Function_Parameter const& p = (Function_Parameter const&)*stage.params[0];
             anton::Array<Member_Info> members_info;
-            explode_type(ctx, *param.type, members_info);
+            explode_type(ctx, *p.type, members_info);
             i64 location = 0;
             for(Member_Info const& m: members_info) {
                 anton::String location_str = anton::to_string(location);
                 anton::String_View type_str = stringify(m.type);
                 anton::String_View interpolation_str = stringify(m.interpolation);
                 out += anton::format(u8"layout(location = {}) {} in {} _pass_{}_in_{}{};\n", location_str, interpolation_str, type_str, pass_name,
-                                     param.identifier->value, m.name);
+                                     p.identifier->value, m.name);
                 location += m.location_slots;
             }
             out += u8"\n";
@@ -1113,11 +1088,11 @@ namespace vush {
 
         // Generate parameters
         for(i64 i = has_prev_stage_input; i < stage.params.size(); ++i) {
-            Sourced_Function_Param const& node = (Sourced_Function_Param const&)*stage.params[i];
-            auto iter = source_definitions.find(node.source->value);
+            Function_Parameter const& p = (Function_Parameter const&)*stage.params[i];
+            auto iter = source_definitions.find(p.source->value);
             ANTON_ASSERT(iter != source_definitions.end(), u8"sourced parameter doesn't have an existing source");
             anton::String_View bind_string = iter->value.bind;
-            anton::Expected<anton::String, anton::String> res = format_bind_string(bind_string, *node.identifier, *node.type);
+            anton::Expected<anton::String, anton::String> res = format_bind_string(bind_string, *p.identifier, *p.type);
             if(res) {
                 arguments.emplace_back(ANTON_MOV(res.value()));
             } else {
@@ -1147,15 +1122,15 @@ namespace vush {
 
         // Build _arg0 (input from the previous stage aggregated into a struct) from fragment inputs
         if(has_prev_stage_input) {
-            Ordinary_Function_Param const& param = (Ordinary_Function_Param const&)*stage.params[0];
+            Function_Parameter const& p = (Function_Parameter const&)*stage.params[0];
             write_indent(out, codegen_ctx.indent);
-            out += stringify_type(*param.type);
+            out += stringify_type(*p.type);
             out += u8" _arg0;\n";
             anton::Array<Member_Info> members_info;
-            explode_type(ctx, *param.type, members_info);
+            explode_type(ctx, *p.type, members_info);
             for(Member_Info const& m: members_info) {
                 write_indent(out, codegen_ctx.indent);
-                out += anton::format(u8"_arg0{} = _pass_{}_in_{}{};\n", m.accessor, pass_name, param.identifier->value, m.name);
+                out += anton::format(u8"_arg0{} = _pass_{}_in_{}{};\n", m.accessor, pass_name, p.identifier->value, m.name);
             }
         }
 
@@ -1255,11 +1230,11 @@ namespace vush {
 
         // Write arguments
         for(i64 i = 0; i < stage.params.size(); ++i) {
-            Sourced_Function_Param const& node = (Sourced_Function_Param const&)*stage.params[i];
-            auto iter = source_definitions.find(node.source->value);
+            Function_Parameter const& p = (Function_Parameter const&)*stage.params[i];
+            auto iter = source_definitions.find(p.source->value);
             ANTON_ASSERT(iter != source_definitions.end(), u8"sourced parameter doesn't have an existing source");
             anton::String_View bind_string = iter->value.bind;
-            anton::Expected<anton::String, anton::String> res = format_bind_string(bind_string, *node.identifier, *node.type);
+            anton::Expected<anton::String, anton::String> res = format_bind_string(bind_string, *p.identifier, *p.type);
             if(!res) {
                 return {anton::expected_error, ANTON_MOV(res.error())};
             }
@@ -1313,7 +1288,7 @@ namespace vush {
                 // We have to make a lot of string copies so that we can expose the variables in the public api
 
                 anton::Array<Sourced_Variable> variables{anton::reserve, value.variables.size()};
-                for(Sourced_Function_Param const* const data: value.variables) {
+                for(Function_Parameter const* const data: value.variables) {
                     anton::String type = stringify_type(*data->type);
                     bool const unsized = is_unsized_array(*data->type);
                     Sourced_Variable variable{data->identifier->value, ANTON_MOV(type), unsized};
@@ -1321,7 +1296,7 @@ namespace vush {
                 }
 
                 anton::Array<Sourced_Opaque_Variable> opaque_variables{anton::reserve, value.opaque_variables.size()};
-                for(Sourced_Function_Param const* const data: value.opaque_variables) {
+                for(Function_Parameter const* const data: value.opaque_variables) {
                     anton::String type = stringify_type(*data->type);
                     bool const unsized = is_unsized_array(*data->type);
                     anton::String image_layout;

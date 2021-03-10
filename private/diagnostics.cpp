@@ -153,6 +153,37 @@ namespace vush {
         return message;
     }
 
+    anton::String format_illegal_image_layout_qualifier_on_non_sourced_parameter(Context const& ctx, Source_Info const& qualifier,
+                                                                                 Source_Info const& parameter_identifier) {
+        anton::String message = format_diagnostic_location(qualifier);
+        anton::String const& source = ctx.source_registry.find(qualifier.file_path)->value;
+        message += u8"illegal image layout qualifier '";
+        message += get_source_bit(source, qualifier);
+        message += u8"' on non-sourced parameter '";
+        message += get_source_bit(source, parameter_identifier);
+        message += u8"'\n";
+        if(ctx.extended_diagnostics) {
+            // TODO: Underline the qualifier and the parameter?
+            print_source_snippet(message, source, qualifier);
+        }
+        return message;
+    }
+
+    anton::String format_illegal_image_layout_qualifier_on_non_image_type(Context const& ctx, Source_Info const& qualifier, Source_Info const& type) {
+        anton::String message = format_diagnostic_location(qualifier);
+        anton::String const& source = ctx.source_registry.find(qualifier.file_path)->value;
+        message += u8"illegal image layout qualifier '";
+        message += get_source_bit(source, qualifier);
+        message += u8"' on non-image type '";
+        message += get_source_bit(source, type);
+        message += u8"'\n";
+        if(ctx.extended_diagnostics) {
+            // TODO: Underline the qualifier and the type?
+            print_source_snippet(message, source, qualifier);
+        }
+        return message;
+    }
+
     anton::String format_duplicate_pass_stage_error(Context const& ctx, Source_Info const& first, Source_Info const& second, anton::String const& pass_name,
                                                     Stage_Type const& stage) {
         anton::String message = format_diagnostic_location(second) + u8"error: duplicate " + stringify(stage) + u8" stage in pass '" + pass_name + "'\n";

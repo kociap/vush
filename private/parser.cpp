@@ -30,7 +30,6 @@ namespace vush {
     static constexpr anton::String_View kw_struct = u8"struct";
     static constexpr anton::String_View kw_import = u8"import";
     static constexpr anton::String_View kw_const = u8"const";
-    static constexpr anton::String_View kw_in = u8"in";
     static constexpr anton::String_View kw_settings = u8"settings";
     static constexpr anton::String_View kw_reinterpret = u8"reinterpret";
     static constexpr anton::String_View kw_invariant = u8"invariant";
@@ -1010,7 +1009,7 @@ namespace vush {
             Parameter_List param_list;
             // Match parameters
             do {
-                Owning_Ptr param = try_function_param();
+                Owning_Ptr param = try_function_parameter();
                 if(param) {
                     param_list.emplace_back(ANTON_MOV(param));
                 } else {
@@ -1028,7 +1027,7 @@ namespace vush {
             return ANTON_MOV(param_list);
         }
 
-        Owning_Ptr<Function_Param> try_function_param() {
+        Owning_Ptr<Function_Parameter_Node> try_function_parameter() {
             Lexer_State const state_backup = _lexer.get_current_state();
             if(Owning_Ptr param_if = try_function_param_if()) {
                 return param_if;
@@ -1050,33 +1049,19 @@ namespace vush {
                 return nullptr;
             }
 
+            Owning_Ptr<Identifier> source;
             if(_lexer.match(kw_from, true)) {
-                if(_lexer.match(kw_in, true)) {
-                    Lexer_State const end_state = _lexer.get_current_state_no_skip();
-                    Source_Info const src = src_info(state_backup, end_state);
-                    return Owning_Ptr{new Vertex_Input_Param(ANTON_MOV(identifier), ANTON_MOV(parameter_type), src)};
-                } else if(Owning_Ptr source = try_identifier()) {
-                    Lexer_State const end_state = _lexer.get_current_state_no_skip();
-                    Source_Info const src = src_info(state_backup, end_state);
-                    return Owning_Ptr{
-                        new Sourced_Function_Param(ANTON_MOV(identifier), ANTON_MOV(parameter_type), ANTON_MOV(source), ANTON_MOV(image_layout), src)};
-                } else {
+                source = try_identifier();
+                if(!source) {
                     set_error(u8"expected parameter source after 'from'");
                     _lexer.restore_state(state_backup);
                     return nullptr;
                 }
-            } else {
-                // TODO: Move validation into vush.cpp
-                if(image_layout) {
-                    set_error(u8"illegal qualifier");
-                    _lexer.restore_state(state_backup);
-                    return nullptr;
-                }
-
-                Lexer_State const end_state = _lexer.get_current_state_no_skip();
-                Source_Info const src = src_info(state_backup, end_state);
-                return Owning_Ptr{new Ordinary_Function_Param(ANTON_MOV(identifier), ANTON_MOV(parameter_type), src)};
             }
+
+            Lexer_State const end_state = _lexer.get_current_state_no_skip();
+            Source_Info const src = src_info(state_backup, end_state);
+            return Owning_Ptr{new Function_Parameter(ANTON_MOV(identifier), ANTON_MOV(parameter_type), ANTON_MOV(source), ANTON_MOV(image_layout), src)};
         }
 
         Owning_Ptr<Function_Param_If> try_function_param_if() {
@@ -1099,7 +1084,7 @@ namespace vush {
                 return nullptr;
             }
 
-            Owning_Ptr true_param = try_function_param();
+            Owning_Ptr true_param = try_function_parameter();
             if(!true_param) {
                 _lexer.restore_state(state_backup);
                 return nullptr;
@@ -1122,7 +1107,7 @@ namespace vush {
                         return nullptr;
                     }
 
-                    Owning_Ptr false_param = try_function_param();
+                    Owning_Ptr false_param = try_function_parameter();
                     if(!false_param) {
                         _lexer.restore_state(state_backup);
                         return nullptr;

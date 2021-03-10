@@ -24,6 +24,10 @@ namespace vush {
     [[nodiscard]] anton::String format_expression_not_implicitly_convertible_to_bool(Context const& ctx, Source_Info const& expression);
     [[nodiscard]] anton::String format_ordinary_parameter_not_allowed_on_stage(Context const& ctx, Source_Info const& src, Stage_Type stage);
     [[nodiscard]] anton::String format_vertex_input_not_allowed_on_stage(Context const& ctx, Source_Info const& src, Stage_Type stage);
+    [[nodiscard]] anton::String format_illegal_image_layout_qualifier_on_non_sourced_parameter(Context const& ctx, Source_Info const& qualifier,
+                                                                                               Source_Info const& parameter_identifier);
+    [[nodiscard]] anton::String format_illegal_image_layout_qualifier_on_non_image_type(Context const& ctx, Source_Info const& qualifier,
+                                                                                        Source_Info const& type);
     [[nodiscard]] anton::String format_duplicate_pass_stage_error(Context const& ctx, Source_Info const& first, Source_Info const& second,
                                                                   anton::String const& pass_name, Stage_Type const& stage);
     [[nodiscard]] anton::String format_missing_vertex_stage_error(Context const& ctx, anton::String const& pass_name);

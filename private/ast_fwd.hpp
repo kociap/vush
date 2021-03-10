@@ -15,11 +15,9 @@ namespace vush {
     struct Identifier;
     struct Type;
     struct Function_Attribute;
-    struct Function_Param;
-    struct Ordinary_Function_Param;
+    struct Function_Parameter_Node;
+    struct Function_Parameter;
     struct Image_Layout_Qualifier;
-    struct Sourced_Function_Param;
-    struct Vertex_Input_Param;
     struct Function_Declaration;
     struct Pass_Stage_Declaration;
     struct String_Literal;
@@ -27,6 +25,6 @@ namespace vush {
 
     using Declaration_List = anton::Array<Owning_Ptr<Declaration>>;
     using Statement_List = anton::Array<Owning_Ptr<Statement>>;
-    using Parameter_List = anton::Array<Owning_Ptr<Function_Param>>;
+    using Parameter_List = anton::Array<Owning_Ptr<Function_Parameter_Node>>;
     using Attribute_List = anton::Array<Owning_Ptr<Function_Attribute>>;
 } // namespace vush

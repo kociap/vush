@@ -9,9 +9,9 @@
 
 namespace vush {
     struct Sourced_Data_Buffers {
-        anton::Array<Sourced_Function_Param const*> all;
-        anton::Array<Sourced_Function_Param const*> variables;
-        anton::Array<Sourced_Function_Param const*> opaque_variables;
+        anton::Array<Function_Parameter const*> all;
+        anton::Array<Function_Parameter const*> variables;
+        anton::Array<Function_Parameter const*> opaque_variables;
     };
 
     struct Pass_Context {

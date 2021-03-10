@@ -20,10 +20,8 @@ namespace vush {
         settings_declaration,
         workgroup_attribute,
         function_param_if,
-        ordinary_function_param,
         image_layout_qualifier,
-        sourced_function_param,
-        vertex_input_param,
+        function_parameter,
         function_declaration,
         pass_stage_declaration,
         expression_if,
@@ -265,6 +263,7 @@ namespace vush {
     };
 
     [[nodiscard]] bool is_opaque_type(Builtin_GLSL_Type type);
+    [[nodiscard]] bool is_image_type(Builtin_GLSL_Type type);
     [[nodiscard]] anton::Optional<Builtin_GLSL_Type> enumify_builtin_glsl_type(anton::String_View type);
     [[nodiscard]] anton::String_View stringify(Builtin_GLSL_Type type);
 
@@ -304,9 +303,10 @@ namespace vush {
     };
 
     [[nodiscard]] bool is_opaque_type(Type const& type);
-    [[nodiscard]] anton::String stringify_type(Type const& type);
     [[nodiscard]] bool is_unsized_array(Type const& type);
     [[nodiscard]] bool is_sized_array(Type const& type);
+    [[nodiscard]] anton::String stringify_type(Type const& type);
+    [[nodiscard]] bool is_image_type(Type const& type);
 
     struct Declaration: public AST_Node {
         using AST_Node::AST_Node;
@@ -454,40 +454,28 @@ namespace vush {
         [[nodiscard]] virtual Workgroup_Attribute* _clone() const override;
     };
 
-    struct Function_Param: public AST_Node {
+    struct Function_Parameter_Node: public AST_Node {
         using AST_Node::AST_Node;
 
-        [[nodiscard]] Owning_Ptr<Function_Param> clone() const;
+        [[nodiscard]] Owning_Ptr<Function_Parameter_Node> clone() const;
 
     private:
-        [[nodiscard]] virtual Function_Param* _clone() const override = 0;
+        [[nodiscard]] virtual Function_Parameter_Node* _clone() const override = 0;
     };
 
-    struct Function_Param_If: public Function_Param {
+    struct Function_Param_If: public Function_Parameter_Node {
         Owning_Ptr<Expression> condition;
-        Owning_Ptr<Function_Param> true_param;
+        Owning_Ptr<Function_Parameter_Node> true_param;
         // nullptr when else branch is not defined
-        Owning_Ptr<Function_Param> false_param;
+        Owning_Ptr<Function_Parameter_Node> false_param;
 
-        Function_Param_If(Owning_Ptr<Expression> condition, Owning_Ptr<Function_Param> true_param, Owning_Ptr<Function_Param> false_param,
+        Function_Param_If(Owning_Ptr<Expression> condition, Owning_Ptr<Function_Parameter_Node> true_param, Owning_Ptr<Function_Parameter_Node> false_param,
                           Source_Info const& source_info);
 
         [[nodiscard]] Owning_Ptr<Function_Param_If> clone() const;
 
     private:
         [[nodiscard]] virtual Function_Param_If* _clone() const override;
-    };
-
-    struct Ordinary_Function_Param: public Function_Param {
-        Owning_Ptr<Type> type;
-        Owning_Ptr<Identifier> identifier;
-
-        Ordinary_Function_Param(Owning_Ptr<Identifier> identifier, Owning_Ptr<Type> type, Source_Info const& source_info);
-
-        [[nodiscard]] Owning_Ptr<Ordinary_Function_Param> clone() const;
-
-    private:
-        [[nodiscard]] virtual Ordinary_Function_Param* _clone() const override;
     };
 
     struct Layout_Qualifier: public AST_Node {
@@ -554,33 +542,26 @@ namespace vush {
         [[nodiscard]] virtual Image_Layout_Qualifier* _clone() const override;
     };
 
-    struct Sourced_Function_Param: public Function_Param {
+    struct Function_Parameter: public Function_Parameter_Node {
         Owning_Ptr<Type> type;
         Owning_Ptr<Identifier> identifier;
+        // nullptr when the parameter has no source.
+        // "in" when the parameter is a vertex input parameter.
         Owning_Ptr<Identifier> source;
         // nullptr if the qualifier is not present
         Owning_Ptr<Image_Layout_Qualifier> image_layout;
 
-        Sourced_Function_Param(Owning_Ptr<Identifier> identifier, Owning_Ptr<Type> type, Owning_Ptr<Identifier> source,
-                               Owning_Ptr<Image_Layout_Qualifier> image_layout, Source_Info const& source_info);
+        Function_Parameter(Owning_Ptr<Identifier> identifier, Owning_Ptr<Type> type, Owning_Ptr<Identifier> source,
+                           Owning_Ptr<Image_Layout_Qualifier> image_layout, Source_Info const& source_info);
 
-        [[nodiscard]] Owning_Ptr<Sourced_Function_Param> clone() const;
-
-    private:
-        [[nodiscard]] virtual Sourced_Function_Param* _clone() const override;
-    };
-
-    struct Vertex_Input_Param: public Function_Param {
-        Owning_Ptr<Type> type;
-        Owning_Ptr<Identifier> identifier;
-
-        Vertex_Input_Param(Owning_Ptr<Identifier> identifier, Owning_Ptr<Type> type, Source_Info const& source_info);
-
-        [[nodiscard]] Owning_Ptr<Vertex_Input_Param> clone() const;
+        [[nodiscard]] Owning_Ptr<Function_Parameter> clone() const;
 
     private:
-        [[nodiscard]] virtual Vertex_Input_Param* _clone() const override;
+        [[nodiscard]] virtual Function_Parameter* _clone() const override;
     };
+
+    [[nodiscard]] bool is_sourced_parameter(Function_Parameter const& parameter);
+    [[nodiscard]] bool is_vertex_input_parameter(Function_Parameter const& parameter);
 
     struct Function_Declaration: public Declaration {
         Parameter_List params;
