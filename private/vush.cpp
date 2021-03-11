@@ -148,7 +148,7 @@ namespace vush {
 
                     if(p.image_layout) {
                         Type& type = *p.type;
-                        if(is_image_type(type)) {
+                        if(!is_image_type(type)) {
                             Source_Info const& qualifier_src = p.image_layout->source_info;
                             Source_Info const& type_src = type.source_info;
                             return {anton::expected_error, format_illegal_image_layout_qualifier_on_non_image_type(ctx, qualifier_src, type_src)};
@@ -205,7 +205,7 @@ namespace vush {
 
                     if(p.image_layout) {
                         Type& type = *p.type;
-                        if(is_image_type(type)) {
+                        if(!is_image_type(type)) {
                             Source_Info const& qualifier_src = p.image_layout->source_info;
                             Source_Info const& type_src = type.source_info;
                             return {anton::expected_error, format_illegal_image_layout_qualifier_on_non_image_type(ctx, qualifier_src, type_src)};
@@ -231,7 +231,7 @@ namespace vush {
 
                     if(p.image_layout) {
                         Type& type = *p.type;
-                        if(is_image_type(type)) {
+                        if(!is_image_type(type)) {
                             Source_Info const& qualifier_src = p.image_layout->source_info;
                             Source_Info const& type_src = type.source_info;
                             return {anton::expected_error, format_illegal_image_layout_qualifier_on_non_image_type(ctx, qualifier_src, type_src)};
