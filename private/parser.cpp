@@ -2595,7 +2595,6 @@ namespace vush {
             };
 
             auto try_decimal = [this]() -> anton::Optional<Owning_Ptr<Integer_Literal>> {
-                Lexer& lexer_variable = _lexer;
                 Lexer_State const state_backup = _lexer.get_current_state();
                 anton::String out;
                 if(char32 const next = _lexer.peek_next(); is_digit(next) && next != U'0') {
