@@ -27,4 +27,5 @@ namespace vush {
     using Statement_List = anton::Array<Owning_Ptr<Statement>>;
     using Parameter_List = anton::Array<Owning_Ptr<Function_Parameter_Node>>;
     using Attribute_List = anton::Array<Owning_Ptr<Function_Attribute>>;
+    using Expression_List = anton::Array<Owning_Ptr<Expression>>;
 } // namespace vush

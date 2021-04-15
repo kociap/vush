@@ -1268,6 +1268,16 @@ namespace vush {
         return new Reinterpret_Expression(target_type->clone(), source->clone(), index->clone(), source_info);
     }
 
+    Default_Expression::Default_Expression(Source_Info const& source_info): Expression(source_info, AST_Node_Type::default_expression) {}
+
+    Owning_Ptr<Default_Expression> Default_Expression::clone() const {
+        return Owning_Ptr{_clone()};
+    }
+
+    Default_Expression* Default_Expression::_clone() const {
+        return new Default_Expression(source_info);
+    }
+
     String_Literal::String_Literal(anton::String value, Source_Info const& source_info)
         : Expression(source_info, AST_Node_Type::string_literal), value(ANTON_MOV(value)) {}
 
@@ -1339,29 +1349,18 @@ namespace vush {
         return new If_Statement(condition->clone(), vush::clone(true_statements), vush::clone(false_statements), source_info);
     }
 
-    Case_Statement::Case_Statement(Owning_Ptr<Expression> condition, Statement_List statements, Source_Info const& source_info)
-        : Statement(source_info, AST_Node_Type::case_statement), condition(ANTON_MOV(condition)), statements(ANTON_MOV(statements)) {}
+    Case_Statement::Case_Statement(Expression_List labels, Statement_List statements, Source_Info const& source_info)
+        : Statement(source_info, AST_Node_Type::case_statement), labels(ANTON_MOV(labels)), statements(ANTON_MOV(statements)) {}
 
     Owning_Ptr<Case_Statement> Case_Statement::clone() const {
         return Owning_Ptr{_clone()};
     }
 
     Case_Statement* Case_Statement::_clone() const {
-        return new Case_Statement(condition->clone(), vush::clone(statements), source_info);
+        return new Case_Statement(vush::clone(labels), vush::clone(statements), source_info);
     }
 
-    Default_Case_Statement::Default_Case_Statement(Statement_List statements, Source_Info const& source_info)
-        : Statement(source_info, AST_Node_Type::default_case_statement), statements(ANTON_MOV(statements)) {}
-
-    Owning_Ptr<Default_Case_Statement> Default_Case_Statement::clone() const {
-        return Owning_Ptr{_clone()};
-    }
-
-    Default_Case_Statement* Default_Case_Statement::_clone() const {
-        return new Default_Case_Statement(vush::clone(statements), source_info);
-    }
-
-    Switch_Statement::Switch_Statement(Owning_Ptr<Expression> match_expression, Statement_List cases, Source_Info const& source_info)
+    Switch_Statement::Switch_Statement(Owning_Ptr<Expression> match_expression, anton::Array<Owning_Ptr<Case_Statement>> cases, Source_Info const& source_info)
         : Statement(source_info, AST_Node_Type::switch_statement), cases(ANTON_MOV(cases)), match_expression(ANTON_MOV(match_expression)) {}
 
     Owning_Ptr<Switch_Statement> Switch_Statement::clone() const {

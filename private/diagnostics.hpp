@@ -37,4 +37,6 @@ namespace vush {
     [[nodiscard]] anton::String format_source_import_failed(Context const& ctx, Source_Info const& import_info, anton::String_View source_callback_message);
     [[nodiscard]] anton::String format_duplicate_sourced_parameter(Context const& ctx, Source_Info const& first, Source_Info const& first_type,
                                                                    Source_Info const& second, Source_Info const& second_type);
+    [[nodiscard]] anton::String format_duplicate_default_label(Context const& ctx, Source_Info const& first, Source_Info const& second);
+    [[nodiscard]] anton::String format_duplicate_label(Context const& ctx, Source_Info const& first, Source_Info const& second);
 } // namespace vush

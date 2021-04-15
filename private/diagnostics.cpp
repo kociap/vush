@@ -3,6 +3,8 @@
 #include <ast.hpp>
 
 namespace vush {
+    using namespace anton::literals;
+
     static void print_underline(anton::String& out, i64 const padding, i64 const underline_length) {
         for(i64 i = 0; i < padding; ++i) {
             out += U' ';
@@ -248,6 +250,46 @@ namespace vush {
             message += u8"second definition with type '";
             message += get_source_bit(second_source, second_type);
             message += u8"' found here\n";
+            print_source_snippet(message, second_source, second);
+        }
+        return message;
+    }
+
+    anton::String format_duplicate_default_label(Context const& ctx, Source_Info const& first, Source_Info const& second) {
+        anton::String message = format_diagnostic_location(second);
+        message += u8"error: duplicate 'default' label in switch statement\n"_sv;
+        if(ctx.extended_diagnostics) {
+            anton::String const& first_source = ctx.source_registry.find(first.file_path)->value;
+            message += format_diagnostic_location(first);
+            message += u8"first occurence of 'default' found here\n"_sv;
+            print_source_snippet(message, first_source, first);
+            message += '\n';
+            anton::String const& second_source = ctx.source_registry.find(second.file_path)->value;
+            message += format_diagnostic_location(second);
+            message += u8"second occurence of 'default' found here\n"_sv;
+            print_source_snippet(message, second_source, second);
+        }
+        return message;
+    }
+
+    anton::String format_duplicate_label(Context const& ctx, Source_Info const& first, Source_Info const& second) {
+        anton::String const& second_source = ctx.source_registry.find(second.file_path)->value;
+        anton::String message = format_diagnostic_location(second);
+        message += u8"error: duplicate '"_sv;
+        message += get_source_bit(second_source, second);
+        message += u8"' label in switch statement\n"_sv;
+        if(ctx.extended_diagnostics) {
+            anton::String const& first_source = ctx.source_registry.find(first.file_path)->value;
+            message += format_diagnostic_location(first);
+            message += u8"first occurence of '"_sv;
+            message += get_source_bit(first_source, first);
+            message += u8"' found here\n"_sv;
+            print_source_snippet(message, first_source, first);
+            message += '\n';
+            message += format_diagnostic_location(second);
+            message += u8"second occurence of '"_sv;
+            message += get_source_bit(second_source, second);
+            message += u8"' found here\n"_sv;
             print_source_snippet(message, second_source, second);
         }
         return message;

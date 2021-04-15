@@ -40,6 +40,7 @@ namespace vush {
         postfix_decrement_expression,
         parenthesised_expression,
         reinterpret_expression,
+        default_expression,
         string_literal,
         bool_literal,
         integer_literal,
@@ -47,7 +48,6 @@ namespace vush {
         block_statement,
         if_statement,
         case_statement,
-        default_case_statement,
         switch_statement,
         for_statement,
         while_statement,
@@ -854,6 +854,18 @@ namespace vush {
         [[nodiscard]] virtual Reinterpret_Expression* _clone() const override;
     };
 
+    // Default_Expression
+    // Used as switch statement's label
+    //
+    struct Default_Expression: public Expression {
+        Default_Expression(Source_Info const& source_info);
+
+        [[nodiscard]] Owning_Ptr<Default_Expression> clone() const;
+
+    private:
+        [[nodiscard]] virtual Default_Expression* _clone() const override;
+    };
+
     struct String_Literal: public Expression {
         anton::String value;
 
@@ -940,10 +952,10 @@ namespace vush {
     };
 
     struct Case_Statement: public Statement {
-        Owning_Ptr<Expression> condition;
+        Expression_List labels;
         Statement_List statements;
 
-        Case_Statement(Owning_Ptr<Expression> condition, Statement_List statements, Source_Info const& source_info);
+        Case_Statement(Expression_List labels, Statement_List statements, Source_Info const& source_info);
 
         [[nodiscard]] Owning_Ptr<Case_Statement> clone() const;
 
@@ -951,22 +963,11 @@ namespace vush {
         [[nodiscard]] virtual Case_Statement* _clone() const override;
     };
 
-    struct Default_Case_Statement: public Statement {
-        Statement_List statements;
-
-        Default_Case_Statement(Statement_List statements, Source_Info const& source_info);
-
-        [[nodiscard]] Owning_Ptr<Default_Case_Statement> clone() const;
-
-    private:
-        [[nodiscard]] virtual Default_Case_Statement* _clone() const override;
-    };
-
     struct Switch_Statement: public Statement {
-        Statement_List cases;
+        anton::Array<Owning_Ptr<Case_Statement>> cases;
         Owning_Ptr<Expression> match_expression;
 
-        Switch_Statement(Owning_Ptr<Expression> match_expression, Statement_List cases, Source_Info const& source_info);
+        Switch_Statement(Owning_Ptr<Expression> match_expression, anton::Array<Owning_Ptr<Case_Statement>> cases, Source_Info const& source_info);
 
         [[nodiscard]] Owning_Ptr<Switch_Statement> clone() const;
 

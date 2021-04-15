@@ -12,6 +12,8 @@
 #include <parser.hpp>
 
 namespace vush {
+    using namespace anton::literals;
+
     // process_fn_param_list
     // Resolves any function parameter ifs and adds the parameters to the symbol table.
     // Validates that the following requirements are met:
@@ -917,36 +919,57 @@ namespace vush {
                         return switch_expr_res;
                     }
 
-                    for(auto& switch_case: node.cases) {
-                        ANTON_ASSERT(switch_case->node_type == AST_Node_Type::case_statement || switch_case->node_type == AST_Node_Type::default_case_statement,
-                                     u8"invalid ast node type");
-                        if(switch_case->node_type == AST_Node_Type::case_statement) {
-                            Case_Statement& s = (Case_Statement&)*switch_case;
-                            // Ensure that the label is an integer literal
-                            anton::Expected<void, anton::String> label_res = process_expression(ctx, s.condition);
+                    struct Label {
+                        Integer_Literal* node;
+                        i64 value;
+                    };
+
+                    Default_Expression* default_label = nullptr;
+                    anton::Array<Label> labels;
+                    for(auto& s: node.cases) {
+                        for(auto& label: s->labels) {
+                            anton::Expected<void, anton::String> label_res = process_expression(ctx, label);
                             if(!label_res) {
                                 return label_res;
                             }
 
-                            if(s.condition->node_type != AST_Node_Type::integer_literal) {
-                                Source_Info const& src = s.condition->source_info;
+                            if(label->node_type == AST_Node_Type::default_expression) {
+                                // Ensure that the default label is unique
+                                if(default_label != nullptr) {
+                                    return {anton::expected_error, format_duplicate_default_label(ctx, default_label->source_info, label->source_info)};
+                                }
+
+                                default_label = (Default_Expression*)label.get();
+                            } else if(label->node_type == AST_Node_Type::integer_literal) {
+                                Integer_Literal* literal = (Integer_Literal*)label.get();
+                                i64 const value = str_to_i64(literal->value, (u64)literal->base);
+                                labels.emplace_back(literal, value);
+                            } else {
+                                Source_Info const& src = label->source_info;
                                 return {anton::expected_error,
                                         build_error_message(src.file_path, src.line, src.column, u8"case label is not an integer literal")};
                             }
+                        }
 
-                            anton::Expected<void, anton::String> res = process_statements(ctx, s.statements);
-                            if(!res) {
-                                return res;
-                            }
-                        } else {
-                            Default_Case_Statement& s = (Default_Case_Statement&)*switch_case;
-                            anton::Expected<void, anton::String> res = process_statements(ctx, s.statements);
-                            if(!res) {
-                                return res;
-                            }
+                        // TODO: prevent break from being used within switch
+
+                        anton::Expected<void, anton::String> res = process_statements(ctx, s->statements);
+                        if(!res) {
+                            return res;
                         }
                     }
 
+                    // Ensure there are no duplicate labels
+                    if(labels.size() > 0) {
+                        anton::merge_sort(labels.begin(), labels.end(), [](Label const& v1, Label const v2) { return v1.value < v2.value; });
+                        for(auto i = labels.begin(), j = labels.begin() + 1, e = labels.end(); j != e; ++i, ++j) {
+                            if(i->value == j->value) {
+                                Source_Info const& src1 = i->node->source_info;
+                                Source_Info const& src2 = j->node->source_info;
+                                return {anton::expected_error, format_duplicate_label(ctx, src1, src2)};
+                            }
+                        }
+                    }
                 } break;
 
                 case AST_Node_Type::return_statement: {
@@ -1304,14 +1327,6 @@ namespace vush {
 
             case AST_Node_Type::case_statement: {
                 Case_Statement& n = (Case_Statement&)node;
-                walk_nodes_and_aggregate_function_calls(function_calls, *n.condition);
-                for(auto& statement: n.statements) {
-                    walk_nodes_and_aggregate_function_calls(function_calls, *statement);
-                }
-            } break;
-
-            case AST_Node_Type::default_case_statement: {
-                Default_Case_Statement& n = (Default_Case_Statement&)node;
                 for(auto& statement: n.statements) {
                     walk_nodes_and_aggregate_function_calls(function_calls, *statement);
                 }
@@ -1518,14 +1533,6 @@ namespace vush {
 
             case AST_Node_Type::case_statement: {
                 Owning_Ptr<Case_Statement>& n = (Owning_Ptr<Case_Statement>&)node;
-                replace_identifier_expressions(n->condition, replacements);
-                for(auto& statement: n->statements) {
-                    replace_identifier_expressions(statement, replacements);
-                }
-            } break;
-
-            case AST_Node_Type::default_case_statement: {
-                Owning_Ptr<Default_Case_Statement>& n = (Owning_Ptr<Default_Case_Statement>&)node;
                 for(auto& statement: n->statements) {
                     replace_identifier_expressions(statement, replacements);
                 }

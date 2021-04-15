@@ -11,6 +11,8 @@
 #include <diagnostics.hpp>
 
 namespace vush {
+    using namespace anton::literals;
+
     struct Codegen_Context {
         Context const& ctx;
         i64 indent;
@@ -357,28 +359,32 @@ namespace vush {
                 out += u8"switch(";
                 stringify(out, *node.match_expression, ctx);
                 out += u8") {\n";
-                for(auto& switch_node: node.cases) {
-                    write_indent(out, ctx.indent + 1);
-                    if(switch_node->node_type == AST_Node_Type::case_statement) {
-                        Case_Statement& switch_case = (Case_Statement&)*switch_node;
-                        out += u8"case ";
-                        stringify(out, *switch_case.condition, ctx);
-                        out += ":\n";
-                        ctx.indent += 2;
-                        for(auto& statement: switch_case.statements) {
-                            stringify(out, *statement, ctx);
+                ctx.indent += 1;
+                for(auto& s: node.cases) {
+                    for(auto& label: s->labels) {
+                        write_indent(out, ctx.indent);
+                        if(label->node_type == AST_Node_Type::default_expression) {
+                            out += u8"default:\n"_sv;
+                        } else {
+                            out += u8"case "_sv;
+                            stringify(out, *label, ctx);
+                            out += u8":\n";
                         }
-                        ctx.indent -= 2;
-                    } else {
-                        Default_Case_Statement& switch_case = (Default_Case_Statement&)*switch_node;
-                        out += u8"default:\n";
-                        ctx.indent += 2;
-                        for(auto& statement: switch_case.statements) {
-                            stringify(out, *statement, ctx);
-                        }
-                        ctx.indent -= 2;
                     }
+
+                    write_indent(out, ctx.indent);
+                    out += u8"{\n"_sv;
+                    ctx.indent += 1;
+                    for(auto& statement: s->statements) {
+                        stringify(out, *statement, ctx);
+                    }
+                    write_indent(out, ctx.indent);
+                    out += u8"break;\n"_sv;
+                    ctx.indent -= 1;
+                    write_indent(out, ctx.indent);
+                    out += u8"}\n"_sv;
                 }
+                ctx.indent -= 1;
                 write_indent(out, ctx.indent);
                 out += u8"}\n";
                 return;
