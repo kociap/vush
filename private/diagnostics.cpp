@@ -1,5 +1,6 @@
 #include <diagnostics.hpp>
 
+#include <anton/format.hpp>
 #include <ast.hpp>
 
 namespace vush {
@@ -67,16 +68,6 @@ namespace vush {
         return anton::String{path} + u8":" + anton::to_string(line + 1) + u8":" + anton::to_string(column + 1) + u8": ";
     }
 
-    anton::String format_integer_literal_overflow(Context const& ctx, Source_Info const& integer) {
-        anton::String message = format_diagnostic_location(integer);
-        message += u8"error: integer literal requires more than 32 bits\n";
-        if(ctx.extended_diagnostics) {
-            anton::String const& source = ctx.source_registry.find(integer.file_path)->value;
-            print_source_snippet(message, source, integer);
-        }
-        return message;
-    }
-
     anton::String format_undefined_symbol(Context const& ctx, Source_Info const& symbol) {
         anton::String const& source = ctx.source_registry.find(symbol.file_path)->value;
         anton::String message = format_diagnostic_location(symbol);
@@ -97,6 +88,34 @@ namespace vush {
         message += u8"' does not name a function\n";
         if(ctx.extended_diagnostics) {
             print_source_snippet(message, source, symbol);
+        }
+        return message;
+    }
+
+    anton::String format_symbol_redefinition(Context const& ctx, Source_Info const& first, Source_Info const& second) {
+        anton::String message = format_diagnostic_location(second);
+        anton::String const& first_source = ctx.source_registry.find(first.file_path)->value;
+        anton::String_View const name = get_source_bit(first_source, first);
+        message += anton::format(u8"error: redefinition of the symbol '{}'\n"_sv, name);
+        if(ctx.extended_diagnostics) {
+            message += format_diagnostic_location(first);
+            message += anton::format(u8"definition of the symbol '{}' found here\n"_sv, name);
+            print_source_snippet(message, first_source, first);
+            message += '\n';
+            message += format_diagnostic_location(second);
+            message += u8"redefined here\n"_sv;
+            anton::String const& second_source = ctx.source_registry.find(second.file_path)->value;
+            print_source_snippet(message, second_source, second);
+        }
+        return message;
+    }
+
+    anton::String format_integer_literal_overflow(Context const& ctx, Source_Info const& integer) {
+        anton::String message = format_diagnostic_location(integer);
+        message += u8"error: integer literal requires more than 32 bits\n";
+        if(ctx.extended_diagnostics) {
+            anton::String const& source = ctx.source_registry.find(integer.file_path)->value;
+            print_source_snippet(message, source, integer);
         }
         return message;
     }

@@ -14,6 +14,44 @@
 namespace vush {
     using namespace anton::literals;
 
+    // check_and_add_symbol
+    // Checks whether a symbol already exists and if not, adds it to the symbol table.
+    // Otherwise returns an error diagnostic.
+    //
+    static anton::Expected<void, anton::String> check_and_add_symbol(Context& ctx, anton::String_View name, Symbol* symbol) {
+        Symbol* original_symbol = find_symbol(ctx, name);
+        if(original_symbol != nullptr) {
+            auto get_symbol_name = [](Symbol* symbol) -> Source_Info {
+                switch(symbol->node_type) {
+                    case Symbol_Type::variable_declaration: {
+                        Variable_Declaration* v = (Variable_Declaration*)symbol;
+                        return v->identifier->source_info;
+                    }
+
+                    case Symbol_Type::constant_declaration: {
+                        Constant_Declaration* v = (Constant_Declaration*)symbol;
+                        return v->identifier->source_info;
+                    }
+
+                    case Symbol_Type::function_parameter: {
+                        Function_Parameter* v = (Function_Parameter*)symbol;
+                        return v->identifier->source_info;
+                    }
+
+                    default:
+                        ANTON_FAIL(false, "unknown symbol type");
+                }
+            };
+
+            Source_Info const first_name = get_symbol_name(original_symbol);
+            Source_Info const second_name = get_symbol_name(symbol);
+            return {anton::expected_error, format_symbol_redefinition(ctx, first_name, second_name)};
+        }
+
+        add_symbol(ctx, name, symbol);
+        return {anton::expected_value};
+    }
+
     // process_fn_param_list
     // Resolves any function parameter ifs and adds the parameters to the symbol table.
     // Validates that the following requirements are met:
@@ -80,7 +118,10 @@ namespace vush {
                 return {anton::expected_error, format_illegal_image_layout_qualifier_on_non_sourced_parameter(ctx, qualifier_src, p_identifier_src)};
             }
 
-            add_symbol(ctx, p.identifier->value, &p);
+            anton::Expected<void, anton::String> symbol_res = check_and_add_symbol(ctx, p.identifier->value, &p);
+            if(!symbol_res) {
+                return symbol_res;
+            }
         }
 
         return {anton::expected_value};
@@ -157,7 +198,10 @@ namespace vush {
                         }
                     }
 
-                    add_symbol(ctx, p.identifier->value, &p);
+                    anton::Expected<void, anton::String> symbol_res = check_and_add_symbol(ctx, p.identifier->value, &p);
+                    if(!symbol_res) {
+                        return symbol_res;
+                    }
                 }
             } break;
 
@@ -165,8 +209,6 @@ namespace vush {
                 bool const has_ordinary_parameter = params.size() > 0 && !is_sourced_parameter((Function_Parameter const&)*params[0]);
                 if(has_ordinary_parameter) {
                     Function_Parameter& p = (Function_Parameter&)*params[0];
-
-                    add_symbol(ctx, p.identifier->value, &p);
 
                     // TODO: Is this validation correct?
                     Type& type = *p.type;
@@ -191,6 +233,11 @@ namespace vush {
                         Source_Info const& p_identifier_src = p.identifier->source_info;
                         return {anton::expected_error, format_illegal_image_layout_qualifier_on_non_sourced_parameter(ctx, qualifier_src, p_identifier_src)};
                     }
+
+                    anton::Expected<void, anton::String> symbol_res = check_and_add_symbol(ctx, p.identifier->value, &p);
+                    if(!symbol_res) {
+                        return symbol_res;
+                    }
                 }
 
                 for(i64 i = has_ordinary_parameter; i < params.size(); ++i) {
@@ -214,7 +261,10 @@ namespace vush {
                         }
                     }
 
-                    add_symbol(ctx, p.identifier->value, &p);
+                    anton::Expected<void, anton::String> symbol_res = check_and_add_symbol(ctx, p.identifier->value, &p);
+                    if(!symbol_res) {
+                        return symbol_res;
+                    }
                 }
             } break;
 
@@ -240,7 +290,10 @@ namespace vush {
                         }
                     }
 
-                    add_symbol(ctx, p.identifier->value, &p);
+                    anton::Expected<void, anton::String> symbol_res = check_and_add_symbol(ctx, p.identifier->value, &p);
+                    if(!symbol_res) {
+                        return symbol_res;
+                    }
                 }
             } break;
         }
@@ -782,7 +835,11 @@ namespace vush {
                                  u8"invalid ast node type");
                     if(node.declaration->node_type == AST_Node_Type::variable_declaration) {
                         Variable_Declaration& decl = (Variable_Declaration&)*node.declaration;
-                        add_symbol(ctx, decl.identifier->value, &decl);
+                        anton::Expected<void, anton::String> symbol_res = check_and_add_symbol(ctx, decl.identifier->value, &decl);
+                        if(!symbol_res) {
+                            return symbol_res;
+                        }
+
                         if(decl.initializer) {
                             anton::Expected<void, anton::String> res = process_expression(ctx, decl.initializer);
                             if(!res) {
@@ -791,12 +848,17 @@ namespace vush {
                         }
                     } else {
                         Constant_Declaration& decl = (Constant_Declaration&)*node.declaration;
-                        add_symbol(ctx, decl.identifier->value, &decl);
+                        anton::Expected<void, anton::String> symbol_res = check_and_add_symbol(ctx, decl.identifier->value, &decl);
+                        if(!symbol_res) {
+                            return symbol_res;
+                        }
+
                         if(!decl.initializer) {
                             return {anton::expected_error, format_constant_missing_initializer(ctx, decl.source_info)};
                         }
 
-                        if(anton::Expected<void, anton::String> res = process_expression(ctx, decl.initializer); !res) {
+                        anton::Expected<void, anton::String> res = process_expression(ctx, decl.initializer);
+                        if(!res) {
                             return res;
                         }
                     }
@@ -857,7 +919,12 @@ namespace vush {
                     For_Statement& node = (For_Statement&)*statements[i];
                     push_scope(ctx);
                     if(node.declaration) {
-                        add_symbol(ctx, node.declaration->identifier->value, node.declaration.get());
+                        anton::Expected<void, anton::String> symbol_res =
+                            check_and_add_symbol(ctx, node.declaration->identifier->value, node.declaration.get());
+                        if(!symbol_res) {
+                            return symbol_res;
+                        }
+
                         anton::Expected<void, anton::String> res = process_expression(ctx, node.declaration->initializer);
                         if(!res) {
                             return res;

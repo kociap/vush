@@ -16,9 +16,10 @@ namespace vush {
 
     [[nodiscard]] anton::String format_diagnostic_location(anton::String_View path, i64 line, i64 column);
 
-    [[nodiscard]] anton::String format_integer_literal_overflow(Context const& ctx, Source_Info const& integer);
     [[nodiscard]] anton::String format_undefined_symbol(Context const& ctx, Source_Info const& symbol);
     [[nodiscard]] anton::String format_called_symbol_does_not_name_function(Context const& ctx, Source_Info const& symbol);
+    [[nodiscard]] anton::String format_symbol_redefinition(Context const& ctx, Source_Info const& first, Source_Info const& second);
+    [[nodiscard]] anton::String format_integer_literal_overflow(Context const& ctx, Source_Info const& integer);
     [[nodiscard]] anton::String format_variable_declaration_in_global_scope(Context const& ctx, Source_Info const& declaration);
     [[nodiscard]] anton::String format_constant_missing_initializer(Context const& ctx, Source_Info const& constant);
     [[nodiscard]] anton::String format_expression_not_implicitly_convertible_to_bool(Context const& ctx, Source_Info const& expression);
