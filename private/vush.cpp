@@ -2260,7 +2260,7 @@ namespace vush {
         ctx.source_request_user_data = user_data;
         ctx.source_definition_cb = config.source_definition_cb;
         ctx.source_definition_user_data = config.source_definition_user_data;
-        ctx.extended_diagnostics = config.extended_diagnostics;
+        ctx.diagnostics = config.diagnostics;
         // Add global scope
         ctx.symbols.emplace_back();
         // Create symbols for the constant defines passed via config

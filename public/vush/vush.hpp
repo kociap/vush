@@ -59,15 +59,21 @@ namespace vush {
 
     using source_definition_callback = anton::Expected<Source_Definition, anton::String> (*)(Source_Definition_Context const& params);
 
+    struct Diagnostics_Options {
+        // Whether to provide extended diagnostic messages that include more thorough explanation
+        // of the error and source code snippets with the exact location highlighted
+        bool extended = true;
+        // Whether to display line numbers on the left side of code snippets
+        bool display_line_numbers = true;
+    };
+
     struct Configuration {
         anton::String source_name;
         anton::Array<Constant_Define> defines;
         anton::Array<Extension> extensions;
         source_definition_callback source_definition_cb = nullptr;
         void* source_definition_user_data = nullptr;
-        // Whether to provide extended diagnostic messages that include more thorough explanation
-        // of the error and source code snippets with the exact location highlighted
-        bool extended_diagnostics = true;
+        Diagnostics_Options diagnostics;
     };
 
     enum struct Stage_Type {

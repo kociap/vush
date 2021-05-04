@@ -23,7 +23,7 @@ namespace vush {
         void* source_definition_user_data;
         source_request_callback source_request_cb;
         void* source_request_user_data;
-        bool extended_diagnostics;
+        Diagnostics_Options diagnostics;
     };
 
     // find_symbol
