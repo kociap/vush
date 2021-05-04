@@ -622,12 +622,6 @@ namespace vush {
                 return nullptr;
             }
 
-            if(_lexer.match(token_brace_close)) {
-                set_error(u8"empty structs are not allowed");
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
             anton::Array<Owning_Ptr<Struct_Member>> members;
             while(!_lexer.match(token_brace_close)) {
                 if(Owning_Ptr decl = try_struct_member()) {

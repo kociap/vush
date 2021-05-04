@@ -33,7 +33,11 @@ namespace vush {
                                                                   anton::String const& pass_name, Stage_Type const& stage);
     [[nodiscard]] anton::String format_missing_vertex_stage_error(Context const& ctx, anton::String const& pass_name);
     [[nodiscard]] anton::String format_vertex_and_compute_stages_error(Context const& ctx, anton::String const& pass_name);
-    [[nodiscard]] anton::String format_empty_struct(Context const& ctx, Source_Info const& struct_info);
+
+    // format_empty_struct
+    //
+    [[nodiscard]] anton::String format_empty_struct(Context const& ctx, Source_Info const& struct_name);
+
     [[nodiscard]] anton::String format_compute_return_type_must_be_void(Context const& ctx, Source_Info const& return_type);
     [[nodiscard]] anton::String format_source_import_failed(Context const& ctx, Source_Info const& import_info, anton::String_View source_callback_message);
     [[nodiscard]] anton::String format_duplicate_sourced_parameter(Context const& ctx, Source_Info const& first, Source_Info const& first_type,

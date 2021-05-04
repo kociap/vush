@@ -225,9 +225,17 @@ namespace vush {
         return u8"error: pass must have either compute or graphics (vertex, fragment) stages. '" + pass_name + u8"' has both";
     }
 
-    anton::String format_empty_struct([[maybe_unused]] Context const& ctx, Source_Info const& struct_info) {
-        anton::String message = format_diagnostic_location(struct_info);
-        message += u8"error: empty structs are not allowed";
+    anton::String format_empty_struct([[maybe_unused]] Context const& ctx, Source_Info const& struct_name) {
+        anton::String const& source = ctx.source_registry.find(struct_name.file_path)->value;
+        anton::String message = format_diagnostic_location(struct_name);
+        anton::String_View const name = get_source_bit(source, struct_name);
+        message += anton::format(u8"error: structs must not be empty, i.e. they must contain at least one member, but '{}' is an empty struct\n"_sv, name);
+        if(ctx.extended_diagnostics) {
+            message += format_diagnostic_location(struct_name);
+            message += anton::format(u8"'{}' is defined here with an empty body\n"_sv, name);
+            print_source_snippet(message, source, struct_name);
+            message += '\n';
+        }
         return message;
     }
 

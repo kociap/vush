@@ -1230,7 +1230,7 @@ namespace vush {
                 case AST_Node_Type::struct_declaration: {
                     Struct_Declaration& node = static_cast<Struct_Declaration&>(*ast_node);
                     if(node.members.size() == 0) {
-                        return {anton::expected_error, format_empty_struct(ctx, node.source_info)};
+                        return {anton::expected_error, format_empty_struct(ctx, node.identifier->source_info)};
                     }
 
                     ctx.symbols[0].emplace(node.identifier->value, &node);
