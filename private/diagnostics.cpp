@@ -76,6 +76,7 @@ namespace vush {
         message += u8"'\n";
         if(ctx.extended_diagnostics) {
             print_source_snippet(message, source, symbol);
+            message += '\n';
         }
         return message;
     }
@@ -88,6 +89,7 @@ namespace vush {
         message += u8"' does not name a function\n";
         if(ctx.extended_diagnostics) {
             print_source_snippet(message, source, symbol);
+            message += '\n';
         }
         return message;
     }
@@ -106,6 +108,7 @@ namespace vush {
             message += u8"redefined here\n"_sv;
             anton::String const& second_source = ctx.source_registry.find(second.file_path)->value;
             print_source_snippet(message, second_source, second);
+            message += '\n';
         }
         return message;
     }
@@ -116,6 +119,7 @@ namespace vush {
         if(ctx.extended_diagnostics) {
             anton::String const& source = ctx.source_registry.find(integer.file_path)->value;
             print_source_snippet(message, source, integer);
+            message += '\n';
         }
         return message;
     }
@@ -126,6 +130,7 @@ namespace vush {
         if(ctx.extended_diagnostics) {
             anton::String const& source = ctx.source_registry.find(declaration.file_path)->value;
             print_source_snippet(message, source, declaration);
+            message += '\n';
         }
         return message;
     }
@@ -136,6 +141,7 @@ namespace vush {
         if(ctx.extended_diagnostics) {
             anton::String const& source = ctx.source_registry.find(constant.file_path)->value;
             print_source_snippet(message, source, constant);
+            message += '\n';
         }
         return message;
     }
@@ -146,6 +152,7 @@ namespace vush {
         if(ctx.extended_diagnostics) {
             anton::String const& source = ctx.source_registry.find(expression.file_path)->value;
             print_source_snippet(message, source, expression);
+            message += '\n';
         }
         return message;
     }
@@ -158,6 +165,7 @@ namespace vush {
         if(ctx.extended_diagnostics) {
             anton::String const& source = ctx.source_registry.find(src.file_path)->value;
             print_source_snippet(message, source, src);
+            message += '\n';
         }
         return message;
     }
@@ -170,6 +178,7 @@ namespace vush {
         if(ctx.extended_diagnostics) {
             anton::String const& source = ctx.source_registry.find(src.file_path)->value;
             print_source_snippet(message, source, src);
+            message += '\n';
         }
         return message;
     }
@@ -186,6 +195,7 @@ namespace vush {
         if(ctx.extended_diagnostics) {
             // TODO: Underline the qualifier and the parameter?
             print_source_snippet(message, source, qualifier);
+            message += '\n';
         }
         return message;
     }
@@ -201,6 +211,7 @@ namespace vush {
         if(ctx.extended_diagnostics) {
             // TODO: Underline the qualifier and the type?
             print_source_snippet(message, source, qualifier);
+            message += '\n';
         }
         return message;
     }
@@ -218,11 +229,11 @@ namespace vush {
     }
 
     anton::String format_missing_vertex_stage_error([[maybe_unused]] Context const& ctx, anton::String const& pass_name) {
-        return u8"error: missing vertex stage in pass '" + pass_name + u8"'";
+        return u8"error: missing vertex stage in pass '" + pass_name + u8"'\n";
     }
 
     anton::String format_vertex_and_compute_stages_error([[maybe_unused]] Context const& ctx, anton::String const& pass_name) {
-        return u8"error: pass must have either compute or graphics (vertex, fragment) stages. '" + pass_name + u8"' has both";
+        return u8"error: pass must have either compute or graphics (vertex, fragment) stages. '" + pass_name + u8"' has both\n";
     }
 
     anton::String format_empty_struct([[maybe_unused]] Context const& ctx, Source_Info const& struct_name) {
@@ -245,6 +256,7 @@ namespace vush {
         if(ctx.extended_diagnostics) {
             anton::String const& source = ctx.source_registry.find(return_type.file_path)->value;
             print_source_snippet(message, source, return_type);
+            message += '\n';
         }
         return message;
     }
@@ -253,6 +265,7 @@ namespace vush {
         anton::String message = format_diagnostic_location(import_info);
         message += u8"error: source import failed with the following error: ";
         message += source_callback_message;
+        message += '\n';
         if(ctx.extended_diagnostics) {
             anton::String const& source = ctx.source_registry.find(import_info.file_path)->value;
             print_source_snippet(message, source, import_info);
@@ -278,6 +291,7 @@ namespace vush {
             message += get_source_bit(second_source, second_type);
             message += u8"' found here\n";
             print_source_snippet(message, second_source, second);
+            message += '\n';
         }
         return message;
     }
@@ -295,6 +309,7 @@ namespace vush {
             message += format_diagnostic_location(second);
             message += u8"second occurence of 'default' found here\n"_sv;
             print_source_snippet(message, second_source, second);
+            message += '\n';
         }
         return message;
     }
@@ -318,6 +333,7 @@ namespace vush {
             message += get_source_bit(second_source, second);
             message += u8"' found here\n"_sv;
             print_source_snippet(message, second_source, second);
+            message += '\n';
         }
         return message;
     }
