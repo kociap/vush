@@ -529,12 +529,18 @@ namespace vush {
                 // Section 4.1.3 of The OpenGL Shading Language 4.60.7 states that integer literals must require at most 32 bits.
                 switch(node->base) {
                     case Integer_Literal_Base::dec: {
+                        anton::String const& value = node->value;
                         // The max number of digits in a 32 bit decimal number is 10, which corresponds to 9999999999
-                        if(node->value.size_bytes() > 13) {
+                        if(value.size_bytes() > 10) {
                             return {anton::expected_error, format_integer_literal_overflow(ctx, node->source_info)};
                         } else {
+                            // Ensure that the decimal literals have no leading zeros
+                            if(value.size_bytes() > 1 && value.data()[0] == '0') {
+                                return {anton::expected_error, format_integer_literal_leading_zeros(ctx, node->source_info)};
+                            }
+
+                            i64 const v = anton::str_to_i64(value);
                             // The max allowed value is 4294967295
-                            i64 const v = anton::str_to_i64(node->value);
                             if(v <= 4294967295) {
                                 return {anton::expected_value};
                             } else {

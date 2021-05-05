@@ -166,6 +166,17 @@ namespace vush {
         return message;
     }
 
+    anton::String format_integer_literal_leading_zeros(Context const& ctx, Source_Info const& integer) {
+        anton::String message = format_diagnostic_location(integer);
+        message += u8"error: leading zeros in decimal integer literals are not allowed\n";
+        if(ctx.diagnostics.extended) {
+            anton::String const& source = ctx.source_registry.find(integer.file_path)->value;
+            print_source_snippet(ctx, message, source, integer);
+            message += '\n';
+        }
+        return message;
+    }
+
     anton::String format_variable_declaration_in_global_scope(Context const& ctx, Source_Info const& declaration) {
         anton::String message = format_diagnostic_location(declaration);
         message += u8"error: illegal declaration of a variable in global scope\n";

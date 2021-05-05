@@ -16,7 +16,7 @@ Four types of integer literals are available:
  - octal literals start with `0o` or `0O` and consist of octal digits `[0-7]`
  - hexadecimal literals start with `0x` or `0X` and consist of hexadecimal digits `[0-9a-fA-F]`
 
-Leading zeros in non-zero decimal literals are not allowed.
+Leading zeros in decimal literals are not allowed.
 
 All integer literals are by default 32bit signed integers (`int`). Use the suffix `u` or `U` to change the type of a literal to 32bit unsigned integer (`uint`).
 
