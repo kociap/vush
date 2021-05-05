@@ -752,10 +752,60 @@ namespace vush {
 
             case AST_Node_Type::integer_literal: {
                 Integer_Literal& node = (Integer_Literal&)ast_node;
-                if(node.base == Integer_Literal_Base::hex) {
-                    out += u8"0x";
+                switch(node.base) {
+                    case Integer_Literal_Base::dec: {
+                        out += node.value;
+                    } break;
+
+                    case Integer_Literal_Base::bin: {
+                        // Convert the binary literal to a hexadecimal literal because GLSL does not support binary literals
+                        auto to_hex_digit = [](i64 value) -> char32 {
+                            if(value < 10) {
+                                return U'0' + value;
+                            } else {
+                                return U'A' + value - 10;
+                            }
+                        };
+
+                        out += u8"0x";
+
+                        i64 const length = node.value.size_bytes();
+                        char8 const* string = node.value.data();
+                        // Since we want to append digits as we go and the literal may have an arbitrary length,
+                        // we have to process the first digits that are superfluous separately
+                        i64 const superfluous = length % 4;
+                        if(superfluous != 0) {
+                            i64 value = 0;
+                            for(i64 i = 0; i < superfluous; ++i) {
+                                value *= 2;
+                                value += string[i] == '1';
+                            }
+                            char32 const digit = to_hex_digit(value);
+                            out += digit;
+                        }
+
+                        for(i64 i = superfluous; i < length; i += 4) {
+                            i64 value = 0;
+                            value |= (string[i] == '1') << 3;
+                            value |= (string[i + 1] == '1') << 2;
+                            value |= (string[i + 2] == '1') << 1;
+                            value |= (string[i + 3] == '1');
+                            char32 const digit = to_hex_digit(value);
+                            out += digit;
+                        }
+                    } break;
+
+                    case Integer_Literal_Base::oct: {
+                        out += u8"0"_sv;
+                        out += node.value;
+                    } break;
+
+                    case Integer_Literal_Base::hex: {
+                        out += u8"0x"_sv;
+                        out += node.value;
+                    } break;
                 }
-                out += node.value;
+
                 if(node.type == Integer_Literal_Type::u32) {
                     out += u8"u";
                 }

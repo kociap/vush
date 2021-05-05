@@ -528,30 +528,6 @@ namespace vush {
                 Owning_Ptr<Integer_Literal>& node = (Owning_Ptr<Integer_Literal>&)expression;
                 // Section 4.1.3 of The OpenGL Shading Language 4.60.7 states that integer literals must require at most 32 bits.
                 switch(node->base) {
-                    case Integer_Literal_Base::hex: {
-                        // The max number of digits in a 32 bit hexadecimal number is 8, which corresponds to 0xFFFFFFFF (excluding the prefix)
-                        if(node->value.size_bytes() > 8) {
-                            return {anton::expected_error, format_integer_literal_overflow(ctx, node->source_info)};
-                        } else {
-                            return {anton::expected_value};
-                        }
-                    } break;
-
-                    case Integer_Literal_Base::oct: {
-                        // The max number of digits in a 32 bit octal number is 13, which corresponds to 0777777777777
-                        if(node->value.size_bytes() > 13) {
-                            return {anton::expected_error, format_integer_literal_overflow(ctx, node->source_info)};
-                        } else {
-                            // The max allowed value is 0377777777777, which corresponds to 4294967295
-                            i64 const v = anton::str_to_i64(node->value, 8);
-                            if(v <= 4294967295) {
-                                return {anton::expected_value};
-                            } else {
-                                return {anton::expected_error, format_integer_literal_overflow(ctx, node->source_info)};
-                            }
-                        }
-                    } break;
-
                     case Integer_Literal_Base::dec: {
                         // The max number of digits in a 32 bit decimal number is 10, which corresponds to 9999999999
                         if(node->value.size_bytes() > 13) {
@@ -564,6 +540,39 @@ namespace vush {
                             } else {
                                 return {anton::expected_error, format_integer_literal_overflow(ctx, node->source_info)};
                             }
+                        }
+                    } break;
+
+                    case Integer_Literal_Base::bin: {
+                        // The max number of digits in a 32 bit binary number is 32 (excluding the prefix)
+                        if(node->value.size_bytes() > 32) {
+                            return {anton::expected_error, format_integer_literal_overflow(ctx, node->source_info)};
+                        } else {
+                            return {anton::expected_value};
+                        }
+                    } break;
+
+                    case Integer_Literal_Base::oct: {
+                        // The max number of digits in a 32 bit octal number is 12, which corresponds to 0777777777777 (excluding the prefix)
+                        if(node->value.size_bytes() > 12) {
+                            return {anton::expected_error, format_integer_literal_overflow(ctx, node->source_info)};
+                        } else {
+                            // The max allowed value is 0377777777777, which corresponds to 4294967295
+                            i64 const v = anton::str_to_i64(node->value, 8);
+                            if(v <= 4294967295) {
+                                return {anton::expected_value};
+                            } else {
+                                return {anton::expected_error, format_integer_literal_overflow(ctx, node->source_info)};
+                            }
+                        }
+                    } break;
+
+                    case Integer_Literal_Base::hex: {
+                        // The max number of digits in a 32 bit hexadecimal number is 8, which corresponds to 0xFFFFFFFF (excluding the prefix)
+                        if(node->value.size_bytes() > 8) {
+                            return {anton::expected_error, format_integer_literal_overflow(ctx, node->source_info)};
+                        } else {
+                            return {anton::expected_value};
                         }
                     } break;
                 }

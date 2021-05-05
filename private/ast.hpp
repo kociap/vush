@@ -889,7 +889,7 @@ namespace vush {
     };
 
     enum struct Integer_Literal_Type { i32, u32 };
-    enum struct Integer_Literal_Base { hex = 16, oct = 8, dec = 10 };
+    enum struct Integer_Literal_Base { dec = 10, bin = 2, oct = 8, hex = 16 };
 
     struct Integer_Literal: public Expression {
         anton::String value;
