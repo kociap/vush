@@ -12,17 +12,25 @@ endif()
 
 if(VUSH_COMPILER_CLANGPP)
     set(VUSH_COMPILE_FLAGS
-        -Wall -Wextra -pedantic
-        -ferror-limit=1
-        -Wnon-virtual-dtor
-        -Werror=return-type
+        # -march=native
+        -fno-math-errno
         -fno-char8_t # Yea, just no.
         -fno-rtti 
         -fno-exceptions
+        -Wall -Wextra -pedantic
+        -ferror-limit=1
+        
+        -Werror=return-type
+        -Werror=uninitialized
+
+        -Wnon-virtual-dtor
+        -Wnewline-eof
+
+        -Wno-reorder-init-list # Supress warnings about reordering in designated initializers
     )
 elseif(MSVC)
     set(VUSH_COMPILE_FLAGS
-        /GF
+        /GF # Kill duplicated strings
     )
 endif()
 
