@@ -3,6 +3,7 @@
 #include <anton/algorithm.hpp>
 #include <anton/filesystem.hpp>
 #include <anton/flat_hash_set.hpp>
+#include <anton/format.hpp>
 #include <anton/iterators.hpp>
 #include <anton/string_stream.hpp>
 #include <codegen.hpp>
@@ -2333,19 +2334,20 @@ namespace vush {
         return {anton::expected_value, Build_Result{ANTON_MOV(ast.settings), ANTON_MOV(codegen_res.value())}};
     }
 
-    [[nodiscard]] static anton::Expected<anton::String, anton::String> resolve_import_path(anton::String const& import_path,
+    [[nodiscard]] static anton::Expected<anton::String, anton::String> resolve_import_path(anton::String const& source_name,
                                                                                            anton::Slice<anton::String const> const import_directories) {
         bool found = false;
         anton::String out_path;
         for(anton::String const& path: import_directories) {
-            anton::String resolved_path = anton::fs::concat_paths(path, import_path);
+            anton::String resolved_path = anton::fs::concat_paths(path, source_name);
             bool exists = anton::fs::exists(resolved_path);
             if(exists) {
                 if(!found) {
                     found = true;
                     out_path = ANTON_MOV(resolved_path);
                 } else {
-                    return {anton::expected_error, anton::String{u8"ambiguous import path"}};
+                    anton::String message = anton::format(u8"ambiguous source '{}' matches '{}' and '{}'", source_name, out_path, resolved_path);
+                    return {anton::expected_error, ANTON_MOV(message)};
                 }
             }
         }
@@ -2353,20 +2355,23 @@ namespace vush {
         if(found) {
             return {anton::expected_value, ANTON_MOV(out_path)};
         } else {
-            return {anton::expected_error, anton::String{u8"could not resolve import path"}};
+            anton::String message = anton::format(u8"could not find the source file '{}'", source_name);
+            return {anton::expected_error, ANTON_MOV(message)};
         }
     }
 
-    [[nodiscard]] static anton::Expected<Source_Request_Result, anton::String> file_read_callback(anton::String const& path, void* user_data) {
+    [[nodiscard]] static anton::Expected<Source_Request_Result, anton::String> file_read_callback(anton::String const& source_name, void* user_data) {
         anton::Slice<anton::String const> const& import_directories = *(anton::Slice<anton::String const> const*)user_data;
-        anton::Expected<anton::String, anton::String> res = resolve_import_path(path, import_directories);
+        anton::Expected<anton::String, anton::String> res = resolve_import_path(source_name, import_directories);
         if(!res) {
             return {anton::expected_error, ANTON_MOV(res.error())};
         }
 
+        anton::String const& path = res.value();
         anton::fs::Input_File_Stream file;
-        if(!file.open(res.value())) {
-            return {anton::expected_error, u8"could not open \"" + res.value() + u8"\" for reading"};
+        if(!file.open(path)) {
+            anton::String message = anton::format(u8"could not open '{}' for reading", path);
+            return {anton::expected_error, ANTON_MOV(message)};
         }
 
         file.seek(anton::Seek_Dir::end, 0);
