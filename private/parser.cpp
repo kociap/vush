@@ -259,7 +259,7 @@ namespace vush {
             char32 const c = _stream.get();
             if(c == '\n') {
                 _line += 1;
-                _column = 0;
+                _column = 1;
             } else {
                 _column += 1;
             }
@@ -276,8 +276,8 @@ namespace vush {
 
     private:
         anton::Input_Stream& _stream;
-        i64 _line = 0;
-        i64 _column = 0;
+        i64 _line = 1;
+        i64 _column = 1;
     };
 
     class Parser {
@@ -311,7 +311,7 @@ namespace vush {
         }
 
         void set_error(anton::String_View const message) {
-            Lexer_State const state = _lexer.get_current_state();
+            Lexer_State const state = _lexer.get_current_state_no_skip();
             if(state.stream_offset >= _last_error.stream_offset) {
                 _last_error.message = message;
                 _last_error.line = state.line;

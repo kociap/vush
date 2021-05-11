@@ -103,11 +103,11 @@ namespace vush {
     }
 
     [[nodiscard]] static anton::String format_diagnostic_location(Source_Info const& info) {
-        return anton::String{info.file_path} + u8":" + anton::to_string(info.line + 1) + u8":" + anton::to_string(info.column + 1) + u8": ";
+        return anton::String{info.file_path} + u8":" + anton::to_string(info.line) + u8":" + anton::to_string(info.column) + u8": ";
     }
 
     anton::String format_diagnostic_location(anton::String_View const path, i64 const line, i64 const column) {
-        return anton::String{path} + u8":" + anton::to_string(line + 1) + u8":" + anton::to_string(column + 1) + u8": ";
+        return anton::String{path} + u8":" + anton::to_string(line) + u8":" + anton::to_string(column) + u8": ";
     }
 
     anton::String format_undefined_symbol(Context const& ctx, Source_Info const& symbol) {
