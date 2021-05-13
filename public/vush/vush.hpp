@@ -82,8 +82,26 @@ namespace vush {
         compute,
     };
 
+    struct Generated_To_Source_Mapping {
+        i64 source_index;
+        i64 generated_line_begin;
+        i64 generated_line_end;
+        i64 generated_column_begin;
+        i64 generated_column_end;
+        i64 source_line_begin;
+        i64 source_line_end;
+        i64 source_column_begin;
+        i64 source_column_end;
+    };
+
+    struct Code_Mappings {
+        anton::Array<Generated_To_Source_Mapping> mappings;
+        anton::Array<anton::String> sources;
+    };
+
     struct GLSL_File {
         anton::String data;
+        Code_Mappings mappings;
         Stage_Type stage_type;
     };
 

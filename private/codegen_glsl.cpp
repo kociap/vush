@@ -13,11 +13,61 @@
 namespace vush {
     using namespace anton::literals;
 
+    struct Code_Mapper {
+    private:
+        anton::Array<Generated_To_Source_Mapping> mappings;
+        anton::Flat_Hash_Map<anton::String, i64> sources;
+
+    public:
+        i64 begin_mapping(Source_Info const& source_info, i64 const line, i64 const column) {
+            i64 source_index = -1;
+            auto iter = sources.find(source_info.file_path);
+            if(iter != sources.end()) {
+                source_index = iter->value;
+            } else {
+                source_index = sources.size();
+                sources.emplace(source_info.file_path, source_index);
+            }
+
+            Generated_To_Source_Mapping mapping{
+                .source_index = source_index,
+                .generated_line_begin = line,
+                .generated_column_begin = column,
+                .source_line_begin = source_info.line,
+                .source_column_begin = source_info.column,
+                .source_line_end = source_info.end_line,
+                .source_column_end = source_info.end_column,
+            };
+            mappings.emplace_back(mapping);
+            i64 const index = mappings.size() - 1;
+            return index;
+        }
+
+        void end_mapping(i64 const index, i64 const line, i64 const column) {
+            Generated_To_Source_Mapping& mapping = mappings[index];
+            mapping.generated_line_end = line;
+            mapping.generated_column_end = column;
+        }
+
+        Code_Mappings build_code_mappings() {
+            i64 const source_count = sources.size();
+            Code_Mappings result{.mappings = ANTON_MOV(mappings)};
+            result.sources.resize(source_count);
+            for(auto kv: sources) {
+                result.sources[kv.value] = ANTON_MOV(kv.key);
+            }
+
+            sources.clear();
+            return result;
+        }
+    };
+
     struct Codegen_Context {
     public:
         Context const& ctx;
 
     private:
+        Code_Mapper mapper;
         anton::String out;
         i64 indent_level = 0;
         i64 line = 0;
@@ -27,13 +77,13 @@ namespace vush {
         Codegen_Context(Context const& ctx): ctx(ctx) {}
         Codegen_Context(Context const& ctx, i64 line): ctx(ctx), line(line) {}
         Codegen_Context(Codegen_Context const& other)
-            : ctx(other.ctx), out(other.out), indent_level(other.indent_level), line(other.line), column(other.column) {}
+            : ctx(other.ctx), mapper(other.mapper), out(other.out), indent_level(other.indent_level), line(other.line), column(other.column) {}
         ~Codegen_Context() = default;
 
         void operator+=(char8 const c) {
             if(c == '\n') {
                 line += 1;
-                column = 0;
+                column = 1;
             }
 
             out += c;
@@ -42,7 +92,7 @@ namespace vush {
         void operator+=(char32 const c) {
             if(c == U'\n') {
                 line += 1;
-                column = 0;
+                column = 1;
             }
 
             out += c;
@@ -54,7 +104,7 @@ namespace vush {
                     column += 1;
                 } else {
                     line += 1;
-                    column = 0;
+                    column = 1;
                 }
             }
 
@@ -81,12 +131,16 @@ namespace vush {
             return out;
         }
 
-        i64 get_line() const {
-            return line;
+        i64 begin_mapping(Source_Info const& source_info) {
+            return mapper.begin_mapping(source_info, line, column);
         }
 
-        i64 get_column() const {
-            return column;
+        void end_mapping(i64 const index) {
+            mapper.end_mapping(index, line, column);
+        }
+
+        Code_Mappings build_code_mappings() {
+            return mapper.build_code_mappings();
         }
     };
 
@@ -277,35 +331,44 @@ namespace vush {
         switch(ast_node.node_type) {
             case AST_Node_Type::identifier: {
                 Identifier& node = (Identifier&)ast_node;
+                i64 const mapping = ctx.begin_mapping(node.source_info);
                 ctx += node.value;
+                ctx.end_mapping(mapping);
                 return;
             }
 
             case AST_Node_Type::builtin_type: {
                 Builtin_Type& node = (Builtin_Type&)ast_node;
+                i64 const mapping = ctx.begin_mapping(node.source_info);
                 ctx += stringify(node.type);
+                ctx.end_mapping(mapping);
                 return;
             }
 
             case AST_Node_Type::user_defined_type: {
                 User_Defined_Type& node = (User_Defined_Type&)ast_node;
+                i64 const mapping = ctx.begin_mapping(node.source_info);
                 ctx += node.identifier;
+                ctx.end_mapping(mapping);
                 return;
             }
 
             case AST_Node_Type::array_type: {
                 Array_Type& node = (Array_Type&)ast_node;
+                i64 const mapping = ctx.begin_mapping(node.source_info);
                 stringify(ctx, *node.base);
                 ctx += u8"[";
                 if(node.size) {
                     stringify(ctx, *node.size);
                 }
                 ctx += u8"]";
+                ctx.end_mapping(mapping);
                 return;
             }
 
             case AST_Node_Type::constant_declaration: {
                 Constant_Declaration& node = (Constant_Declaration&)ast_node;
+                i64 const mapping = ctx.begin_mapping(node.source_info);
                 ctx += u8"const ";
                 stringify(ctx, *node.type);
                 ctx += u8" ";
@@ -313,11 +376,13 @@ namespace vush {
                 ctx += u8" = ";
                 stringify(ctx, *node.initializer);
                 ctx += u8";\n";
+                ctx.end_mapping(mapping);
                 return;
             }
 
             case AST_Node_Type::variable_declaration: {
                 Variable_Declaration& node = (Variable_Declaration&)ast_node;
+                i64 const mapping = ctx.begin_mapping(node.source_info);
                 stringify(ctx, *node.type);
                 ctx += u8" ";
                 stringify(ctx, *node.identifier);
@@ -326,11 +391,13 @@ namespace vush {
                     stringify(ctx, *node.initializer);
                 }
                 ctx += u8";\n";
+                ctx.end_mapping(mapping);
                 return;
             }
 
             case AST_Node_Type::struct_declaration: {
                 Struct_Declaration& node = (Struct_Declaration&)ast_node;
+                i64 const mapping = ctx.begin_mapping(node.source_info);
                 ctx += u8"struct ";
                 stringify(ctx, *node.identifier);
                 ctx += u8" {\n";
@@ -344,11 +411,13 @@ namespace vush {
                 }
                 ctx.unindent();
                 ctx += u8"};\n";
+                ctx.end_mapping(mapping);
                 return;
             }
 
             case AST_Node_Type::function_declaration: {
                 Function_Declaration& node = (Function_Declaration&)ast_node;
+                i64 const mapping = ctx.begin_mapping(node.source_info);
                 stringify(ctx, *node.return_type);
                 ctx += u8" ";
                 stringify(ctx, *node.identifier);
@@ -368,14 +437,17 @@ namespace vush {
                 }
                 ctx.unindent();
                 ctx += u8"}\n";
+                ctx.end_mapping(mapping);
                 return;
             }
 
             case AST_Node_Type::function_parameter: {
                 Function_Parameter& node = (Function_Parameter&)ast_node;
+                i64 const mapping = ctx.begin_mapping(node.source_info);
                 stringify(ctx, *node.type);
                 ctx += u8" ";
                 stringify(ctx, *node.identifier);
+                ctx.end_mapping(mapping);
                 return;
             }
 
@@ -540,20 +612,29 @@ namespace vush {
             }
 
             case AST_Node_Type::break_statement: {
+                Break_Statement& node = (Break_Statement&)ast_node;
+                i64 const mapping = ctx.begin_mapping(node.source_info);
                 ctx.write_indent();
                 ctx += u8"break;\n";
+                ctx.end_mapping(mapping);
                 return;
             }
 
             case AST_Node_Type::continue_statement: {
+                Continue_Statement& node = (Continue_Statement&)ast_node;
+                i64 const mapping = ctx.begin_mapping(node.source_info);
                 ctx.write_indent();
                 ctx += u8"continue;\n";
+                ctx.end_mapping(mapping);
                 return;
             }
 
             case AST_Node_Type::discard_statement: {
+                Discard_Statement& node = (Discard_Statement&)ast_node;
+                i64 const mapping = ctx.begin_mapping(node.source_info);
                 ctx.write_indent();
                 ctx += u8"discard;\n";
+                ctx.end_mapping(mapping);
                 return;
             }
 
@@ -574,9 +655,11 @@ namespace vush {
 
             case AST_Node_Type::assignment_expression: {
                 Assignment_Expression& node = (Assignment_Expression&)ast_node;
+                i64 const mapping = ctx.begin_mapping(node.source_info);
                 stringify(ctx, *node.lhs);
                 ctx += u8" = ";
                 stringify(ctx, *node.rhs);
+                ctx.end_mapping(mapping);
                 return;
             }
 
@@ -630,16 +713,19 @@ namespace vush {
 
             case AST_Node_Type::elvis_expression: {
                 Elvis_Expression& node = (Elvis_Expression&)ast_node;
+                i64 const mapping = ctx.begin_mapping(node.source_info);
                 stringify(ctx, *node.condition);
                 ctx += u8" ? ";
                 stringify(ctx, *node.true_expression);
                 ctx += u8" : ";
                 stringify(ctx, *node.false_expression);
+                ctx.end_mapping(mapping);
                 return;
             }
 
             case AST_Node_Type::binary_expression: {
                 Binary_Expression& node = (Binary_Expression&)ast_node;
+                i64 const mapping = ctx.begin_mapping(node.source_info);
                 stringify(ctx, *node.lhs);
                 switch(node.type) {
                     case Binary_Expression_Type::logic_or:
@@ -701,11 +787,13 @@ namespace vush {
                         break;
                 }
                 stringify(ctx, *node.rhs);
+                ctx.end_mapping(mapping);
                 return;
             }
 
             case AST_Node_Type::unary_expression: {
                 Unary_Expression& node = (Unary_Expression&)ast_node;
+                i64 const mapping = ctx.begin_mapping(node.source_info);
                 switch(node.type) {
                     case Unary_Type::plus:
                         break;
@@ -723,20 +811,25 @@ namespace vush {
                     } break;
                 }
                 stringify(ctx, *node.expression);
+                ctx.end_mapping(mapping);
                 return;
             }
 
             case AST_Node_Type::prefix_increment_expression: {
                 Prefix_Increment_Expression& node = (Prefix_Increment_Expression&)ast_node;
+                i64 const mapping = ctx.begin_mapping(node.source_info);
                 ctx += u8"++";
                 stringify(ctx, *node.expression);
+                ctx.end_mapping(mapping);
                 return;
             }
 
             case AST_Node_Type::prefix_decrement_expression: {
                 Prefix_Decrement_Expression& node = (Prefix_Decrement_Expression&)ast_node;
+                i64 const mapping = ctx.begin_mapping(node.source_info);
                 ctx += u8"--";
                 stringify(ctx, *node.expression);
+                ctx.end_mapping(mapping);
                 return;
             }
 
@@ -788,15 +881,19 @@ namespace vush {
 
             case AST_Node_Type::identifier_expression: {
                 Identifier_Expression& node = (Identifier_Expression&)ast_node;
+                i64 const mapping = ctx.begin_mapping(node.source_info);
                 stringify(ctx, *node.identifier);
+                ctx.end_mapping(mapping);
                 return;
             }
 
             case AST_Node_Type::parenthesised_expression: {
                 Parenthesised_Expression& node = (Parenthesised_Expression&)ast_node;
+                i64 const mapping = ctx.begin_mapping(node.source_info);
                 ctx += u8"(";
                 stringify(ctx, *node.expression);
                 ctx += u8")";
+                ctx.end_mapping(mapping);
                 return;
             }
 
@@ -811,12 +908,15 @@ namespace vush {
 
             case AST_Node_Type::bool_literal: {
                 Bool_Literal& node = (Bool_Literal&)ast_node;
+                i64 const mapping = ctx.begin_mapping(node.source_info);
                 ctx += node.value ? u8"true" : u8"false";
+                ctx.end_mapping(mapping);
                 return;
             }
 
             case AST_Node_Type::integer_literal: {
                 Integer_Literal& node = (Integer_Literal&)ast_node;
+                i64 const mapping = ctx.begin_mapping(node.source_info);
                 switch(node.base) {
                     case Integer_Literal_Base::dec: {
                         ctx += node.value;
@@ -874,15 +974,20 @@ namespace vush {
                 if(node.type == Integer_Literal_Type::u32) {
                     ctx += u8"u";
                 }
+
+                ctx.end_mapping(mapping);
                 return;
             }
 
             case AST_Node_Type::float_literal: {
                 Float_Literal& node = (Float_Literal&)ast_node;
+                i64 const mapping = ctx.begin_mapping(node.source_info);
                 ctx += node.value;
                 if(node.type == Float_Literal_Type::f64) {
                     ctx += u8"lf";
                 }
+
+                ctx.end_mapping(mapping);
                 return;
             }
 
@@ -1484,7 +1589,8 @@ namespace vush {
                 anton::String result{anton::reserve, header.size_bytes() + out.size_bytes()};
                 result += header;
                 result += out;
-                pass_data.files.emplace_back(GLSL_File{ANTON_MOV(result), Stage_Type::vertex});
+                Code_Mappings mappings = vertex_ctx.build_code_mappings();
+                pass_data.files.emplace_back(GLSL_File{ANTON_MOV(result), ANTON_MOV(mappings), Stage_Type::vertex});
             }
 
             if(pass.fragment_stage) {
@@ -1500,7 +1606,8 @@ namespace vush {
                 anton::String result{anton::reserve, header.size_bytes() + out.size_bytes()};
                 result += header;
                 result += out;
-                pass_data.files.emplace_back(GLSL_File{ANTON_MOV(result), Stage_Type::fragment});
+                Code_Mappings mappings = fragment_ctx.build_code_mappings();
+                pass_data.files.emplace_back(GLSL_File{ANTON_MOV(result), ANTON_MOV(mappings), Stage_Type::fragment});
             }
 
             if(pass.compute_stage) {
@@ -1516,7 +1623,8 @@ namespace vush {
                 anton::String result{anton::reserve, header.size_bytes() + out.size_bytes()};
                 result += header;
                 result += out;
-                pass_data.files.emplace_back(GLSL_File{ANTON_MOV(result), Stage_Type::compute});
+                Code_Mappings mappings = compute_ctx.build_code_mappings();
+                pass_data.files.emplace_back(GLSL_File{ANTON_MOV(result), ANTON_MOV(mappings), Stage_Type::compute});
             }
         }
 
