@@ -588,9 +588,9 @@ namespace vush {
 
             case AST_Node_Type::identifier_expression: {
                 Owning_Ptr<Identifier_Expression>& node = (Owning_Ptr<Identifier_Expression>&)expression;
-                Symbol const* const symbol = find_symbol(ctx, node->identifier->value);
+                Symbol const* const symbol = find_symbol(ctx, node->value);
                 if(!symbol) {
-                    return {anton::expected_error, format_undefined_symbol(ctx, node->identifier->source_info)};
+                    return {anton::expected_error, format_undefined_symbol(ctx, node->source_info)};
                 }
 
                 return {anton::expected_value};
@@ -1508,7 +1508,7 @@ namespace vush {
 
             case AST_Node_Type::identifier_expression: {
                 Owning_Ptr<Identifier_Expression>& n = (Owning_Ptr<Identifier_Expression>&)node;
-                anton::String_View identifier = n->identifier->value;
+                anton::String_View identifier = n->value;
                 auto iter = anton::find_if(replacements.begin(), replacements.end(),
                                            [identifier](Replacement_Rule const& rule) { return rule.identifier == identifier; });
                 if(iter != replacements.end()) {
@@ -1730,7 +1730,7 @@ namespace vush {
                                      "unsized array argument must be an identifier expression");
                         Identifier_Expression& expr = (Identifier_Expression&)*function_call.arguments[i];
                         instance_name += "_";
-                        instance_name += expr.identifier->value;
+                        instance_name += expr.value;
                         requires_instantiation = true;
                     }
                 }

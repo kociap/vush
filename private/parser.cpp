@@ -2770,12 +2770,24 @@ namespace vush {
         }
 
         Owning_Ptr<Identifier_Expression> try_identifier_expression() {
-            if(Owning_Ptr identifier = try_identifier()) {
-                Source_Info const src = identifier->source_info;
-                return Owning_Ptr{new Identifier_Expression(ANTON_MOV(identifier), src)};
-            } else {
+            Lexer_State const state_backup = _lexer.get_current_state();
+            anton::String identifier;
+            if(!_lexer.match_identifier(identifier)) {
+                set_error(u8"expected an identifier");
+                _lexer.restore_state(state_backup);
                 return nullptr;
             }
+
+            if(is_keyword(identifier)) {
+                anton::String msg = u8"keyword '" + identifier + "' may not be used as identifier";
+                set_error(msg, state_backup);
+                _lexer.restore_state(state_backup);
+                return nullptr;
+            }
+
+            Lexer_State const end_state = _lexer.get_current_state_no_skip();
+            Source_Info const src = src_info(state_backup, end_state);
+            return Owning_Ptr{new Identifier_Expression(ANTON_MOV(identifier), src)};
         }
     };
 

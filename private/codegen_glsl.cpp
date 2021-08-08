@@ -721,7 +721,7 @@ namespace vush {
 
             case AST_Node_Type::identifier_expression: {
                 Identifier_Expression& node = (Identifier_Expression&)ast_node;
-                stringify(out, *node.identifier, ctx);
+                out += node.value;
                 return;
             }
 
