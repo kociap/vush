@@ -1097,15 +1097,15 @@ namespace vush {
         return new Expression_If(condition->clone(), true_expression->clone(), false_expression->clone(), source_info);
     }
 
-    Identifier_Expression::Identifier_Expression(Owning_Ptr<Identifier> identifier, Source_Info const& source_info)
-        : Expression(source_info, AST_Node_Type::identifier_expression), identifier(ANTON_MOV(identifier)) {}
+    Identifier_Expression::Identifier_Expression(anton::String value, Source_Info const& source_info)
+        : Expression(source_info, AST_Node_Type::identifier_expression), value(ANTON_MOV(value)) {}
 
     Owning_Ptr<Identifier_Expression> Identifier_Expression::clone() const {
         return Owning_Ptr{_clone()};
     }
 
     Identifier_Expression* Identifier_Expression::_clone() const {
-        return new Identifier_Expression(identifier->clone(), source_info);
+        return new Identifier_Expression(value, source_info);
     }
 
     Assignment_Expression::Assignment_Expression(Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info)

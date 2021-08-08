@@ -633,9 +633,9 @@ namespace vush {
     };
 
     struct Identifier_Expression: public Expression {
-        Owning_Ptr<Identifier> identifier;
+        anton::String value;
 
-        Identifier_Expression(Owning_Ptr<Identifier> identifier, Source_Info const& source_info);
+        Identifier_Expression(anton::String value, Source_Info const& source_info);
 
         [[nodiscard]] Owning_Ptr<Identifier_Expression> clone() const;
 

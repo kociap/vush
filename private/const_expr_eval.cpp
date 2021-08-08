@@ -19,9 +19,9 @@ namespace vush {
 
             case AST_Node_Type::identifier_expression: {
                 Identifier_Expression& expr = (Identifier_Expression&)expression;
-                Symbol* symbol = find_symbol(ctx, expr.identifier->value);
+                Symbol* symbol = find_symbol(ctx, expr.value);
                 if(!symbol) {
-                    anton::String msg = u8"unknown identifier '" + expr.identifier->value + u8"'";
+                    anton::String msg = u8"unknown identifier '" + expr.value + u8"'";
                     Source_Info const& src = expr.source_info;
                     return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, msg)};
                 }
@@ -96,16 +96,16 @@ namespace vush {
 
             case AST_Node_Type::identifier_expression: {
                 Identifier_Expression& expr = (Identifier_Expression&)expression;
-                Symbol* symbol = find_symbol(ctx, expr.identifier->value);
+                Symbol* symbol = find_symbol(ctx, expr.value);
                 if(!symbol) {
-                    anton::String msg = u8"unknown identifier '" + expr.identifier->value + u8"'";
+                    anton::String msg = u8"unknown identifier '" + expr.value + u8"'";
                     Source_Info const& src = expr.source_info;
                     return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, msg)};
                 }
 
                 if(symbol->node_type != Symbol_Type::constant_declaration) {
                     Source_Info const& src = expr.source_info;
-                    anton::String msg = u8"identifier '" + expr.identifier->value + u8"' does not name a constant";
+                    anton::String msg = u8"identifier '" + expr.value + u8"' does not name a constant";
                     return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, msg)};
                 }
 
