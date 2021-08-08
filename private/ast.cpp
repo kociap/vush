@@ -985,13 +985,13 @@ namespace vush {
         return new Settings_Declaration(pass_name->clone(), settings, source_info);
     }
 
-    Owning_Ptr<Function_Attribute> Function_Attribute::clone() const {
+    Owning_Ptr<Attribute> Attribute::clone() const {
         return Owning_Ptr{_clone()};
     }
 
     Workgroup_Attribute::Workgroup_Attribute(Owning_Ptr<Integer_Literal> x, Owning_Ptr<Integer_Literal> y, Owning_Ptr<Integer_Literal> z,
                                              Source_Info const& source_info)
-        : Function_Attribute(source_info, AST_Node_Type::workgroup_attribute), x(ANTON_MOV(x)), y(ANTON_MOV(y)), z(ANTON_MOV(z)) {}
+        : Attribute(source_info, AST_Node_Type::workgroup_attribute), x(ANTON_MOV(x)), y(ANTON_MOV(y)), z(ANTON_MOV(z)) {}
 
     Owning_Ptr<Workgroup_Attribute> Workgroup_Attribute::clone() const {
         return Owning_Ptr{_clone()};

@@ -746,73 +746,93 @@ namespace vush {
             return settings_declaration;
         }
 
-        Owning_Ptr<Workgroup_Attribute> try_workgroup_attribute() {
+        Owning_Ptr<Attribute> try_attribute() {
             Lexer_State const state_backup = _lexer.get_current_state();
-            if(!_lexer.match(token_bracket_open)) {
-                set_error(u8"expected '['");
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
 
-            if(!_lexer.match(attrib_workgroup, true)) {
-                set_error(u8"expected 'workgroup'");
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            if(!_lexer.match(token_paren_open)) {
-                set_error(u8"expected '('");
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            Owning_Ptr x = try_integer_literal();
-            if(!x) {
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            Owning_Ptr<Integer_Literal> y;
-            Owning_Ptr<Integer_Literal> z;
-            if(_lexer.match(token_comma)) {
-                y = try_integer_literal();
-                if(!y) {
+            // workgroup attribute
+            if(_lexer.match(attrib_workgroup, true)) {
+                if(!_lexer.match(token_paren_open)) {
+                    set_error(u8"expected '('");
                     _lexer.restore_state(state_backup);
                     return nullptr;
                 }
 
+                Owning_Ptr x = try_integer_literal();
+                if(!x) {
+                    _lexer.restore_state(state_backup);
+                    return nullptr;
+                }
+
+                Owning_Ptr<Integer_Literal> y;
+                Owning_Ptr<Integer_Literal> z;
                 if(_lexer.match(token_comma)) {
-                    z = try_integer_literal();
-                    if(!z) {
+                    y = try_integer_literal();
+                    if(!y) {
                         _lexer.restore_state(state_backup);
                         return nullptr;
                     }
+
+                    if(_lexer.match(token_comma)) {
+                        z = try_integer_literal();
+                        if(!z) {
+                            _lexer.restore_state(state_backup);
+                            return nullptr;
+                        }
+                    }
+                }
+
+                if(!_lexer.match(token_paren_close)) {
+                    set_error(u8"expected ')'");
+                    _lexer.restore_state(state_backup);
+                    return nullptr;
+                }
+
+                Lexer_State const end_state = _lexer.get_current_state_no_skip();
+                Source_Info const src = src_info(state_backup, end_state);
+                return Owning_Ptr{new Workgroup_Attribute(ANTON_MOV(x), ANTON_MOV(y), ANTON_MOV(z), src)};
+            }
+
+            // TODO: Add a diagnostic for unrecognized attributes
+            set_error(u8"expected identifier");
+            _lexer.restore_state(state_backup);
+            return nullptr;
+        }
+
+        anton::Optional<Attribute_List> try_attribute_list() {
+            Lexer_State const state_backup = _lexer.get_current_state();
+            if(!_lexer.match(token_bracket_open)) {
+                set_error(u8"expected '['");
+                _lexer.restore_state(state_backup);
+                return anton::null_optional;
+            }
+
+            if(_lexer.match(token_bracket_close)) {
+                set_error(u8"empty attribute list (TODO: PROVIDE A PROPER DIAGNOSTIC MESSAGE WITH EXACT LOCATION AND CODE SNIPPET)");
+                _lexer.restore_state(state_backup);
+                return anton::null_optional;
+            }
+
+            Attribute_List attributes;
+            while(true) {
+                Owning_Ptr attribute = try_attribute();
+                if(!attribute) {
+                    _lexer.restore_state(state_backup);
+                    return anton::null_optional;
+                }
+
+                attributes.emplace_back(ANTON_MOV(attribute));
+
+                if(!_lexer.match(token_comma)) {
+                    break;
                 }
             }
 
-            if(!_lexer.match(token_paren_close)) {
-                set_error(u8"expected ')'");
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
             if(!_lexer.match(token_bracket_close)) {
-                set_error(u8"expected ']'");
                 _lexer.restore_state(state_backup);
-                return nullptr;
+                return anton::null_optional;
             }
 
-            Lexer_State const end_state = _lexer.get_current_state_no_skip();
-            Source_Info const src = src_info(state_backup, end_state);
-            return Owning_Ptr{new Workgroup_Attribute(ANTON_MOV(x), ANTON_MOV(y), ANTON_MOV(z), src)};
-        }
-
-        Owning_Ptr<Function_Attribute> try_function_attribute() {
-            if(Owning_Ptr attrib = try_workgroup_attribute()) {
-                return attrib;
-            }
-
-            return nullptr;
+            return ANTON_MOV(attributes);
         }
 
         Owning_Ptr<Image_Layout_Qualifier> try_image_layout_qualifier() {
@@ -872,9 +892,20 @@ namespace vush {
 
         Owning_Ptr<Pass_Stage_Declaration> try_pass_stage_declaration() {
             Lexer_State const state_backup = _lexer.get_current_state();
+
+            // Parse the attribute lists. We allow many attribute lists
+            // to be present on a stage declaration. We merge the lists into
+            // a single attribute array.
             Attribute_List attributes;
-            while(Owning_Ptr attrib = try_function_attribute()) {
-                attributes.emplace_back(ANTON_MOV(attrib));
+            while(true) {
+                anton::Optional<Attribute_List> attributes_result = try_attribute_list();
+                if(!attributes_result) {
+                    break;
+                }
+
+                for(auto& attribute: attributes_result.value()) {
+                    attributes.emplace_back(ANTON_MOV(attribute));
+                }
             }
 
             Owning_Ptr return_type = try_type();
@@ -918,8 +949,8 @@ namespace vush {
                 }
             }
 
-            auto param_list = try_function_param_list();
-            if(!param_list) {
+            anton::Optional<Parameter_List> parameter_list = try_function_param_list();
+            if(!parameter_list) {
                 _lexer.restore_state(state_backup);
                 return nullptr;
             }
@@ -933,14 +964,25 @@ namespace vush {
             Lexer_State const end_state = _lexer.get_current_state_no_skip();
             Source_Info const src = src_info(state_backup, end_state);
             return Owning_Ptr{new Pass_Stage_Declaration(ANTON_MOV(attributes), ANTON_MOV(return_type), ANTON_MOV(pass), stage_type,
-                                                         ANTON_MOV(param_list.value()), ANTON_MOV(statements.value()), src)};
+                                                         ANTON_MOV(parameter_list.value()), ANTON_MOV(statements.value()), src)};
         }
 
         Owning_Ptr<Function_Declaration> try_function_declaration() {
             Lexer_State const state_backup = _lexer.get_current_state();
+
+            // Parse the attribute lists. We allow many attribute lists
+            // to be present on a function declaration. We merge the lists
+            // into a single attribute array.
             Attribute_List attributes;
-            while(Owning_Ptr attrib = try_function_attribute()) {
-                attributes.emplace_back(ANTON_MOV(attrib));
+            while(true) {
+                anton::Optional<Attribute_List> attributes_result = try_attribute_list();
+                if(!attributes_result) {
+                    break;
+                }
+
+                for(auto& attribute: attributes_result.value()) {
+                    attributes.emplace_back(ANTON_MOV(attribute));
+                }
             }
 
             Owning_Ptr return_type = try_type();
