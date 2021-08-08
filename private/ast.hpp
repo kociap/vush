@@ -432,16 +432,16 @@ namespace vush {
         [[nodiscard]] virtual Settings_Declaration* _clone() const override;
     };
 
-    struct Function_Attribute: public AST_Node {
+    struct Attribute: public AST_Node {
         using AST_Node::AST_Node;
 
-        [[nodiscard]] Owning_Ptr<Function_Attribute> clone() const;
+        [[nodiscard]] Owning_Ptr<Attribute> clone() const;
 
     private:
-        [[nodiscard]] virtual Function_Attribute* _clone() const override = 0;
+        [[nodiscard]] virtual Attribute* _clone() const override = 0;
     };
 
-    struct Workgroup_Attribute: public Function_Attribute {
+    struct Workgroup_Attribute: public Attribute {
         Owning_Ptr<Integer_Literal> x;
         Owning_Ptr<Integer_Literal> y;
         Owning_Ptr<Integer_Literal> z;
