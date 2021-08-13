@@ -1,8 +1,8 @@
 #include <parser.hpp>
 
 #include <anton/optional.hpp>
-#include <anton/stream.hpp>
-#include <anton/string_view.hpp>
+#include <anton/string7_stream.hpp>
+#include <anton/string7_view.hpp>
 
 // TODO: When matching keywords, ensure that the keyword is followed by non-identifier character (Find a cleaner way).
 // TODO: Figure out a way to match operators that use overlapping symbols (+ and +=) in a clean way.
@@ -159,7 +159,7 @@ namespace vush {
 
     class Lexer {
     public:
-        Lexer(anton::Input_Stream& stream): _stream(stream) {}
+        Lexer(anton::String_View source_code): _stream(anton::String7_View{source_code.bytes_begin(), source_code.bytes_end()}) {}
 
         bool match(anton::String_View const string, bool const must_not_be_followed_by_identifier_char = false) {
             ignore_whitespace_and_comments();
@@ -275,14 +275,16 @@ namespace vush {
         }
 
     private:
-        anton::Input_Stream& _stream;
+        // The source string is ASCII, so String7 will be the exact same size as String,
+        // but String7 will avoid all Unicode function calls and thus accelerate parsing.
+        anton::Input_String7_Stream _stream;
         i64 _line = 1;
         i64 _column = 1;
     };
 
     class Parser {
     public:
-        Parser(anton::Input_Stream& stream, anton::String_View source_name): _source_name(source_name), _lexer(stream) {}
+        Parser(anton::String_View source_code, anton::String_View source_name): _source_name(source_name), _lexer(source_code) {}
 
         anton::Expected<Declaration_List, Parse_Error> build_ast() {
             Declaration_List ast;
@@ -2717,8 +2719,8 @@ namespace vush {
         }
     };
 
-    anton::Expected<Declaration_List, Parse_Error> parse_source(anton::Input_Stream& stream, anton::String_View const source_name) {
-        Parser parser(stream, source_name);
+    anton::Expected<Declaration_List, Parse_Error> parse_source(anton::String_View const source_code, anton::String_View const source_name) {
+        Parser parser(source_code, source_name);
         anton::Expected<Declaration_List, Parse_Error> ast = parser.build_ast();
         return ast;
     }

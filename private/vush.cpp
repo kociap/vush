@@ -1173,11 +1173,10 @@ namespace vush {
                 auto iter = anton::find_if(ctx.imported_sources.begin(), ctx.imported_sources.end(),
                                            [&source_name = request_res.source_name](Owning_Ptr<anton::String> const& v) { return *v == source_name; });
                 if(iter == ctx.imported_sources.end()) {
-                    ctx.source_registry.emplace(request_res.source_name, request_res.data);
-                    anton::Input_String_Stream stream{ANTON_MOV(request_res.data)};
                     Owning_Ptr<anton::String> const& current_source_name =
-                        ctx.imported_sources.emplace_back(Owning_Ptr{new anton::String{ANTON_MOV(request_res.source_name)}});
-                    anton::Expected<Declaration_List, Parse_Error> parse_result = parse_source(stream, *current_source_name);
+                        ctx.imported_sources.emplace_back(Owning_Ptr{new anton::String{request_res.source_name}});
+                    anton::Expected<Declaration_List, Parse_Error> parse_result = parse_source(request_res.data, *current_source_name);
+                    ctx.source_registry.emplace(ANTON_MOV(request_res.source_name), ANTON_MOV(request_res.data));
                     if(!parse_result) {
                         Parse_Error const& error = parse_result.error();
                         anton::String error_msg = build_error_message(*current_source_name, error.line, error.column, error.message);
@@ -1919,11 +1918,9 @@ namespace vush {
             }
 
             Source_Request_Result& request_res = source_request_res.value();
-            ctx.source_registry.emplace(request_res.source_name, request_res.data);
-            anton::Input_String_Stream stream{ANTON_MOV(request_res.data)};
-            Owning_Ptr<anton::String> const& current_source_name =
-                ctx.imported_sources.emplace_back(Owning_Ptr{new anton::String{ANTON_MOV(request_res.source_name)}});
-            anton::Expected<Declaration_List, Parse_Error> parse_result = parse_source(stream, *current_source_name);
+            Owning_Ptr<anton::String> const& current_source_name = ctx.imported_sources.emplace_back(Owning_Ptr{new anton::String{request_res.source_name}});
+            anton::Expected<Declaration_List, Parse_Error> parse_result = parse_source(request_res.data, *current_source_name);
+            ctx.source_registry.emplace(ANTON_MOV(request_res.source_name), ANTON_MOV(request_res.data));
             if(parse_result) {
                 ast = ANTON_MOV(parse_result.value());
             } else {
