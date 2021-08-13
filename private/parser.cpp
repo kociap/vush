@@ -14,92 +14,92 @@ namespace vush {
 
     // keywords
 
-    static constexpr anton::String_View kw_if = u8"if";
-    static constexpr anton::String_View kw_else = u8"else";
-    static constexpr anton::String_View kw_switch = u8"switch";
-    static constexpr anton::String_View kw_case = u8"case";
-    static constexpr anton::String_View kw_default = u8"default";
-    static constexpr anton::String_View kw_for = u8"for";
-    static constexpr anton::String_View kw_while = u8"while";
-    static constexpr anton::String_View kw_do = u8"do";
-    static constexpr anton::String_View kw_return = u8"return";
-    static constexpr anton::String_View kw_break = u8"break";
-    static constexpr anton::String_View kw_continue = u8"continue";
-    static constexpr anton::String_View kw_discard = u8"discard";
-    static constexpr anton::String_View kw_true = u8"true";
-    static constexpr anton::String_View kw_false = u8"false";
-    static constexpr anton::String_View kw_from = u8"from";
-    static constexpr anton::String_View kw_struct = u8"struct";
-    static constexpr anton::String_View kw_import = u8"import";
-    static constexpr anton::String_View kw_const = u8"const";
-    static constexpr anton::String_View kw_settings = u8"settings";
-    static constexpr anton::String_View kw_reinterpret = u8"reinterpret";
-    static constexpr anton::String_View kw_invariant = u8"invariant";
-    static constexpr anton::String_View kw_smooth = u8"smooth";
-    static constexpr anton::String_View kw_flat = u8"flat";
-    static constexpr anton::String_View kw_noperspective = u8"noperspective";
+    static constexpr anton::String7_View kw_if = u8"if";
+    static constexpr anton::String7_View kw_else = u8"else";
+    static constexpr anton::String7_View kw_switch = u8"switch";
+    static constexpr anton::String7_View kw_case = u8"case";
+    static constexpr anton::String7_View kw_default = u8"default";
+    static constexpr anton::String7_View kw_for = u8"for";
+    static constexpr anton::String7_View kw_while = u8"while";
+    static constexpr anton::String7_View kw_do = u8"do";
+    static constexpr anton::String7_View kw_return = u8"return";
+    static constexpr anton::String7_View kw_break = u8"break";
+    static constexpr anton::String7_View kw_continue = u8"continue";
+    static constexpr anton::String7_View kw_discard = u8"discard";
+    static constexpr anton::String7_View kw_true = u8"true";
+    static constexpr anton::String7_View kw_false = u8"false";
+    static constexpr anton::String7_View kw_from = u8"from";
+    static constexpr anton::String7_View kw_struct = u8"struct";
+    static constexpr anton::String7_View kw_import = u8"import";
+    static constexpr anton::String7_View kw_const = u8"const";
+    static constexpr anton::String7_View kw_settings = u8"settings";
+    static constexpr anton::String7_View kw_reinterpret = u8"reinterpret";
+    static constexpr anton::String7_View kw_invariant = u8"invariant";
+    static constexpr anton::String7_View kw_smooth = u8"smooth";
+    static constexpr anton::String7_View kw_flat = u8"flat";
+    static constexpr anton::String7_View kw_noperspective = u8"noperspective";
 
     // attributes
-    static constexpr anton::String_View attrib_workgroup = u8"workgroup";
+    static constexpr anton::String7_View attrib_workgroup = u8"workgroup";
 
     // stages
 
-    static constexpr anton::String_View stage_vertex = u8"vertex";
-    static constexpr anton::String_View stage_fragment = u8"fragment";
-    static constexpr anton::String_View stage_compute = u8"compute";
+    static constexpr anton::String7_View stage_vertex = u8"vertex";
+    static constexpr anton::String7_View stage_fragment = u8"fragment";
+    static constexpr anton::String7_View stage_compute = u8"compute";
 
     // separators and operators
 
-    static constexpr anton::String_View token_brace_open = u8"{";
-    static constexpr anton::String_View token_brace_close = u8"}";
-    static constexpr anton::String_View token_bracket_open = u8"[";
-    static constexpr anton::String_View token_bracket_close = u8"]";
-    static constexpr anton::String_View token_paren_open = u8"(";
-    static constexpr anton::String_View token_paren_close = u8")";
-    static constexpr anton::String_View token_angle_open = u8"<";
-    static constexpr anton::String_View token_angle_close = u8">";
-    static constexpr anton::String_View token_semicolon = u8";";
-    static constexpr anton::String_View token_colon = u8":";
-    static constexpr anton::String_View token_scope_resolution = u8"::";
-    static constexpr anton::String_View token_arrow = u8"=>";
-    static constexpr anton::String_View token_comma = u8",";
-    static constexpr anton::String_View token_question = u8"?";
-    static constexpr anton::String_View token_dot = u8".";
-    static constexpr anton::String_View token_double_quote = u8"\"";
-    static constexpr anton::String_View token_plus = u8"+";
-    static constexpr anton::String_View token_minus = u8"-";
-    static constexpr anton::String_View token_multiply = u8"*";
-    static constexpr anton::String_View token_divide = u8"/";
-    static constexpr anton::String_View token_remainder = u8"%";
-    static constexpr anton::String_View token_logic_and = u8"&&";
-    static constexpr anton::String_View token_bit_and = u8"&";
-    static constexpr anton::String_View token_logic_or = u8"||";
-    static constexpr anton::String_View token_logic_xor = u8"^^";
-    static constexpr anton::String_View token_bit_or = u8"|";
-    static constexpr anton::String_View token_bit_xor = u8"^";
-    static constexpr anton::String_View token_logic_not = u8"!";
-    static constexpr anton::String_View token_bit_not = u8"~";
-    static constexpr anton::String_View token_bit_lshift = u8"<<";
-    static constexpr anton::String_View token_bit_rshift = u8">>";
-    static constexpr anton::String_View token_equal = u8"==";
-    static constexpr anton::String_View token_not_equal = u8"!=";
-    static constexpr anton::String_View token_less = u8"<";
-    static constexpr anton::String_View token_greater = u8">";
-    static constexpr anton::String_View token_less_equal = u8"<=";
-    static constexpr anton::String_View token_greater_equal = u8">=";
-    static constexpr anton::String_View token_assign = u8"=";
-    static constexpr anton::String_View token_increment = u8"++";
-    static constexpr anton::String_View token_decrement = u8"--";
-    static constexpr anton::String_View token_compound_plus = u8"+=";
-    static constexpr anton::String_View token_compound_minus = u8"-=";
-    static constexpr anton::String_View token_compound_multiply = u8"*=";
-    static constexpr anton::String_View token_compound_divide = u8"/=";
-    static constexpr anton::String_View token_compound_remainder = u8"%=";
-    static constexpr anton::String_View token_compound_bit_and = u8"&=";
-    static constexpr anton::String_View token_compound_bit_or = u8"|=";
-    static constexpr anton::String_View token_compound_bit_xor = u8"^=";
-    static constexpr anton::String_View token_compound_bit_lshift = u8"<<=";
-    static constexpr anton::String_View token_compound_bit_rshift = u8">>=";
+    static constexpr anton::String7_View token_brace_open = u8"{";
+    static constexpr anton::String7_View token_brace_close = u8"}";
+    static constexpr anton::String7_View token_bracket_open = u8"[";
+    static constexpr anton::String7_View token_bracket_close = u8"]";
+    static constexpr anton::String7_View token_paren_open = u8"(";
+    static constexpr anton::String7_View token_paren_close = u8")";
+    static constexpr anton::String7_View token_angle_open = u8"<";
+    static constexpr anton::String7_View token_angle_close = u8">";
+    static constexpr anton::String7_View token_semicolon = u8";";
+    static constexpr anton::String7_View token_colon = u8":";
+    static constexpr anton::String7_View token_scope_resolution = u8"::";
+    static constexpr anton::String7_View token_arrow = u8"=>";
+    static constexpr anton::String7_View token_comma = u8",";
+    static constexpr anton::String7_View token_question = u8"?";
+    static constexpr anton::String7_View token_dot = u8".";
+    static constexpr anton::String7_View token_double_quote = u8"\"";
+    static constexpr anton::String7_View token_plus = u8"+";
+    static constexpr anton::String7_View token_minus = u8"-";
+    static constexpr anton::String7_View token_multiply = u8"*";
+    static constexpr anton::String7_View token_divide = u8"/";
+    static constexpr anton::String7_View token_remainder = u8"%";
+    static constexpr anton::String7_View token_logic_and = u8"&&";
+    static constexpr anton::String7_View token_bit_and = u8"&";
+    static constexpr anton::String7_View token_logic_or = u8"||";
+    static constexpr anton::String7_View token_logic_xor = u8"^^";
+    static constexpr anton::String7_View token_bit_or = u8"|";
+    static constexpr anton::String7_View token_bit_xor = u8"^";
+    static constexpr anton::String7_View token_logic_not = u8"!";
+    static constexpr anton::String7_View token_bit_not = u8"~";
+    static constexpr anton::String7_View token_bit_lshift = u8"<<";
+    static constexpr anton::String7_View token_bit_rshift = u8">>";
+    static constexpr anton::String7_View token_equal = u8"==";
+    static constexpr anton::String7_View token_not_equal = u8"!=";
+    static constexpr anton::String7_View token_less = u8"<";
+    static constexpr anton::String7_View token_greater = u8">";
+    static constexpr anton::String7_View token_less_equal = u8"<=";
+    static constexpr anton::String7_View token_greater_equal = u8">=";
+    static constexpr anton::String7_View token_assign = u8"=";
+    static constexpr anton::String7_View token_increment = u8"++";
+    static constexpr anton::String7_View token_decrement = u8"--";
+    static constexpr anton::String7_View token_compound_plus = u8"+=";
+    static constexpr anton::String7_View token_compound_minus = u8"-=";
+    static constexpr anton::String7_View token_compound_multiply = u8"*=";
+    static constexpr anton::String7_View token_compound_divide = u8"/=";
+    static constexpr anton::String7_View token_compound_remainder = u8"%=";
+    static constexpr anton::String7_View token_compound_bit_and = u8"&=";
+    static constexpr anton::String7_View token_compound_bit_or = u8"|=";
+    static constexpr anton::String7_View token_compound_bit_xor = u8"^=";
+    static constexpr anton::String7_View token_compound_bit_lshift = u8"<<=";
+    static constexpr anton::String7_View token_compound_bit_rshift = u8">>=";
 
     [[nodiscard]] static bool is_whitespace(char32 c) {
         return (c <= 32) | (c == 127);
@@ -134,14 +134,15 @@ namespace vush {
     }
 
     [[nodiscard]] static bool is_keyword(anton::String_View string) {
-        static constexpr anton::String_View keywords[] = {
+        static constexpr anton::String7_View keywords[] = {
             kw_if,       kw_else,    kw_switch, kw_case,  kw_default, kw_for,    kw_while,  kw_do,    kw_return,   kw_break,
             kw_continue, kw_discard, kw_true,   kw_false, kw_from,    kw_struct, kw_import, kw_const, kw_settings, kw_reinterpret,
         };
 
-        constexpr i64 array_size = sizeof(keywords) / sizeof(anton::String_View);
-        for(anton::String_View const *i = keywords, *end = keywords + array_size; i != end; ++i) {
-            if(*i == string) {
+        anton::String7_View string7{string.bytes_begin(), string.bytes_end()};
+        constexpr i64 array_size = sizeof(keywords) / sizeof(anton::String7_View);
+        for(anton::String7_View const *i = keywords, *end = keywords + array_size; i != end; ++i) {
+            if(*i == string7) {
                 return true;
             }
         }
@@ -161,11 +162,9 @@ namespace vush {
     public:
         Lexer(anton::String_View source_code): _stream(anton::String7_View{source_code.bytes_begin(), source_code.bytes_end()}) {}
 
-        bool match(anton::String_View const string, bool const must_not_be_followed_by_identifier_char = false) {
-            ignore_whitespace_and_comments();
-
+        bool match(anton::String7_View const string, bool const must_not_be_followed_by_identifier_char = false) {
             Lexer_State const state_backup = get_current_state();
-            for(char32 c: string.chars()) {
+            for(char32 c: string) {
                 if(get_next() != c) {
                     restore_state(state_backup);
                     return false;
@@ -189,17 +188,21 @@ namespace vush {
 
             // No need to backup the lexer state since we can predict whether the next
             // sequence of characters is an identifier using only the first character.
-            char32 const next_char = peek_next();
+
+            char32 const next_char = _stream.peek();
             if(!is_first_identifier_character(next_char)) {
                 return false;
             }
 
-            get_next();
-            out += next_char;
-            for(char32 peek = peek_next(); is_identifier_character(peek); peek = peek_next()) {
-                out += peek;
-                get_next();
+            i64 peek_size = 2;
+            anton::String7_View peek = _stream.peek(peek_size);
+            while(is_identifier_character(peek[peek_size - 1])) {
+                peek = _stream.peek(peek_size + 1);
+                peek_size += 1;
             }
+
+            anton::String7_View const data = _stream.read(peek_size - 1);
+            out += anton::String_View{data.begin(), data.end()};
             return true;
         }
 
@@ -881,8 +884,9 @@ namespace vush {
             Lexer_State const state_backup = _lexer.get_current_state();
             constexpr i64 array_size = sizeof(qualifiers) / sizeof(Image_Layout_Type);
             for(i64 i = 0; i < array_size; ++i) {
-                anton::String_View const str = stringify(qualifiers[i]);
-                if(_lexer.match(str, true)) {
+                anton::String_View const string{stringify(qualifiers[i])};
+                anton::String7_View const string7{string.bytes_begin(), string.bytes_end()};
+                if(_lexer.match(string7, true)) {
                     Lexer_State const end_state = _lexer.get_current_state_no_skip();
                     Source_Info const src = src_info(state_backup, end_state);
                     return Owning_Ptr{new Image_Layout_Qualifier(qualifiers[i], src)};
@@ -930,7 +934,7 @@ namespace vush {
                 return nullptr;
             }
 
-            static constexpr anton::String_View stage_types_strings[] = {stage_vertex, stage_fragment, stage_compute};
+            static constexpr anton::String7_View stage_types_strings[] = {stage_vertex, stage_fragment, stage_compute};
             static constexpr Stage_Type stage_types[] = {Stage_Type::vertex, Stage_Type::fragment, Stage_Type::compute};
 
             Stage_Type stage_type;
