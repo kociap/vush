@@ -1656,7 +1656,7 @@ namespace vush {
 
         Owning_Ptr<Expression> try_assignment_expression() {
             Lexer_State const state_backup = _lexer.get_current_state();
-            Owning_Ptr lhs = try_logic_or_expr();
+            Owning_Ptr lhs = try_binary_expression();
             if(!lhs) {
                 _lexer.restore_state(state_backup);
                 return nullptr;
@@ -1707,396 +1707,322 @@ namespace vush {
             }
         }
 
-        Owning_Ptr<Expression> try_elvis_expression() {
-            Lexer_State const state_backup = _lexer.get_current_state();
-            Owning_Ptr cond = try_logic_or_expr();
-            if(!cond) {
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
+        // Owning_Ptr<Expression> try_elvis_expression() {
+        //     Lexer_State const state_backup = _lexer.get_current_state();
+        //     Owning_Ptr cond = try_logic_or_expr();
+        //     if(!cond) {
+        //         _lexer.restore_state(state_backup);
+        //         return nullptr;
+        //     }
 
-            if(!_lexer.match(token_question)) {
-                return cond;
-            }
+        //     if(!_lexer.match(token_question)) {
+        //         return cond;
+        //     }
 
-            // TODO: is using try_expression here correct?
+        //     // TODO: is using try_expression here correct?
 
-            Owning_Ptr true_expression = try_expression();
-            if(!true_expression) {
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
+        //     Owning_Ptr true_expression = try_expression();
+        //     if(!true_expression) {
+        //         _lexer.restore_state(state_backup);
+        //         return nullptr;
+        //     }
 
-            if(!_lexer.match(token_colon)) {
-                set_error(u8"expected ':'");
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
+        //     if(!_lexer.match(token_colon)) {
+        //         set_error(u8"expected ':'");
+        //         _lexer.restore_state(state_backup);
+        //         return nullptr;
+        //     }
 
-            Owning_Ptr false_expression = try_expression();
-            if(!false_expression) {
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
+        //     Owning_Ptr false_expression = try_expression();
+        //     if(!false_expression) {
+        //         _lexer.restore_state(state_backup);
+        //         return nullptr;
+        //     }
 
-            Lexer_State const end_state = _lexer.get_current_state_no_skip();
-            Source_Info const src = src_info(state_backup, end_state);
-            return Owning_Ptr{new Elvis_Expression(ANTON_MOV(cond), ANTON_MOV(true_expression), ANTON_MOV(false_expression), src)};
-        }
+        //     Lexer_State const end_state = _lexer.get_current_state_no_skip();
+        //     Source_Info const src = src_info(state_backup, end_state);
+        //     return Owning_Ptr{new Elvis_Expression(ANTON_MOV(cond), ANTON_MOV(true_expression), ANTON_MOV(false_expression), src)};
+        // }
 
-        Owning_Ptr<Expression> try_logic_or_expr() {
-            Lexer_State const state_backup = _lexer.get_current_state();
-            Owning_Ptr lhs = try_logic_xor_expr();
-            if(!lhs) {
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
+        Owning_Ptr<Expression> try_binary_expression() {
+            auto insert_node = [](Owning_Ptr<Expression> root, Owning_Ptr<Binary_Expression> node) -> Owning_Ptr<Expression> {
+                auto get_precedence = [](Binary_Expression& expression) -> i32 {
+                    i64 precedence[19] = {};
+                    precedence[(i64)Binary_Expression_Type::logic_or] = 11;
+                    precedence[(i64)Binary_Expression_Type::logic_xor] = 10;
+                    precedence[(i64)Binary_Expression_Type::logic_and] = 9;
+                    precedence[(i64)Binary_Expression_Type::equal] = 5;
+                    precedence[(i64)Binary_Expression_Type::unequal] = 5;
+                    precedence[(i64)Binary_Expression_Type::greater_than] = 4;
+                    precedence[(i64)Binary_Expression_Type::less_than] = 4;
+                    precedence[(i64)Binary_Expression_Type::greater_equal] = 4;
+                    precedence[(i64)Binary_Expression_Type::less_equal] = 4;
+                    precedence[(i64)Binary_Expression_Type::bit_or] = 8;
+                    precedence[(i64)Binary_Expression_Type::bit_xor] = 7;
+                    precedence[(i64)Binary_Expression_Type::bit_and] = 6;
+                    precedence[(i64)Binary_Expression_Type::lshift] = 3;
+                    precedence[(i64)Binary_Expression_Type::rshift] = 3;
+                    precedence[(i64)Binary_Expression_Type::add] = 2;
+                    precedence[(i64)Binary_Expression_Type::sub] = 2;
+                    precedence[(i64)Binary_Expression_Type::mul] = 1;
+                    precedence[(i64)Binary_Expression_Type::div] = 1;
+                    precedence[(i64)Binary_Expression_Type::mod] = 1;
+                    return precedence[(i64)expression.type];
+                };
 
-            Lexer_State op_state = _lexer.get_current_state();
-            while(_lexer.match(token_logic_or)) {
-                Lexer_State const end_state = _lexer.get_current_state_no_skip();
-                Source_Info const src = src_info(op_state, end_state);
-                if(Owning_Ptr rhs = try_logic_xor_expr()) {
-                    lhs = Owning_Ptr{new Binary_Expression(Binary_Expression_Type::logic_or, ANTON_MOV(lhs), ANTON_MOV(rhs), src)};
-                } else {
-                    _lexer.restore_state(state_backup);
-                    return nullptr;
+                i32 const node_precedence = get_precedence(*node);
+                Owning_Ptr<Expression>* insertion_node = &root;
+                while(true) {
+                    if((**insertion_node).node_type != AST_Node_Type::binary_expression) {
+                        break;
+                    }
+
+                    Binary_Expression& expression = static_cast<Binary_Expression&>(**insertion_node);
+                    i32 const expression_precedence = get_precedence(expression);
+                    if(expression_precedence < node_precedence) {
+                        // Precedence is smaller
+                        insertion_node = &expression.rhs;
+                    } else {
+                        break;
+                    }
                 }
-                op_state = _lexer.get_current_state();
-            }
 
-            return lhs;
-        }
+                node->lhs = ANTON_MOV(*insertion_node);
+                *insertion_node = ANTON_MOV(node);
 
-        Owning_Ptr<Expression> try_logic_xor_expr() {
-            Lexer_State const state_backup = _lexer.get_current_state();
-            Owning_Ptr lhs = try_logic_and_expr();
-            if(!lhs) {
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
+                return root;
+            };
 
-            Lexer_State op_state = _lexer.get_current_state();
-            while(_lexer.match(token_logic_xor)) {
-                Lexer_State const end_state = _lexer.get_current_state_no_skip();
-                Source_Info const src = src_info(op_state, end_state);
-                if(Owning_Ptr rhs = try_logic_and_expr()) {
-                    lhs = Owning_Ptr{new Binary_Expression(Binary_Expression_Type::logic_xor, ANTON_MOV(lhs), ANTON_MOV(rhs), src)};
-                } else {
-                    _lexer.restore_state(state_backup);
-                    return nullptr;
-                }
-                op_state = _lexer.get_current_state();
-            }
-
-            return lhs;
-        }
-
-        Owning_Ptr<Expression> try_logic_and_expr() {
-            Lexer_State const state_backup = _lexer.get_current_state();
-            Owning_Ptr lhs = try_bit_or_expr();
-            if(!lhs) {
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            Lexer_State op_state = _lexer.get_current_state();
-            while(_lexer.match(token_logic_and)) {
-                Lexer_State const end_state = _lexer.get_current_state_no_skip();
-                Source_Info const src = src_info(op_state, end_state);
-                if(Owning_Ptr rhs = try_bit_or_expr()) {
-                    lhs = Owning_Ptr{new Binary_Expression(Binary_Expression_Type::logic_and, ANTON_MOV(lhs), ANTON_MOV(rhs), src)};
-                } else {
-                    _lexer.restore_state(state_backup);
-                    return nullptr;
-                }
-                op_state = _lexer.get_current_state();
-            }
-
-            return lhs;
-        }
-
-        Owning_Ptr<Expression> try_bit_or_expr() {
-            Lexer_State const state_backup = _lexer.get_current_state();
-            Owning_Ptr lhs = try_bit_xor_expr();
-            if(!lhs) {
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            if(Lexer_State const check_backup = _lexer.get_current_state(); _lexer.match(token_compound_bit_or) || _lexer.match(token_logic_or)) {
-                _lexer.restore_state(check_backup);
-                return lhs;
-            }
-
-            Lexer_State op_state = _lexer.get_current_state();
-            while(_lexer.match(token_bit_or)) {
-                Lexer_State const end_state = _lexer.get_current_state_no_skip();
-                Source_Info const src = src_info(op_state, end_state);
-                if(Owning_Ptr rhs = try_bit_xor_expr()) {
-                    lhs = Owning_Ptr{new Binary_Expression(Binary_Expression_Type::bit_or, ANTON_MOV(lhs), ANTON_MOV(rhs), src)};
-                } else {
-                    _lexer.restore_state(state_backup);
-                    return nullptr;
-                }
-                op_state = _lexer.get_current_state();
-            }
-
-            return lhs;
-        }
-
-        Owning_Ptr<Expression> try_bit_xor_expr() {
-            Lexer_State const state_backup = _lexer.get_current_state();
-            Owning_Ptr lhs = try_bit_and_expr();
-            if(!lhs) {
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            if(Lexer_State const check_backup = _lexer.get_current_state(); _lexer.match(token_compound_bit_xor) || _lexer.match(token_logic_xor)) {
-                _lexer.restore_state(check_backup);
-                return lhs;
-            }
-
-            Lexer_State op_state = _lexer.get_current_state();
-            while(_lexer.match(token_bit_xor)) {
-                Lexer_State const end_state = _lexer.get_current_state_no_skip();
-                Source_Info const src = src_info(op_state, end_state);
-                if(Owning_Ptr rhs = try_bit_and_expr()) {
-                    lhs = Owning_Ptr{new Binary_Expression(Binary_Expression_Type::bit_xor, ANTON_MOV(lhs), ANTON_MOV(rhs), src)};
-                } else {
-                    _lexer.restore_state(state_backup);
-                    return nullptr;
-                }
-                op_state = _lexer.get_current_state();
-            }
-
-            return lhs;
-        }
-
-        Owning_Ptr<Expression> try_bit_and_expr() {
-            Lexer_State const state_backup = _lexer.get_current_state();
-            Owning_Ptr lhs = try_relational_equality_expression();
-            if(!lhs) {
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            if(Lexer_State const check_backup = _lexer.get_current_state(); _lexer.match(token_compound_bit_and) || _lexer.match(token_logic_and)) {
-                _lexer.restore_state(check_backup);
-                return lhs;
-            }
-
-            Lexer_State op_state = _lexer.get_current_state();
-            while(_lexer.match(token_bit_and)) {
-                Lexer_State const end_state = _lexer.get_current_state_no_skip();
-                Source_Info const src = src_info(op_state, end_state);
-                if(Owning_Ptr rhs = try_relational_equality_expression()) {
-                    lhs = Owning_Ptr{new Binary_Expression(Binary_Expression_Type::bit_and, ANTON_MOV(lhs), ANTON_MOV(rhs), src)};
-                } else {
-                    _lexer.restore_state(state_backup);
-                    return nullptr;
-                }
-                op_state = _lexer.get_current_state();
-            }
-
-            return lhs;
-        }
-
-        Owning_Ptr<Expression> try_relational_equality_expression() {
-            Lexer_State const state_backup = _lexer.get_current_state();
-            Owning_Ptr lhs = try_relational_expression();
-            if(!lhs) {
-                _lexer.restore_state(state_backup);
+            Owning_Ptr<Expression> root = try_unary_expression();
+            if(!root) {
                 return nullptr;
             }
 
             while(true) {
                 Lexer_State const op_state = _lexer.get_current_state();
-                if(_lexer.match(token_equal)) {
-                    Lexer_State const end_state = _lexer.get_current_state_no_skip();
-                    Source_Info const src = src_info(op_state, end_state);
-                    if(Owning_Ptr rhs = try_relational_expression()) {
-                        lhs = Owning_Ptr{new Binary_Expression(Binary_Expression_Type::equal, ANTON_MOV(lhs), ANTON_MOV(rhs), src)};
-                    } else {
-                        _lexer.restore_state(state_backup);
-                        return nullptr;
-                    }
-                } else if(_lexer.match(token_not_equal)) {
-                    Lexer_State const end_state = _lexer.get_current_state_no_skip();
-                    Source_Info const src = src_info(op_state, end_state);
-                    if(Owning_Ptr rhs = try_relational_expression()) {
-                        lhs = Owning_Ptr{new Binary_Expression(Binary_Expression_Type::unequal, ANTON_MOV(lhs), ANTON_MOV(rhs), src)};
-                    } else {
-                        _lexer.restore_state(state_backup);
-                        return nullptr;
-                    }
-                } else {
-                    return lhs;
-                }
-            }
-        }
-
-        Owning_Ptr<Expression> try_relational_expression() {
-            Lexer_State const state_backup = _lexer.get_current_state();
-            Owning_Ptr lhs = try_lshift_rshift_expr();
-            if(!lhs) {
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            while(true) {
-                Lexer_State const op_state = _lexer.get_current_state();
-                Binary_Expression_Type type;
-                if(_lexer.match(token_less_equal)) {
-                    type = Binary_Expression_Type::less_equal;
-                } else if(_lexer.match(token_greater_equal)) {
-                    type = Binary_Expression_Type::greater_equal;
-                } else if(_lexer.match(token_less)) {
-                    type = Binary_Expression_Type::less_than;
-                } else if(_lexer.match(token_greater)) {
-                    type = Binary_Expression_Type::greater_than;
-                } else {
-                    return lhs;
+                if(_lexer.match(token_compound_bit_and) || _lexer.match(token_compound_bit_or) || _lexer.match(token_compound_bit_xor) ||
+                   _lexer.match(token_compound_bit_lshift) || _lexer.match(token_compound_bit_rshift) || _lexer.match(token_compound_remainder) ||
+                   _lexer.match(token_compound_divide) || _lexer.match(token_compound_multiply) || _lexer.match(token_compound_plus) ||
+                   _lexer.match(token_compound_minus)) {
+                    _lexer.restore_state(op_state);
+                    return root;
                 }
 
-                Lexer_State const end_state = _lexer.get_current_state_no_skip();
-                Source_Info const src = src_info(op_state, end_state);
-                if(Owning_Ptr rhs = try_lshift_rshift_expr()) {
-                    lhs = Owning_Ptr{new Binary_Expression(type, ANTON_MOV(lhs), ANTON_MOV(rhs), src)};
-                } else {
-                    _lexer.restore_state(state_backup);
-                    return nullptr;
-                }
-            }
-        }
-
-        Owning_Ptr<Expression> try_lshift_rshift_expr() {
-            Lexer_State const state_backup = _lexer.get_current_state();
-            Owning_Ptr lhs = try_add_sub_expr();
-            if(!lhs) {
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            if(Lexer_State const check_backup = _lexer.get_current_state();
-               _lexer.match(token_compound_bit_lshift) || _lexer.match(token_compound_bit_rshift)) {
-                _lexer.restore_state(check_backup);
-                return lhs;
-            }
-
-            while(true) {
-                Lexer_State const op_state = _lexer.get_current_state();
-                if(_lexer.match(token_bit_lshift)) {
+                if(_lexer.match(token_logic_or)) {
                     Lexer_State const end_state = _lexer.get_current_state_no_skip();
                     Source_Info const src = src_info(op_state, end_state);
-                    if(Owning_Ptr rhs = try_add_sub_expr()) {
-                        lhs = Owning_Ptr{new Binary_Expression(Binary_Expression_Type::lshift, ANTON_MOV(lhs), ANTON_MOV(rhs), src)};
-                    } else {
-                        _lexer.restore_state(state_backup);
+
+                    Owning_Ptr<Expression> rhs = try_unary_expression();
+                    if(!rhs) {
                         return nullptr;
                     }
+
+                    Owning_Ptr expression{new Binary_Expression{Binary_Expression_Type::logic_or, nullptr, ANTON_MOV(rhs), src}};
+                    root = insert_node(ANTON_MOV(root), ANTON_MOV(expression));
+                } else if(_lexer.match(token_logic_xor)) {
+                    Lexer_State const end_state = _lexer.get_current_state_no_skip();
+                    Source_Info const src = src_info(op_state, end_state);
+
+                    Owning_Ptr<Expression> rhs = try_unary_expression();
+                    if(!rhs) {
+                        return nullptr;
+                    }
+
+                    Owning_Ptr expression{new Binary_Expression{Binary_Expression_Type::logic_xor, nullptr, ANTON_MOV(rhs), src}};
+                    root = insert_node(ANTON_MOV(root), ANTON_MOV(expression));
+                } else if(_lexer.match(token_logic_and)) {
+                    Lexer_State const end_state = _lexer.get_current_state_no_skip();
+                    Source_Info const src = src_info(op_state, end_state);
+
+                    Owning_Ptr<Expression> rhs = try_unary_expression();
+                    if(!rhs) {
+                        return nullptr;
+                    }
+
+                    Owning_Ptr expression{new Binary_Expression{Binary_Expression_Type::logic_and, nullptr, ANTON_MOV(rhs), src}};
+                    root = insert_node(ANTON_MOV(root), ANTON_MOV(expression));
+                } else if(_lexer.match(token_bit_or)) {
+                    Lexer_State const end_state = _lexer.get_current_state_no_skip();
+                    Source_Info const src = src_info(op_state, end_state);
+
+                    Owning_Ptr<Expression> rhs = try_unary_expression();
+                    if(!rhs) {
+                        return nullptr;
+                    }
+
+                    Owning_Ptr expression{new Binary_Expression{Binary_Expression_Type::bit_or, nullptr, ANTON_MOV(rhs), src}};
+                    root = insert_node(ANTON_MOV(root), ANTON_MOV(expression));
+                } else if(_lexer.match(token_bit_xor)) {
+                    Lexer_State const end_state = _lexer.get_current_state_no_skip();
+                    Source_Info const src = src_info(op_state, end_state);
+
+                    Owning_Ptr<Expression> rhs = try_unary_expression();
+                    if(!rhs) {
+                        return nullptr;
+                    }
+
+                    Owning_Ptr expression{new Binary_Expression{Binary_Expression_Type::bit_xor, nullptr, ANTON_MOV(rhs), src}};
+                    root = insert_node(ANTON_MOV(root), ANTON_MOV(expression));
+                } else if(_lexer.match(token_bit_and)) {
+                    Lexer_State const end_state = _lexer.get_current_state_no_skip();
+                    Source_Info const src = src_info(op_state, end_state);
+
+                    Owning_Ptr<Expression> rhs = try_unary_expression();
+                    if(!rhs) {
+                        return nullptr;
+                    }
+
+                    Owning_Ptr expression{new Binary_Expression{Binary_Expression_Type::bit_and, nullptr, ANTON_MOV(rhs), src}};
+                    root = insert_node(ANTON_MOV(root), ANTON_MOV(expression));
+                } else if(_lexer.match(token_bit_lshift)) {
+                    Lexer_State const end_state = _lexer.get_current_state_no_skip();
+                    Source_Info const src = src_info(op_state, end_state);
+
+                    Owning_Ptr<Expression> rhs = try_unary_expression();
+                    if(!rhs) {
+                        return nullptr;
+                    }
+
+                    Owning_Ptr expression{new Binary_Expression{Binary_Expression_Type::lshift, nullptr, ANTON_MOV(rhs), src}};
+                    root = insert_node(ANTON_MOV(root), ANTON_MOV(expression));
                 } else if(_lexer.match(token_bit_rshift)) {
                     Lexer_State const end_state = _lexer.get_current_state_no_skip();
                     Source_Info const src = src_info(op_state, end_state);
-                    if(Owning_Ptr rhs = try_add_sub_expr()) {
-                        lhs = Owning_Ptr{new Binary_Expression(Binary_Expression_Type::rshift, ANTON_MOV(lhs), ANTON_MOV(rhs), src)};
-                    } else {
-                        _lexer.restore_state(state_backup);
+
+                    Owning_Ptr<Expression> rhs = try_unary_expression();
+                    if(!rhs) {
                         return nullptr;
                     }
-                } else {
-                    return lhs;
-                }
-            }
-        }
 
-        Owning_Ptr<Expression> try_add_sub_expr() {
-            Lexer_State const state_backup = _lexer.get_current_state();
-            Owning_Ptr lhs = try_mul_div_mod_expr();
-            if(!lhs) {
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            if(Lexer_State const check_backup = _lexer.get_current_state(); _lexer.match(token_compound_plus) || _lexer.match(token_compound_minus)) {
-                _lexer.restore_state(check_backup);
-                return lhs;
-            }
-
-            while(true) {
-                Lexer_State const op_state = _lexer.get_current_state();
-                if(_lexer.match(token_plus)) {
+                    Owning_Ptr expression{new Binary_Expression{Binary_Expression_Type::rshift, nullptr, ANTON_MOV(rhs), src}};
+                    root = insert_node(ANTON_MOV(root), ANTON_MOV(expression));
+                } else if(_lexer.match(token_equal)) {
                     Lexer_State const end_state = _lexer.get_current_state_no_skip();
                     Source_Info const src = src_info(op_state, end_state);
-                    if(Owning_Ptr rhs = try_mul_div_mod_expr()) {
-                        lhs = Owning_Ptr{new Binary_Expression(Binary_Expression_Type::add, ANTON_MOV(lhs), ANTON_MOV(rhs), src)};
-                    } else {
-                        _lexer.restore_state(state_backup);
+
+                    Owning_Ptr<Expression> rhs = try_unary_expression();
+                    if(!rhs) {
                         return nullptr;
                     }
+
+                    Owning_Ptr expression{new Binary_Expression{Binary_Expression_Type::equal, nullptr, ANTON_MOV(rhs), src}};
+                    root = insert_node(ANTON_MOV(root), ANTON_MOV(expression));
+                } else if(_lexer.match(token_not_equal)) {
+                    Lexer_State const end_state = _lexer.get_current_state_no_skip();
+                    Source_Info const src = src_info(op_state, end_state);
+
+                    Owning_Ptr<Expression> rhs = try_unary_expression();
+                    if(!rhs) {
+                        return nullptr;
+                    }
+
+                    Owning_Ptr expression{new Binary_Expression{Binary_Expression_Type::unequal, nullptr, ANTON_MOV(rhs), src}};
+                    root = insert_node(ANTON_MOV(root), ANTON_MOV(expression));
+                } else if(_lexer.match(token_less_equal)) {
+                    Lexer_State const end_state = _lexer.get_current_state_no_skip();
+                    Source_Info const src = src_info(op_state, end_state);
+
+                    Owning_Ptr<Expression> rhs = try_unary_expression();
+                    if(!rhs) {
+                        return nullptr;
+                    }
+
+                    Owning_Ptr expression{new Binary_Expression{Binary_Expression_Type::less_equal, nullptr, ANTON_MOV(rhs), src}};
+                    root = insert_node(ANTON_MOV(root), ANTON_MOV(expression));
+                } else if(_lexer.match(token_greater_equal)) {
+                    Lexer_State const end_state = _lexer.get_current_state_no_skip();
+                    Source_Info const src = src_info(op_state, end_state);
+
+                    Owning_Ptr<Expression> rhs = try_unary_expression();
+                    if(!rhs) {
+                        return nullptr;
+                    }
+
+                    Owning_Ptr expression{new Binary_Expression{Binary_Expression_Type::greater_equal, nullptr, ANTON_MOV(rhs), src}};
+                    root = insert_node(ANTON_MOV(root), ANTON_MOV(expression));
+                } else if(_lexer.match(token_greater)) {
+                    Lexer_State const end_state = _lexer.get_current_state_no_skip();
+                    Source_Info const src = src_info(op_state, end_state);
+
+                    Owning_Ptr<Expression> rhs = try_unary_expression();
+                    if(!rhs) {
+                        return nullptr;
+                    }
+
+                    Owning_Ptr expression{new Binary_Expression{Binary_Expression_Type::greater_than, nullptr, ANTON_MOV(rhs), src}};
+                    root = insert_node(ANTON_MOV(root), ANTON_MOV(expression));
+                } else if(_lexer.match(token_less)) {
+                    Lexer_State const end_state = _lexer.get_current_state_no_skip();
+                    Source_Info const src = src_info(op_state, end_state);
+
+                    Owning_Ptr<Expression> rhs = try_unary_expression();
+                    if(!rhs) {
+                        return nullptr;
+                    }
+
+                    Owning_Ptr expression{new Binary_Expression{Binary_Expression_Type::less_than, nullptr, ANTON_MOV(rhs), src}};
+                    root = insert_node(ANTON_MOV(root), ANTON_MOV(expression));
+                } else if(_lexer.match(token_plus)) {
+                    Lexer_State const end_state = _lexer.get_current_state_no_skip();
+                    Source_Info const src = src_info(op_state, end_state);
+
+                    Owning_Ptr<Expression> rhs = try_unary_expression();
+                    if(!rhs) {
+                        return nullptr;
+                    }
+
+                    Owning_Ptr expression{new Binary_Expression{Binary_Expression_Type::add, nullptr, ANTON_MOV(rhs), src}};
+                    root = insert_node(ANTON_MOV(root), ANTON_MOV(expression));
                 } else if(_lexer.match(token_minus)) {
                     Lexer_State const end_state = _lexer.get_current_state_no_skip();
                     Source_Info const src = src_info(op_state, end_state);
-                    if(Owning_Ptr rhs = try_mul_div_mod_expr()) {
-                        lhs = Owning_Ptr{new Binary_Expression(Binary_Expression_Type::sub, ANTON_MOV(lhs), ANTON_MOV(rhs), src)};
-                    } else {
-                        _lexer.restore_state(state_backup);
+
+                    Owning_Ptr<Expression> rhs = try_unary_expression();
+                    if(!rhs) {
                         return nullptr;
                     }
-                } else {
-                    return lhs;
-                }
-            }
-        }
 
-        Owning_Ptr<Expression> try_mul_div_mod_expr() {
-            Lexer_State const state_backup = _lexer.get_current_state();
-            Owning_Ptr lhs = try_unary_expression();
-            if(!lhs) {
-                _lexer.restore_state(state_backup);
-                return nullptr;
-            }
-
-            if(Lexer_State const check_backup = _lexer.get_current_state();
-               _lexer.match(token_compound_multiply) || _lexer.match(token_compound_divide) || _lexer.match(token_compound_remainder)) {
-                _lexer.restore_state(check_backup);
-                return lhs;
-            }
-
-            while(true) {
-                Lexer_State const op_state = _lexer.get_current_state();
-                if(_lexer.match(token_multiply)) {
+                    Owning_Ptr expression{new Binary_Expression{Binary_Expression_Type::sub, nullptr, ANTON_MOV(rhs), src}};
+                    root = insert_node(ANTON_MOV(root), ANTON_MOV(expression));
+                } else if(_lexer.match(token_multiply)) {
                     Lexer_State const end_state = _lexer.get_current_state_no_skip();
                     Source_Info const src = src_info(op_state, end_state);
-                    if(Owning_Ptr rhs = try_unary_expression()) {
-                        lhs = Owning_Ptr{new Binary_Expression(Binary_Expression_Type::mul, ANTON_MOV(lhs), ANTON_MOV(rhs), src)};
-                    } else {
-                        _lexer.restore_state(state_backup);
+
+                    Owning_Ptr<Expression> rhs = try_unary_expression();
+                    if(!rhs) {
                         return nullptr;
                     }
+
+                    Owning_Ptr expression{new Binary_Expression{Binary_Expression_Type::mul, nullptr, ANTON_MOV(rhs), src}};
+                    root = insert_node(ANTON_MOV(root), ANTON_MOV(expression));
                 } else if(_lexer.match(token_divide)) {
                     Lexer_State const end_state = _lexer.get_current_state_no_skip();
                     Source_Info const src = src_info(op_state, end_state);
-                    if(Owning_Ptr rhs = try_unary_expression()) {
-                        lhs = Owning_Ptr{new Binary_Expression(Binary_Expression_Type::div, ANTON_MOV(lhs), ANTON_MOV(rhs), src)};
-                    } else {
-                        _lexer.restore_state(state_backup);
+
+                    Owning_Ptr<Expression> rhs = try_unary_expression();
+                    if(!rhs) {
                         return nullptr;
                     }
+
+                    Owning_Ptr expression{new Binary_Expression{Binary_Expression_Type::div, nullptr, ANTON_MOV(rhs), src}};
+                    root = insert_node(ANTON_MOV(root), ANTON_MOV(expression));
                 } else if(_lexer.match(token_remainder)) {
                     Lexer_State const end_state = _lexer.get_current_state_no_skip();
                     Source_Info const src = src_info(op_state, end_state);
-                    if(Owning_Ptr rhs = try_unary_expression()) {
-                        lhs = Owning_Ptr{new Binary_Expression(Binary_Expression_Type::mod, ANTON_MOV(lhs), ANTON_MOV(rhs), src)};
-                    } else {
-                        _lexer.restore_state(state_backup);
+
+                    Owning_Ptr<Expression> rhs = try_unary_expression();
+                    if(!rhs) {
                         return nullptr;
                     }
+
+                    Owning_Ptr expression{new Binary_Expression{Binary_Expression_Type::mod, nullptr, ANTON_MOV(rhs), src}};
+                    root = insert_node(ANTON_MOV(root), ANTON_MOV(expression));
                 } else {
-                    return lhs;
+                    break;
                 }
             }
+
+            return root;
         }
 
         Owning_Ptr<Expression> try_unary_expression() {
