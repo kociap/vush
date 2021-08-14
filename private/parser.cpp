@@ -158,21 +158,29 @@ namespace vush {
 
     constexpr char32 eof_char32 = (char32)EOF;
 
+    // TODO: Place this comment somewhere
+    // The source string is ASCII only, so String7 will be the exact same size as String,
+    // but String7 will avoid all Unicode function calls and thus accelerate parsing.
+
     class Lexer {
     public:
-        Lexer(anton::String_View source_code): _stream(anton::String7_View{source_code.bytes_begin(), source_code.bytes_end()}) {}
+        Lexer(anton::String_View source): _begin(source.bytes_begin()), _end(source.bytes_end()), _current(source.bytes_begin()) {}
 
         bool match(anton::String7_View const string, bool const must_not_be_followed_by_identifier_char = false) {
             Lexer_State const state_backup = get_current_state();
             for(char32 c: string) {
-                if(get_next() != c) {
+                if(_current != _end && *_current == c) {
+                    ++_current;
+                    ++_column;
+                } else {
                     restore_state(state_backup);
                     return false;
                 }
             }
 
             if(must_not_be_followed_by_identifier_char) {
-                if(is_identifier_character(peek_next())) {
+                char32 const c = peek_next();
+                if(is_identifier_character(c)) {
                     restore_state(state_backup);
                     return false;
                 } else {
@@ -186,55 +194,47 @@ namespace vush {
         bool match_identifier(anton::String& out) {
             ignore_whitespace_and_comments();
 
-            // No need to backup the lexer state since we can predict whether the next
-            // sequence of characters is an identifier using only the first character.
-
-            char32 const next_char = _stream.peek();
-            if(!is_first_identifier_character(next_char)) {
+            if(_current != _end && !is_first_identifier_character(*_current)) {
                 return false;
             }
 
-            i64 peek_size = 2;
-            anton::String7_View peek = _stream.peek(peek_size);
-            while(is_identifier_character(peek[peek_size - 1])) {
-                peek = _stream.peek(peek_size + 1);
-                peek_size += 1;
+            char8 const* identifier_end = _current + 1;
+            while(identifier_end != _end && is_identifier_character(*identifier_end)) {
+                ++identifier_end;
             }
 
-            anton::String7_View const data = _stream.read(peek_size - 1);
-            out += anton::String_View{data.begin(), data.end()};
+            out += anton::String_View{_current, identifier_end};
+            _column += identifier_end - _current;
+            _current = identifier_end;
             return true;
         }
 
         bool match_eof() {
             ignore_whitespace_and_comments();
-            char32 const next_char = peek_next();
-            return next_char == eof_char32;
+            return _current == _end || *_current == eof_char32;
         }
 
         void ignore_whitespace_and_comments() {
             while(true) {
-                char32 const next_char = peek_next();
-                if(is_whitespace(next_char)) {
-                    get_next();
-                    continue;
+                while(_current != _end && is_whitespace(*_current)) {
+                    ++_current;
                 }
 
-                if(next_char == U'/') {
-                    get_next();
-                    char32 const next_next_char = peek_next();
-                    if(next_next_char == U'/') {
-                        get_next();
-                        while(get_next() != U'\n') {}
+                if(_current != _end && *_current == '/' && _current + 1 != _end) {
+                    char32 const next_char = *(_current + 1);
+                    if(next_char == U'/') {
+                        for(; _current != _end && *_current != '\n'; ++_current) {}
+                        _line += 1;
+                        _column = 1;
                         continue;
-                    } else if(next_next_char == U'*') {
-                        get_next();
-                        for(char32 c1 = get_next(), c2 = peek_next(); c1 != U'*' || c2 != U'/'; c1 = get_next(), c2 = _stream.peek()) {}
+                    } else if(next_char == U'*') {
+                        _current += 2;
+                        _column += 2;
+                        for(char32 c1 = get_next(), c2 = peek_next(); c1 != U'*' || c2 != U'/'; c1 = get_next(), c2 = peek_next()) {}
                         get_next();
                         continue;
                     } else {
                         // Not a comment. End skipping.
-                        unget();
                         break;
                     }
                 }
@@ -245,42 +245,53 @@ namespace vush {
 
         Lexer_State get_current_state() {
             ignore_whitespace_and_comments();
-            return {_stream.tell(), _line, _column};
+            return {_current - _begin, _line, _column};
         }
 
         Lexer_State get_current_state_no_skip() {
-            return {_stream.tell(), _line, _column};
+            return {_current - _begin, _line, _column};
         }
 
         void restore_state(Lexer_State const state) {
-            _stream.seek(anton::Seek_Dir::beg, state.stream_offset);
+            _current = _begin + state.stream_offset;
             _line = state.line;
             _column = state.column;
         }
 
         char32 get_next() {
-            char32 const c = _stream.get();
-            if(c == '\n') {
-                _line += 1;
-                _column = 1;
+            if(_current != _end) {
+                char32 const c = *_current;
+                ++_current;
+                if(c == '\n') {
+                    _line += 1;
+                    _column = 1;
+                } else {
+                    _column += 1;
+                }
+                return c;
             } else {
-                _column += 1;
+                return eof_char32;
             }
-            return c;
         }
 
         char32 peek_next() {
-            return _stream.peek();
+            if(_current != _end) {
+                return *_current;
+            } else {
+                return eof_char32;
+            }
         }
 
         void unget() {
-            _stream.unget();
+            if(_current != _begin) {
+                --_current;
+            }
         }
 
     private:
-        // The source string is ASCII, so String7 will be the exact same size as String,
-        // but String7 will avoid all Unicode function calls and thus accelerate parsing.
-        anton::Input_String7_Stream _stream;
+        char8 const* _begin;
+        char8 const* _end;
+        char8 const* _current;
         i64 _line = 1;
         i64 _column = 1;
     };
@@ -2410,7 +2421,7 @@ namespace vush {
             }
 
             if(pre_point_digits == 0) {
-                number += U'0';
+                number += '0';
             }
 
             bool has_period = false;
@@ -2426,7 +2437,7 @@ namespace vush {
                 }
 
                 if(post_point_digits == 0) {
-                    number += U'0';
+                    number += '0';
                 }
             }
 
