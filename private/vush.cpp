@@ -1170,18 +1170,18 @@ namespace vush {
 
                 Source_Request_Result& request_res = source_request_res.value();
                 // Ensure we're not importing the same source multiple times
-                auto iter = anton::find_if(ctx.imported_sources.begin(), ctx.imported_sources.end(),
-                                           [&source_name = request_res.source_name](Owning_Ptr<anton::String> const& v) { return *v == source_name; });
-                if(iter == ctx.imported_sources.end()) {
-                    Owning_Ptr<anton::String> const& current_source_name =
-                        ctx.imported_sources.emplace_back(Owning_Ptr{new anton::String{request_res.source_name}});
-                    anton::Expected<Declaration_List, Parse_Error> parse_result = parse_source(request_res.data, *current_source_name);
-                    ctx.source_registry.emplace(ANTON_MOV(request_res.source_name), ANTON_MOV(request_res.data));
+                auto iter = ctx.source_registry.find(request_res.source_name);
+                if(iter == ctx.source_registry.end()) {
+                    Source_Data source{Owning_Ptr{new anton::String{ANTON_MOV(request_res.source_name)}},
+                                       Owning_Ptr{new anton::String{ANTON_MOV(request_res.data)}}};
+                    anton::Expected<Declaration_List, Parse_Error> parse_result = parse_source(*source.name, *source.data);
                     if(!parse_result) {
                         Parse_Error const& error = parse_result.error();
-                        anton::String error_msg = build_error_message(*current_source_name, error.line, error.column, error.message);
+                        anton::String error_msg = build_error_message(*source.name, error.line, error.column, error.message);
                         return {anton::expected_error, ANTON_MOV(error_msg)};
                     }
+
+                    ctx.source_registry.emplace(*source.name, ANTON_MOV(source));
 
                     // Insert the result of parsing into the ast
                     Declaration_List& decls = parse_result.value();
@@ -1918,16 +1918,16 @@ namespace vush {
             }
 
             Source_Request_Result& request_res = source_request_res.value();
-            Owning_Ptr<anton::String> const& current_source_name = ctx.imported_sources.emplace_back(Owning_Ptr{new anton::String{request_res.source_name}});
-            anton::Expected<Declaration_List, Parse_Error> parse_result = parse_source(request_res.data, *current_source_name);
-            ctx.source_registry.emplace(ANTON_MOV(request_res.source_name), ANTON_MOV(request_res.data));
-            if(parse_result) {
-                ast = ANTON_MOV(parse_result.value());
-            } else {
+            Source_Data source{Owning_Ptr{new anton::String{ANTON_MOV(request_res.source_name)}}, Owning_Ptr{new anton::String{ANTON_MOV(request_res.data)}}};
+            anton::Expected<Declaration_List, Parse_Error> parse_result = parse_source(*source.name, *source.data);
+            if(!parse_result) {
                 Parse_Error const& error = parse_result.error();
-                anton::String error_msg = build_error_message(path, error.line, error.column, error.message);
+                anton::String error_msg = build_error_message(*source.name, error.line, error.column, error.message);
                 return {anton::expected_error, ANTON_MOV(error_msg)};
             }
+
+            ctx.source_registry.emplace(*source.name, ANTON_MOV(source));
+            ast = ANTON_MOV(parse_result.value());
         }
 
         if(anton::Expected<void, anton::String> res = resolve_imports_and_declaration_ifs(ctx, ast); !res) {

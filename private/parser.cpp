@@ -2734,7 +2734,7 @@ namespace vush {
         }
     };
 
-    anton::Expected<Declaration_List, Parse_Error> parse_source(anton::String_View const source_code, anton::String_View const source_name) {
+    anton::Expected<Declaration_List, Parse_Error> parse_source(anton::String_View const source_name, anton::String_View const source_code) {
         Parser parser(source_code, source_name);
         anton::Expected<Declaration_List, Parse_Error> ast = parser.build_ast();
         return ast;
