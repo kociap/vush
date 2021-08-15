@@ -18,8 +18,9 @@ namespace vush {
     // Builds ast from the contents of stream.
     //
     // Parameters:
-    // source_code - The source code to be parsed. Must consist of ASCII only.
     // source_name - Name of the source. Must be address-stable and persist for at least as long as the AST.
+    // source_code - The source code to be parsed. Must consist of ASCII only. Must be address-stable and
+    //               persist for at least as long as the AST.
     //
-    anton::Expected<Declaration_List, Parse_Error> parse_source(anton::String_View source_code, anton::String_View source_name);
+    anton::Expected<Declaration_List, Parse_Error> parse_source(anton::String_View source_name, anton::String_View source_code);
 } // namespace vush
