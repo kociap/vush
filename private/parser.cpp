@@ -1764,27 +1764,46 @@ namespace vush {
         Owning_Ptr<Expression> try_binary_expression() {
             auto insert_node = [](Owning_Ptr<Expression> root, Owning_Ptr<Binary_Expression> node) -> Owning_Ptr<Expression> {
                 auto get_precedence = [](Binary_Expression& expression) -> i32 {
-                    i64 precedence[19] = {};
-                    precedence[(i64)Binary_Expression_Type::logic_or] = 11;
-                    precedence[(i64)Binary_Expression_Type::logic_xor] = 10;
-                    precedence[(i64)Binary_Expression_Type::logic_and] = 9;
-                    precedence[(i64)Binary_Expression_Type::equal] = 5;
-                    precedence[(i64)Binary_Expression_Type::unequal] = 5;
-                    precedence[(i64)Binary_Expression_Type::greater_than] = 4;
-                    precedence[(i64)Binary_Expression_Type::less_than] = 4;
-                    precedence[(i64)Binary_Expression_Type::greater_equal] = 4;
-                    precedence[(i64)Binary_Expression_Type::less_equal] = 4;
-                    precedence[(i64)Binary_Expression_Type::bit_or] = 8;
-                    precedence[(i64)Binary_Expression_Type::bit_xor] = 7;
-                    precedence[(i64)Binary_Expression_Type::bit_and] = 6;
-                    precedence[(i64)Binary_Expression_Type::lshift] = 3;
-                    precedence[(i64)Binary_Expression_Type::rshift] = 3;
-                    precedence[(i64)Binary_Expression_Type::add] = 2;
-                    precedence[(i64)Binary_Expression_Type::sub] = 2;
-                    precedence[(i64)Binary_Expression_Type::mul] = 1;
-                    precedence[(i64)Binary_Expression_Type::div] = 1;
-                    precedence[(i64)Binary_Expression_Type::mod] = 1;
-                    return precedence[(i64)expression.type];
+                    switch(expression.type) {
+                        case Binary_Expression_Type::logic_or:
+                            return 11;
+                        case Binary_Expression_Type::logic_xor:
+                            return 10;
+                        case Binary_Expression_Type::logic_and:
+                            return 9;
+                        case Binary_Expression_Type::equal:
+                            return 5;
+                        case Binary_Expression_Type::unequal:
+                            return 5;
+                        case Binary_Expression_Type::greater_than:
+                            return 4;
+                        case Binary_Expression_Type::less_than:
+                            return 4;
+                        case Binary_Expression_Type::greater_equal:
+                            return 4;
+                        case Binary_Expression_Type::less_equal:
+                            return 4;
+                        case Binary_Expression_Type::bit_or:
+                            return 8;
+                        case Binary_Expression_Type::bit_xor:
+                            return 7;
+                        case Binary_Expression_Type::bit_and:
+                            return 6;
+                        case Binary_Expression_Type::lshift:
+                            return 3;
+                        case Binary_Expression_Type::rshift:
+                            return 3;
+                        case Binary_Expression_Type::add:
+                            return 2;
+                        case Binary_Expression_Type::sub:
+                            return 2;
+                        case Binary_Expression_Type::mul:
+                            return 1;
+                        case Binary_Expression_Type::div:
+                            return 1;
+                        case Binary_Expression_Type::mod:
+                            return 1;
+                    }
                 };
 
                 i32 const node_precedence = get_precedence(*node);
