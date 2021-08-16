@@ -63,7 +63,7 @@ namespace vush {
     static constexpr anton::String7_View token_scope_resolution = u8"::";
     static constexpr anton::String7_View token_arrow = u8"=>";
     static constexpr anton::String7_View token_comma = u8",";
-    static constexpr anton::String7_View token_question = u8"?";
+    // static constexpr anton::String7_View token_question = u8"?";
     static constexpr anton::String7_View token_dot = u8".";
     static constexpr anton::String7_View token_double_quote = u8"\"";
     static constexpr anton::String7_View token_plus = u8"+";
@@ -156,6 +156,7 @@ namespace vush {
         i64 column;
     };
 
+    constexpr char8 eof_char8 = (char8)EOF;
     constexpr char32 eof_char32 = (char32)EOF;
 
     // TODO: Place this comment somewhere
@@ -168,7 +169,7 @@ namespace vush {
 
         bool match(anton::String7_View const string, bool const must_not_be_followed_by_identifier_char = false) {
             Lexer_State const state_backup = get_current_state();
-            for(char32 c: string) {
+            for(char8 c: string) {
                 if(_current != _end && *_current == c) {
                     ++_current;
                     ++_column;
@@ -211,7 +212,7 @@ namespace vush {
 
         bool match_eof() {
             ignore_whitespace_and_comments();
-            return _current == _end || *_current == eof_char32;
+            return _current == _end || *_current == eof_char8;
         }
 
         void ignore_whitespace_and_comments() {
