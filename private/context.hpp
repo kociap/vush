@@ -14,14 +14,12 @@ namespace vush {
     using Symbol_Type = AST_Node_Type;
 
     struct Source_Data {
-        // Address-stable name of the source
-        Owning_Ptr<anton::String> name;
-        // Address-stable data of the source
-        Owning_Ptr<anton::String> data;
+        anton::String name;
+        anton::String data;
     };
 
     struct Context {
-        // Maps source's name to address-stable source information
+        // Maps source's name to source information
         anton::Flat_Hash_Map<anton::String_View, Source_Data> source_registry;
         anton::Array<anton::Flat_Hash_Map<anton::String, Symbol*>> symbols;
         source_definition_callback source_definition_cb;

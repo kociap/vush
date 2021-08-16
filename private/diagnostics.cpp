@@ -111,7 +111,7 @@ namespace vush {
     }
 
     anton::String format_undefined_symbol(Context const& ctx, Source_Info const& symbol) {
-        anton::String_View const source = *ctx.source_registry.find(symbol.file_path)->value.data;
+        anton::String_View const source = ctx.source_registry.find(symbol.file_path)->value.data;
         anton::String message = format_diagnostic_location(symbol);
         message += u8"error: undefined symbol '";
         message += get_source_bit(source, symbol);
@@ -124,7 +124,7 @@ namespace vush {
     }
 
     anton::String format_called_symbol_does_not_name_function(Context const& ctx, Source_Info const& symbol) {
-        anton::String_View const source = *ctx.source_registry.find(symbol.file_path)->value.data;
+        anton::String_View const source = ctx.source_registry.find(symbol.file_path)->value.data;
         anton::String message = format_diagnostic_location(symbol);
         message += u8"error: called symbol '";
         message += get_source_bit(source, symbol);
@@ -138,7 +138,7 @@ namespace vush {
 
     anton::String format_symbol_redefinition(Context const& ctx, Source_Info const& first, Source_Info const& second) {
         anton::String message = format_diagnostic_location(second);
-        anton::String_View const first_source = *ctx.source_registry.find(first.file_path)->value.data;
+        anton::String_View const first_source = ctx.source_registry.find(first.file_path)->value.data;
         anton::String_View const name = get_source_bit(first_source, first);
         message += anton::format(u8"error: redefinition of the symbol '{}'\n"_sv, name);
         if(ctx.diagnostics.extended) {
@@ -148,7 +148,7 @@ namespace vush {
             message += '\n';
             message += format_diagnostic_location(second);
             message += u8"redefined here\n"_sv;
-            anton::String_View const second_source = *ctx.source_registry.find(second.file_path)->value.data;
+            anton::String_View const second_source = ctx.source_registry.find(second.file_path)->value.data;
             print_source_snippet(ctx, message, second_source, second);
             message += '\n';
         }
@@ -159,7 +159,7 @@ namespace vush {
         anton::String message = format_diagnostic_location(integer);
         message += u8"error: integer literal requires more than 32 bits\n";
         if(ctx.diagnostics.extended) {
-            anton::String_View const source = *ctx.source_registry.find(integer.file_path)->value.data;
+            anton::String_View const source = ctx.source_registry.find(integer.file_path)->value.data;
             print_source_snippet(ctx, message, source, integer);
             message += '\n';
         }
@@ -170,7 +170,7 @@ namespace vush {
         anton::String message = format_diagnostic_location(integer);
         message += u8"error: leading zeros in decimal integer literals are not allowed\n";
         if(ctx.diagnostics.extended) {
-            anton::String_View const source = *ctx.source_registry.find(integer.file_path)->value.data;
+            anton::String_View const source = ctx.source_registry.find(integer.file_path)->value.data;
             print_source_snippet(ctx, message, source, integer);
             message += '\n';
         }
@@ -181,7 +181,7 @@ namespace vush {
         anton::String message = format_diagnostic_location(declaration);
         message += u8"error: illegal declaration of a variable in global scope\n";
         if(ctx.diagnostics.extended) {
-            anton::String_View const& source = *ctx.source_registry.find(declaration.file_path)->value.data;
+            anton::String_View const& source = ctx.source_registry.find(declaration.file_path)->value.data;
             print_source_snippet(ctx, message, source, declaration);
             message += '\n';
         }
@@ -192,7 +192,7 @@ namespace vush {
         anton::String message = format_diagnostic_location(constant);
         message += u8"error: missing constant initializer\n";
         if(ctx.diagnostics.extended) {
-            anton::String_View const source = *ctx.source_registry.find(constant.file_path)->value.data;
+            anton::String_View const source = ctx.source_registry.find(constant.file_path)->value.data;
             print_source_snippet(ctx, message, source, constant);
             message += '\n';
         }
@@ -203,7 +203,7 @@ namespace vush {
         anton::String message = format_diagnostic_location(expression);
         message += u8"error: expression is not implicitly convertible to bool\n";
         if(ctx.diagnostics.extended) {
-            anton::String_View const source = *ctx.source_registry.find(expression.file_path)->value.data;
+            anton::String_View const source = ctx.source_registry.find(expression.file_path)->value.data;
             print_source_snippet(ctx, message, source, expression);
             message += '\n';
         }
@@ -216,7 +216,7 @@ namespace vush {
         message += stringify(stage);
         message += u8" stage\n";
         if(ctx.diagnostics.extended) {
-            anton::String_View const source = *ctx.source_registry.find(src.file_path)->value.data;
+            anton::String_View const source = ctx.source_registry.find(src.file_path)->value.data;
             print_source_snippet(ctx, message, source, src);
             message += '\n';
         }
@@ -229,7 +229,7 @@ namespace vush {
         message += stringify(stage);
         message += u8" stage\n";
         if(ctx.diagnostics.extended) {
-            anton::String_View const source = *ctx.source_registry.find(src.file_path)->value.data;
+            anton::String_View const source = ctx.source_registry.find(src.file_path)->value.data;
             print_source_snippet(ctx, message, source, src);
             message += '\n';
         }
@@ -239,7 +239,7 @@ namespace vush {
     anton::String format_illegal_image_layout_qualifier_on_non_sourced_parameter(Context const& ctx, Source_Info const& qualifier,
                                                                                  Source_Info const& parameter_identifier) {
         anton::String message = format_diagnostic_location(qualifier);
-        anton::String_View const source = *ctx.source_registry.find(qualifier.file_path)->value.data;
+        anton::String_View const source = ctx.source_registry.find(qualifier.file_path)->value.data;
         message += u8"illegal image layout qualifier '";
         message += get_source_bit(source, qualifier);
         message += u8"' on non-sourced parameter '";
@@ -255,7 +255,7 @@ namespace vush {
 
     anton::String format_illegal_image_layout_qualifier_on_non_image_type(Context const& ctx, Source_Info const& qualifier, Source_Info const& type) {
         anton::String message = format_diagnostic_location(qualifier);
-        anton::String_View const source = *ctx.source_registry.find(qualifier.file_path)->value.data;
+        anton::String_View const source = ctx.source_registry.find(qualifier.file_path)->value.data;
         message += u8"illegal image layout qualifier '";
         message += get_source_bit(source, qualifier);
         message += u8"' on non-image type '";
@@ -290,7 +290,7 @@ namespace vush {
     }
 
     anton::String format_empty_struct([[maybe_unused]] Context const& ctx, Source_Info const& struct_name) {
-        anton::String_View const source = *ctx.source_registry.find(struct_name.file_path)->value.data;
+        anton::String_View const source = ctx.source_registry.find(struct_name.file_path)->value.data;
         anton::String message = format_diagnostic_location(struct_name);
         anton::String_View const name = get_source_bit(source, struct_name);
         message += anton::format(u8"error: structs must not be empty, i.e. they must contain at least one member, but '{}' is an empty struct\n"_sv, name);
@@ -307,7 +307,7 @@ namespace vush {
         anton::String message = format_diagnostic_location(return_type);
         message += u8"error: the return type of the compute stage must be void\n";
         if(ctx.diagnostics.extended) {
-            anton::String_View const source = *ctx.source_registry.find(return_type.file_path)->value.data;
+            anton::String_View const source = ctx.source_registry.find(return_type.file_path)->value.data;
             print_source_snippet(ctx, message, source, return_type);
             message += '\n';
         }
@@ -320,7 +320,7 @@ namespace vush {
         message += source_callback_message;
         message += '\n';
         if(ctx.diagnostics.extended) {
-            anton::String_View const source = *ctx.source_registry.find(import_info.file_path)->value.data;
+            anton::String_View const source = ctx.source_registry.find(import_info.file_path)->value.data;
             print_source_snippet(ctx, message, source, import_info);
         }
         return message;
@@ -331,14 +331,14 @@ namespace vush {
         anton::String message = format_diagnostic_location(second);
         message += u8"error: duplicate sourced parameter name with a different type\n";
         if(ctx.diagnostics.extended) {
-            anton::String_View const first_source = *ctx.source_registry.find(first.file_path)->value.data;
+            anton::String_View const first_source = ctx.source_registry.find(first.file_path)->value.data;
             message += format_diagnostic_location(first);
             message += u8"first definition with type '";
             message += get_source_bit(first_source, first_type);
             message += u8"' found here\n";
             print_source_snippet(ctx, message, first_source, first);
             message += '\n';
-            anton::String_View const second_source = *ctx.source_registry.find(second.file_path)->value.data;
+            anton::String_View const second_source = ctx.source_registry.find(second.file_path)->value.data;
             message += format_diagnostic_location(second);
             message += u8"second definition with type '";
             message += get_source_bit(second_source, second_type);
@@ -353,12 +353,12 @@ namespace vush {
         anton::String message = format_diagnostic_location(second);
         message += u8"error: duplicate 'default' label in switch statement\n"_sv;
         if(ctx.diagnostics.extended) {
-            anton::String_View const first_source = *ctx.source_registry.find(first.file_path)->value.data;
+            anton::String_View const first_source = ctx.source_registry.find(first.file_path)->value.data;
             message += format_diagnostic_location(first);
             message += u8"first occurence of 'default' found here\n"_sv;
             print_source_snippet(ctx, message, first_source, first);
             message += '\n';
-            anton::String_View const second_source = *ctx.source_registry.find(second.file_path)->value.data;
+            anton::String_View const second_source = ctx.source_registry.find(second.file_path)->value.data;
             message += format_diagnostic_location(second);
             message += u8"second occurence of 'default' found here\n"_sv;
             print_source_snippet(ctx, message, second_source, second);
@@ -368,13 +368,13 @@ namespace vush {
     }
 
     anton::String format_duplicate_label(Context const& ctx, Source_Info const& first, Source_Info const& second) {
-        anton::String_View const second_source = *ctx.source_registry.find(second.file_path)->value.data;
+        anton::String_View const second_source = ctx.source_registry.find(second.file_path)->value.data;
         anton::String message = format_diagnostic_location(second);
         message += u8"error: duplicate '"_sv;
         message += get_source_bit(second_source, second);
         message += u8"' label in switch statement\n"_sv;
         if(ctx.diagnostics.extended) {
-            anton::String_View const first_source = *ctx.source_registry.find(first.file_path)->value.data;
+            anton::String_View const first_source = ctx.source_registry.find(first.file_path)->value.data;
             message += format_diagnostic_location(first);
             message += u8"first occurence of '"_sv;
             message += get_source_bit(first_source, first);
