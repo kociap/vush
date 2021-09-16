@@ -1172,7 +1172,7 @@ namespace vush {
                 // Ensure we're not importing the same source multiple times
                 auto iter = ctx.source_registry.find(request_res.source_name);
                 if(iter == ctx.source_registry.end()) {
-                    Source_Data source{anton::String{ANTON_MOV(request_res.source_name)}, anton::String{ANTON_MOV(request_res.data)}};
+                    Source_Data source{ANTON_MOV(request_res.source_name), ANTON_MOV(request_res.data)};
                     anton::Expected<Declaration_List, Parse_Error> parse_result = parse_source(source.name, source.data);
                     if(!parse_result) {
                         Parse_Error const& error = parse_result.error();
@@ -1917,7 +1917,7 @@ namespace vush {
             }
 
             Source_Request_Result& request_res = source_request_res.value();
-            Source_Data source{anton::String{ANTON_MOV(request_res.source_name)}, anton::String{ANTON_MOV(request_res.data)}};
+            Source_Data source{ANTON_MOV(request_res.source_name), ANTON_MOV(request_res.data)};
             anton::Expected<Declaration_List, Parse_Error> parse_result = parse_source(source.name, source.data);
             if(!parse_result) {
                 Parse_Error const& error = parse_result.error();
