@@ -218,6 +218,10 @@ namespace vush {
         void ignore_whitespace_and_comments() {
             while(true) {
                 while(_current != _end && is_whitespace(*_current)) {
+                    if(*_current == '\n') {
+                        _line += 1;
+                        _column = 1;
+                    }
                     ++_current;
                 }
 
@@ -225,6 +229,8 @@ namespace vush {
                     char32 const next_char = *(_current + 1);
                     if(next_char == U'/') {
                         for(; _current != _end && *_current != '\n'; ++_current) {}
+                        // The loop stops at the newline. Skip the newline.
+                        _current += 1;
                         _line += 1;
                         _column = 1;
                         continue;
