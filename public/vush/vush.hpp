@@ -48,16 +48,27 @@ namespace vush {
         anton::Array<Setting_Key_Value> settings;
     };
 
+    struct Stage_Sourced_Data {
+        anton::Slice<Sourced_Variable const> variables;
+        anton::Slice<Sourced_Opaque_Variable const> opaque_variables;
+    };
+
     struct Source_Definition_Context {
         anton::String_View pass_name;
         anton::String_View source_name;
         anton::Slice<Setting_Key_Value const> settings;
-        anton::Slice<Sourced_Variable const> variables;
-        anton::Slice<Sourced_Opaque_Variable const> opaque_variables;
+        // Index with Stage_Type
+        anton::Slice<Stage_Sourced_Data const> sourced_data;
         void* user_data;
     };
 
-    using source_definition_callback = anton::Expected<Source_Definition, anton::String> (*)(Source_Definition_Context const& params);
+    // source_definition_callback
+    //
+    // Parameters:
+    // definitions - output parameter for per-stage source definitions. The slice is always presized to stage_type_count.
+    //
+    using source_definition_callback = anton::Expected<void, anton::String> (*)(Source_Definition_Context const& context,
+                                                                                anton::Slice<Source_Definition> definitions);
 
     struct Diagnostics_Options {
         // Whether to provide extended diagnostic messages that include more thorough explanation
@@ -81,6 +92,10 @@ namespace vush {
         fragment,
         compute,
     };
+
+    // stage_type_count
+    // The number of enumerations in Stage_Type.
+    constexpr i64 stage_type_count = 3;
 
     struct GLSL_File {
         anton::String data;

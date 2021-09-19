@@ -10,6 +10,7 @@
 #include <const_expr_eval.hpp>
 #include <context.hpp>
 #include <diagnostics.hpp>
+#include <implicit_source.hpp>
 #include <parser.hpp>
 
 namespace vush {
@@ -210,29 +211,9 @@ namespace vush {
                 bool const has_ordinary_parameter = params.size() > 0 && !is_sourced_parameter((Function_Parameter const&)*params[0]);
                 if(has_ordinary_parameter) {
                     Function_Parameter& p = (Function_Parameter&)*params[0];
-
-                    // TODO: Is this validation correct?
-                    Type& type = *p.type;
-                    // Stage input parameters that are arrays must be sized
-                    if(is_unsized_array(type)) {
-                        Source_Info const& src = type.source_info;
-                        return {anton::expected_error,
-                                build_error_message(src.file_path, src.line, src.column, u8"stage input parameters must not be unsized arrays")};
-                    }
-
-                    // Stage input parameters must not be opaque
-                    if(is_opaque_type(type)) {
-                        Source_Info const& src = type.source_info;
-                        return {anton::expected_error,
-                                build_error_message(src.file_path, src.line, src.column,
-                                                    u8"stage input parameters must be of non-opaque type (non-opaque builtin type or user "
-                                                    u8"defined type) or an array of non-opaque type")};
-                    }
-
-                    if(p.image_layout) {
-                        Source_Info const& qualifier_src = p.image_layout->source_info;
-                        Source_Info const& p_identifier_src = p.identifier->source_info;
-                        return {anton::expected_error, format_illegal_image_layout_qualifier_on_non_sourced_parameter(ctx, qualifier_src, p_identifier_src)};
+                    bool const udt_type = p.type->node_type == AST_Node_Type::user_defined_type;
+                    if(!udt_type) {
+                        return {anton::expected_error, format_stage_input_parameter_must_be_udt(ctx, function.pass_name->value, Stage_Type::fragment, p)};
                     }
 
                     anton::Expected<void, anton::String> symbol_res = check_and_add_symbol(ctx, p.identifier->value, &p);
@@ -1109,33 +1090,45 @@ namespace vush {
     }
 
     // process_function
-    // Validates function attributes, processes the parameter list and function body resolving any compiletime ifs.
+    // Validates stage attributes, return type and parameter list.
+    // Processes the parameter list and function body to resolve any compiletime ifs.
     // Does not add any symbols to the top level scope.
     //
     static anton::Expected<void, anton::String> process_function(Context& ctx, Pass_Stage_Declaration& fn) {
-        // Validate the return types
+        // Validate the return type.
+        bool const void_return = is_void(*fn.return_type);
+        // TODO: Add symbol lookup to ensure the return types actually exist
+        bool const udt_return = fn.return_type->node_type == AST_Node_Type::user_defined_type;
         switch(fn.stage_type) {
-            case Stage_Type::compute: {
-                // Return type of a compute stage must always be void
-                Type& return_type = *fn.return_type;
-                bool const return_type_is_void =
-                    return_type.node_type == AST_Node_Type::builtin_type && ((Builtin_Type&)return_type).type == Builtin_GLSL_Type::glsl_void;
-                if(!return_type_is_void) {
-                    Source_Info const& src = return_type.source_info;
-                    return {anton::expected_error, format_compute_return_type_must_be_void(ctx, src)};
+            case Stage_Type::vertex: {
+                // The return type of a vertex stage must always be void or a UDT.
+                if(!void_return && !udt_return) {
+                    return {anton::expected_error, format_stage_return_type_must_be_void_or_udt(ctx, fn.pass_name->value, Stage_Type::vertex, *fn.return_type)};
                 }
             } break;
 
-            default:
-                // TODO: Add symbol lookup to ensure the return types actually exist
-                break;
+            case Stage_Type::fragment: {
+                // The return type of a vertex stage must always be void or a UDT.
+                if(!void_return && !udt_return) {
+                    return {anton::expected_error,
+                            format_stage_return_type_must_be_void_or_udt(ctx, fn.pass_name->value, Stage_Type::fragment, *fn.return_type)};
+                }
+            } break;
+
+            case Stage_Type::compute: {
+                // The return type of a compute stage must always be void.
+                if(!void_return) {
+                    Source_Info const& src = fn.return_type->source_info;
+                    return {anton::expected_error, format_compute_return_type_must_be_void(ctx, src)};
+                }
+            } break;
         }
 
         if(anton::Expected<void, anton::String> res = validate_function_attributes(ctx, fn); !res) {
             return res;
         }
 
-        // Push new scope for the function body and parameters
+        // Push new scope for the function body and parameters.
         push_scope(ctx);
         if(anton::Expected<void, anton::String> res = process_fn_param_list(ctx, fn); !res) {
             return res;
@@ -1693,16 +1686,16 @@ namespace vush {
         anton::Array<Function_Call_Expression*> function_calls;
         anton::Flat_Hash_Set<u64> instantiated_functions;
         for(Pass_Context& pass: passes) {
-            if(pass.vertex_stage) {
-                walk_nodes_and_aggregate_function_calls(function_calls, *pass.vertex_stage);
+            if(pass.vertex_context) {
+                walk_nodes_and_aggregate_function_calls(function_calls, *pass.vertex_context.declaration);
             }
 
-            if(pass.fragment_stage) {
-                walk_nodes_and_aggregate_function_calls(function_calls, *pass.fragment_stage);
+            if(pass.fragment_context) {
+                walk_nodes_and_aggregate_function_calls(function_calls, *pass.fragment_context.declaration);
             }
 
-            if(pass.compute_stage) {
-                walk_nodes_and_aggregate_function_calls(function_calls, *pass.compute_stage);
+            if(pass.compute_context) {
+                walk_nodes_and_aggregate_function_calls(function_calls, *pass.compute_context.declaration);
             }
 
             for(i64 i = 0; i < function_calls.size(); ++i) {
@@ -1960,46 +1953,46 @@ namespace vush {
     }
 
     [[nodiscard]] static anton::Expected<anton::Array<Pass_Context>, anton::String>
-    build_pass_contexts(Context& ctx, anton::Slice<Owning_Ptr<Pass_Stage_Declaration> const> const stage_declarations) {
+    build_pass_contexts(Context const& ctx, anton::Slice<Owning_Ptr<Pass_Stage_Declaration> const> const stage_declarations) {
         anton::Array<Pass_Context> passes;
         for(auto const& stage_declaration: stage_declarations) {
-            anton::String const& pass_name = stage_declaration->pass_name->value;
-            Pass_Context* pass = anton::find_if(passes.begin(), passes.end(), [&pass_name](Pass_Context const& v) { return v.name == pass_name; });
+            anton::String_View const pass_name = stage_declaration->pass_name->value;
+            Pass_Context* pass = anton::find_if(passes.begin(), passes.end(), [pass_name](Pass_Context const& v) { return v.name == pass_name; });
             if(pass == passes.end()) {
-                Pass_Context& v = passes.emplace_back(Pass_Context{pass_name, {}, nullptr, nullptr, nullptr, {}, {}});
+                Pass_Context& v = passes.emplace_back(Pass_Context{pass_name});
                 pass = &v;
             }
 
             // Ensure there is only 1 stage of each type
             switch(stage_declaration->stage_type) {
                 case Stage_Type::vertex: {
-                    if(pass->vertex_stage) {
-                        Source_Info const& src1 = pass->vertex_stage->source_info;
+                    if(pass->vertex_context) {
+                        Source_Info const& src1 = pass->vertex_context.declaration->source_info;
                         Source_Info const& src2 = stage_declaration->source_info;
                         return {anton::expected_error, format_duplicate_pass_stage_error(ctx, src1, src2, pass->name, Stage_Type::vertex)};
                     }
 
-                    pass->vertex_stage = stage_declaration.get();
+                    pass->vertex_context.declaration = stage_declaration.get();
                 } break;
 
                 case Stage_Type::fragment: {
-                    if(pass->fragment_stage) {
-                        Source_Info const& src1 = pass->vertex_stage->source_info;
+                    if(pass->fragment_context) {
+                        Source_Info const& src1 = pass->fragment_context.declaration->source_info;
                         Source_Info const& src2 = stage_declaration->source_info;
                         return {anton::expected_error, format_duplicate_pass_stage_error(ctx, src1, src2, pass->name, Stage_Type::fragment)};
                     }
 
-                    pass->fragment_stage = stage_declaration.get();
+                    pass->fragment_context.declaration = stage_declaration.get();
                 } break;
 
                 case Stage_Type::compute: {
-                    if(pass->compute_stage) {
-                        Source_Info const& src1 = pass->vertex_stage->source_info;
+                    if(pass->compute_context) {
+                        Source_Info const& src1 = pass->compute_context.declaration->source_info;
                         Source_Info const& src2 = stage_declaration->source_info;
                         return {anton::expected_error, format_duplicate_pass_stage_error(ctx, src1, src2, pass->name, Stage_Type::compute)};
                     }
 
-                    pass->compute_stage = stage_declaration.get();
+                    pass->compute_context.declaration = stage_declaration.get();
                 } break;
             }
         }
@@ -2007,262 +2000,64 @@ namespace vush {
         return {anton::expected_value, ANTON_MOV(passes)};
     }
 
-    // extract_sourced_parameters
-    // Removes unsized and opaque sourced parameters from the parameter list of all Pass_Stage_Declarations of all passes
-    // and moves them to a different storage.
-    //
-    // Returns:
-    // Array of the extracted unsized and opaque sourced parameters.
-    //
-    [[nodiscard]] static anton::Array<Owning_Ptr<Function_Parameter>> extract_sourced_parameters(anton::Slice<Pass_Context> const passes) {
-        auto extract = [](anton::Array<Owning_Ptr<Function_Parameter>>& sourced_params, Pass_Context& pass, Pass_Stage_Declaration& stage_declaration) {
-            Parameter_List& params = stage_declaration.params;
-            for(i64 i = 0; i < params.size(); ++i) {
-                Function_Parameter& p = (Function_Parameter&)*params[i];
-                if(is_sourced_parameter(p) && !is_vertex_input_parameter(p)) {
-                    auto iter = pass.sourced_data.find_or_emplace(p.source->value);
-                    iter->value.all.emplace_back(&p);
-                    if(is_unsized_array(*p.type) || is_opaque_type(*p.type)) {
-                        sourced_params.emplace_back(ANTON_MOV((Owning_Ptr<Function_Parameter>&)params[i]));
-                        auto begin = params.begin();
-                        params.erase(begin + i, begin + i + 1);
-                        --i;
-                    }
-                }
-            }
-        };
-
-        anton::Array<Owning_Ptr<Function_Parameter>> sourced_params;
-        for(Pass_Context& pass: passes) {
-            if(pass.vertex_stage) {
-                extract(sourced_params, pass, *pass.vertex_stage);
-            }
-
-            if(pass.fragment_stage) {
-                extract(sourced_params, pass, *pass.fragment_stage);
-            }
-
-            if(pass.compute_stage) {
-                extract(sourced_params, pass, *pass.compute_stage);
-            }
-        }
-
-        return sourced_params;
-    }
-
-    struct Layout_Info {
-        i64 alignment;
-        i64 size;
-    };
-
-    [[nodiscard]] static Layout_Info calculate_type_layout_info(Context const& ctx, Type const& type) {
-        ANTON_ASSERT(type.node_type == AST_Node_Type::builtin_type || type.node_type == AST_Node_Type::user_defined_type ||
-                         type.node_type == AST_Node_Type::array_type,
-                     u8"unknown ast node type");
-        if(type.node_type == AST_Node_Type::builtin_type) {
-            Builtin_Type const& t = (Builtin_Type const&)type;
-            switch(t.type) {
-                case Builtin_GLSL_Type::glsl_void:
-                    return {0, 0};
-
-                case Builtin_GLSL_Type::glsl_bool:
-                case Builtin_GLSL_Type::glsl_int:
-                case Builtin_GLSL_Type::glsl_uint:
-                case Builtin_GLSL_Type::glsl_float:
-                    return {4, 4};
-
-                case Builtin_GLSL_Type::glsl_double:
-                    return {8, 8};
-
-                case Builtin_GLSL_Type::glsl_vec2:
-                case Builtin_GLSL_Type::glsl_bvec2:
-                case Builtin_GLSL_Type::glsl_ivec2:
-                case Builtin_GLSL_Type::glsl_uvec2:
-                    return {8, 8};
-
-                case Builtin_GLSL_Type::glsl_vec3:
-                case Builtin_GLSL_Type::glsl_vec4:
-                case Builtin_GLSL_Type::glsl_bvec3:
-                case Builtin_GLSL_Type::glsl_bvec4:
-                case Builtin_GLSL_Type::glsl_ivec3:
-                case Builtin_GLSL_Type::glsl_ivec4:
-                case Builtin_GLSL_Type::glsl_uvec3:
-                case Builtin_GLSL_Type::glsl_uvec4:
-                    return {16, 16};
-
-                case Builtin_GLSL_Type::glsl_dvec2:
-                    return {16, 16};
-
-                case Builtin_GLSL_Type::glsl_dvec3:
-                case Builtin_GLSL_Type::glsl_dvec4:
-                    return {32, 32};
-
-                case Builtin_GLSL_Type::glsl_mat2:
-                case Builtin_GLSL_Type::glsl_mat2x3:
-                case Builtin_GLSL_Type::glsl_mat2x4:
-                    return {16, 32};
-
-                case Builtin_GLSL_Type::glsl_mat3x2:
-                case Builtin_GLSL_Type::glsl_mat3:
-                case Builtin_GLSL_Type::glsl_mat3x4:
-                    return {16, 48};
-
-                case Builtin_GLSL_Type::glsl_mat4x2:
-                case Builtin_GLSL_Type::glsl_mat4x3:
-                case Builtin_GLSL_Type::glsl_mat4:
-                    return {16, 64};
-
-                case Builtin_GLSL_Type::glsl_dmat2:
-                    return {16, 32};
-
-                case Builtin_GLSL_Type::glsl_dmat2x3:
-                case Builtin_GLSL_Type::glsl_dmat2x4:
-                    return {32, 64};
-
-                case Builtin_GLSL_Type::glsl_dmat3x2:
-                    return {16, 48};
-
-                case Builtin_GLSL_Type::glsl_dmat3:
-                case Builtin_GLSL_Type::glsl_dmat3x4:
-                    return {32, 96};
-
-                case Builtin_GLSL_Type::glsl_dmat4x2:
-                    return {16, 64};
-
-                case Builtin_GLSL_Type::glsl_dmat4x3:
-                case Builtin_GLSL_Type::glsl_dmat4:
-                    return {32, 128};
-
-                default:
-                    return {0, 0};
-            }
-        } else if(type.node_type == AST_Node_Type::user_defined_type) {
-            User_Defined_Type const& t = (User_Defined_Type const&)type;
-            Symbol const* symbol = find_symbol(ctx, t.identifier);
-            Struct_Declaration const* struct_declaration = (Struct_Declaration const*)symbol;
-            i64 max_alignment = 0;
-            i64 offset = 0;
-            for(auto& member: struct_declaration->members) {
-                Layout_Info const info = calculate_type_layout_info(ctx, *member->type);
-                max_alignment = anton::math::max(max_alignment, info.alignment);
-                // Realign offset if necessary
-                i64 const misalignment = offset % info.alignment;
-                if(misalignment != 0) {
-                    offset += info.alignment - misalignment;
-                }
-                offset += info.size;
-            }
-            // Round the alignment up to a multiple of vec4's alignment
-            i64 const alignment = ((max_alignment + 15) / 16) * 16;
-            return {alignment, offset};
-        } else if(type.node_type == AST_Node_Type::array_type) {
-            Array_Type const& t = (Array_Type const&)type;
-            i64 array_size = 0;
-            if(!is_unsized_array(t)) {
-                array_size = anton::str_to_i64(t.size->value);
-            }
-            Layout_Info const info = calculate_type_layout_info(ctx, *t.base);
-            // Round the alignment up to a multiple of vec4's alignment
-            i64 const alignment = ((info.alignment + 15) / 16) * 16;
-            // If the adjusted alignment forces padding, add
-            i64 const misalignment = info.size % alignment;
-            i64 size = info.size;
-            if(misalignment != 0) {
-                size += alignment - misalignment;
-            }
-            return {alignment, size * array_size};
-        } else {
-            ANTON_UNREACHABLE();
-        }
-    }
-
-    // validate_and_optimize_passes
+    // validate_passes
     // Checks whether a pass has either a compute stage or a vertex stage and optionally a fragment stage.
-    // Ensures there are no different-type-same-name parameters in any of the passes.
-    // Removes same-type-same-name duplicates.
-    // Copies Sourced_Data to specialized buffers (all to variables/opaque_variables/unsized_variables).
-    // Optimizes layout of variables.
+    // Checks whether vertex/fragment have matching return/parameter. Checks whether the type is UDT or void.
+    // Checks whether the return type of the fragment stage is void or UDT.
     //
-    [[nodiscard]] static anton::Expected<void, anton::String> validate_and_optimize_passes(Context const& ctx, anton::Slice<Pass_Context> const passes) {
-        for(Pass_Context& pass: passes) {
+    [[nodiscard]] static anton::Expected<void, anton::String> validate_passes(Context const& ctx, anton::Slice<Pass_Context const> const passes) {
+        for(Pass_Context const& pass: passes) {
             // Validate that a pass has either a compute stage or a vertex stage and optionally a fragment stage
-            if(!pass.compute_stage) {
-                if(!pass.vertex_stage) {
+            if(!pass.compute_context) {
+                if(!pass.vertex_context) {
                     return {anton::expected_error, format_missing_vertex_stage_error(ctx, pass.name)};
                 }
             } else {
-                if(pass.vertex_stage || pass.fragment_stage) {
-                    return {anton::expected_error, format_vertex_and_compute_stages_error(ctx, pass.name)};
+                if(pass.vertex_context || pass.fragment_context) {
+                    return {anton::expected_error, format_graphics_and_compute_stages(ctx, pass.name)};
                 }
             }
 
-            // Remove duplicates, validate there is no different-type-same-name sourced parameters, optimize layout
-            for(auto& [source_name, data]: pass.sourced_data) {
-                // We use stable sort to preserve the order and report duplicates in the correct order
-                anton::merge_sort(data.all.begin(), data.all.end(), [](Function_Parameter const* lhs, Function_Parameter const* rhs) {
-                    anton::String const& lhs_str = lhs->identifier->value;
-                    anton::String const& rhs_str = rhs->identifier->value;
-                    return anton::compare(lhs_str, rhs_str) == -1;
-                });
-
-                // Ensure there are no name duplicates with different types
-                for(auto i = data.all.begin(), j = data.all.begin() + 1, end = data.all.end(); j != end; ++i, ++j) {
-                    Function_Parameter const& i_param = **i;
-                    Function_Parameter const& j_param = **j;
-                    anton::String const i_type = stringify_type(*i_param.type);
-                    anton::String const j_type = stringify_type(*j_param.type);
-                    if(i_param.identifier->value == j_param.identifier->value && i_type != j_type) {
-                        return {anton::expected_error, format_duplicate_sourced_parameter(ctx, i_param.source_info, i_param.type->source_info,
-                                                                                          j_param.source_info, j_param.type->source_info)};
-                    }
-                }
-
-                // Remove type duplicates
-                auto end = anton::unique(data.all.begin(), data.all.end(), [](Function_Parameter const* lhs, Function_Parameter const* rhs) {
-                    anton::String const i_type = stringify_type(*lhs->type);
-                    anton::String const j_type = stringify_type(*rhs->type);
-                    return i_type == j_type && lhs->identifier->value == rhs->identifier->value;
-                });
-
-                data.all.erase(end, data.all.end());
-
-                // Copy sourced Function_Parameter's to specialized buffers
-                for(Function_Parameter const* const p: data.all) {
-                    bool const opaque = is_opaque_type(*p->type);
-                    if(!opaque) {
-                        data.variables.emplace_back(p);
+            // Check whether vertex/fragment stages have matching return/parameter.
+            if(pass.vertex_context) {
+                Type const& vertex_return_type = *pass.vertex_context.declaration->return_type;
+                bool const vertex_void_return = is_void(vertex_return_type);
+                if(pass.fragment_context) {
+                    if(!vertex_void_return) {
+                        // The fragment stage must have an unsourced stage input parameter of matching type.
+                        // Consider cases:
+                        // - fragment stage has no parameters at all.
+                        // - fragment stage has sourced parameter as the first parameter.
+                        // - the first parameter of the fragment stage does not have a matching type.
+                        Parameter_List const& parameters = pass.fragment_context.declaration->params;
+                        if(parameters.size() < 1) {
+                            return {anton::expected_error, "TODO"_s};
+                        }
+                        Function_Parameter const& first_parameter = static_cast<Function_Parameter const&>(*parameters[0]);
+                        bool const previous_stage_input = !is_sourced_parameter(first_parameter);
+                        if(!previous_stage_input) {
+                            return {anton::expected_error, "TODO"_s};
+                        }
+                        if(*first_parameter.type != vertex_return_type) {
+                            return {anton::expected_error, "TODO"_s};
+                        }
                     } else {
-                        data.opaque_variables.emplace_back(p);
+                        // The fragment stage must NOT have an unsourced stage input parameter.
+                        Parameter_List const& parameters = pass.fragment_context.declaration->params;
+                        bool const previous_stage_input =
+                            parameters.size() > 0 && !is_sourced_parameter(static_cast<Function_Parameter const&>(*parameters[0]));
+                        if(previous_stage_input) {
+                            return {anton::expected_error, "TODO"_s};
+                        }
                     }
-                }
-
-                // Optimize the layout of the variables
-                i64 const variables_count = data.variables.size();
-                anton::Array<Layout_Info> layout_info{anton::reserve, variables_count};
-                for(Function_Parameter const* p: data.variables) {
-                    Layout_Info info = calculate_type_layout_info(ctx, *p->type);
-                    layout_info.emplace_back(info);
-                }
-                // Create a permutation that will sort by alignment
-                anton::Array<i64> indices{variables_count, 0};
-                anton::fill_with_consecutive(indices.begin(), indices.end(), 0);
-                anton::quick_sort(indices.begin(), indices.end(),
-                                  [&layout_info](i64 const lhs, i64 const rhs) { return layout_info[lhs].alignment > layout_info[rhs].alignment; });
-                // Apply the permutation
-                {
-                    anton::Array<Function_Parameter const*> perm_data{variables_count};
-                    anton::Array<Layout_Info> perm_layout_info{variables_count};
-                    for(i64 i = 0; i < variables_count; ++i) {
-                        i64 const index = indices[i];
-                        perm_data[i] = data.variables[index];
-                        perm_layout_info[i] = layout_info[index];
+                } else {
+                    // The return type must be void when there is no fragment stage present in the pass.
+                    if(!vertex_void_return) {
+                        return {anton::expected_error, "TODO"_s};
                     }
-                    data.variables = ANTON_MOV(perm_data);
-                    layout_info = ANTON_MOV(perm_layout_info);
                 }
             }
         }
-
         return {anton::expected_value};
     }
 
@@ -2298,10 +2093,27 @@ namespace vush {
             return {anton::expected_error, ANTON_MOV(pass_build_res.error())};
         }
 
-        anton::Array<Pass_Context>& passes = pass_build_res.value();
-        // BREAKS THE SYMBOL TABLE!
-        // Make sure everything that requires the symbol table is done at this point.
-        perform_function_instantiations(ctx, passes, ast.functions);
+        anton::Slice<Pass_Context> const passes = pass_build_res.value();
+        anton::Expected<void, anton::String> pass_validation_res = validate_passes(ctx, passes);
+        if(!pass_validation_res) {
+            return {anton::expected_error, ANTON_MOV(pass_validation_res.error())};
+        }
+
+        anton::Slice<Pass_Settings const> const settings = ast.settings;
+        // Request source definitions for implicit sources.
+        for(Pass_Context& pass: passes) {
+            Pass_Settings const* const this_pass_settings =
+                anton::find_if(settings.begin(), settings.end(), [&name = pass.name](Pass_Settings const& settings) { return settings.pass_name == name; });
+            anton::Slice<Setting_Key_Value const> skv;
+            if(this_pass_settings != settings.end()) {
+                skv = this_pass_settings->settings;
+            }
+
+            anton::Expected<void, anton::String> result = request_source_definitions(ctx, pass, skv);
+            if(!result) {
+                return {anton::expected_error, ANTON_MOV(result.error())};
+            }
+        }
 
         // TODO: Temporary
         // Copy structs and constants over to each pass regardless of whether they are used or not.
@@ -2311,17 +2123,11 @@ namespace vush {
             }
         }
 
-        // We want to remove the sourced parameters from all passes so that they are not
-        // passed down to codegen which doesn't know about them!.
-        // Store the sourced parameters so that they are valid until we generate glsl
-        // because the pointers are referenced by Pass_Context's sourced_data.
-        [[maybe_unused]] anton::Array<Owning_Ptr<Function_Parameter>> const sourced_params = extract_sourced_parameters(passes);
+        // BREAKS THE SYMBOL TABLE!
+        // Make sure everything that requires the symbol table is done at this point.
+        perform_function_instantiations(ctx, passes, ast.functions);
 
-        if(anton::Expected<void, anton::String> res = validate_and_optimize_passes(ctx, passes); !res) {
-            return {anton::expected_error, ANTON_MOV(res.error())};
-        }
-
-        Codegen_Data codegen_data{config.extensions, ast.settings, passes};
+        Codegen_Data codegen_data{config.extensions, passes};
         anton::Expected<anton::Array<Pass_Data>, anton::String> codegen_res = generate_glsl(ctx, codegen_data);
         if(!codegen_res) {
             return {anton::expected_error, ANTON_MOV(codegen_res.error())};

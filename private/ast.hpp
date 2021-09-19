@@ -302,11 +302,14 @@ namespace vush {
         [[nodiscard]] virtual Array_Type* _clone() const override;
     };
 
+    [[nodiscard]] bool operator==(Type const& lhs, Type const& rhs);
+    [[nodiscard]] bool operator!=(Type const& lhs, Type const& rhs);
+    [[nodiscard]] bool is_void(Type const& type);
     [[nodiscard]] bool is_opaque_type(Type const& type);
     [[nodiscard]] bool is_unsized_array(Type const& type);
     [[nodiscard]] bool is_sized_array(Type const& type);
-    [[nodiscard]] anton::String stringify_type(Type const& type);
     [[nodiscard]] bool is_image_type(Type const& type);
+    [[nodiscard]] anton::String stringify_type(Type const& type);
 
     struct Declaration: public AST_Node {
         using AST_Node::AST_Node;
