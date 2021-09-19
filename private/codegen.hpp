@@ -8,29 +8,44 @@
 #include <vush/vush.hpp>
 
 namespace vush {
-    struct Sourced_Data_Buffers {
-        anton::Array<Function_Parameter const*> all;
-        anton::Array<Function_Parameter const*> variables;
-        anton::Array<Function_Parameter const*> opaque_variables;
+    struct Stage_Context {
+        // Maps source name to source definitions
+        anton::Flat_Hash_Map<anton::String, Source_Definition> source_definitions;
+        // If the declaration is nullptr, the stage is not present in the pass
+        Pass_Stage_Declaration* declaration = nullptr;
+
+        // operator bool
+        // Checks whether the stage is defined within a pass.
+        // The stage is not defined when declaration is nullptr.
+        //
+        // Returns:
+        // true when the stage is defined within a pass. false otherwise.
+        //
+        [[nodiscard]] operator bool() const {
+            return declaration != nullptr;
+        }
     };
 
     struct Pass_Context {
         // The name of the pass
         anton::String name;
-        // Maps source name to sourced data (sourced parameters)
-        anton::Flat_Hash_Map<anton::String, Sourced_Data_Buffers> sourced_data;
-        Pass_Stage_Declaration* vertex_stage = nullptr;
-        Pass_Stage_Declaration* fragment_stage = nullptr;
-        Pass_Stage_Declaration* compute_stage = nullptr;
+        Stage_Context vertex_context;
+        Stage_Context fragment_context;
+        Stage_Context compute_context;
+
+        // TODO: Move the members below to Stage_Context
+        //       once we implement symbol referencing.
+
         // Functions used by the pass
         anton::Array<Function_Declaration const*> functions;
         // Structs and constants used by the pass
         anton::Array<Declaration const*> structs_and_constants;
+
+        Pass_Context(anton::String_View const name): name(name) {}
     };
 
     struct Codegen_Data {
         anton::Slice<Extension const> extensions;
-        anton::Slice<Pass_Settings const> settings;
         anton::Slice<Pass_Context const> passes;
     };
 

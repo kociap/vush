@@ -1,5 +1,7 @@
 #include <ast.hpp>
 
+#include <anton/intrinsics.hpp>
+
 namespace vush {
     bool is_opaque_type(Builtin_GLSL_Type const type) {
         return static_cast<i32>(type) >= static_cast<i32>(Builtin_GLSL_Type::glsl_sampler1D);
@@ -665,6 +667,52 @@ namespace vush {
         }
     }
 
+    bool operator==(Type const& lhs, Type const& rhs) {
+        if(lhs.node_type != rhs.node_type) {
+            return false;
+        }
+
+        AST_Node_Type const type = lhs.node_type;
+        switch(type) {
+            case AST_Node_Type::builtin_type: {
+                Builtin_Type const& lhs_t = static_cast<Builtin_Type const&>(lhs);
+                Builtin_Type const& rhs_t = static_cast<Builtin_Type const&>(rhs);
+                return lhs_t.type == rhs_t.type;
+            }
+
+            case AST_Node_Type::user_defined_type: {
+                User_Defined_Type const& lhs_t = static_cast<User_Defined_Type const&>(lhs);
+                User_Defined_Type const& rhs_t = static_cast<User_Defined_Type const&>(rhs);
+                return lhs_t.identifier == rhs_t.identifier;
+            }
+
+            case AST_Node_Type::array_type: {
+                Array_Type const& lhs_t = static_cast<Array_Type const&>(lhs);
+                Array_Type const& rhs_t = static_cast<Array_Type const&>(rhs);
+                if(*lhs_t.base != *rhs_t.base) {
+                    return false;
+                }
+
+                if(!lhs_t.size && !rhs_t.size) {
+                    return true;
+                }
+
+                return lhs_t.size->value == rhs_t.size->value;
+            }
+
+            default:
+                ANTON_UNREACHABLE();
+        }
+    }
+
+    bool operator!=(Type const& lhs, Type const& rhs) {
+        return !(lhs == rhs);
+    }
+
+    bool is_void(Type const& type) {
+        return type.node_type == AST_Node_Type::builtin_type && static_cast<Builtin_Type const&>(type).type == Builtin_GLSL_Type::glsl_void;
+    }
+
     bool is_opaque_type(Type const& type) {
         ANTON_ASSERT(type.node_type == AST_Node_Type::builtin_type || type.node_type == AST_Node_Type::user_defined_type ||
                          type.node_type == AST_Node_Type::array_type,
@@ -688,6 +736,24 @@ namespace vush {
         return type.node_type == AST_Node_Type::array_type && static_cast<Array_Type const&>(type).size;
     }
 
+    bool is_image_type(Type const& type) {
+        ANTON_ASSERT(type.node_type == AST_Node_Type::builtin_type || type.node_type == AST_Node_Type::user_defined_type ||
+                         type.node_type == AST_Node_Type::array_type,
+                     u8"unknown ast node type");
+
+        if(type.node_type == AST_Node_Type::user_defined_type) {
+            return false;
+        }
+
+        if(type.node_type == AST_Node_Type::builtin_type) {
+            Builtin_Type const& t = (Builtin_Type const&)type;
+            return is_image_type(t.type);
+        }
+
+        Array_Type const& t = (Array_Type const&)type;
+        return is_image_type(*t.base);
+    }
+
     anton::String stringify_type(Type const& type) {
         ANTON_ASSERT(type.node_type == AST_Node_Type::builtin_type || type.node_type == AST_Node_Type::user_defined_type ||
                          type.node_type == AST_Node_Type::array_type,
@@ -709,24 +775,6 @@ namespace vush {
             str += u8"]";
             return str;
         }
-    }
-
-    bool is_image_type(Type const& type) {
-        ANTON_ASSERT(type.node_type == AST_Node_Type::builtin_type || type.node_type == AST_Node_Type::user_defined_type ||
-                         type.node_type == AST_Node_Type::array_type,
-                     u8"unknown ast node type");
-
-        if(type.node_type == AST_Node_Type::user_defined_type) {
-            return false;
-        }
-
-        if(type.node_type == AST_Node_Type::builtin_type) {
-            Builtin_Type const& t = (Builtin_Type const&)type;
-            return is_image_type(t.type);
-        }
-
-        Array_Type const& t = (Array_Type const&)type;
-        return is_image_type(*t.base);
     }
 
     anton::String_View stringify(Image_Layout_Type type) {

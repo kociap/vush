@@ -110,6 +110,23 @@ namespace vush {
         return anton::String{path} + u8":" + anton::to_string(line) + u8":" + anton::to_string(column) + u8": ";
     }
 
+    [[nodiscard]] static anton::String_View readable_type_node_type(AST_Node_Type const type) {
+        ANTON_ASSERT(type == AST_Node_Type::builtin_type || type == AST_Node_Type::builtin_type || type == AST_Node_Type::array_type, "invalid AST_Node_Type");
+        switch(type) {
+            case AST_Node_Type::builtin_type:
+                return "builtin"_sv;
+
+            case AST_Node_Type::user_defined_type:
+                return "user defined"_sv;
+
+            case AST_Node_Type::array_type:
+                return "array"_sv;
+
+            default:
+                ANTON_UNREACHABLE();
+        }
+    }
+
     anton::String format_undefined_symbol(Context const& ctx, Source_Info const& symbol) {
         anton::String_View const source = ctx.source_registry.find(symbol.file_path)->value.data;
         anton::String message = format_diagnostic_location(symbol);
@@ -285,8 +302,43 @@ namespace vush {
         return u8"error: missing vertex stage in pass '" + pass_name + u8"'\n";
     }
 
-    anton::String format_vertex_and_compute_stages_error([[maybe_unused]] Context const& ctx, anton::String const& pass_name) {
+    anton::String format_graphics_and_compute_stages([[maybe_unused]] Context const& ctx, anton::String const& pass_name) {
         return u8"error: pass must have either compute or graphics (vertex, fragment) stages. '" + pass_name + u8"' has both\n";
+    }
+
+    anton::String format_stage_return_type_must_be_void_or_udt(Context const& ctx, anton::String_View const pass_name, Stage_Type const stage,
+                                                               Type const& return_type) {
+        anton::String_View const source = ctx.source_registry.find(return_type.source_info.file_path)->value.data;
+        anton::String_View const stage_string = stringify(stage);
+        anton::String_View const type = get_source_bit(source, return_type.source_info);
+        anton::String_View const readable_type = readable_type_node_type(return_type.node_type);
+        anton::String message = format_diagnostic_location(return_type.source_info);
+        message += anton::format(
+            "error: the {} return type '{}' of the {} stage in the pass {} is not allowed. the return type of a {} stage must be 'void' or a user defined type\n"_sv,
+            readable_type, type, stage_string, pass_name, stage_string);
+        if(ctx.diagnostics.extended) {
+            print_source_snippet(ctx, message, source, return_type.source_info);
+            message += "\n"_sv;
+        }
+        return message;
+    }
+
+    anton::String format_stage_input_parameter_must_be_udt(Context const& ctx, anton::String_View const pass_name, Stage_Type const stage,
+                                                           Function_Parameter const& parameter) {
+        anton::String_View const source = ctx.source_registry.find(parameter.source_info.file_path)->value.data;
+        anton::String_View const stage_string = stringify(stage);
+        anton::String_View const parameter_name = parameter.identifier->value;
+        anton::String const type = stringify_type(*parameter.type);
+        anton::String_View const readable_type = readable_type_node_type(parameter.type->node_type);
+        anton::String message = format_diagnostic_location(parameter.type->source_info);
+        message += anton::format("error: the stage input parameter '{}' in the {} stage in the pass {} has illegal {} type '{}'."_sv, parameter_name,
+                                 stage_string, pass_name, readable_type, type);
+        message += "the stage input parameter must be a user defined type\n"_sv;
+        if(ctx.diagnostics.extended) {
+            print_source_snippet(ctx, message, source, parameter.type->source_info);
+            message += '\n';
+        }
+        return message;
     }
 
     anton::String format_empty_struct([[maybe_unused]] Context const& ctx, Source_Info const& struct_name) {

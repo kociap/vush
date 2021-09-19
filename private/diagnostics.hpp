@@ -35,7 +35,11 @@ namespace vush {
     [[nodiscard]] anton::String format_duplicate_pass_stage_error(Context const& ctx, Source_Info const& first, Source_Info const& second,
                                                                   anton::String const& pass_name, Stage_Type const& stage);
     [[nodiscard]] anton::String format_missing_vertex_stage_error(Context const& ctx, anton::String const& pass_name);
-    [[nodiscard]] anton::String format_vertex_and_compute_stages_error(Context const& ctx, anton::String const& pass_name);
+    [[nodiscard]] anton::String format_graphics_and_compute_stages(Context const& ctx, anton::String const& pass_name);
+    [[nodiscard]] anton::String format_stage_return_type_must_be_void_or_udt(Context const& ctx, anton::String_View pass_name, Stage_Type stage,
+                                                                             Type const& return_type);
+    [[nodiscard]] anton::String format_stage_input_parameter_must_be_udt(Context const& ctx, anton::String_View pass_name, Stage_Type stage,
+                                                                         Function_Parameter const& parameter);
 
     // format_empty_struct
     //
