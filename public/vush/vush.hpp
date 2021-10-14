@@ -57,7 +57,7 @@ namespace vush {
         anton::String_View pass_name;
         anton::String_View source_name;
         anton::Slice<Setting_Key_Value const> settings;
-        // Index with Stage_Type
+        // Per stage sourced data. Index by casting Stage_Type to i64.
         anton::Slice<Stage_Sourced_Data const> sourced_data;
         void* user_data;
     };
@@ -65,7 +65,9 @@ namespace vush {
     // source_definition_callback
     //
     // Parameters:
-    // definitions - output parameter for per-stage source definitions. The slice is always presized to stage_type_count.
+    //     context - the definition context of a source.
+    // definitions - output parameter for per-stage source definitions. 
+    //               The slice is always presized to stage_type_count.
     //
     using source_definition_callback = anton::Expected<void, anton::String> (*)(Source_Definition_Context const& context,
                                                                                 anton::Slice<Source_Definition> definitions);

@@ -59,6 +59,8 @@ target_sources(vush
     "${CMAKE_CURRENT_SOURCE_DIR}/private/context.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/diagnostics.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/diagnostics.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/private/implicit_source.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/private/implicit_source.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/owning_ptr.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/parser.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/parser.hpp"

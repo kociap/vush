@@ -18,7 +18,7 @@ namespace vush {
                                   Pass_Stage_Declaration& stage_declaration, i64 const stage_index) {
         Parameter_List& params = stage_declaration.params;
         for(i64 i = 0; i < params.size(); ++i) {
-            Function_Parameter& p = (Function_Parameter&)*params[i];
+            Function_Parameter& p = static_cast<Function_Parameter&>(*params[i]);
             if(is_sourced_parameter(p) && !is_vertex_input_parameter(p)) {
                 auto iter = sourced_data.find_or_emplace(p.source->value, anton::Fixed_Array<Stage_Sourced_Data_Internal, stage_type_count>{stage_type_count});
                 Stage_Sourced_Data_Internal& ssdi = iter->value[stage_index];
