@@ -221,6 +221,8 @@ namespace vush {
                     if(*_current == '\n') {
                         _line += 1;
                         _column = 1;
+                    } else {
+                        ++_column;
                     }
                     ++_current;
                 }
