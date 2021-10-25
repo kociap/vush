@@ -10,8 +10,8 @@
 #include <const_expr_eval.hpp>
 #include <context.hpp>
 #include <diagnostics.hpp>
-#include <implicit_source.hpp>
 #include <parser.hpp>
+#include <sources.hpp>
 
 namespace vush {
     using namespace anton::literals;
