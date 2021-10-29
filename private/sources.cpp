@@ -72,17 +72,9 @@ namespace vush {
                 return {anton::expected_error, ANTON_MOV(result.error())};
             }
 
-            if(per_stage_data[(i64)Stage_Type::vertex].variables.size() > 0 || per_stage_data[(i64)Stage_Type::vertex].opaque_variables.size() > 0) {
-                pass.vertex_context.source_definitions.emplace(source, ANTON_MOV(definitions[(i64)Stage_Type::vertex]));
-            }
-
-            if(per_stage_data[(i64)Stage_Type::fragment].variables.size() > 0 || per_stage_data[(i64)Stage_Type::fragment].opaque_variables.size() > 0) {
-                pass.fragment_context.source_definitions.emplace(source, ANTON_MOV(definitions[(i64)Stage_Type::fragment]));
-            }
-
-            if(per_stage_data[(i64)Stage_Type::compute].variables.size() > 0 || per_stage_data[(i64)Stage_Type::compute].opaque_variables.size() > 0) {
-                pass.compute_context.source_definitions.emplace(source, ANTON_MOV(definitions[(i64)Stage_Type::compute]));
-            }
+            pass.vertex_context.source_definitions.emplace(source, ANTON_MOV(definitions[(i64)Stage_Type::vertex]));
+            pass.fragment_context.source_definitions.emplace(source, ANTON_MOV(definitions[(i64)Stage_Type::fragment]));
+            pass.compute_context.source_definitions.emplace(source, ANTON_MOV(definitions[(i64)Stage_Type::compute]));
         }
         return {anton::expected_value};
     }
