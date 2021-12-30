@@ -1101,8 +1101,8 @@ namespace vush {
     }
 
     Function_Declaration::Function_Declaration(Attribute_List attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> identifier,
-                                               Parameter_List params, Statement_List body, Source_Info const& source_info)
-        : Declaration(source_info, AST_Node_Type::function_declaration), params(ANTON_MOV(params)), attributes(ANTON_MOV(attributes)),
+                                               Parameter_List parameters, Statement_List body, Source_Info const& source_info)
+        : Declaration(source_info, AST_Node_Type::function_declaration), parameters(ANTON_MOV(parameters)), attributes(ANTON_MOV(attributes)),
           identifier(ANTON_MOV(identifier)), return_type(ANTON_MOV(return_type)), body(ANTON_MOV(body)) {}
 
     Owning_Ptr<Function_Declaration> Function_Declaration::clone() const {
@@ -1110,22 +1110,22 @@ namespace vush {
     }
 
     Function_Declaration* Function_Declaration::_clone() const {
-        return new Function_Declaration(vush::clone(attributes), return_type->clone(), identifier->clone(), vush::clone(params), vush::clone(body),
+        return new Function_Declaration(vush::clone(attributes), return_type->clone(), identifier->clone(), vush::clone(parameters), vush::clone(body),
                                         source_info);
     }
 
     Pass_Stage_Declaration::Pass_Stage_Declaration(Attribute_List attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> pass_name,
-                                                   Stage_Type stage_type, Parameter_List params, Statement_List body, Source_Info const& source_info)
-        : Declaration(source_info, AST_Node_Type::pass_stage_declaration), params(ANTON_MOV(params)), attributes(ANTON_MOV(attributes)), body(ANTON_MOV(body)),
-          pass_name(ANTON_MOV(pass_name)), return_type(ANTON_MOV(return_type)), stage_type(ANTON_MOV(stage_type)) {}
+                                                   Stage_Type stage_type, Parameter_List parameters, Statement_List body, Source_Info const& source_info)
+        : Declaration(source_info, AST_Node_Type::pass_stage_declaration), parameters(ANTON_MOV(parameters)), attributes(ANTON_MOV(attributes)),
+          body(ANTON_MOV(body)), pass_name(ANTON_MOV(pass_name)), return_type(ANTON_MOV(return_type)), stage_type(ANTON_MOV(stage_type)) {}
 
     Owning_Ptr<Pass_Stage_Declaration> Pass_Stage_Declaration::clone() const {
         return Owning_Ptr{_clone()};
     }
 
     Pass_Stage_Declaration* Pass_Stage_Declaration::_clone() const {
-        return new Pass_Stage_Declaration(vush::clone(attributes), return_type->clone(), pass_name->clone(), stage_type, vush::clone(params), vush::clone(body),
-                                          source_info);
+        return new Pass_Stage_Declaration(vush::clone(attributes), return_type->clone(), pass_name->clone(), stage_type, vush::clone(parameters),
+                                          vush::clone(body), source_info);
     }
 
     Owning_Ptr<Expression> Expression::clone() const {

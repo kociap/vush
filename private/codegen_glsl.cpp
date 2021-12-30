@@ -286,11 +286,11 @@ namespace vush {
                 stringify(out, *node.identifier, ctx);
                 // param list
                 out += u8"(";
-                if(node.params.size() > 0) {
-                    stringify(out, *node.params[0], ctx);
-                    for(i64 i = 1; i != node.params.size(); ++i) {
+                if(node.parameters.size() > 0) {
+                    stringify(out, *node.parameters[0], ctx);
+                    for(i64 i = 1; i != node.parameters.size(); ++i) {
                         out += u8", ";
-                        stringify(out, *node.params[i], ctx);
+                        stringify(out, *node.parameters[i], ctx);
                     }
                 }
                 out += u8") {\n";
@@ -832,11 +832,11 @@ namespace vush {
         stringify(out, *node.identifier, ctx);
         // param list
         out += u8"(";
-        if(node.params.size() > 0) {
-            stringify(out, *node.params[0], ctx);
-            for(i64 i = 1; i != node.params.size(); ++i) {
+        if(node.parameters.size() > 0) {
+            stringify(out, *node.parameters[0], ctx);
+            for(i64 i = 1; i != node.parameters.size(); ++i) {
                 out += u8", ";
-                stringify(out, *node.params[i], ctx);
+                stringify(out, *node.parameters[i], ctx);
             }
         }
         out += u8");\n";
@@ -1009,7 +1009,7 @@ namespace vush {
         {
             out += u8"("_sv;
             bool comma = false;
-            for(auto& parameter_node: stage_ctx.declaration->params) {
+            for(auto& parameter_node: stage_ctx.declaration->parameters) {
                 Function_Parameter const& parameter = (Function_Parameter const&)*parameter_node;
                 // We skip unsized and opaque parameters.
                 if(is_unsized_array(*parameter.type) || is_opaque_type(*parameter.type)) {
@@ -1038,7 +1038,7 @@ namespace vush {
         // Vertex input variable names are of the form '_pass_<pass name>_<parameter name><exploded member name>'.
         {
             anton::Array<Member_Info> members_info;
-            for(auto& parameter_node: stage_ctx.declaration->params) {
+            for(auto& parameter_node: stage_ctx.declaration->parameters) {
                 Function_Parameter const& p = (Function_Parameter const&)*parameter_node;
                 if(is_vertex_input_parameter(p)) {
                     explode_type(ctx, *p.type, members_info);
@@ -1081,7 +1081,7 @@ namespace vush {
         {
             i64 param_index = 0;
             anton::Array<Member_Info> members_info;
-            for(auto& parameter_node: stage_ctx.declaration->params) {
+            for(auto& parameter_node: stage_ctx.declaration->parameters) {
                 Function_Parameter const& p = (Function_Parameter const&)*parameter_node;
                 ANTON_ASSERT(is_sourced_parameter(p), u8"all vertex stage parameters must be sourced");
                 if(is_vertex_input_parameter(p)) {
@@ -1205,7 +1205,7 @@ namespace vush {
         {
             out += u8"("_sv;
             bool comma = false;
-            for(auto& parameter_node: stage_ctx.declaration->params) {
+            for(auto& parameter_node: stage_ctx.declaration->parameters) {
                 Function_Parameter const& parameter = (Function_Parameter const&)*parameter_node;
                 // We skip unsized and opaque parameters.
                 if(is_unsized_array(*parameter.type) || is_opaque_type(*parameter.type)) {
@@ -1231,10 +1231,10 @@ namespace vush {
 
         anton::Array<anton::String> arguments;
         bool const has_prev_stage_input =
-            stage_ctx.declaration->params.size() > 0 && !is_sourced_parameter((Function_Parameter const&)*stage_ctx.declaration->params[0]);
+            stage_ctx.declaration->parameters.size() > 0 && !is_sourced_parameter((Function_Parameter const&)*stage_ctx.declaration->parameters[0]);
         // Write input from the previous stage if the first parameter is an ordinary parameter
         if(has_prev_stage_input) {
-            Function_Parameter const& p = (Function_Parameter const&)*stage_ctx.declaration->params[0];
+            Function_Parameter const& p = (Function_Parameter const&)*stage_ctx.declaration->parameters[0];
             anton::Array<Member_Info> members_info;
             explode_type(ctx, *p.type, members_info);
             i64 location = 0;
@@ -1251,8 +1251,8 @@ namespace vush {
         }
 
         // Generate parameters
-        for(i64 i = has_prev_stage_input; i < stage_ctx.declaration->params.size(); ++i) {
-            Function_Parameter const& p = (Function_Parameter const&)*stage_ctx.declaration->params[i];
+        for(i64 i = has_prev_stage_input; i < stage_ctx.declaration->parameters.size(); ++i) {
+            Function_Parameter const& p = (Function_Parameter const&)*stage_ctx.declaration->parameters[i];
             // We skip unsized and opaque parameters since we can't pass those.
             if(is_unsized_array(*p.type) || is_opaque_type(*p.type)) {
                 continue;
@@ -1290,7 +1290,7 @@ namespace vush {
 
         // Build _arg0 (input from the previous stage aggregated into a struct) from fragment inputs
         if(has_prev_stage_input) {
-            Function_Parameter const& p = (Function_Parameter const&)*stage_ctx.declaration->params[0];
+            Function_Parameter const& p = (Function_Parameter const&)*stage_ctx.declaration->parameters[0];
             write_indent(out, codegen_ctx.indent);
             out += stringify_type(*p.type);
             out += u8" _arg0;\n"_sv;
@@ -1394,7 +1394,7 @@ namespace vush {
         {
             out += u8"("_sv;
             bool comma = false;
-            for(auto& parameter_node: stage_ctx.declaration->params) {
+            for(auto& parameter_node: stage_ctx.declaration->parameters) {
                 Function_Parameter const& parameter = (Function_Parameter const&)*parameter_node;
                 // We skip unsized and opaque parameters.
                 if(is_unsized_array(*parameter.type) || is_opaque_type(*parameter.type)) {
@@ -1451,7 +1451,7 @@ namespace vush {
 
         // Write arguments.
         bool comma = false;
-        for(auto& parameter_node: stage_ctx.declaration->params) {
+        for(auto& parameter_node: stage_ctx.declaration->parameters) {
             Function_Parameter const& parameter = (Function_Parameter const&)*parameter_node;
             // We skip unsized and opaque parameters.
             if(is_unsized_array(*parameter.type) || is_opaque_type(*parameter.type)) {

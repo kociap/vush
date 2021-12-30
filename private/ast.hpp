@@ -567,13 +567,13 @@ namespace vush {
     [[nodiscard]] bool is_vertex_input_parameter(Function_Parameter const& parameter);
 
     struct Function_Declaration: public Declaration {
-        Parameter_List params;
+        Parameter_List parameters;
         Attribute_List attributes;
         Owning_Ptr<Identifier> identifier;
         Owning_Ptr<Type> return_type;
         Statement_List body;
 
-        Function_Declaration(Attribute_List attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> identifier, Parameter_List params,
+        Function_Declaration(Attribute_List attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> identifier, Parameter_List parameters,
                              Statement_List body, Source_Info const& source_info);
 
         [[nodiscard]] Owning_Ptr<Function_Declaration> clone() const;
@@ -594,7 +594,7 @@ namespace vush {
     }
 
     struct Pass_Stage_Declaration: public Declaration {
-        Parameter_List params;
+        Parameter_List parameters;
         Attribute_List attributes;
         Statement_List body;
         Owning_Ptr<Identifier> pass_name;
@@ -602,7 +602,7 @@ namespace vush {
         Stage_Type stage_type;
 
         Pass_Stage_Declaration(Attribute_List attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> pass_name, Stage_Type stage_type,
-                               Parameter_List params, Statement_List body, Source_Info const& source_info);
+                               Parameter_List parameters, Statement_List body, Source_Info const& source_info);
 
         [[nodiscard]] Owning_Ptr<Pass_Stage_Declaration> clone() const;
 

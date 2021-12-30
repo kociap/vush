@@ -65,12 +65,12 @@ namespace vush {
     //  - all sourced parameters are of non-opaque types or are sized arrays of non-opaque types
     //
     static anton::Expected<void, anton::String> process_fn_param_list(Context& ctx, Function_Declaration& function) {
-        Parameter_List& params = function.params;
-        for(i64 i = 0; i < params.size();) {
+        Parameter_List& parameters = function.parameters;
+        for(i64 i = 0; i < parameters.size();) {
             // If the node is a prameter if, we replace it with the contents of one of the branches.
             // We do not advance in that case in order to check the replaced node.
-            if(params[i]->node_type == AST_Node_Type::function_param_if) {
-                Function_Param_If& node = (Function_Param_If&)*params[i];
+            if(parameters[i]->node_type == AST_Node_Type::function_param_if) {
+                Function_Param_If& node = (Function_Param_If&)*parameters[i];
                 anton::Expected<Expr_Value, anton::String> result = evaluate_const_expr(ctx, *node.condition);
                 if(!result) {
                     return {anton::expected_error, ANTON_MOV(result.error())};
@@ -83,15 +83,15 @@ namespace vush {
 
                 if(result.value().as_boolean()) {
                     if(node.true_param) {
-                        params[i] = ANTON_MOV(node.true_param);
+                        parameters[i] = ANTON_MOV(node.true_param);
                     } else {
-                        params.erase(params.begin() + i, params.begin() + i + 1);
+                        parameters.erase(parameters.begin() + i, parameters.begin() + i + 1);
                     }
                 } else {
                     if(node.false_param) {
-                        params[i] = ANTON_MOV(node.false_param);
+                        parameters[i] = ANTON_MOV(node.false_param);
                     } else {
-                        params.erase(params.begin() + i, params.begin() + i + 1);
+                        parameters.erase(parameters.begin() + i, parameters.begin() + i + 1);
                     }
                 }
             } else {
@@ -99,7 +99,7 @@ namespace vush {
             }
         }
 
-        for(auto& param: params) {
+        for(auto& param: parameters) {
             ANTON_ASSERT(param->node_type == AST_Node_Type::function_parameter, u8"unknown parameter type");
             Function_Parameter& p = (Function_Parameter&)*param;
             if(is_sourced_parameter(p)) {
@@ -130,12 +130,12 @@ namespace vush {
     }
 
     static anton::Expected<void, anton::String> process_fn_param_list(Context& ctx, Pass_Stage_Declaration& function) {
-        Parameter_List& params = function.params;
-        for(i64 i = 0; i < params.size();) {
+        Parameter_List& parameters = function.parameters;
+        for(i64 i = 0; i < parameters.size();) {
             // If the node is a prameter if, we replace it with the contents of one of the branches.
             // We do not advance in that case in order to check the replaced node.
-            if(params[i]->node_type == AST_Node_Type::function_param_if) {
-                Function_Param_If& node = (Function_Param_If&)*params[i];
+            if(parameters[i]->node_type == AST_Node_Type::function_param_if) {
+                Function_Param_If& node = (Function_Param_If&)*parameters[i];
                 anton::Expected<Expr_Value, anton::String> result = evaluate_const_expr(ctx, *node.condition);
                 if(!result) {
                     return {anton::expected_error, ANTON_MOV(result.error())};
@@ -148,15 +148,15 @@ namespace vush {
 
                 if(result.value().as_boolean()) {
                     if(node.true_param) {
-                        params[i] = ANTON_MOV(node.true_param);
+                        parameters[i] = ANTON_MOV(node.true_param);
                     } else {
-                        params.erase(params.begin() + i, params.begin() + i + 1);
+                        parameters.erase(parameters.begin() + i, parameters.begin() + i + 1);
                     }
                 } else {
                     if(node.false_param) {
-                        params[i] = ANTON_MOV(node.false_param);
+                        parameters[i] = ANTON_MOV(node.false_param);
                     } else {
-                        params.erase(params.begin() + i, params.begin() + i + 1);
+                        parameters.erase(parameters.begin() + i, parameters.begin() + i + 1);
                     }
                 }
             } else {
@@ -166,7 +166,7 @@ namespace vush {
 
         switch(function.stage_type) {
             case Stage_Type::vertex: {
-                for(auto& param: params) {
+                for(auto& param: parameters) {
                     ANTON_ASSERT(param->node_type == AST_Node_Type::function_parameter, u8"unknown parameter type");
                     Function_Parameter& p = (Function_Parameter&)*param;
                     if(!is_sourced_parameter(p)) {
@@ -208,9 +208,9 @@ namespace vush {
             } break;
 
             case Stage_Type::fragment: {
-                bool const has_ordinary_parameter = params.size() > 0 && !is_sourced_parameter((Function_Parameter const&)*params[0]);
+                bool const has_ordinary_parameter = parameters.size() > 0 && !is_sourced_parameter((Function_Parameter const&)*parameters[0]);
                 if(has_ordinary_parameter) {
-                    Function_Parameter& p = (Function_Parameter&)*params[0];
+                    Function_Parameter& p = (Function_Parameter&)*parameters[0];
                     bool const udt_type = p.type->node_type == AST_Node_Type::user_defined_type;
                     if(!udt_type) {
                         return {anton::expected_error, format_stage_input_parameter_must_be_udt(ctx, function.pass_name->value, Stage_Type::fragment, p)};
@@ -222,8 +222,8 @@ namespace vush {
                     }
                 }
 
-                for(i64 i = has_ordinary_parameter; i < params.size(); ++i) {
-                    Function_Parameter& p = (Function_Parameter&)*params[i];
+                for(i64 i = has_ordinary_parameter; i < parameters.size(); ++i) {
+                    Function_Parameter& p = (Function_Parameter&)*parameters[i];
                     if(is_vertex_input_parameter(p)) {
                         Source_Info const& src = p.source_info;
                         return {anton::expected_error, format_vertex_input_not_allowed_on_stage(ctx, src, Stage_Type::fragment)};
@@ -251,7 +251,7 @@ namespace vush {
             } break;
 
             case Stage_Type::compute: {
-                for(auto& param: params) {
+                for(auto& param: parameters) {
                     Function_Parameter& p = (Function_Parameter&)*param;
                     if(is_vertex_input_parameter(p)) {
                         Source_Info const& src = p.source_info;
@@ -1713,8 +1713,8 @@ namespace vush {
                 // Check whether the function requires instantiation, aka has any unsized array parameters.
                 // Stringify the signature and generate instance name.
                 bool requires_instantiation = false;
-                for(i64 i = 0; i < fn_template.params.size(); ++i) {
-                    Function_Parameter& p = (Function_Parameter&)*fn_template.params[i];
+                for(i64 i = 0; i < fn_template.parameters.size(); ++i) {
+                    Function_Parameter& p = (Function_Parameter&)*fn_template.parameters[i];
                     stringified_signature += stringify_type(*p.type);
                     if(is_unsized_array(*p.type)) {
                         ANTON_ASSERT(function_call.arguments[i]->node_type == AST_Node_Type::identifier_expression,
@@ -1740,8 +1740,8 @@ namespace vush {
                 if(iter != instantiated_functions.end()) {
                     // Function already instantiated.
                     // Remove the unsized array arguments from the function call.
-                    for(i64 i = 0, j = 0; i < fn_template.params.size(); ++i) {
-                        Function_Parameter& p = (Function_Parameter&)*fn_template.params[i];
+                    for(i64 i = 0, j = 0; i < fn_template.parameters.size(); ++i) {
+                        Function_Parameter& p = (Function_Parameter&)*fn_template.parameters[i];
                         if(is_unsized_array(*p.type)) {
                             auto arg_begin = function_call.arguments.begin();
                             function_call.arguments.erase(arg_begin + j, arg_begin + j + 1);
@@ -1760,8 +1760,8 @@ namespace vush {
                 instance->identifier->value = instance_name;
                 // Build replacements table
                 anton::Array<Replacement_Rule> replacements;
-                for(i64 i = 0; i < instance->params.size(); ++i) {
-                    Function_Parameter& p = (Function_Parameter&)*instance->params[i];
+                for(i64 i = 0; i < instance->parameters.size(); ++i) {
+                    Function_Parameter& p = (Function_Parameter&)*instance->parameters[i];
                     if(is_unsized_array(*p.type)) {
                         ANTON_ASSERT(function_call.arguments[i]->node_type == AST_Node_Type::identifier_expression,
                                      "unsized array argument must be an identifier expression");
@@ -1773,13 +1773,13 @@ namespace vush {
                 replace_identifier_expressions(instance, replacements);
 
                 // Remove the unsized array parameters and arguments from the instance and the function call
-                for(i64 i = 0; i < instance->params.size();) {
-                    Function_Parameter& p = (Function_Parameter&)*instance->params[i];
+                for(i64 i = 0; i < instance->parameters.size();) {
+                    Function_Parameter& p = (Function_Parameter&)*instance->parameters[i];
                     if(is_unsized_array(*p.type)) {
                         auto arg_begin = function_call.arguments.begin();
                         function_call.arguments.erase(arg_begin + i, arg_begin + i + 1);
-                        auto param_begin = instance->params.begin();
-                        instance->params.erase(param_begin + i, param_begin + i + 1);
+                        auto param_begin = instance->parameters.begin();
+                        instance->parameters.erase(param_begin + i, param_begin + i + 1);
                     } else {
                         ++i;
                     }
@@ -2029,7 +2029,7 @@ namespace vush {
                         // - fragment stage has no parameters at all.
                         // - fragment stage has sourced parameter as the first parameter.
                         // - the first parameter of the fragment stage does not have a matching type.
-                        Parameter_List const& parameters = pass.fragment_context.declaration->params;
+                        Parameter_List const& parameters = pass.fragment_context.declaration->parameters;
                         if(parameters.size() < 1) {
                             return {anton::expected_error, "TODO"_s};
                         }
@@ -2043,7 +2043,7 @@ namespace vush {
                         }
                     } else {
                         // The fragment stage must NOT have an unsourced stage input parameter.
-                        Parameter_List const& parameters = pass.fragment_context.declaration->params;
+                        Parameter_List const& parameters = pass.fragment_context.declaration->parameters;
                         bool const previous_stage_input =
                             parameters.size() > 0 && !is_sourced_parameter(static_cast<Function_Parameter const&>(*parameters[0]));
                         if(previous_stage_input) {
