@@ -68,6 +68,10 @@ namespace vush {
         return {};
     }
 
+    Recursive_AST_Matcher::Match_Result Recursive_AST_Matcher::match(Overloaded_Function_Declaration const&) {
+        return {};
+    }
+
     Recursive_AST_Matcher::Match_Result Recursive_AST_Matcher::match(Pass_Stage_Declaration const&) {
         return {};
     }
@@ -224,6 +228,7 @@ namespace vush {
     void AST_Action::execute(Owning_Ptr<Image_Layout_Qualifier>&) {}
     void AST_Action::execute(Owning_Ptr<Function_Parameter>&) {}
     void AST_Action::execute(Owning_Ptr<Function_Declaration>&) {}
+    void AST_Action::execute(Owning_Ptr<Overloaded_Function_Declaration>&) {}
     void AST_Action::execute(Owning_Ptr<Pass_Stage_Declaration>&) {}
     void AST_Action::execute(Owning_Ptr<Expression_If>&) {}
     void AST_Action::execute(Owning_Ptr<Identifier_Expression>&) {}
@@ -637,6 +642,32 @@ namespace vush {
 
                     for(auto& statement: n.body) {
                         if(traverse_node_internal(matcher, action, statement)) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            } break;
+
+            case AST_Node_Type::overloaded_function_declaration: {
+                Overloaded_Function_Declaration& n = static_cast<Overloaded_Function_Declaration&>(*node);
+                Match_Result const result = matcher.match(n);
+                if(result.matched) {
+                    Owning_Ptr<Overloaded_Function_Declaration>& node_typed = reinterpret_cast<Owning_Ptr<Overloaded_Function_Declaration>&>(node);
+                    action.execute(node_typed);
+                }
+
+                if(result.break_matching) {
+                    return true;
+                }
+
+                if(!result.ignore_children) {
+                    if(traverse_node_internal(matcher, action, n.identifier)) {
+                        return true;
+                    }
+
+                    for(auto& overload: n.overloads) {
+                        if(traverse_node_internal(matcher, action, overload)) {
                             return true;
                         }
                     }

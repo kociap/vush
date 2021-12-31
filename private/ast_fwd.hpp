@@ -31,6 +31,7 @@ namespace vush {
     struct Image_Layout_Qualifier;
     struct Function_Parameter;
     struct Function_Declaration;
+    struct Overloaded_Function_Declaration;
     struct Pass_Stage_Declaration;
     struct Expression_If;
     struct Identifier_Expression;

@@ -28,6 +28,7 @@ namespace vush {
         [[nodiscard]] virtual Match_Result match(Image_Layout_Qualifier const& node);
         [[nodiscard]] virtual Match_Result match(Function_Parameter const& node);
         [[nodiscard]] virtual Match_Result match(Function_Declaration const& node);
+        [[nodiscard]] virtual Match_Result match(Overloaded_Function_Declaration const& node);
         [[nodiscard]] virtual Match_Result match(Pass_Stage_Declaration const& node);
         [[nodiscard]] virtual Match_Result match(Expression_If const& node);
         [[nodiscard]] virtual Match_Result match(Identifier_Expression const& node);
@@ -84,6 +85,7 @@ namespace vush {
         virtual void execute(Owning_Ptr<Image_Layout_Qualifier>& node);
         virtual void execute(Owning_Ptr<Function_Parameter>& node);
         virtual void execute(Owning_Ptr<Function_Declaration>& node);
+        virtual void execute(Owning_Ptr<Overloaded_Function_Declaration>& node);
         virtual void execute(Owning_Ptr<Pass_Stage_Declaration>& node);
         virtual void execute(Owning_Ptr<Expression_If>& node);
         virtual void execute(Owning_Ptr<Identifier_Expression>& node);

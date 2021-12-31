@@ -23,6 +23,7 @@ namespace vush {
         image_layout_qualifier,
         function_parameter,
         function_declaration,
+        overloaded_function_declaration,
         pass_stage_declaration,
         expression_if,
         identifier_expression,
@@ -582,6 +583,18 @@ namespace vush {
 
     private:
         [[nodiscard]] virtual Function_Declaration* _clone() const override;
+    };
+
+    struct Overloaded_Function_Declaration: public Declaration {
+        Owning_Ptr<Identifier> identifier;
+        anton::Array<Owning_Ptr<Function_Declaration>> overloads;
+
+        Overloaded_Function_Declaration(Owning_Ptr<Identifier> identifier, anton::Array<Owning_Ptr<Function_Declaration>> overloads);
+
+        [[nodiscard]] Owning_Ptr<Overloaded_Function_Declaration> clone() const;
+
+    private:
+        [[nodiscard]] virtual Overloaded_Function_Declaration* _clone() const override;
     };
 
     constexpr anton::String_View stringify(Stage_Type type) {
