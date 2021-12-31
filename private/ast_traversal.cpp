@@ -212,58 +212,213 @@ namespace vush {
         return {};
     }
 
-    void AST_Action::execute(Owning_Ptr<Identifier>&) {}
-    void AST_Action::execute(Owning_Ptr<Builtin_Type>&) {}
-    void AST_Action::execute(Owning_Ptr<User_Defined_Type>&) {}
-    void AST_Action::execute(Owning_Ptr<Array_Type>&) {}
-    void AST_Action::execute(Owning_Ptr<Declaration_If>&) {}
-    void AST_Action::execute(Owning_Ptr<Import_Declaration>&) {}
-    void AST_Action::execute(Owning_Ptr<Variable_Declaration>&) {}
-    void AST_Action::execute(Owning_Ptr<Constant_Declaration>&) {}
-    void AST_Action::execute(Owning_Ptr<Struct_Member>&) {}
-    void AST_Action::execute(Owning_Ptr<Struct_Declaration>&) {}
-    void AST_Action::execute(Owning_Ptr<Settings_Declaration>&) {}
-    void AST_Action::execute(Owning_Ptr<Workgroup_Attribute>&) {}
-    void AST_Action::execute(Owning_Ptr<Function_Param_If>&) {}
-    void AST_Action::execute(Owning_Ptr<Image_Layout_Qualifier>&) {}
-    void AST_Action::execute(Owning_Ptr<Function_Parameter>&) {}
-    void AST_Action::execute(Owning_Ptr<Function_Declaration>&) {}
-    void AST_Action::execute(Owning_Ptr<Overloaded_Function_Declaration>&) {}
-    void AST_Action::execute(Owning_Ptr<Pass_Stage_Declaration>&) {}
-    void AST_Action::execute(Owning_Ptr<Expression_If>&) {}
-    void AST_Action::execute(Owning_Ptr<Identifier_Expression>&) {}
-    void AST_Action::execute(Owning_Ptr<Assignment_Expression>&) {}
-    void AST_Action::execute(Owning_Ptr<Arithmetic_Assignment_Expression>&) {}
-    void AST_Action::execute(Owning_Ptr<Elvis_Expression>&) {}
-    void AST_Action::execute(Owning_Ptr<Binary_Expression>&) {}
-    void AST_Action::execute(Owning_Ptr<Unary_Expression>&) {}
-    void AST_Action::execute(Owning_Ptr<Prefix_Increment_Expression>&) {}
-    void AST_Action::execute(Owning_Ptr<Prefix_Decrement_Expression>&) {}
-    void AST_Action::execute(Owning_Ptr<Function_Call_Expression>&) {}
-    void AST_Action::execute(Owning_Ptr<Member_Access_Expression>&) {}
-    void AST_Action::execute(Owning_Ptr<Array_Access_Expression>&) {}
-    void AST_Action::execute(Owning_Ptr<Postfix_Increment_Expression>&) {}
-    void AST_Action::execute(Owning_Ptr<Postfix_Decrement_Expression>&) {}
-    void AST_Action::execute(Owning_Ptr<Parenthesised_Expression>&) {}
-    void AST_Action::execute(Owning_Ptr<Reinterpret_Expression>&) {}
-    void AST_Action::execute(Owning_Ptr<Default_Expression>&) {}
-    void AST_Action::execute(Owning_Ptr<String_Literal>&) {}
-    void AST_Action::execute(Owning_Ptr<Bool_Literal>&) {}
-    void AST_Action::execute(Owning_Ptr<Integer_Literal>&) {}
-    void AST_Action::execute(Owning_Ptr<Float_Literal>&) {}
-    void AST_Action::execute(Owning_Ptr<Block_Statement>&) {}
-    void AST_Action::execute(Owning_Ptr<If_Statement>&) {}
-    void AST_Action::execute(Owning_Ptr<Case_Statement>&) {}
-    void AST_Action::execute(Owning_Ptr<Switch_Statement>&) {}
-    void AST_Action::execute(Owning_Ptr<For_Statement>&) {}
-    void AST_Action::execute(Owning_Ptr<While_Statement>&) {}
-    void AST_Action::execute(Owning_Ptr<Do_While_Statement>&) {}
-    void AST_Action::execute(Owning_Ptr<Return_Statement>&) {}
-    void AST_Action::execute(Owning_Ptr<Break_Statement>&) {}
-    void AST_Action::execute(Owning_Ptr<Continue_Statement>&) {}
-    void AST_Action::execute(Owning_Ptr<Discard_Statement>&) {}
-    void AST_Action::execute(Owning_Ptr<Declaration_Statement>&) {}
-    void AST_Action::execute(Owning_Ptr<Expression_Statement>&) {}
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Identifier> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Builtin_Type> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<User_Defined_Type> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Array_Type> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Declaration_If> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Import_Declaration> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Variable_Declaration> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Constant_Declaration> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Struct_Member> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Struct_Declaration> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Settings_Declaration> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Workgroup_Attribute> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Function_Param_If> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Image_Layout_Qualifier> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Function_Parameter> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Function_Declaration> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Overloaded_Function_Declaration> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Pass_Stage_Declaration> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Expression_If> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Identifier_Expression> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Assignment_Expression> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Arithmetic_Assignment_Expression> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Elvis_Expression> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Binary_Expression> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Unary_Expression> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Prefix_Increment_Expression> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Prefix_Decrement_Expression> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Function_Call_Expression> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Member_Access_Expression> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Array_Access_Expression> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Postfix_Increment_Expression> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Postfix_Decrement_Expression> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Parenthesised_Expression> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Reinterpret_Expression> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Default_Expression> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<String_Literal> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Bool_Literal> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Integer_Literal> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Float_Literal> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Block_Statement> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<If_Statement> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Case_Statement> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Switch_Statement> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<For_Statement> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<While_Statement> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Do_While_Statement> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Return_Statement> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Break_Statement> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Continue_Statement> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Discard_Statement> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Declaration_Statement> node) {
+        return ANTON_MOV(node);
+    }
+
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Expression_Statement> node) {
+        return ANTON_MOV(node);
+    }
 
     using Match_Result = Recursive_AST_Matcher::Match_Result;
 
@@ -273,8 +428,8 @@ namespace vush {
                 Identifier& n = static_cast<Identifier&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Identifier>& node_typed = reinterpret_cast<Owning_Ptr<Identifier>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Identifier> node_typed{static_cast<Identifier*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
                 return result.break_matching;
             } break;
@@ -283,8 +438,8 @@ namespace vush {
                 Builtin_Type& n = static_cast<Builtin_Type&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Builtin_Type>& node_typed = reinterpret_cast<Owning_Ptr<Builtin_Type>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Builtin_Type> node_typed{static_cast<Builtin_Type*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
                 return result.break_matching;
             } break;
@@ -293,8 +448,8 @@ namespace vush {
                 User_Defined_Type& n = static_cast<User_Defined_Type&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<User_Defined_Type>& node_typed = reinterpret_cast<Owning_Ptr<User_Defined_Type>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<User_Defined_Type> node_typed{static_cast<User_Defined_Type*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
                 return result.break_matching;
             } break;
@@ -303,8 +458,8 @@ namespace vush {
                 Array_Type& n = static_cast<Array_Type&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Array_Type>& node_typed = reinterpret_cast<Owning_Ptr<Array_Type>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Array_Type> node_typed{static_cast<Array_Type*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -328,8 +483,8 @@ namespace vush {
                 Declaration_If& n = static_cast<Declaration_If&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Declaration_If>& node_typed = reinterpret_cast<Owning_Ptr<Declaration_If>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Declaration_If> node_typed{static_cast<Declaration_If*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -360,8 +515,8 @@ namespace vush {
                 Import_Declaration& n = static_cast<Import_Declaration&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Import_Declaration>& node_typed = reinterpret_cast<Owning_Ptr<Import_Declaration>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Import_Declaration> node_typed{static_cast<Import_Declaration*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -380,8 +535,8 @@ namespace vush {
                 Variable_Declaration& n = static_cast<Variable_Declaration&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Variable_Declaration>& node_typed = reinterpret_cast<Owning_Ptr<Variable_Declaration>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Variable_Declaration> node_typed{static_cast<Variable_Declaration*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -408,8 +563,8 @@ namespace vush {
                 Constant_Declaration& n = static_cast<Constant_Declaration&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Constant_Declaration>& node_typed = reinterpret_cast<Owning_Ptr<Constant_Declaration>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Constant_Declaration> node_typed{static_cast<Constant_Declaration*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -436,8 +591,8 @@ namespace vush {
                 Struct_Member& n = static_cast<Struct_Member&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Struct_Member>& node_typed = reinterpret_cast<Owning_Ptr<Struct_Member>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Struct_Member> node_typed{static_cast<Struct_Member*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -464,8 +619,8 @@ namespace vush {
                 Struct_Declaration& n = static_cast<Struct_Declaration&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Struct_Declaration>& node_typed = reinterpret_cast<Owning_Ptr<Struct_Declaration>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Struct_Declaration> node_typed{static_cast<Struct_Declaration*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -490,8 +645,8 @@ namespace vush {
                 Settings_Declaration& n = static_cast<Settings_Declaration&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Settings_Declaration>& node_typed = reinterpret_cast<Owning_Ptr<Settings_Declaration>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Settings_Declaration> node_typed{static_cast<Settings_Declaration*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -510,8 +665,8 @@ namespace vush {
                 Workgroup_Attribute& n = static_cast<Workgroup_Attribute&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Workgroup_Attribute>& node_typed = reinterpret_cast<Owning_Ptr<Workgroup_Attribute>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Workgroup_Attribute> node_typed{static_cast<Workgroup_Attribute*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -540,8 +695,8 @@ namespace vush {
                 Function_Param_If& n = static_cast<Function_Param_If&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Function_Param_If>& node_typed = reinterpret_cast<Owning_Ptr<Function_Param_If>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Function_Param_If> node_typed{static_cast<Function_Param_If*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -568,8 +723,8 @@ namespace vush {
                 Image_Layout_Qualifier& n = static_cast<Image_Layout_Qualifier&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Image_Layout_Qualifier>& node_typed = reinterpret_cast<Owning_Ptr<Image_Layout_Qualifier>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Image_Layout_Qualifier> node_typed{static_cast<Image_Layout_Qualifier*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
                 return result.break_matching;
             } break;
@@ -578,8 +733,8 @@ namespace vush {
                 Function_Parameter& n = static_cast<Function_Parameter&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Function_Parameter>& node_typed = reinterpret_cast<Owning_Ptr<Function_Parameter>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Function_Parameter> node_typed{static_cast<Function_Parameter*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -611,8 +766,8 @@ namespace vush {
                 Function_Declaration& n = static_cast<Function_Declaration&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Function_Declaration>& node_typed = reinterpret_cast<Owning_Ptr<Function_Declaration>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Function_Declaration> node_typed{static_cast<Function_Declaration*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -653,8 +808,8 @@ namespace vush {
                 Overloaded_Function_Declaration& n = static_cast<Overloaded_Function_Declaration&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Overloaded_Function_Declaration>& node_typed = reinterpret_cast<Owning_Ptr<Overloaded_Function_Declaration>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Overloaded_Function_Declaration> node_typed{static_cast<Overloaded_Function_Declaration*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -679,8 +834,8 @@ namespace vush {
                 Pass_Stage_Declaration& n = static_cast<Pass_Stage_Declaration&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Pass_Stage_Declaration>& node_typed = reinterpret_cast<Owning_Ptr<Pass_Stage_Declaration>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Pass_Stage_Declaration> node_typed{static_cast<Pass_Stage_Declaration*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -721,8 +876,8 @@ namespace vush {
                 Expression_If& n = static_cast<Expression_If&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Expression_If>& node_typed = reinterpret_cast<Owning_Ptr<Expression_If>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Expression_If> node_typed{static_cast<Expression_If*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -747,8 +902,8 @@ namespace vush {
                 Identifier_Expression& n = static_cast<Identifier_Expression&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Identifier_Expression>& node_typed = reinterpret_cast<Owning_Ptr<Identifier_Expression>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Identifier_Expression> node_typed{static_cast<Identifier_Expression*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
                 return result.break_matching;
             } break;
@@ -757,8 +912,8 @@ namespace vush {
                 Assignment_Expression& n = static_cast<Assignment_Expression&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Assignment_Expression>& node_typed = reinterpret_cast<Owning_Ptr<Assignment_Expression>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Assignment_Expression> node_typed{static_cast<Assignment_Expression*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -780,8 +935,8 @@ namespace vush {
                 Arithmetic_Assignment_Expression& n = static_cast<Arithmetic_Assignment_Expression&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Arithmetic_Assignment_Expression>& node_typed = reinterpret_cast<Owning_Ptr<Arithmetic_Assignment_Expression>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Arithmetic_Assignment_Expression> node_typed{static_cast<Arithmetic_Assignment_Expression*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -803,8 +958,8 @@ namespace vush {
                 Elvis_Expression& n = static_cast<Elvis_Expression&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Elvis_Expression>& node_typed = reinterpret_cast<Owning_Ptr<Elvis_Expression>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Elvis_Expression> node_typed{static_cast<Elvis_Expression*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -829,8 +984,8 @@ namespace vush {
                 Binary_Expression& n = static_cast<Binary_Expression&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Binary_Expression>& node_typed = reinterpret_cast<Owning_Ptr<Binary_Expression>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Binary_Expression> node_typed{static_cast<Binary_Expression*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -852,8 +1007,8 @@ namespace vush {
                 Unary_Expression& n = static_cast<Unary_Expression&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Unary_Expression>& node_typed = reinterpret_cast<Owning_Ptr<Unary_Expression>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Unary_Expression> node_typed{static_cast<Unary_Expression*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -872,8 +1027,8 @@ namespace vush {
                 Prefix_Increment_Expression& n = static_cast<Prefix_Increment_Expression&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Prefix_Increment_Expression>& node_typed = reinterpret_cast<Owning_Ptr<Prefix_Increment_Expression>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Prefix_Increment_Expression> node_typed{static_cast<Prefix_Increment_Expression*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -892,8 +1047,8 @@ namespace vush {
                 Prefix_Decrement_Expression& n = static_cast<Prefix_Decrement_Expression&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Prefix_Decrement_Expression>& node_typed = reinterpret_cast<Owning_Ptr<Prefix_Decrement_Expression>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Prefix_Decrement_Expression> node_typed{static_cast<Prefix_Decrement_Expression*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -912,8 +1067,8 @@ namespace vush {
                 Function_Call_Expression& n = static_cast<Function_Call_Expression&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Function_Call_Expression>& node_typed = reinterpret_cast<Owning_Ptr<Function_Call_Expression>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Function_Call_Expression> node_typed{static_cast<Function_Call_Expression*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -934,8 +1089,8 @@ namespace vush {
                 Member_Access_Expression& n = static_cast<Member_Access_Expression&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Member_Access_Expression>& node_typed = reinterpret_cast<Owning_Ptr<Member_Access_Expression>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Member_Access_Expression> node_typed{static_cast<Member_Access_Expression*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -957,8 +1112,8 @@ namespace vush {
                 Array_Access_Expression& n = static_cast<Array_Access_Expression&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Array_Access_Expression>& node_typed = reinterpret_cast<Owning_Ptr<Array_Access_Expression>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Array_Access_Expression> node_typed{static_cast<Array_Access_Expression*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -980,8 +1135,8 @@ namespace vush {
                 Postfix_Increment_Expression& n = static_cast<Postfix_Increment_Expression&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Postfix_Increment_Expression>& node_typed = reinterpret_cast<Owning_Ptr<Postfix_Increment_Expression>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Postfix_Increment_Expression> node_typed{static_cast<Postfix_Increment_Expression*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -1000,8 +1155,8 @@ namespace vush {
                 Postfix_Decrement_Expression& n = static_cast<Postfix_Decrement_Expression&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Postfix_Decrement_Expression>& node_typed = reinterpret_cast<Owning_Ptr<Postfix_Decrement_Expression>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Postfix_Decrement_Expression> node_typed{static_cast<Postfix_Decrement_Expression*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -1020,8 +1175,8 @@ namespace vush {
                 Parenthesised_Expression& n = static_cast<Parenthesised_Expression&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Parenthesised_Expression>& node_typed = reinterpret_cast<Owning_Ptr<Parenthesised_Expression>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Parenthesised_Expression> node_typed{static_cast<Parenthesised_Expression*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -1040,8 +1195,8 @@ namespace vush {
                 Reinterpret_Expression& n = static_cast<Reinterpret_Expression&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Reinterpret_Expression>& node_typed = reinterpret_cast<Owning_Ptr<Reinterpret_Expression>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Reinterpret_Expression> node_typed{static_cast<Reinterpret_Expression*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -1066,8 +1221,8 @@ namespace vush {
                 Default_Expression& n = static_cast<Default_Expression&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Default_Expression>& node_typed = reinterpret_cast<Owning_Ptr<Default_Expression>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Default_Expression> node_typed{static_cast<Default_Expression*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
                 return result.break_matching;
             } break;
@@ -1076,8 +1231,8 @@ namespace vush {
                 String_Literal& n = static_cast<String_Literal&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<String_Literal>& node_typed = reinterpret_cast<Owning_Ptr<String_Literal>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<String_Literal> node_typed{static_cast<String_Literal*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
                 return result.break_matching;
             } break;
@@ -1086,8 +1241,8 @@ namespace vush {
                 Bool_Literal& n = static_cast<Bool_Literal&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Bool_Literal>& node_typed = reinterpret_cast<Owning_Ptr<Bool_Literal>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Bool_Literal> node_typed{static_cast<Bool_Literal*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
                 return result.break_matching;
             } break;
@@ -1096,8 +1251,8 @@ namespace vush {
                 Integer_Literal& n = static_cast<Integer_Literal&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Integer_Literal>& node_typed = reinterpret_cast<Owning_Ptr<Integer_Literal>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Integer_Literal> node_typed{static_cast<Integer_Literal*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
                 return result.break_matching;
             } break;
@@ -1106,8 +1261,8 @@ namespace vush {
                 Float_Literal& n = static_cast<Float_Literal&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Float_Literal>& node_typed = reinterpret_cast<Owning_Ptr<Float_Literal>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Float_Literal> node_typed{static_cast<Float_Literal*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
                 return result.break_matching;
             } break;
@@ -1116,8 +1271,8 @@ namespace vush {
                 Block_Statement& n = static_cast<Block_Statement&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Block_Statement>& node_typed = reinterpret_cast<Owning_Ptr<Block_Statement>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Block_Statement> node_typed{static_cast<Block_Statement*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -1138,8 +1293,8 @@ namespace vush {
                 If_Statement& n = static_cast<If_Statement&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<If_Statement>& node_typed = reinterpret_cast<Owning_Ptr<If_Statement>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<If_Statement> node_typed{static_cast<If_Statement*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -1168,8 +1323,8 @@ namespace vush {
                 Case_Statement& n = static_cast<Case_Statement&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Case_Statement>& node_typed = reinterpret_cast<Owning_Ptr<Case_Statement>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Case_Statement> node_typed{static_cast<Case_Statement*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -1195,8 +1350,8 @@ namespace vush {
                 Switch_Statement& n = static_cast<Switch_Statement&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Switch_Statement>& node_typed = reinterpret_cast<Owning_Ptr<Switch_Statement>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Switch_Statement> node_typed{static_cast<Switch_Statement*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -1221,8 +1376,8 @@ namespace vush {
                 For_Statement& n = static_cast<For_Statement&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<For_Statement>& node_typed = reinterpret_cast<Owning_Ptr<For_Statement>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<For_Statement> node_typed{static_cast<For_Statement*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -1253,8 +1408,8 @@ namespace vush {
                 While_Statement& n = static_cast<While_Statement&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<While_Statement>& node_typed = reinterpret_cast<Owning_Ptr<While_Statement>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<While_Statement> node_typed{static_cast<While_Statement*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -1279,8 +1434,8 @@ namespace vush {
                 Do_While_Statement& n = static_cast<Do_While_Statement&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Do_While_Statement>& node_typed = reinterpret_cast<Owning_Ptr<Do_While_Statement>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Do_While_Statement> node_typed{static_cast<Do_While_Statement*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -1305,8 +1460,8 @@ namespace vush {
                 Return_Statement& n = static_cast<Return_Statement&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Return_Statement>& node_typed = reinterpret_cast<Owning_Ptr<Return_Statement>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Return_Statement> node_typed{static_cast<Return_Statement*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -1328,8 +1483,8 @@ namespace vush {
                 Break_Statement& n = static_cast<Break_Statement&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Break_Statement>& node_typed = reinterpret_cast<Owning_Ptr<Break_Statement>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Break_Statement> node_typed{static_cast<Break_Statement*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 return result.break_matching;
@@ -1339,8 +1494,8 @@ namespace vush {
                 Continue_Statement& n = static_cast<Continue_Statement&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Continue_Statement>& node_typed = reinterpret_cast<Owning_Ptr<Continue_Statement>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Continue_Statement> node_typed{static_cast<Continue_Statement*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 return result.break_matching;
@@ -1350,8 +1505,8 @@ namespace vush {
                 Discard_Statement& n = static_cast<Discard_Statement&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Discard_Statement>& node_typed = reinterpret_cast<Owning_Ptr<Discard_Statement>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Discard_Statement> node_typed{static_cast<Discard_Statement*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 return result.break_matching;
@@ -1361,8 +1516,8 @@ namespace vush {
                 Declaration_Statement& n = static_cast<Declaration_Statement&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Declaration_Statement>& node_typed = reinterpret_cast<Owning_Ptr<Declaration_Statement>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Declaration_Statement> node_typed{static_cast<Declaration_Statement*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {
@@ -1382,8 +1537,8 @@ namespace vush {
                 Expression_Statement& n = static_cast<Expression_Statement&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Expression_Statement>& node_typed = reinterpret_cast<Owning_Ptr<Expression_Statement>&>(node);
-                    action.execute(node_typed);
+                    Owning_Ptr<Expression_Statement> node_typed{static_cast<Expression_Statement*>(node.release())};
+                    node = action.execute(ANTON_MOV(node_typed));
                 }
 
                 if(result.break_matching) {

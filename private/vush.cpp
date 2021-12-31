@@ -1274,17 +1274,16 @@ namespace vush {
         return {anton::expected_value};
     }
 
-    struct Function_Call_Matcher: public Recursive_AST_Matcher {
+    struct Function_Call_Aggregator: public Recursive_AST_Matcher, public AST_Action {
+        anton::Array<Function_Call_Expression*> function_calls;
+
         [[nodiscard]] virtual Match_Result match(Function_Call_Expression const&) override {
             return {true};
         }
-    };
 
-    struct Function_Call_Aggregator: public AST_Action {
-        anton::Array<Function_Call_Expression*> function_calls;
-
-        virtual void execute(Owning_Ptr<Function_Call_Expression>& function_call) override {
+        virtual Owning_Ptr<AST_Node> execute(Owning_Ptr<Function_Call_Expression> function_call) override {
             function_calls.push_back(function_call.get());
+            return function_call;
         }
     };
 
@@ -1293,25 +1292,25 @@ namespace vush {
         Expression* replacement;
     };
 
-    struct Identifier_Expression_Matcher: public Recursive_AST_Matcher {
-        [[nodiscard]] virtual Match_Result match(Identifier_Expression const&) override {
-            return {true};
-        }
-    };
-
-    struct Identifier_Expression_Replacer: public AST_Action {
+    struct Identifier_Expression_Replacer: public Recursive_AST_Matcher, public AST_Action {
     private:
         anton::Slice<Replacement_Rule const> replacements;
 
     public:
         Identifier_Expression_Replacer(anton::Slice<Replacement_Rule const> const replacements): replacements(replacements) {}
 
-        virtual void execute(Owning_Ptr<Identifier_Expression>& n) override {
+        [[nodiscard]] virtual Match_Result match(Identifier_Expression const&) override {
+            return {true, true};
+        }
+
+        virtual Owning_Ptr<AST_Node> execute(Owning_Ptr<Identifier_Expression> n) override {
             anton::String_View identifier = n->value;
             auto iterator =
                 anton::find_if(replacements.begin(), replacements.end(), [identifier](Replacement_Rule const& rule) { return rule.identifier == identifier; });
             if(iterator != replacements.end()) {
-                reinterpret_cast<Owning_Ptr<AST_Node>&>(n) = iterator->replacement->clone();
+                return iterator->replacement->clone();
+            } else {
+                return n;
             }
         }
     };
@@ -1331,26 +1330,25 @@ namespace vush {
     //
     static void perform_function_instantiations(Context& ctx, anton::Slice<Pass_Context> const passes,
                                                 anton::Array<Owning_Ptr<Function_Declaration>>& functions) {
-        Function_Call_Matcher fn_call_matcher;
         Function_Call_Aggregator fn_call_aggregator;
         anton::Array<Function_Call_Expression*>& function_calls = fn_call_aggregator.function_calls;
         anton::Flat_Hash_Set<u64> instantiated_functions;
         for(Pass_Context& pass: passes) {
             if(pass.vertex_context) {
                 Owning_Ptr<AST_Node> declaration{pass.vertex_context.declaration};
-                traverse_node(fn_call_matcher, fn_call_aggregator, declaration);
+                traverse_node(fn_call_aggregator, fn_call_aggregator, declaration);
                 [[maybe_unused]] void* p = declaration.release();
             }
 
             if(pass.fragment_context) {
                 Owning_Ptr<AST_Node> declaration{pass.fragment_context.declaration};
-                traverse_node(fn_call_matcher, fn_call_aggregator, declaration);
+                traverse_node(fn_call_aggregator, fn_call_aggregator, declaration);
                 [[maybe_unused]] void* p = declaration.release();
             }
 
             if(pass.compute_context) {
                 Owning_Ptr<AST_Node> declaration{pass.compute_context.declaration};
-                traverse_node(fn_call_matcher, fn_call_aggregator, declaration);
+                traverse_node(fn_call_aggregator, fn_call_aggregator, declaration);
                 [[maybe_unused]] void* p = declaration.release();
             }
 
@@ -1426,9 +1424,8 @@ namespace vush {
                     }
                 }
 
-                Identifier_Expression_Matcher identifier_matcher;
                 Identifier_Expression_Replacer identifier_replacer(replacements);
-                traverse_node(identifier_matcher, identifier_replacer, instance);
+                traverse_node(identifier_replacer, identifier_replacer, instance);
 
                 // Remove the unsized array parameters and arguments from the instance and the function call
                 for(i64 i = 0; i < instance->parameters.size();) {
@@ -1443,7 +1440,7 @@ namespace vush {
                     }
                 }
 
-                traverse_node(fn_call_matcher, fn_call_aggregator, instance);
+                traverse_node(fn_call_aggregator, fn_call_aggregator, instance);
                 pass.functions.emplace_back(instance.get());
                 functions.emplace_back(ANTON_MOV(instance));
             }
