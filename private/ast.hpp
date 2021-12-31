@@ -368,7 +368,7 @@ namespace vush {
     struct Variable_Declaration: public Declaration {
         Owning_Ptr<Type> type;
         Owning_Ptr<Identifier> identifier;
-        // nullptr when the declaration does not have an initializer
+        // nullptr when the declaration does not have an initializer.
         Owning_Ptr<Expression> initializer;
 
         Variable_Declaration(Owning_Ptr<Type> type, Owning_Ptr<Identifier> identifier, Owning_Ptr<Expression> initializer, Source_Info const& source_info);
@@ -382,7 +382,7 @@ namespace vush {
     struct Constant_Declaration: public Declaration {
         Owning_Ptr<Type> type;
         Owning_Ptr<Identifier> identifier;
-        // nullptr when the declaration does not have an initializer
+        // nullptr when the declaration does not have an initializer.
         Owning_Ptr<Expression> initializer;
 
         Constant_Declaration(Owning_Ptr<Type> type, Owning_Ptr<Identifier> identifier, Owning_Ptr<Expression> initializer, Source_Info const& source_info);
@@ -396,9 +396,11 @@ namespace vush {
     struct Struct_Member: public AST_Node {
         Owning_Ptr<Type> type;
         Owning_Ptr<Identifier> identifier;
+        // nullptr when the member does not have an initializer.
         Owning_Ptr<Expression> initializer;
+        // TODO: Turn interpolation and invariant into actual AST nodes to preserve source information.
         Interpolation interpolation;
-        // Whether the member is qualified with 'invariant'
+        // Whether the member is qualified with 'invariant'.
         bool invariant;
 
         Struct_Member(Owning_Ptr<Type> type, Owning_Ptr<Identifier> identifier, Owning_Ptr<Expression> initializer, Interpolation interpolation, bool invariant,
@@ -567,11 +569,11 @@ namespace vush {
     [[nodiscard]] bool is_vertex_input_parameter(Function_Parameter const& parameter);
 
     struct Function_Declaration: public Declaration {
-        Parameter_List parameters;
         Attribute_List attributes;
+        Parameter_List parameters;
+        Statement_List body;
         Owning_Ptr<Identifier> identifier;
         Owning_Ptr<Type> return_type;
-        Statement_List body;
 
         Function_Declaration(Attribute_List attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> identifier, Parameter_List parameters,
                              Statement_List body, Source_Info const& source_info);
@@ -594,8 +596,8 @@ namespace vush {
     }
 
     struct Pass_Stage_Declaration: public Declaration {
-        Parameter_List parameters;
         Attribute_List attributes;
+        Parameter_List parameters;
         Statement_List body;
         Owning_Ptr<Identifier> pass_name;
         Owning_Ptr<Type> return_type;
