@@ -1307,7 +1307,10 @@ namespace vush {
                                                 anton::Array<Owning_Ptr<Function_Declaration>>& functions) {
         Function_Call_Aggregator fn_call_aggregator;
         anton::Array<Function_Call_Expression*>& function_calls = fn_call_aggregator.function_calls;
+        // Stores hashes of the stringified signatures of the instances of the functions.
         anton::Flat_Hash_Set<u64> instantiated_functions;
+        // Stores functions that do no require instantiation that have been added to a pass.
+        anton::Flat_Hash_Set<Function_Declaration*> noninstantiable_functions;
         for(Pass_Context& pass: passes) {
             if(pass.vertex_context) {
                 Owning_Ptr<AST_Node> declaration{pass.vertex_context.declaration};
@@ -1357,7 +1360,13 @@ namespace vush {
                     }
 
                     if(!requires_instantiation) {
-                        pass.functions.emplace_back(&fn_template);
+                        // We want to add the function to the pass only once, therefore we store
+                        // it in a set to keep track of which functions we have already added.
+                        auto iter = noninstantiable_functions.find(&fn_template);
+                        if(iter == noninstantiable_functions.end()) {
+                            noninstantiable_functions.emplace(&fn_template);
+                            pass.functions.emplace_back(&fn_template);
+                        }
                         continue;
                     }
 
@@ -1425,6 +1434,7 @@ namespace vush {
             function_calls.clear();
             // Passes are independent
             instantiated_functions.clear();
+            noninstantiable_functions.clear();
         }
     }
 
