@@ -108,13 +108,13 @@ namespace vush {
             if(is_sourced_parameter(p)) {
                 Source_Info const& src = p.source_info;
                 return {anton::expected_error,
-                        build_error_message(src.file_path, src.line, src.column, u8"sourced parameters are not allowed on ordinary functions")};
+                        build_error_message(src.source_path, src.line, src.column, u8"sourced parameters are not allowed on ordinary functions")};
             }
 
             if(is_vertex_input_parameter(p)) {
                 Source_Info const& src = p.source_info;
                 return {anton::expected_error,
-                        build_error_message(src.file_path, src.line, src.column, u8"vertex input parameters are not allowed on ordinary functions")};
+                        build_error_message(src.source_path, src.line, src.column, u8"vertex input parameters are not allowed on ordinary functions")};
             }
 
             if(p.image_layout) {
@@ -183,14 +183,14 @@ namespace vush {
                         if(is_opaque_type(type)) {
                             Source_Info const& src = type.source_info;
                             return {anton::expected_error,
-                                    build_error_message(src.file_path, src.line, src.column, u8"vertex input parameters must not be opaque types")};
+                                    build_error_message(src.source_path, src.line, src.column, u8"vertex input parameters must not be opaque types")};
                         }
 
                         // Vertex input parameters must not be arrays (we do not support them yet)
                         if(type.node_type == AST_Node_Type::array_type) {
                             Source_Info const& src = type.source_info;
                             return {anton::expected_error,
-                                    build_error_message(src.file_path, src.line, src.column, u8"vertex input parameters must not be arrays")};
+                                    build_error_message(src.source_path, src.line, src.column, u8"vertex input parameters must not be arrays")};
                         }
                     }
 
@@ -295,7 +295,7 @@ namespace vush {
     static anton::Expected<void, anton::String> validate_function_attributes([[maybe_unused]] Context& ctx, Function_Declaration const& fn) {
         for(auto& attribute: fn.attributes) {
             Source_Info const& src = attribute->source_info;
-            return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"illegal attribute")};
+            return {anton::expected_error, build_error_message(src.source_path, src.line, src.column, u8"illegal attribute")};
         }
 
         return {anton::expected_value};
@@ -311,11 +311,11 @@ namespace vush {
                             has_workgroup = true;
                         } else {
                             Source_Info const& src = attribute->source_info;
-                            return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"duplicate workgroup attribute")};
+                            return {anton::expected_error, build_error_message(src.source_path, src.line, src.column, u8"duplicate workgroup attribute")};
                         }
                     } else {
                         Source_Info const& src = attribute->source_info;
-                        return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"illegal attribute")};
+                        return {anton::expected_error, build_error_message(src.source_path, src.line, src.column, u8"illegal attribute")};
                     }
                 }
             } break;
@@ -323,7 +323,7 @@ namespace vush {
             default: {
                 for(auto& attribute: fn.attributes) {
                     Source_Info const& src = attribute->source_info;
-                    return {anton::expected_error, build_error_message(src.file_path, src.line, src.column, u8"illegal attribute")};
+                    return {anton::expected_error, build_error_message(src.source_path, src.line, src.column, u8"illegal attribute")};
                 }
             } break;
         }
@@ -1014,7 +1014,7 @@ namespace vush {
                             } else {
                                 Source_Info const& src = label->source_info;
                                 return {anton::expected_error,
-                                        build_error_message(src.file_path, src.line, src.column, u8"case label is not an integer literal")};
+                                        build_error_message(src.source_path, src.line, src.column, u8"case label is not an integer literal")};
                             }
                         }
 

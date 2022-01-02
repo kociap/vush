@@ -62,7 +62,7 @@ namespace vush {
     };
 
     struct Source_Info {
-        anton::String_View file_path;
+        anton::String_View source_path;
         i64 line = 0;
         i64 column = 0;
         // The offset into the source at which the matched node starts
