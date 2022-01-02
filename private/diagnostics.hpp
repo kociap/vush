@@ -22,7 +22,10 @@ namespace vush {
 
     [[nodiscard]] anton::String format_integer_literal_overflow(Context const& ctx, Source_Info const& integer);
     [[nodiscard]] anton::String format_integer_literal_leading_zeros(Context const& ctx, Source_Info const& integer);
-
+    [[nodiscard]] anton::String format_overload_identical_parameters_different_return_types(Context const& ctx, Function_Declaration const& overload1,
+                                                                                            Function_Declaration const& overload2);
+    [[nodiscard]] anton::String format_overload_identical_parameters(Context const& ctx, Function_Declaration const& overload1,
+                                                                     Function_Declaration const& overload2);
     [[nodiscard]] anton::String format_variable_declaration_in_global_scope(Context const& ctx, Source_Info const& declaration);
     [[nodiscard]] anton::String format_constant_missing_initializer(Context const& ctx, Source_Info const& constant);
     [[nodiscard]] anton::String format_expression_not_implicitly_convertible_to_bool(Context const& ctx, Source_Info const& expression);

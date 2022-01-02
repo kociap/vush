@@ -194,6 +194,44 @@ namespace vush {
         return message;
     }
 
+    anton::String format_overload_identical_parameters_different_return_types(Context const& ctx, Function_Declaration const& overload1,
+                                                                              Function_Declaration const& overload2) {
+        anton::String message = format_diagnostic_location(overload2.source_info);
+        message += u8"error: functions may not be overloaded on their return type alone\n";
+        if(ctx.diagnostics.extended) {
+            anton::String_View const first_source = ctx.source_registry.find(overload1.source_info.file_path)->value.data;
+            message += format_diagnostic_location(overload1.source_info);
+            message += anton::format(u8"overload with return type '{}' defined here\n", stringify_type(*overload1.return_type));
+            print_source_snippet(ctx, message, first_source, overload1.return_type->source_info);
+            message += '\n';
+            anton::String_View const second_source = ctx.source_registry.find(overload2.source_info.file_path)->value.data;
+            message += format_diagnostic_location(overload2.source_info);
+            message +=
+                anton::format(u8"overload with a different return type '{}', but identical parameters defined here\n", stringify_type(*overload2.return_type));
+            print_source_snippet(ctx, message, second_source, overload2.return_type->source_info);
+            message += '\n';
+        }
+        return message;
+    }
+
+    anton::String format_overload_identical_parameters(Context const& ctx, Function_Declaration const& overload1, Function_Declaration const& overload2) {
+        anton::String message = format_diagnostic_location(overload2.source_info);
+        message += anton::format(u8"error: redefinition of function '{}'\n", overload1.identifier->value);
+        if(ctx.diagnostics.extended) {
+            anton::String_View const first_source = ctx.source_registry.find(overload1.source_info.file_path)->value.data;
+            message += format_diagnostic_location(overload1.source_info);
+            message += u8"first definition found here\n";
+            print_source_snippet(ctx, message, first_source, overload1.source_info);
+            message += '\n';
+            anton::String_View const second_source = ctx.source_registry.find(overload2.source_info.file_path)->value.data;
+            message += format_diagnostic_location(overload2.source_info);
+            message += u8"second definition found here\n";
+            print_source_snippet(ctx, message, second_source, overload2.source_info);
+            message += '\n';
+        }
+        return message;
+    }
+
     anton::String format_variable_declaration_in_global_scope(Context const& ctx, Source_Info const& declaration) {
         anton::String message = format_diagnostic_location(declaration);
         message += u8"error: illegal declaration of a variable in global scope\n";

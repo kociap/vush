@@ -589,7 +589,8 @@ namespace vush {
         Owning_Ptr<Identifier> identifier;
         anton::Array<Owning_Ptr<Function_Declaration>> overloads;
 
-        Overloaded_Function_Declaration(Owning_Ptr<Identifier> identifier, anton::Array<Owning_Ptr<Function_Declaration>> overloads);
+        Overloaded_Function_Declaration(Owning_Ptr<Identifier> identifier, anton::Array<Owning_Ptr<Function_Declaration>> overloads,
+                                        Source_Info const& source_info);
 
         [[nodiscard]] Owning_Ptr<Overloaded_Function_Declaration> clone() const;
 

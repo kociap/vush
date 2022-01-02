@@ -1115,15 +1115,15 @@ namespace vush {
     }
 
     Overloaded_Function_Declaration::Overloaded_Function_Declaration(Owning_Ptr<Identifier> identifier,
-                                                                     anton::Array<Owning_Ptr<Function_Declaration>> overloads)
-        : Declaration(Source_Info{}, AST_Node_Type::overloaded_function_declaration), identifier(ANTON_MOV(identifier)), overloads(ANTON_MOV(overloads)) {}
+                                                                     anton::Array<Owning_Ptr<Function_Declaration>> overloads, Source_Info const& source_info)
+        : Declaration(source_info, AST_Node_Type::overloaded_function_declaration), identifier(ANTON_MOV(identifier)), overloads(ANTON_MOV(overloads)) {}
 
     Owning_Ptr<Overloaded_Function_Declaration> Overloaded_Function_Declaration::clone() const {
         return Owning_Ptr{_clone()};
     }
 
     Overloaded_Function_Declaration* Overloaded_Function_Declaration::_clone() const {
-        return new Overloaded_Function_Declaration(identifier->clone(), vush::clone(overloads));
+        return new Overloaded_Function_Declaration(identifier->clone(), vush::clone(overloads), source_info);
     }
 
     Pass_Stage_Declaration::Pass_Stage_Declaration(Attribute_List attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> pass_name,
