@@ -23,4 +23,6 @@ namespace vush {
     //               persist for at least as long as the AST.
     //
     anton::Expected<Declaration_List, Parse_Error> parse_source(anton::String_View source_name, anton::String_View source_code);
+
+    anton::Expected<Declaration_List, Parse_Error> parse_builtin_functions(anton::String_View source_name, anton::String_View source_code);
 } // namespace vush

@@ -575,6 +575,8 @@ namespace vush {
         Statement_List body;
         Owning_Ptr<Identifier> identifier;
         Owning_Ptr<Type> return_type;
+        // Whether the function is a builtin function.
+        bool builtin = false;
 
         Function_Declaration(Attribute_List attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> identifier, Parameter_List parameters,
                              Statement_List body, Source_Info const& source_info);
@@ -588,6 +590,8 @@ namespace vush {
     struct Overloaded_Function_Declaration: public Declaration {
         Owning_Ptr<Identifier> identifier;
         anton::Array<Owning_Ptr<Function_Declaration>> overloads;
+        // Whether the function is a builtin function.
+        bool builtin = false;
 
         Overloaded_Function_Declaration(Owning_Ptr<Identifier> identifier, anton::Array<Owning_Ptr<Function_Declaration>> overloads,
                                         Source_Info const& source_info);

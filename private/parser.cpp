@@ -321,6 +321,21 @@ namespace vush {
             return {anton::expected_value, ANTON_MOV(ast)};
         }
 
+        anton::Expected<Declaration_List, Parse_Error> parse_builtin_functions() {
+            Declaration_List builtin_functions;
+            while(!_lexer.match_eof()) {
+                if(Owning_Ptr fn = try_function_declaration()) {
+                    fn->builtin = true;
+                    fn->source_info.line = 1;
+                    fn->source_info.end_line = 1;
+                    builtin_functions.emplace_back(ANTON_MOV(fn));
+                } else {
+                    return {anton::expected_error, _last_error};
+                }
+            }
+            return {anton::expected_value, ANTON_MOV(builtin_functions)};
+        }
+
     private:
         anton::String_View _source_name;
         Lexer _lexer;
@@ -2765,6 +2780,12 @@ namespace vush {
     anton::Expected<Declaration_List, Parse_Error> parse_source(anton::String_View const source_name, anton::String_View const source_code) {
         Parser parser(source_code, source_name);
         anton::Expected<Declaration_List, Parse_Error> ast = parser.build_ast();
+        return ast;
+    }
+
+    anton::Expected<Declaration_List, Parse_Error> parse_builtin_functions(anton::String_View const source_name, anton::String_View const source_code) {
+        Parser parser(source_code, source_name);
+        anton::Expected<Declaration_List, Parse_Error> ast = parser.parse_builtin_functions();
         return ast;
     }
 } // namespace vush

@@ -48,11 +48,13 @@ target_link_libraries(vush PUBLIC anton_core)
 target_include_directories(vush PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/public" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/private")
 target_sources(vush 
     PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/private/ast_fwd.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/ast_traversal.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/ast_traversal.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/ast.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/ast.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/private/ast_fwd.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/private/builtins.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/private/builtins.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/codegen_glsl.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/codegen.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/const_expr_eval.cpp"
