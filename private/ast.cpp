@@ -3,6 +3,8 @@
 #include <anton/intrinsics.hpp>
 
 namespace vush {
+    using namespace anton::literals;
+
     bool is_opaque_type(Builtin_GLSL_Type const type) {
         return static_cast<i32>(type) >= static_cast<i32>(Builtin_GLSL_Type::glsl_sampler1D);
     }

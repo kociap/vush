@@ -9,6 +9,7 @@
 #include <anton/iterators/zip.hpp>
 #include <anton/string_stream.hpp>
 #include <ast_traversal.hpp>
+#include <builtins.hpp>
 #include <codegen.hpp>
 #include <const_expr_eval.hpp>
 #include <context.hpp>
@@ -331,182 +332,6 @@ namespace vush {
         return {anton::expected_value};
     }
 
-    [[nodiscard]] static bool is_builtin_function_name(anton::String_View const name) {
-        static constexpr anton::String_View builtin_function_names[] = {
-            "radians",
-            "degrees",
-            "sin",
-            "cos",
-            "tan",
-            "asin",
-            "acos",
-            "atan",
-            "sinh",
-            "cosh",
-            "tanh",
-            "asinh",
-            "acosh",
-            "atanh",
-            "pow",
-            "exp",
-            "log",
-            "exp2",
-            "log2",
-            "sqrt",
-            "inversesqrt",
-            "abs",
-            "sign",
-            "floor",
-            "trunc",
-            "round",
-            "roundEven",
-            "ceil",
-            "fract",
-            "mod",
-            "modf",
-            "min",
-            "max",
-            "clamp",
-            "mix",
-            "step",
-            "smoothstep",
-            "isnan",
-            "isinf",
-            "floatBitsToInt",
-            "floatBitsToUint",
-            "intBitstoFloat",
-            "uintBitsToFloat",
-            "fma",
-            "frexp",
-            "ldexp",
-            "length",
-            "distance",
-            "dot",
-            "cross",
-            "normalize",
-            "faceforward",
-            "reflect",
-            "refract",
-            "matrixCompMult",
-            "outerProduct",
-            "transpose",
-            "determinant",
-            "inverse",
-            "lessThan",
-            "lessThanEqual",
-            "greaterThan",
-            "greaterThanEqual",
-            "equal",
-            "notEqual",
-            "any",
-            "all",
-            "not",
-            "uaddCarry",
-            "usubBorrow",
-            "umulExtended",
-            "imulExtended",
-            "bitfieldExtract",
-            "bitfieldInsert",
-            "bitfieldReverse",
-            "bitCount",
-            "findLSB",
-            "findMSB",
-            "textureSize",
-            "textureQueryLod",
-            "textureQueryLevels",
-            "textureSamples",
-            "texture",
-            "textureProj",
-            "textureLod",
-            "textureOffset",
-            "texelFetch",
-            "texelFetchOffset",
-            "textureProjOffset",
-            "textureLodOffset",
-            "textureProjLod",
-            "textureProjLodOffset",
-            "textureGrad",
-            "textureGradOffset",
-            "textureProjGrad",
-            "textureProjGradOffset",
-            "textureGather",
-            "textureGatherOffset",
-            "texture1D",
-            "texture1DProj",
-            "texture1DLod",
-            "texture1DLod",
-            "texture1DProjLod",
-            "texture2D",
-            "texture2DProj",
-            "texture2DLod",
-            "texture2DProjLod",
-            "texture3D",
-            "texture3DProj",
-            "texture3DLod",
-            "texture3DProjLod",
-            "textureCube",
-            "textureCubeLod",
-            "shadow1D",
-            "shadow2D",
-            "shadow1DProj",
-            "shadow2dProj",
-            "shadow1DLod",
-            "shadow2DLod",
-            "shadow1DProjLod",
-            "shadow2DProjLod",
-            "atomicCounterIncrement",
-            "atomicCounterDecrement",
-            "atomicCounter",
-            "atomicCounterAdd",
-            "atomicCounterSubtract",
-            "atomicCounterMin",
-            "atomicCounterMax",
-            "atomicCounterAnd",
-            "atomicCounterOr",
-            "atomicCounterXor",
-            "atomicCounterExchange",
-            "atomicCounterCompSwap",
-            "atomicAdd",
-            "atomicMin",
-            "atomicMax",
-            "atomicAnd",
-            "atomicOr",
-            "atomicXor",
-            "atomicExchange",
-            "atomicCompSwap",
-            "imageSize",
-            "imageSamples",
-            "imageLoad",
-            "imageStore",
-            "imageAtomicAdd",
-            "imageAtomicMin",
-            "imageAtomicMax",
-            "imageAtomicAnd",
-            "imageAtomicOr",
-            "imageAtomicXor",
-            "imageAtomicExchange",
-            "imageAtomicCompSwap",
-            "dFdx",
-            "dFdy",
-            "dFdxFine",
-            "dFdyFine",
-            "dFdxCoarse",
-            "dFdyCoarse",
-            "fwidth",
-            "fwidthFine",
-            "fwidthCoarse",
-            "barrier",
-        };
-
-        constexpr i64 array_size = sizeof(builtin_function_names) / sizeof(anton::String_View);
-        for(i64 i = 0; i < array_size; ++i) {
-            if(builtin_function_names[i] == name) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     static anton::Expected<void, anton::String> process_expression(Context& ctx, Owning_Ptr<Expression>& expression) {
         switch(expression->node_type) {
             case AST_Node_Type::integer_literal: {
@@ -691,11 +516,6 @@ namespace vush {
 
                 // If the identifier is a builtin glsl type, it's a constructor call
                 if(anton::Optional<Builtin_GLSL_Type> res = enumify_builtin_glsl_type(node->identifier->value); res) {
-                    return {anton::expected_value};
-                }
-
-                // TODO: Temporarily check whether it's the name of a builtin function
-                if(is_builtin_function_name(node->identifier->value)) {
                     return {anton::expected_value};
                 }
 
@@ -1339,7 +1159,12 @@ namespace vush {
                     continue;
                 }
 
-                for(auto& overload: static_cast<Overloaded_Function_Declaration*>(symbol)->overloads) {
+                Overloaded_Function_Declaration& fn = static_cast<Overloaded_Function_Declaration&>(*symbol);
+                if(fn.builtin) {
+                    continue;
+                }
+
+                for(auto& overload: fn.overloads) {
                     Function_Declaration& fn_template = *overload;
                     anton::String stringified_signature = stringify_type(*fn_template.return_type) + fn_template.identifier->value;
                     anton::String instance_name = fn_template.identifier->value;
@@ -1438,60 +1263,6 @@ namespace vush {
         }
     }
 
-    static void populate_builtin_glsl_variables(Context& ctx, Declaration_List& storage) {
-        struct Builtin_Variable {
-            anton::String_View name;
-            Type* type;
-        };
-
-        Source_Info const src_info{u8"<GLSL Builtin>", 0, 0, 0};
-        Builtin_Variable builtin_variables[] = {
-            // Vertex Shader
-            {"gl_VertexID", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
-            {"gl_InstanceID", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
-            {"gl_VertexIndex", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
-            {"gl_InstanceIndex", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
-            {"gl_DrawID", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
-            {"gl_BaseVertex", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
-            {"gl_BaseInstance", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
-            {"gl_Position", new Builtin_Type(Builtin_GLSL_Type::glsl_vec4, src_info)},
-            {"gl_PointSize", new Builtin_Type(Builtin_GLSL_Type::glsl_float, src_info)},
-            {"gl_ClipDistance", new Array_Type(Owning_Ptr{new Builtin_Type(Builtin_GLSL_Type::glsl_float, src_info)}, nullptr, src_info)},
-            {"gl_CullDistance", new Array_Type(Owning_Ptr{new Builtin_Type(Builtin_GLSL_Type::glsl_float, src_info)}, nullptr, src_info)},
-            // TODO: Add tessellation shader variables and geometry shader variables
-            // Fragment Shader
-            {"gl_FragCoord", new Builtin_Type(Builtin_GLSL_Type::glsl_vec4, src_info)},
-            {"gl_FrontFacing", new Builtin_Type(Builtin_GLSL_Type::glsl_bool, src_info)},
-            // gl_ClipDistance, gl_CullDistance already declared above in the vertex shader section
-            {"gl_PointCoord", new Builtin_Type(Builtin_GLSL_Type::glsl_vec2, src_info)},
-            {"gl_PrimitiveID", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
-            {"gl_SampleID", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
-            {"gl_SamplePosition", new Builtin_Type(Builtin_GLSL_Type::glsl_vec2, src_info)},
-            {"gl_SampleMaskIn", new Array_Type(Owning_Ptr{new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)}, nullptr, src_info)},
-            {"gl_Layer", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
-            {"gl_ViewportIndex", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
-            {"gl_HelperInvocation", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
-            {"gl_FragDepth", new Builtin_Type(Builtin_GLSL_Type::glsl_float, src_info)},
-            {"gl_SampleMask", new Array_Type(Owning_Ptr{new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)}, nullptr, src_info)},
-            // Compute Shader
-            {"gl_NumWorkGroups", new Builtin_Type(Builtin_GLSL_Type::glsl_uvec3, src_info)},
-            {"gl_WorkgroupSize", new Builtin_Type(Builtin_GLSL_Type::glsl_uvec3, src_info)},
-            {"gl_WorkGroupID", new Builtin_Type(Builtin_GLSL_Type::glsl_uvec3, src_info)},
-            {"gl_LocalInvocationID", new Builtin_Type(Builtin_GLSL_Type::glsl_uvec3, src_info)},
-            {"gl_GlobalInvocationID", new Builtin_Type(Builtin_GLSL_Type::glsl_uvec3, src_info)},
-            {"gl_LocalInvocationIndex", new Builtin_Type(Builtin_GLSL_Type::glsl_uint, src_info)}};
-
-        // Populate storage and symbols
-        constexpr i64 variable_count = sizeof(builtin_variables) / sizeof(Builtin_Variable);
-        for(i64 i = 0; i < variable_count; ++i) {
-            Builtin_Variable const& var = builtin_variables[i];
-            Variable_Declaration* decl =
-                new Variable_Declaration(Owning_Ptr{var.type}, Owning_Ptr{new Identifier(anton::String(var.name), src_info)}, nullptr, src_info);
-            ctx.symbols[0].emplace(var.name, decl);
-            storage.emplace_back(decl);
-        }
-    }
-
     // partition_ast
     // Moves nodes based on their type into arrays.
     //
@@ -1583,10 +1354,6 @@ namespace vush {
     // Builds top-level symbol table.
     //
     [[nodiscard]] static anton::Expected<AST_Build_Result, anton::String> build_ast_from_sources(Context& ctx, anton::String const& path) {
-        // Create symbols for the builtin glsl variables
-        anton::Array<Owning_Ptr<Declaration>> builtin_variables;
-        populate_builtin_glsl_variables(ctx, builtin_variables);
-
         Declaration_List ast;
         // Parse the entry source
         {
@@ -1818,6 +1585,21 @@ namespace vush {
                                                                   {config.source_name, 0, 0, 0});
             ctx.symbols[0].emplace(define.name, decl);
             constant_defines.emplace_back(decl);
+        }
+
+        Builtin_Declarations builtins = get_builtin_declarations(ctx);
+        for(auto& fn: builtins.functions) {
+            anton::Expected<void, anton::String> result = check_and_add_symbol(ctx, fn->identifier->value, fn.get());
+            if(!result) {
+                return {anton::expected_error, ANTON_MOV(result.error())};
+            }
+        }
+
+        for(auto& var: builtins.variables) {
+            anton::Expected<void, anton::String> result = check_and_add_symbol(ctx, var->identifier->value, var.get());
+            if(!result) {
+                return {anton::expected_error, ANTON_MOV(result.error())};
+            }
         }
 
         anton::Expected<AST_Build_Result, anton::String> build_res = build_ast_from_sources(ctx, config.source_name);
