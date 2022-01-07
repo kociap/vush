@@ -1,3 +1,5 @@
+#pragma once
+
 #include <ast_fwd.hpp>
 #include <context.hpp>
 
