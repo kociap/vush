@@ -48,8 +48,7 @@ namespace vush {
         i64 const allocation_alignment = anton::math::max(alignment, default_block_alignment);
         i64 const header = roundup_to_alignment(sizeof(Block), allocation_alignment);
         i64 const allocation_size = anton::math::max(size + header, default_block_size);
-        // void* const memory = anton::allocate(allocation_size, allocation_alignment);
-        void* const memory = malloc(allocation_size);
+        void* const memory = anton::allocate(allocation_size, allocation_alignment);
         Block* const block = reinterpret_cast<Block*>(memory);
         block->next = nullptr;
         block->free = advance(memory, sizeof(Block));
@@ -82,8 +81,7 @@ namespace vush {
     void Arena_Allocator::reset() {
         for(Block* block = first; block != nullptr;) {
             Block* const next = block->next;
-            // anton::deallocate(block);
-            free(block);
+            anton::deallocate(block);
             block = next;
         }
 
