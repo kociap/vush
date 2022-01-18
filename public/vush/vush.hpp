@@ -5,6 +5,7 @@
 #include <anton/slice.hpp>
 #include <anton/string.hpp>
 #include <anton/string_view.hpp>
+#include <vush/allocator.hpp>
 #include <vush/types.hpp>
 
 namespace vush {
@@ -66,7 +67,7 @@ namespace vush {
     //
     // Parameters:
     //     context - the definition context of a source.
-    // definitions - output parameter for per-stage source definitions. 
+    // definitions - output parameter for per-stage source definitions.
     //               The slice is always presized to stage_type_count.
     //
     using source_definition_callback = anton::Expected<void, anton::String> (*)(Source_Definition_Context const& context,
@@ -127,7 +128,8 @@ namespace vush {
     //
     // Returns compiled glsl files or error message.
     //
-    anton::Expected<Build_Result, anton::String> compile_to_glsl(Configuration const& config, source_request_callback callback, void* user_data);
+    anton::Expected<Build_Result, anton::String> compile_to_glsl(Configuration const& config, Allocator& allocator, source_request_callback callback,
+                                                                 void* user_data);
 
     // compile_to_glsl
     // Compiles given vush shader to glsl shader.
@@ -136,5 +138,6 @@ namespace vush {
     //
     // Returns compiled glsl files or error message.
     //
-    anton::Expected<Build_Result, anton::String> compile_to_glsl(Configuration const& config, anton::Slice<anton::String const> const& import_directories);
+    anton::Expected<Build_Result, anton::String> compile_to_glsl(Configuration const& config, Allocator& allocator,
+                                                                 anton::Slice<anton::String const> const& import_directories);
 } // namespace vush

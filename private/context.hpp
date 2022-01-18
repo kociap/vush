@@ -27,6 +27,7 @@ namespace vush {
         source_request_callback source_request_cb;
         void* source_request_user_data;
         Diagnostics_Options diagnostics;
+        Allocator* allocator;
     };
 
     // find_symbol

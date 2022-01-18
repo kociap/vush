@@ -14,6 +14,7 @@
 #include <const_expr_eval.hpp>
 #include <context.hpp>
 #include <diagnostics.hpp>
+#include <memory.hpp>
 #include <parser.hpp>
 #include <sources.hpp>
 
@@ -717,7 +718,7 @@ namespace vush {
                         }
 
                         // We have to keep the if_statement object around until we no longer need the branch statements
-                        Owning_Ptr owner{node.release()};
+                        Owning_Ptr owner{ANTON_MOV(node)};
                         // Remove the if_statement node from ast and insert the statements corresponding to the true or false branch
                         statements.erase(statements.begin() + i, statements.begin() + i + 1);
                         Statement_List& insert_statements = (eval_res.value().as_boolean() ? owner->true_statements : owner->false_statements);
@@ -1013,7 +1014,7 @@ namespace vush {
         for(i64 i = 0; i < ast.size();) {
             bool const should_advance = ast[i]->node_type != AST_Node_Type::import_declaration && ast[i]->node_type != AST_Node_Type::declaration_if;
             if(ast[i]->node_type == AST_Node_Type::import_declaration) {
-                Owning_Ptr<Import_Declaration> node{static_cast<Import_Declaration*>(ast[i].release())};
+                Owning_Ptr<Import_Declaration> node{downcast, ANTON_MOV(ast[i])};
                 ast.erase(ast.begin() + i, ast.begin() + i + 1);
 
                 anton::Expected<Source_Request_Result, anton::String> source_request_res =
@@ -1027,7 +1028,7 @@ namespace vush {
                 auto iter = ctx.source_registry.find(request_res.source_name);
                 if(iter == ctx.source_registry.end()) {
                     Source_Data source{ANTON_MOV(request_res.source_name), ANTON_MOV(request_res.data)};
-                    anton::Expected<Declaration_List, Parse_Error> parse_result = parse_source(source.name, source.data);
+                    anton::Expected<Declaration_List, Parse_Error> parse_result = parse_source(ctx.allocator, source.name, source.data);
                     if(!parse_result) {
                         Parse_Error const& error = parse_result.error();
                         anton::String error_msg = build_error_message(source.name, error.line, error.column, error.message);
@@ -1043,7 +1044,7 @@ namespace vush {
                     ast.insert(i, begin, end);
                 }
             } else if(ast[i]->node_type == AST_Node_Type::declaration_if) {
-                Owning_Ptr<Declaration_If> node{static_cast<Declaration_If*>(ast[i].release())};
+                Owning_Ptr<Declaration_If> node{downcast, ANTON_MOV(ast[i])};
                 ast.erase(ast.begin() + i, ast.begin() + i + 1);
 
                 anton::Expected<Expr_Value, anton::String> result = evaluate_const_expr(ctx, *node->condition);
@@ -1090,9 +1091,11 @@ namespace vush {
     struct Identifier_Expression_Replacer: public Recursive_AST_Matcher, public AST_Action {
     private:
         anton::Slice<Replacement_Rule const> replacements;
+        Allocator* allocator;
 
     public:
-        Identifier_Expression_Replacer(anton::Slice<Replacement_Rule const> const replacements): replacements(replacements) {}
+        Identifier_Expression_Replacer(anton::Slice<Replacement_Rule const> const replacements, Allocator* const allocator)
+            : replacements(replacements), allocator(allocator) {}
 
         [[nodiscard]] virtual Match_Result match(Identifier_Expression const&) override {
             return {true, true};
@@ -1103,7 +1106,7 @@ namespace vush {
             auto iterator =
                 anton::find_if(replacements.begin(), replacements.end(), [identifier](Replacement_Rule const& rule) { return rule.identifier == identifier; });
             if(iterator != replacements.end()) {
-                return iterator->replacement->clone();
+                return iterator->replacement->clone(allocator);
             } else {
                 return n;
             }
@@ -1133,19 +1136,19 @@ namespace vush {
         anton::Flat_Hash_Set<Function_Declaration*> noninstantiable_functions;
         for(Pass_Context& pass: passes) {
             if(pass.vertex_context) {
-                Owning_Ptr<AST_Node> declaration{pass.vertex_context.declaration};
+                Owning_Ptr<AST_Node> declaration{pass.vertex_context.declaration, nullptr};
                 traverse_node(fn_call_aggregator, fn_call_aggregator, declaration);
                 [[maybe_unused]] void* p = declaration.release();
             }
 
             if(pass.fragment_context) {
-                Owning_Ptr<AST_Node> declaration{pass.fragment_context.declaration};
+                Owning_Ptr<AST_Node> declaration{pass.fragment_context.declaration, nullptr};
                 traverse_node(fn_call_aggregator, fn_call_aggregator, declaration);
                 [[maybe_unused]] void* p = declaration.release();
             }
 
             if(pass.compute_context) {
-                Owning_Ptr<AST_Node> declaration{pass.compute_context.declaration};
+                Owning_Ptr<AST_Node> declaration{pass.compute_context.declaration, nullptr};
                 traverse_node(fn_call_aggregator, fn_call_aggregator, declaration);
                 [[maybe_unused]] void* p = declaration.release();
             }
@@ -1219,7 +1222,7 @@ namespace vush {
 
                     instantiated_functions.emplace(signature_hash);
 
-                    Owning_Ptr<Function_Declaration> instance = fn_template.clone();
+                    Owning_Ptr<Function_Declaration> instance = fn_template.clone(ctx.allocator);
                     // Rename the instance
                     instance->identifier->value = instance_name;
                     // Build replacements table
@@ -1234,7 +1237,7 @@ namespace vush {
                         }
                     }
 
-                    Identifier_Expression_Replacer identifier_replacer(replacements);
+                    Identifier_Expression_Replacer identifier_replacer(replacements, ctx.allocator);
                     traverse_node(identifier_replacer, identifier_replacer, instance);
 
                     // Remove the unsized array parameters and arguments from the instance and the function call
@@ -1321,7 +1324,7 @@ namespace vush {
         }
     }
 
-    static void gather_overloads(anton::Array<Owning_Ptr<Overloaded_Function_Declaration>>& overloads,
+    static void gather_overloads(Context& ctx, anton::Array<Owning_Ptr<Overloaded_Function_Declaration>>& overloads,
                                  anton::Slice<Owning_Ptr<Function_Declaration>> const functions) {
         anton::Flat_Hash_Map<anton::String_View, Owning_Ptr<Overloaded_Function_Declaration>> overloads_dictionary;
         for(auto& fn: functions) {
@@ -1329,7 +1332,8 @@ namespace vush {
             if(iter == overloads_dictionary.end()) {
                 // We use the source information of the first overload to be able to provide diagnostics without
                 // having to complicate the code with special cases for handling Overloaded_Function_Declaration.
-                Owning_Ptr<Overloaded_Function_Declaration> overloaded_fn{new Overloaded_Function_Declaration(fn->identifier->clone(), {}, fn->source_info)};
+                Owning_Ptr<Overloaded_Function_Declaration> overloaded_fn =
+                    allocate_owning<Overloaded_Function_Declaration>(ctx.allocator, fn->identifier->clone(ctx.allocator), fn->source_info);
                 overloaded_fn->overloads.emplace_back(ANTON_MOV(fn));
                 overloads_dictionary.emplace(overloaded_fn->identifier->value, ANTON_MOV(overloaded_fn));
             } else {
@@ -1364,7 +1368,7 @@ namespace vush {
 
             Source_Request_Result& request_res = source_request_res.value();
             Source_Data source{ANTON_MOV(request_res.source_name), ANTON_MOV(request_res.data)};
-            anton::Expected<Declaration_List, Parse_Error> parse_result = parse_source(source.name, source.data);
+            anton::Expected<Declaration_List, Parse_Error> parse_result = parse_source(ctx.allocator, source.name, source.data);
             if(!parse_result) {
                 Parse_Error const& error = parse_result.error();
                 anton::String error_msg = build_error_message(source.name, error.line, error.column, error.message);
@@ -1397,7 +1401,7 @@ namespace vush {
         anton::Array<Owning_Ptr<Function_Declaration>> functions;
         partition_ast(ast, result.stages, functions, result.structs_and_constants, settings);
         gather_settings(result.settings, settings);
-        gather_overloads(result.functions, functions);
+        gather_overloads(ctx, result.functions, functions);
         // Populate the symbol table and perform basic validation in the meantime.
         for(auto& ast_node: result.structs_and_constants) {
             switch(ast_node->node_type) {
@@ -1566,25 +1570,27 @@ namespace vush {
         return {anton::expected_value};
     }
 
-    anton::Expected<Build_Result, anton::String> compile_to_glsl(Configuration const& config, source_request_callback callback, void* user_data) {
+    anton::Expected<Build_Result, anton::String> compile_to_glsl(Configuration const& config, Allocator& allocator, source_request_callback callback,
+                                                                 void* user_data) {
         Context ctx = {};
         ctx.source_request_cb = callback;
         ctx.source_request_user_data = user_data;
         ctx.source_definition_cb = config.source_definition_cb;
         ctx.source_definition_user_data = config.source_definition_user_data;
         ctx.diagnostics = config.diagnostics;
+        ctx.allocator = &allocator;
         // Add global scope
         ctx.symbols.emplace_back();
         // Create symbols for the constant defines passed via config
         anton::Array<Owning_Ptr<Declaration>> constant_defines;
         for(Constant_Define const& define: config.defines) {
-            Constant_Declaration* decl = new Constant_Declaration(Owning_Ptr{new Builtin_Type(Builtin_GLSL_Type::glsl_int, {config.source_name, 0, 0, 0})},
-                                                                  Owning_Ptr{new Identifier(anton::String(define.name), {config.source_name, 0, 0, 0})},
-                                                                  Owning_Ptr{new Integer_Literal(anton::to_string(define.value), Integer_Literal_Type::i32,
-                                                                                                 Integer_Literal_Base::dec, {config.source_name, 0, 0, 0})},
-                                                                  {config.source_name, 0, 0, 0});
-            ctx.symbols[0].emplace(define.name, decl);
-            constant_defines.emplace_back(decl);
+            Source_Info src = {config.source_name, 0, 0, 0};
+            Owning_Ptr decl = allocate_owning<Constant_Declaration>(
+                &allocator, allocate_owning<Builtin_Type>(&allocator, Builtin_GLSL_Type::glsl_int, src),
+                allocate_owning<Identifier>(&allocator, anton::String(define.name), src),
+                allocate_owning<Integer_Literal>(&allocator, anton::to_string(define.value), Integer_Literal_Type::i32, Integer_Literal_Base::dec, src), src);
+            ctx.symbols[0].emplace(define.name, decl.get());
+            constant_defines.push_back(ANTON_MOV(decl));
         }
 
         Builtin_Declarations builtins = get_builtin_declarations(ctx);
@@ -1707,7 +1713,8 @@ namespace vush {
         return {anton::expected_value, Source_Request_Result{ANTON_MOV(res.value()), ANTON_MOV(file_contents)}};
     }
 
-    anton::Expected<Build_Result, anton::String> compile_to_glsl(Configuration const& config, anton::Slice<anton::String const> const& import_directories) {
-        return compile_to_glsl(config, file_read_callback, (void*)&import_directories);
+    anton::Expected<Build_Result, anton::String> compile_to_glsl(Configuration const& config, Allocator& allocator,
+                                                                 anton::Slice<anton::String const> const& import_directories) {
+        return compile_to_glsl(config, allocator, file_read_callback, (void*)&import_directories);
     }
 } // namespace vush

@@ -22,7 +22,8 @@ namespace vush {
     // source_code - The source code to be parsed. Must consist of ASCII only. Must be address-stable and
     //               persist for at least as long as the AST.
     //
-    anton::Expected<Declaration_List, Parse_Error> parse_source(anton::String_View source_name, anton::String_View source_code);
+    anton::Expected<Declaration_List, Parse_Error> parse_source(Allocator* allocator, anton::String_View source_name, anton::String_View source_code);
 
-    anton::Expected<Declaration_List, Parse_Error> parse_builtin_functions(anton::String_View source_name, anton::String_View source_code);
+    anton::Expected<Declaration_List, Parse_Error> parse_builtin_functions(Allocator* allocator, anton::String_View source_name,
+                                                                           anton::String_View source_code);
 } // namespace vush

@@ -48,6 +48,7 @@ target_link_libraries(vush PUBLIC anton_core)
 target_include_directories(vush PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/public" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/private")
 target_sources(vush 
     PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/private/allocator.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/ast_fwd.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/ast_traversal.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/ast_traversal.hpp"
@@ -63,12 +64,14 @@ target_sources(vush
     "${CMAKE_CURRENT_SOURCE_DIR}/private/context.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/diagnostics.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/diagnostics.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/private/memory.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/sources.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/sources.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/owning_ptr.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/parser.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/parser.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/vush.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/public/vush/allocator.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/public/vush/types.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/public/vush/vush.hpp"
 )

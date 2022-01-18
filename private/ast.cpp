@@ -1,6 +1,7 @@
 #include <ast.hpp>
 
 #include <anton/intrinsics.hpp>
+#include <memory.hpp>
 
 namespace vush {
     using namespace anton::literals;
@@ -870,73 +871,75 @@ namespace vush {
         return parameter.source && parameter.source->value == u8"in";
     }
 
+#define ALLOC(type, ...) allocate<type>(allocator, __VA_ARGS__)
+
     template<typename T>
-    anton::Array<Owning_Ptr<T>> clone(anton::Array<Owning_Ptr<T>> const& array) {
+    anton::Array<Owning_Ptr<T>> clone(anton::Array<Owning_Ptr<T>> const& array, Allocator* const allocator) {
         anton::Array<Owning_Ptr<T>> copy{anton::reserve, array.size()};
         for(Owning_Ptr<T> const& object: array) {
-            copy.emplace_back(object->clone());
+            copy.emplace_back(object->clone(allocator));
         }
         return copy;
     }
 
     AST_Node::AST_Node(Source_Info const& source_info, AST_Node_Type node_type): source_info(source_info), node_type(node_type) {}
 
-    Owning_Ptr<AST_Node> AST_Node::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<AST_Node> AST_Node::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
     Identifier::Identifier(anton::String value, Source_Info const& source_info): AST_Node(source_info, AST_Node_Type::identifier), value(ANTON_MOV(value)) {}
 
-    Owning_Ptr<Identifier> Identifier::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Identifier> Identifier::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Identifier* Identifier::_clone() const {
-        return new Identifier(value, source_info);
+    Identifier* Identifier::_clone(Allocator* const allocator) const {
+        return ALLOC(Identifier, value, source_info);
     }
 
-    Owning_Ptr<Type> Type::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Type> Type::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
     Builtin_Type::Builtin_Type(Builtin_GLSL_Type type, Source_Info const& source_info): Type(source_info, AST_Node_Type::builtin_type), type(type) {}
 
-    Owning_Ptr<Builtin_Type> Builtin_Type::clone() const {
-        return Owning_Ptr(_clone());
+    Owning_Ptr<Builtin_Type> Builtin_Type::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Builtin_Type* Builtin_Type::_clone() const {
-        return new Builtin_Type(type, source_info);
+    Builtin_Type* Builtin_Type::_clone(Allocator* const allocator) const {
+        return ALLOC(Builtin_Type, type, source_info);
     }
 
     User_Defined_Type::User_Defined_Type(anton::String identifier, Source_Info const& source_info)
         : Type(source_info, AST_Node_Type::user_defined_type), identifier(ANTON_MOV(identifier)) {}
 
-    Owning_Ptr<User_Defined_Type> User_Defined_Type::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<User_Defined_Type> User_Defined_Type::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    User_Defined_Type* User_Defined_Type::_clone() const {
-        return new User_Defined_Type(identifier, source_info);
+    User_Defined_Type* User_Defined_Type::_clone(Allocator* const allocator) const {
+        return ALLOC(User_Defined_Type, identifier, source_info);
     }
 
     Array_Type::Array_Type(Owning_Ptr<Type> base, Owning_Ptr<Integer_Literal> size, Source_Info const& source_info)
         : Type(source_info, AST_Node_Type::array_type), base(ANTON_MOV(base)), size(ANTON_MOV(size)) {}
 
-    Owning_Ptr<Array_Type> Array_Type::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Array_Type> Array_Type::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Array_Type* Array_Type::_clone() const {
+    Array_Type* Array_Type::_clone(Allocator* const allocator) const {
         if(size) {
-            return new Array_Type(base->clone(), size->clone(), source_info);
+            return ALLOC(Array_Type, base->clone(allocator), size->clone(allocator), source_info);
         } else {
-            return new Array_Type(base->clone(), nullptr, source_info);
+            return ALLOC(Array_Type, base->clone(allocator), nullptr, source_info);
         }
     }
 
-    Owning_Ptr<Declaration> Declaration::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Declaration> Declaration::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
     Declaration_If::Declaration_If(Owning_Ptr<Expression> condition, Declaration_List true_declarations, Declaration_List false_declarations,
@@ -944,23 +947,24 @@ namespace vush {
         : Declaration(source_info, AST_Node_Type::declaration_if), condition(ANTON_MOV(condition)), true_declarations(ANTON_MOV(true_declarations)),
           false_declarations(ANTON_MOV(false_declarations)) {}
 
-    Owning_Ptr<Declaration_If> Declaration_If::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Declaration_If> Declaration_If::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Declaration_If* Declaration_If::_clone() const {
-        return new Declaration_If(condition->clone(), vush::clone(true_declarations), vush::clone(false_declarations), source_info);
+    Declaration_If* Declaration_If::_clone(Allocator* const allocator) const {
+        return ALLOC(Declaration_If, condition->clone(allocator), vush::clone(true_declarations, allocator), vush::clone(false_declarations, allocator),
+                     source_info);
     }
 
     Import_Declaration::Import_Declaration(Owning_Ptr<String_Literal> path, Source_Info const& source_info)
         : Declaration(source_info, AST_Node_Type::import_declaration), path(ANTON_MOV(path)) {}
 
-    Owning_Ptr<Import_Declaration> Import_Declaration::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Import_Declaration> Import_Declaration::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Import_Declaration* Import_Declaration::_clone() const {
-        return new Import_Declaration(path->clone(), source_info);
+    Import_Declaration* Import_Declaration::_clone(Allocator* const allocator) const {
+        return ALLOC(Import_Declaration, path->clone(allocator), source_info);
     }
 
     Variable_Declaration::Variable_Declaration(Owning_Ptr<Type> type, Owning_Ptr<Identifier> identifier, Owning_Ptr<Expression> initializer,
@@ -968,15 +972,15 @@ namespace vush {
         : Declaration(source_info, AST_Node_Type::variable_declaration), type(ANTON_MOV(type)), identifier(ANTON_MOV(identifier)),
           initializer(ANTON_MOV(initializer)) {}
 
-    Owning_Ptr<Variable_Declaration> Variable_Declaration::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Variable_Declaration> Variable_Declaration::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Variable_Declaration* Variable_Declaration::_clone() const {
+    Variable_Declaration* Variable_Declaration::_clone(Allocator* const allocator) const {
         if(initializer) {
-            return new Variable_Declaration(type->clone(), identifier->clone(), initializer->clone(), source_info);
+            return ALLOC(Variable_Declaration, type->clone(allocator), identifier->clone(allocator), initializer->clone(allocator), source_info);
         } else {
-            return new Variable_Declaration(type->clone(), identifier->clone(), nullptr, source_info);
+            return ALLOC(Variable_Declaration, type->clone(allocator), identifier->clone(allocator), nullptr, source_info);
         }
     }
 
@@ -985,15 +989,15 @@ namespace vush {
         : Declaration(source_info, AST_Node_Type::constant_declaration), type(ANTON_MOV(type)), identifier(ANTON_MOV(identifier)),
           initializer(ANTON_MOV(initializer)) {}
 
-    Owning_Ptr<Constant_Declaration> Constant_Declaration::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Constant_Declaration> Constant_Declaration::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Constant_Declaration* Constant_Declaration::_clone() const {
+    Constant_Declaration* Constant_Declaration::_clone(Allocator* const allocator) const {
         if(initializer) {
-            return new Constant_Declaration(type->clone(), identifier->clone(), initializer->clone(), source_info);
+            return ALLOC(Constant_Declaration, type->clone(allocator), identifier->clone(allocator), initializer->clone(allocator), source_info);
         } else {
-            return new Constant_Declaration(type->clone(), identifier->clone(), nullptr, source_info);
+            return ALLOC(Constant_Declaration, type->clone(allocator), identifier->clone(allocator), nullptr, source_info);
         }
     }
 
@@ -1002,23 +1006,23 @@ namespace vush {
         : AST_Node(source_info, AST_Node_Type::struct_member), type(ANTON_MOV(type)), identifier(ANTON_MOV(identifier)), initializer(ANTON_MOV(initializer)),
           interpolation(interpolation), invariant(invariant) {}
 
-    Owning_Ptr<Struct_Member> Struct_Member::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Struct_Member> Struct_Member::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Struct_Member* Struct_Member::_clone() const {
-        return new Struct_Member(type->clone(), identifier->clone(), initializer->clone(), interpolation, invariant, source_info);
+    Struct_Member* Struct_Member::_clone(Allocator* const allocator) const {
+        return ALLOC(Struct_Member, type->clone(allocator), identifier->clone(allocator), initializer->clone(allocator), interpolation, invariant, source_info);
     }
 
     Struct_Declaration::Struct_Declaration(Owning_Ptr<Identifier> identifier, anton::Array<Owning_Ptr<Struct_Member>> members, Source_Info const& source_info)
         : Declaration(source_info, AST_Node_Type::struct_declaration), members(ANTON_MOV(members)), identifier(ANTON_MOV(identifier)) {}
 
-    Owning_Ptr<Struct_Declaration> Struct_Declaration::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Struct_Declaration> Struct_Declaration::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Struct_Declaration* Struct_Declaration::_clone() const {
-        return new Struct_Declaration(identifier->clone(), vush::clone(members), source_info);
+    Struct_Declaration* Struct_Declaration::_clone(Allocator* const allocator) const {
+        return ALLOC(Struct_Declaration, identifier->clone(allocator), vush::clone(members, allocator), source_info);
     }
 
     Settings_Declaration::Settings_Declaration(Owning_Ptr<Identifier> pass_name, Source_Info const& source_info)
@@ -1027,32 +1031,32 @@ namespace vush {
     Settings_Declaration::Settings_Declaration(Owning_Ptr<Identifier> pass_name, anton::Array<Setting_Key_Value> settings, Source_Info const& source_info)
         : Declaration(source_info, AST_Node_Type::settings_declaration), pass_name(ANTON_MOV(pass_name)), settings(ANTON_MOV(settings)) {}
 
-    Owning_Ptr<Settings_Declaration> Settings_Declaration::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Settings_Declaration> Settings_Declaration::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Settings_Declaration* Settings_Declaration::_clone() const {
-        return new Settings_Declaration(pass_name->clone(), settings, source_info);
+    Settings_Declaration* Settings_Declaration::_clone(Allocator* const allocator) const {
+        return ALLOC(Settings_Declaration, pass_name->clone(allocator), settings, source_info);
     }
 
-    Owning_Ptr<Attribute> Attribute::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Attribute> Attribute::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
     Workgroup_Attribute::Workgroup_Attribute(Owning_Ptr<Integer_Literal> x, Owning_Ptr<Integer_Literal> y, Owning_Ptr<Integer_Literal> z,
                                              Source_Info const& source_info)
         : Attribute(source_info, AST_Node_Type::workgroup_attribute), x(ANTON_MOV(x)), y(ANTON_MOV(y)), z(ANTON_MOV(z)) {}
 
-    Owning_Ptr<Workgroup_Attribute> Workgroup_Attribute::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Workgroup_Attribute> Workgroup_Attribute::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Workgroup_Attribute* Workgroup_Attribute::_clone() const {
-        return new Workgroup_Attribute(x->clone(), y->clone(), z->clone(), source_info);
+    Workgroup_Attribute* Workgroup_Attribute::_clone(Allocator* const allocator) const {
+        return ALLOC(Workgroup_Attribute, x->clone(allocator), y->clone(allocator), z->clone(allocator), source_info);
     }
 
-    Owning_Ptr<Function_Parameter_Node> Function_Parameter_Node::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Function_Parameter_Node> Function_Parameter_Node::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
     Function_Param_If::Function_Param_If(Owning_Ptr<Expression> condition, Owning_Ptr<Function_Parameter_Node> true_param,
@@ -1060,31 +1064,31 @@ namespace vush {
         : Function_Parameter_Node(source_info, AST_Node_Type::function_param_if), condition(ANTON_MOV(condition)), true_param(ANTON_MOV(true_param)),
           false_param(ANTON_MOV(false_param)) {}
 
-    Owning_Ptr<Function_Param_If> Function_Param_If::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Function_Param_If> Function_Param_If::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Function_Param_If* Function_Param_If::_clone() const {
+    Function_Param_If* Function_Param_If::_clone(Allocator* const allocator) const {
         if(false_param) {
-            return new Function_Param_If(condition->clone(), true_param->clone(), false_param->clone(), source_info);
+            return ALLOC(Function_Param_If, condition->clone(allocator), true_param->clone(allocator), false_param->clone(allocator), source_info);
         } else {
-            return new Function_Param_If(condition->clone(), true_param->clone(), nullptr, source_info);
+            return ALLOC(Function_Param_If, condition->clone(allocator), true_param->clone(allocator), nullptr, source_info);
         }
     }
 
-    Owning_Ptr<Layout_Qualifier> Layout_Qualifier::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Layout_Qualifier> Layout_Qualifier::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
     Image_Layout_Qualifier::Image_Layout_Qualifier(Image_Layout_Type type, Source_Info const& source_info)
         : Layout_Qualifier(source_info, AST_Node_Type::image_layout_qualifier), type(type) {}
 
-    Owning_Ptr<Image_Layout_Qualifier> Image_Layout_Qualifier::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Image_Layout_Qualifier> Image_Layout_Qualifier::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Image_Layout_Qualifier* Image_Layout_Qualifier::_clone() const {
-        return new Image_Layout_Qualifier(type, source_info);
+    Image_Layout_Qualifier* Image_Layout_Qualifier::_clone(Allocator* const allocator) const {
+        return ALLOC(Image_Layout_Qualifier, type, source_info);
     }
 
     Function_Parameter::Function_Parameter(Owning_Ptr<Identifier> identifier, Owning_Ptr<Type> type, Owning_Ptr<Identifier> source,
@@ -1092,58 +1096,61 @@ namespace vush {
         : Function_Parameter_Node(source_info, AST_Node_Type::function_parameter), type(ANTON_MOV(type)), identifier(ANTON_MOV(identifier)),
           source(ANTON_MOV(source)), image_layout(ANTON_MOV(image_layout)) {}
 
-    Owning_Ptr<Function_Parameter> Function_Parameter::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Function_Parameter> Function_Parameter::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Function_Parameter* Function_Parameter::_clone() const {
-        Owning_Ptr<Image_Layout_Qualifier> _image_layout = image_layout ? image_layout->clone() : nullptr;
-        Owning_Ptr<Identifier> _source = source ? source->clone() : nullptr;
-        return new Function_Parameter(identifier->clone(), type->clone(), ANTON_MOV(_source), ANTON_MOV(_image_layout), source_info);
+    Function_Parameter* Function_Parameter::_clone(Allocator* const allocator) const {
+        Owning_Ptr<Image_Layout_Qualifier> _image_layout = image_layout ? image_layout->clone(allocator) : nullptr;
+        Owning_Ptr<Identifier> _source = source ? source->clone(allocator) : nullptr;
+        return ALLOC(Function_Parameter, identifier->clone(allocator), type->clone(allocator), ANTON_MOV(_source), ANTON_MOV(_image_layout), source_info);
     }
 
     Function_Declaration::Function_Declaration(Attribute_List attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> identifier,
                                                Parameter_List parameters, Statement_List body, Source_Info const& source_info)
-        : Declaration(source_info, AST_Node_Type::function_declaration), parameters(ANTON_MOV(parameters)), attributes(ANTON_MOV(attributes)),
-          identifier(ANTON_MOV(identifier)), return_type(ANTON_MOV(return_type)), body(ANTON_MOV(body)) {}
+        : Declaration(source_info, AST_Node_Type::function_declaration), attributes(ANTON_MOV(attributes)), parameters(ANTON_MOV(parameters)),
+          body(ANTON_MOV(body)), identifier(ANTON_MOV(identifier)), return_type(ANTON_MOV(return_type)) {}
 
-    Owning_Ptr<Function_Declaration> Function_Declaration::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Function_Declaration> Function_Declaration::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Function_Declaration* Function_Declaration::_clone() const {
-        return new Function_Declaration(vush::clone(attributes), return_type->clone(), identifier->clone(), vush::clone(parameters), vush::clone(body),
-                                        source_info);
+    Function_Declaration* Function_Declaration::_clone(Allocator* const allocator) const {
+        return ALLOC(Function_Declaration, vush::clone(attributes, allocator), return_type->clone(allocator), identifier->clone(allocator),
+                     vush::clone(parameters, allocator), vush::clone(body, allocator), source_info);
     }
+
+    Overloaded_Function_Declaration::Overloaded_Function_Declaration(Owning_Ptr<Identifier> identifier, Source_Info const& source_info)
+        : Declaration(source_info, AST_Node_Type::overloaded_function_declaration), identifier(ANTON_MOV(identifier)) {}
 
     Overloaded_Function_Declaration::Overloaded_Function_Declaration(Owning_Ptr<Identifier> identifier,
                                                                      anton::Array<Owning_Ptr<Function_Declaration>> overloads, Source_Info const& source_info)
         : Declaration(source_info, AST_Node_Type::overloaded_function_declaration), identifier(ANTON_MOV(identifier)), overloads(ANTON_MOV(overloads)) {}
 
-    Owning_Ptr<Overloaded_Function_Declaration> Overloaded_Function_Declaration::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Overloaded_Function_Declaration> Overloaded_Function_Declaration::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Overloaded_Function_Declaration* Overloaded_Function_Declaration::_clone() const {
-        return new Overloaded_Function_Declaration(identifier->clone(), vush::clone(overloads), source_info);
+    Overloaded_Function_Declaration* Overloaded_Function_Declaration::_clone(Allocator* const allocator) const {
+        return ALLOC(Overloaded_Function_Declaration, identifier->clone(allocator), vush::clone(overloads, allocator), source_info);
     }
 
     Pass_Stage_Declaration::Pass_Stage_Declaration(Attribute_List attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> pass_name,
                                                    Stage_Type stage_type, Parameter_List parameters, Statement_List body, Source_Info const& source_info)
-        : Declaration(source_info, AST_Node_Type::pass_stage_declaration), parameters(ANTON_MOV(parameters)), attributes(ANTON_MOV(attributes)),
+        : Declaration(source_info, AST_Node_Type::pass_stage_declaration), attributes(ANTON_MOV(attributes)), parameters(ANTON_MOV(parameters)),
           body(ANTON_MOV(body)), pass_name(ANTON_MOV(pass_name)), return_type(ANTON_MOV(return_type)), stage_type(ANTON_MOV(stage_type)) {}
 
-    Owning_Ptr<Pass_Stage_Declaration> Pass_Stage_Declaration::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Pass_Stage_Declaration> Pass_Stage_Declaration::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Pass_Stage_Declaration* Pass_Stage_Declaration::_clone() const {
-        return new Pass_Stage_Declaration(vush::clone(attributes), return_type->clone(), pass_name->clone(), stage_type, vush::clone(parameters),
-                                          vush::clone(body), source_info);
+    Pass_Stage_Declaration* Pass_Stage_Declaration::_clone(Allocator* const allocator) const {
+        return ALLOC(Pass_Stage_Declaration, vush::clone(attributes, allocator), return_type->clone(allocator), pass_name->clone(allocator), stage_type,
+                     vush::clone(parameters, allocator), vush::clone(body, allocator), source_info);
     }
 
-    Owning_Ptr<Expression> Expression::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Expression> Expression::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
     Expression_If::Expression_If(Owning_Ptr<Expression> condition, Owning_Ptr<Expression> true_expression, Owning_Ptr<Expression> false_expression,
@@ -1151,46 +1158,46 @@ namespace vush {
         : Expression(source_info, AST_Node_Type::expression_if), condition(ANTON_MOV(condition)), true_expression(ANTON_MOV(true_expression)),
           false_expression(ANTON_MOV(false_expression)) {}
 
-    Owning_Ptr<Expression_If> Expression_If::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Expression_If> Expression_If::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Expression_If* Expression_If::_clone() const {
-        return new Expression_If(condition->clone(), true_expression->clone(), false_expression->clone(), source_info);
+    Expression_If* Expression_If::_clone(Allocator* const allocator) const {
+        return ALLOC(Expression_If, condition->clone(allocator), true_expression->clone(allocator), false_expression->clone(allocator), source_info);
     }
 
     Identifier_Expression::Identifier_Expression(anton::String value, Source_Info const& source_info)
         : Expression(source_info, AST_Node_Type::identifier_expression), value(ANTON_MOV(value)) {}
 
-    Owning_Ptr<Identifier_Expression> Identifier_Expression::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Identifier_Expression> Identifier_Expression::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Identifier_Expression* Identifier_Expression::_clone() const {
-        return new Identifier_Expression(value, source_info);
+    Identifier_Expression* Identifier_Expression::_clone(Allocator* const allocator) const {
+        return ALLOC(Identifier_Expression, value, source_info);
     }
 
     Assignment_Expression::Assignment_Expression(Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info)
         : Expression(source_info, AST_Node_Type::assignment_expression), lhs(ANTON_MOV(lhs)), rhs(ANTON_MOV(rhs)) {}
 
-    Owning_Ptr<Assignment_Expression> Assignment_Expression::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Assignment_Expression> Assignment_Expression::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Assignment_Expression* Assignment_Expression::_clone() const {
-        return new Assignment_Expression(lhs->clone(), rhs->clone(), source_info);
+    Assignment_Expression* Assignment_Expression::_clone(Allocator* const allocator) const {
+        return ALLOC(Assignment_Expression, lhs->clone(allocator), rhs->clone(allocator), source_info);
     }
 
     Arithmetic_Assignment_Expression::Arithmetic_Assignment_Expression(Arithmetic_Assignment_Type type, Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs,
                                                                        Source_Info const& source_info)
         : Expression(source_info, AST_Node_Type::arithmetic_assignment_expression), lhs(ANTON_MOV(lhs)), rhs(ANTON_MOV(rhs)), type(ANTON_MOV(type)) {}
 
-    Owning_Ptr<Arithmetic_Assignment_Expression> Arithmetic_Assignment_Expression::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Arithmetic_Assignment_Expression> Arithmetic_Assignment_Expression::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Arithmetic_Assignment_Expression* Arithmetic_Assignment_Expression::_clone() const {
-        return new Arithmetic_Assignment_Expression(type, lhs->clone(), rhs->clone(), source_info);
+    Arithmetic_Assignment_Expression* Arithmetic_Assignment_Expression::_clone(Allocator* const allocator) const {
+        return ALLOC(Arithmetic_Assignment_Expression, type, lhs->clone(allocator), rhs->clone(allocator), source_info);
     }
 
     Elvis_Expression::Elvis_Expression(Owning_Ptr<Expression> condition, Owning_Ptr<Expression> true_expression, Owning_Ptr<Expression> false_expression,
@@ -1198,123 +1205,123 @@ namespace vush {
         : Expression(source_info, AST_Node_Type::elvis_expression), condition(ANTON_MOV(condition)), true_expression(ANTON_MOV(true_expression)),
           false_expression(ANTON_MOV(false_expression)) {}
 
-    Owning_Ptr<Elvis_Expression> Elvis_Expression::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Elvis_Expression> Elvis_Expression::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Elvis_Expression* Elvis_Expression::_clone() const {
-        return new Elvis_Expression(condition->clone(), true_expression->clone(), false_expression->clone(), source_info);
+    Elvis_Expression* Elvis_Expression::_clone(Allocator* const allocator) const {
+        return ALLOC(Elvis_Expression, condition->clone(allocator), true_expression->clone(allocator), false_expression->clone(allocator), source_info);
     }
 
     Binary_Expression::Binary_Expression(Binary_Expression_Type type, Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info)
         : Expression(source_info, AST_Node_Type::binary_expression), lhs(ANTON_MOV(lhs)), rhs(ANTON_MOV(rhs)), type(type) {}
 
-    Owning_Ptr<Binary_Expression> Binary_Expression::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Binary_Expression> Binary_Expression::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Binary_Expression* Binary_Expression::_clone() const {
-        return new Binary_Expression(type, lhs->clone(), rhs->clone(), source_info);
+    Binary_Expression* Binary_Expression::_clone(Allocator* const allocator) const {
+        return ALLOC(Binary_Expression, type, lhs->clone(allocator), rhs->clone(allocator), source_info);
     }
 
     Unary_Expression::Unary_Expression(Unary_Type type, Owning_Ptr<Expression> expression, Source_Info const& source_info)
         : Expression(source_info, AST_Node_Type::unary_expression), expression(ANTON_MOV(expression)), type(type) {}
 
-    Owning_Ptr<Unary_Expression> Unary_Expression::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Unary_Expression> Unary_Expression::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Unary_Expression* Unary_Expression::_clone() const {
-        return new Unary_Expression(type, expression->clone(), source_info);
+    Unary_Expression* Unary_Expression::_clone(Allocator* const allocator) const {
+        return ALLOC(Unary_Expression, type, expression->clone(allocator), source_info);
     }
 
     Prefix_Increment_Expression::Prefix_Increment_Expression(Owning_Ptr<Expression> expression, Source_Info const& source_info)
         : Expression(source_info, AST_Node_Type::prefix_increment_expression), expression(ANTON_MOV(expression)) {}
 
-    Owning_Ptr<Prefix_Increment_Expression> Prefix_Increment_Expression::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Prefix_Increment_Expression> Prefix_Increment_Expression::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Prefix_Increment_Expression* Prefix_Increment_Expression::_clone() const {
-        return new Prefix_Increment_Expression(expression->clone(), source_info);
+    Prefix_Increment_Expression* Prefix_Increment_Expression::_clone(Allocator* const allocator) const {
+        return ALLOC(Prefix_Increment_Expression, expression->clone(allocator), source_info);
     }
 
     Prefix_Decrement_Expression::Prefix_Decrement_Expression(Owning_Ptr<Expression> expression, Source_Info const& source_info)
         : Expression(source_info, AST_Node_Type::prefix_decrement_expression), expression(ANTON_MOV(expression)) {}
 
-    Owning_Ptr<Prefix_Decrement_Expression> Prefix_Decrement_Expression::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Prefix_Decrement_Expression> Prefix_Decrement_Expression::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Prefix_Decrement_Expression* Prefix_Decrement_Expression::_clone() const {
-        return new Prefix_Decrement_Expression(expression->clone(), source_info);
+    Prefix_Decrement_Expression* Prefix_Decrement_Expression::_clone(Allocator* const allocator) const {
+        return ALLOC(Prefix_Decrement_Expression, expression->clone(allocator), source_info);
     }
 
     Function_Call_Expression::Function_Call_Expression(Owning_Ptr<Identifier> identifier, anton::Array<Owning_Ptr<Expression>> arguments,
                                                        Source_Info const& source_info)
         : Expression(source_info, AST_Node_Type::function_call_expression), arguments(ANTON_MOV(arguments)), identifier(ANTON_MOV(identifier)) {}
 
-    Owning_Ptr<Function_Call_Expression> Function_Call_Expression::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Function_Call_Expression> Function_Call_Expression::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Function_Call_Expression* Function_Call_Expression::_clone() const {
-        return new Function_Call_Expression(identifier->clone(), vush::clone(arguments), source_info);
+    Function_Call_Expression* Function_Call_Expression::_clone(Allocator* const allocator) const {
+        return ALLOC(Function_Call_Expression, identifier->clone(allocator), vush::clone(arguments, allocator), source_info);
     }
 
     Member_Access_Expression::Member_Access_Expression(Owning_Ptr<Expression> base, Owning_Ptr<Identifier> member, Source_Info const& source_info)
         : Expression(source_info, AST_Node_Type::member_access_expression), base(ANTON_MOV(base)), member(ANTON_MOV(member)) {}
 
-    Owning_Ptr<Member_Access_Expression> Member_Access_Expression::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Member_Access_Expression> Member_Access_Expression::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Member_Access_Expression* Member_Access_Expression::_clone() const {
-        return new Member_Access_Expression(base->clone(), member->clone(), source_info);
+    Member_Access_Expression* Member_Access_Expression::_clone(Allocator* const allocator) const {
+        return ALLOC(Member_Access_Expression, base->clone(allocator), member->clone(allocator), source_info);
     }
 
     Array_Access_Expression::Array_Access_Expression(Owning_Ptr<Expression> base, Owning_Ptr<Expression> index, Source_Info const& source_info)
         : Expression(source_info, AST_Node_Type::array_access_expression), base(ANTON_MOV(base)), index(ANTON_MOV(index)) {}
 
-    Owning_Ptr<Array_Access_Expression> Array_Access_Expression::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Array_Access_Expression> Array_Access_Expression::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Array_Access_Expression* Array_Access_Expression::_clone() const {
-        return new Array_Access_Expression(base->clone(), index->clone(), source_info);
+    Array_Access_Expression* Array_Access_Expression::_clone(Allocator* const allocator) const {
+        return ALLOC(Array_Access_Expression, base->clone(allocator), index->clone(allocator), source_info);
     }
 
     Postfix_Increment_Expression::Postfix_Increment_Expression(Owning_Ptr<Expression> expression, Source_Info const& source_info)
         : Expression(source_info, AST_Node_Type::postfix_increment_expression), expression(ANTON_MOV(expression)) {}
 
-    Owning_Ptr<Postfix_Increment_Expression> Postfix_Increment_Expression::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Postfix_Increment_Expression> Postfix_Increment_Expression::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Postfix_Increment_Expression* Postfix_Increment_Expression::_clone() const {
-        return new Postfix_Increment_Expression(expression->clone(), source_info);
+    Postfix_Increment_Expression* Postfix_Increment_Expression::_clone(Allocator* const allocator) const {
+        return ALLOC(Postfix_Increment_Expression, expression->clone(allocator), source_info);
     }
 
     Postfix_Decrement_Expression::Postfix_Decrement_Expression(Owning_Ptr<Expression> expression, Source_Info const& source_info)
         : Expression(source_info, AST_Node_Type::postfix_decrement_expression), expression(ANTON_MOV(expression)) {}
 
-    Owning_Ptr<Postfix_Decrement_Expression> Postfix_Decrement_Expression::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Postfix_Decrement_Expression> Postfix_Decrement_Expression::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Postfix_Decrement_Expression* Postfix_Decrement_Expression::_clone() const {
-        return new Postfix_Decrement_Expression(expression->clone(), source_info);
+    Postfix_Decrement_Expression* Postfix_Decrement_Expression::_clone(Allocator* const allocator) const {
+        return ALLOC(Postfix_Decrement_Expression, expression->clone(allocator), source_info);
     }
 
     Parenthesised_Expression::Parenthesised_Expression(Owning_Ptr<Expression> expression, Source_Info const& source_info)
         : Expression(source_info, AST_Node_Type::parenthesised_expression), expression(ANTON_MOV(expression)) {}
 
-    Owning_Ptr<Parenthesised_Expression> Parenthesised_Expression::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Parenthesised_Expression> Parenthesised_Expression::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Parenthesised_Expression* Parenthesised_Expression::_clone() const {
-        return new Parenthesised_Expression(expression->clone(), source_info);
+    Parenthesised_Expression* Parenthesised_Expression::_clone(Allocator* const allocator) const {
+        return ALLOC(Parenthesised_Expression, expression->clone(allocator), source_info);
     }
 
     Reinterpret_Expression::Reinterpret_Expression(Owning_Ptr<Type> target_type, Owning_Ptr<Expression> source, Owning_Ptr<Expression> index,
@@ -1322,80 +1329,80 @@ namespace vush {
         : Expression(source_info, AST_Node_Type::reinterpret_expression), target_type(ANTON_MOV(target_type)), source(ANTON_MOV(source)),
           index(ANTON_MOV(index)) {}
 
-    Owning_Ptr<Reinterpret_Expression> Reinterpret_Expression::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Reinterpret_Expression> Reinterpret_Expression::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Reinterpret_Expression* Reinterpret_Expression::_clone() const {
-        return new Reinterpret_Expression(target_type->clone(), source->clone(), index->clone(), source_info);
+    Reinterpret_Expression* Reinterpret_Expression::_clone(Allocator* const allocator) const {
+        return ALLOC(Reinterpret_Expression, target_type->clone(allocator), source->clone(allocator), index->clone(allocator), source_info);
     }
 
     Default_Expression::Default_Expression(Source_Info const& source_info): Expression(source_info, AST_Node_Type::default_expression) {}
 
-    Owning_Ptr<Default_Expression> Default_Expression::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Default_Expression> Default_Expression::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Default_Expression* Default_Expression::_clone() const {
-        return new Default_Expression(source_info);
+    Default_Expression* Default_Expression::_clone(Allocator* const allocator) const {
+        return ALLOC(Default_Expression, source_info);
     }
 
     String_Literal::String_Literal(anton::String value, Source_Info const& source_info)
         : Expression(source_info, AST_Node_Type::string_literal), value(ANTON_MOV(value)) {}
 
-    Owning_Ptr<String_Literal> String_Literal::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<String_Literal> String_Literal::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    String_Literal* String_Literal::_clone() const {
-        return new String_Literal(value, source_info);
+    String_Literal* String_Literal::_clone(Allocator* const allocator) const {
+        return ALLOC(String_Literal, value, source_info);
     }
 
     Bool_Literal::Bool_Literal(bool value, Source_Info const& source_info): Expression(source_info, AST_Node_Type::bool_literal), value(value) {}
 
-    Owning_Ptr<Bool_Literal> Bool_Literal::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Bool_Literal> Bool_Literal::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Bool_Literal* Bool_Literal::_clone() const {
-        return new Bool_Literal(value, source_info);
+    Bool_Literal* Bool_Literal::_clone(Allocator* const allocator) const {
+        return ALLOC(Bool_Literal, value, source_info);
     }
 
     Integer_Literal::Integer_Literal(anton::String value, Integer_Literal_Type type, Integer_Literal_Base base, Source_Info const& source_info)
         : Expression(source_info, AST_Node_Type::integer_literal), value(ANTON_MOV(value)), type(type), base(base) {}
 
-    Owning_Ptr<Integer_Literal> Integer_Literal::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Integer_Literal> Integer_Literal::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Integer_Literal* Integer_Literal::_clone() const {
-        return new Integer_Literal(value, type, base, source_info);
+    Integer_Literal* Integer_Literal::_clone(Allocator* const allocator) const {
+        return ALLOC(Integer_Literal, value, type, base, source_info);
     }
 
     Float_Literal::Float_Literal(anton::String value, Float_Literal_Type type, Source_Info const& source_info)
         : Expression(source_info, AST_Node_Type::float_literal), value(ANTON_MOV(value)), type(type) {}
 
-    Owning_Ptr<Float_Literal> Float_Literal::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Float_Literal> Float_Literal::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Float_Literal* Float_Literal::_clone() const {
-        return new Float_Literal(value, type, source_info);
+    Float_Literal* Float_Literal::_clone(Allocator* const allocator) const {
+        return ALLOC(Float_Literal, value, type, source_info);
     }
 
-    Owning_Ptr<Statement> Statement::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Statement> Statement::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
     Block_Statement::Block_Statement(Statement_List statements, Source_Info const& source_info)
         : Statement(source_info, AST_Node_Type::block_statement), statements(ANTON_MOV(statements)) {}
 
-    Owning_Ptr<Block_Statement> Block_Statement::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Block_Statement> Block_Statement::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Block_Statement* Block_Statement::_clone() const {
-        return new Block_Statement(vush::clone(statements), source_info);
+    Block_Statement* Block_Statement::_clone(Allocator* const allocator) const {
+        return ALLOC(Block_Statement, vush::clone(statements, allocator), source_info);
     }
 
     If_Statement::If_Statement(Owning_Ptr<Expression> condition, Statement_List true_statements, Statement_List false_statements,
@@ -1403,34 +1410,34 @@ namespace vush {
         : Statement(source_info, AST_Node_Type::if_statement), condition(ANTON_MOV(condition)), true_statements(ANTON_MOV(true_statements)),
           false_statements(ANTON_MOV(false_statements)) {}
 
-    Owning_Ptr<If_Statement> If_Statement::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<If_Statement> If_Statement::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    If_Statement* If_Statement::_clone() const {
-        return new If_Statement(condition->clone(), vush::clone(true_statements), vush::clone(false_statements), source_info);
+    If_Statement* If_Statement::_clone(Allocator* const allocator) const {
+        return ALLOC(If_Statement, condition->clone(allocator), vush::clone(true_statements, allocator), vush::clone(false_statements, allocator), source_info);
     }
 
     Case_Statement::Case_Statement(Expression_List labels, Statement_List statements, Source_Info const& source_info)
         : Statement(source_info, AST_Node_Type::case_statement), labels(ANTON_MOV(labels)), statements(ANTON_MOV(statements)) {}
 
-    Owning_Ptr<Case_Statement> Case_Statement::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Case_Statement> Case_Statement::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Case_Statement* Case_Statement::_clone() const {
-        return new Case_Statement(vush::clone(labels), vush::clone(statements), source_info);
+    Case_Statement* Case_Statement::_clone(Allocator* const allocator) const {
+        return ALLOC(Case_Statement, vush::clone(labels, allocator), vush::clone(statements, allocator), source_info);
     }
 
     Switch_Statement::Switch_Statement(Owning_Ptr<Expression> match_expression, anton::Array<Owning_Ptr<Case_Statement>> cases, Source_Info const& source_info)
         : Statement(source_info, AST_Node_Type::switch_statement), cases(ANTON_MOV(cases)), match_expression(ANTON_MOV(match_expression)) {}
 
-    Owning_Ptr<Switch_Statement> Switch_Statement::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Switch_Statement> Switch_Statement::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Switch_Statement* Switch_Statement::_clone() const {
-        return new Switch_Statement(match_expression->clone(), vush::clone(cases), source_info);
+    Switch_Statement* Switch_Statement::_clone(Allocator* const allocator) const {
+        return ALLOC(Switch_Statement, match_expression->clone(allocator), vush::clone(cases, allocator), source_info);
     }
 
     For_Statement::For_Statement(Owning_Ptr<Variable_Declaration> declaration, Owning_Ptr<Expression> condition, Owning_Ptr<Expression> post_expression,
@@ -1438,100 +1445,101 @@ namespace vush {
         : Statement(source_info, AST_Node_Type::for_statement), declaration(ANTON_MOV(declaration)), condition(ANTON_MOV(condition)),
           post_expression(ANTON_MOV(post_expression)), statements(ANTON_MOV(statements)) {}
 
-    Owning_Ptr<For_Statement> For_Statement::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<For_Statement> For_Statement::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    For_Statement* For_Statement::_clone() const {
-        return new For_Statement(declaration->clone(), condition->clone(), post_expression->clone(), vush::clone(statements), source_info);
+    For_Statement* For_Statement::_clone(Allocator* const allocator) const {
+        return ALLOC(For_Statement, declaration->clone(allocator), condition->clone(allocator), post_expression->clone(allocator),
+                     vush::clone(statements, allocator), source_info);
     }
 
     While_Statement::While_Statement(Owning_Ptr<Expression> condition, Statement_List statements, Source_Info const& source_info)
         : Statement(source_info, AST_Node_Type::while_statement), condition(ANTON_MOV(condition)), statements(ANTON_MOV(statements)) {}
 
-    Owning_Ptr<While_Statement> While_Statement::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<While_Statement> While_Statement::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    While_Statement* While_Statement::_clone() const {
-        return new While_Statement(condition->clone(), vush::clone(statements), source_info);
+    While_Statement* While_Statement::_clone(Allocator* const allocator) const {
+        return ALLOC(While_Statement, condition->clone(allocator), vush::clone(statements, allocator), source_info);
     }
 
     Do_While_Statement::Do_While_Statement(Owning_Ptr<Expression> condition, Statement_List statements, Source_Info const& source_info)
         : Statement(source_info, AST_Node_Type::do_while_statement), condition(ANTON_MOV(condition)), statements(ANTON_MOV(statements)) {}
 
-    Owning_Ptr<Do_While_Statement> Do_While_Statement::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Do_While_Statement> Do_While_Statement::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Do_While_Statement* Do_While_Statement::_clone() const {
-        return new Do_While_Statement(condition->clone(), vush::clone(statements), source_info);
+    Do_While_Statement* Do_While_Statement::_clone(Allocator* const allocator) const {
+        return ALLOC(Do_While_Statement, condition->clone(allocator), vush::clone(statements, allocator), source_info);
     }
 
     Return_Statement::Return_Statement(Owning_Ptr<Expression> return_expression, Source_Info const& source_info)
         : Statement(source_info, AST_Node_Type::return_statement), return_expression(ANTON_MOV(return_expression)) {}
 
-    Owning_Ptr<Return_Statement> Return_Statement::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Return_Statement> Return_Statement::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Return_Statement* Return_Statement::_clone() const {
+    Return_Statement* Return_Statement::_clone(Allocator* const allocator) const {
         if(return_expression) {
-            return new Return_Statement(return_expression->clone(), source_info);
+            return ALLOC(Return_Statement, return_expression->clone(allocator), source_info);
         } else {
-            return new Return_Statement(nullptr, source_info);
+            return ALLOC(Return_Statement, nullptr, source_info);
         }
     }
 
     Break_Statement::Break_Statement(Source_Info const& source_info): Statement(source_info, AST_Node_Type::break_statement) {}
 
-    Owning_Ptr<Break_Statement> Break_Statement::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Break_Statement> Break_Statement::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Break_Statement* Break_Statement::_clone() const {
-        return new Break_Statement(source_info);
+    Break_Statement* Break_Statement::_clone(Allocator* const allocator) const {
+        return ALLOC(Break_Statement, source_info);
     }
 
     Continue_Statement::Continue_Statement(Source_Info const& source_info): Statement(source_info, AST_Node_Type::continue_statement) {}
 
-    Owning_Ptr<Continue_Statement> Continue_Statement::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Continue_Statement> Continue_Statement::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Continue_Statement* Continue_Statement::_clone() const {
-        return new Continue_Statement(source_info);
+    Continue_Statement* Continue_Statement::_clone(Allocator* const allocator) const {
+        return ALLOC(Continue_Statement, source_info);
     }
 
     Discard_Statement::Discard_Statement(Source_Info const& source_info): Statement(source_info, AST_Node_Type::discard_statement) {}
 
-    Owning_Ptr<Discard_Statement> Discard_Statement::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Discard_Statement> Discard_Statement::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Discard_Statement* Discard_Statement::_clone() const {
-        return new Discard_Statement(source_info);
+    Discard_Statement* Discard_Statement::_clone(Allocator* const allocator) const {
+        return ALLOC(Discard_Statement, source_info);
     }
 
     Declaration_Statement::Declaration_Statement(Owning_Ptr<Declaration> declaration, Source_Info const& source_info)
         : Statement(source_info, AST_Node_Type::declaration_statement), declaration(ANTON_MOV(declaration)) {}
 
-    Owning_Ptr<Declaration_Statement> Declaration_Statement::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Declaration_Statement> Declaration_Statement::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Declaration_Statement* Declaration_Statement::_clone() const {
-        return new Declaration_Statement(declaration->clone(), source_info);
+    Declaration_Statement* Declaration_Statement::_clone(Allocator* const allocator) const {
+        return ALLOC(Declaration_Statement, declaration->clone(allocator), source_info);
     }
 
     Expression_Statement::Expression_Statement(Owning_Ptr<Expression> expression, Source_Info const& source_info)
         : Statement(source_info, AST_Node_Type::expression_statement), expression(ANTON_MOV(expression)) {}
 
-    Owning_Ptr<Expression_Statement> Expression_Statement::clone() const {
-        return Owning_Ptr{_clone()};
+    Owning_Ptr<Expression_Statement> Expression_Statement::clone(Allocator* const allocator) const {
+        return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Expression_Statement* Expression_Statement::_clone() const {
-        return new Expression_Statement(expression->clone(), source_info);
+    Expression_Statement* Expression_Statement::_clone(Allocator* const allocator) const {
+        return ALLOC(Expression_Statement, expression->clone(allocator), source_info);
     }
 } // namespace vush

@@ -1,6 +1,7 @@
 #include <anton/flat_hash_map.hpp>
 #include <anton/string_view.hpp>
 #include <builtins.hpp>
+#include <memory.hpp>
 #include <parser.hpp>
 
 namespace vush {
@@ -1941,73 +1942,78 @@ bool anyInvocation(bool value) {}
 bool allInvocations(bool value) {}
 bool allInvocationsEqual(bool value) {})";
 
-    [[nodiscard]] static anton::Array<Owning_Ptr<Variable_Declaration>> generate_builtin_variables() {
+    [[nodiscard]] static anton::Array<Owning_Ptr<Variable_Declaration>> generate_builtin_variables(Context& ctx) {
         struct Builtin_Variable {
             anton::String_View name;
-            Type* type;
+            Owning_Ptr<Type> type;
         };
 
         Source_Info const src_info{u8"<builtin>", 0, 0, 0};
         Builtin_Variable builtin_variables[] = {
             // Vertex Shader
-            {"gl_VertexIndex", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
-            {"gl_InstanceIndex", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
-            {"gl_DrawID", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
-            {"gl_BaseVertex", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
-            {"gl_BaseInstance", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
-            {"gl_Position", new Builtin_Type(Builtin_GLSL_Type::glsl_vec4, src_info)},
-            {"gl_PointSize", new Builtin_Type(Builtin_GLSL_Type::glsl_float, src_info)},
-            {"gl_ClipDistance", new Array_Type(Owning_Ptr{new Builtin_Type(Builtin_GLSL_Type::glsl_float, src_info)}, nullptr, src_info)},
-            {"gl_CullDistance", new Array_Type(Owning_Ptr{new Builtin_Type(Builtin_GLSL_Type::glsl_float, src_info)}, nullptr, src_info)},
+            {"gl_VertexIndex", allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_int, src_info)},
+            {"gl_InstanceIndex", allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_int, src_info)},
+            {"gl_DrawID", allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_int, src_info)},
+            {"gl_BaseVertex", allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_int, src_info)},
+            {"gl_BaseInstance", allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_int, src_info)},
+            {"gl_Position", allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_vec4, src_info)},
+            {"gl_PointSize", allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_float, src_info)},
+            {"gl_ClipDistance", allocate_owning<Array_Type>(
+                                    ctx.allocator, allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_float, src_info), nullptr, src_info)},
+            {"gl_CullDistance", allocate_owning<Array_Type>(
+                                    ctx.allocator, allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_float, src_info), nullptr, src_info)},
             // TODO: Add tessellation shader variables and geometry shader variables
             // Fragment Shader
-            {"gl_FragCoord", new Builtin_Type(Builtin_GLSL_Type::glsl_vec4, src_info)},
-            {"gl_FrontFacing", new Builtin_Type(Builtin_GLSL_Type::glsl_bool, src_info)},
+            {"gl_FragCoord", allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_vec4, src_info)},
+            {"gl_FrontFacing", allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_bool, src_info)},
             // gl_ClipDistance, gl_CullDistance already declared above in the vertex shader section
-            {"gl_PointCoord", new Builtin_Type(Builtin_GLSL_Type::glsl_vec2, src_info)},
-            {"gl_PrimitiveID", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
-            {"gl_SampleID", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
-            {"gl_SamplePosition", new Builtin_Type(Builtin_GLSL_Type::glsl_vec2, src_info)},
-            {"gl_SampleMaskIn", new Array_Type(Owning_Ptr{new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)}, nullptr, src_info)},
-            {"gl_Layer", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
-            {"gl_ViewportIndex", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
-            {"gl_HelperInvocation", new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)},
-            {"gl_FragDepth", new Builtin_Type(Builtin_GLSL_Type::glsl_float, src_info)},
-            {"gl_SampleMask", new Array_Type(Owning_Ptr{new Builtin_Type(Builtin_GLSL_Type::glsl_int, src_info)}, nullptr, src_info)},
+            {"gl_PointCoord", allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_vec2, src_info)},
+            {"gl_PrimitiveID", allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_int, src_info)},
+            {"gl_SampleID", allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_int, src_info)},
+            {"gl_SamplePosition", allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_vec2, src_info)},
+            {"gl_SampleMaskIn", allocate_owning<Array_Type>(ctx.allocator, allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_int, src_info),
+                                                            nullptr, src_info)},
+            {"gl_Layer", allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_int, src_info)},
+            {"gl_ViewportIndex", allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_int, src_info)},
+            {"gl_HelperInvocation", allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_int, src_info)},
+            {"gl_FragDepth", allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_float, src_info)},
+            {"gl_SampleMask", allocate_owning<Array_Type>(ctx.allocator, allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_int, src_info),
+                                                          nullptr, src_info)},
             // Compute Shader
-            {"gl_NumWorkGroups", new Builtin_Type(Builtin_GLSL_Type::glsl_uvec3, src_info)},
-            {"gl_WorkgroupSize", new Builtin_Type(Builtin_GLSL_Type::glsl_uvec3, src_info)},
-            {"gl_WorkGroupID", new Builtin_Type(Builtin_GLSL_Type::glsl_uvec3, src_info)},
-            {"gl_LocalInvocationID", new Builtin_Type(Builtin_GLSL_Type::glsl_uvec3, src_info)},
-            {"gl_GlobalInvocationID", new Builtin_Type(Builtin_GLSL_Type::glsl_uvec3, src_info)},
-            {"gl_LocalInvocationIndex", new Builtin_Type(Builtin_GLSL_Type::glsl_uint, src_info)}};
+            {"gl_NumWorkGroups", allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_uvec3, src_info)},
+            {"gl_WorkgroupSize", allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_uvec3, src_info)},
+            {"gl_WorkGroupID", allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_uvec3, src_info)},
+            {"gl_LocalInvocationID", allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_uvec3, src_info)},
+            {"gl_GlobalInvocationID", allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_uvec3, src_info)},
+            {"gl_LocalInvocationIndex", allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_uint, src_info)}};
 
         // Populate storage.
         anton::Array<Owning_Ptr<Variable_Declaration>> storage;
         constexpr i64 variable_count = sizeof(builtin_variables) / sizeof(Builtin_Variable);
         for(i64 i = 0; i < variable_count; ++i) {
-            Builtin_Variable const& var = builtin_variables[i];
-            Variable_Declaration* decl =
-                new Variable_Declaration(Owning_Ptr{var.type}, Owning_Ptr{new Identifier(anton::String(var.name), src_info)}, nullptr, src_info);
-            storage.emplace_back(decl);
+            Builtin_Variable& var = builtin_variables[i];
+            Owning_Ptr decl = allocate_owning<Variable_Declaration>(
+                ctx.allocator, ANTON_MOV(var.type), allocate_owning<Identifier>(ctx.allocator, anton::String(var.name), src_info), nullptr, src_info);
+            storage.emplace_back(ANTON_MOV(decl));
         }
         return storage;
     }
 
     Builtin_Declarations get_builtin_declarations(Context& ctx) {
         anton::String functions_source{builtin_functions_declarations_source};
-        anton::Expected<Declaration_List, Parse_Error> result = parse_builtin_functions("<builtin>"_sv, functions_source);
+        anton::Expected<Declaration_List, Parse_Error> result = parse_builtin_functions(ctx.allocator, "<builtin>"_sv, functions_source);
         ANTON_ASSERT(result, "invalid builtin source code");
         ctx.source_registry.emplace("<builtin>"_sv, Source_Data{"<builtin>"_s, ANTON_MOV(functions_source)});
 
         anton::Flat_Hash_Map<anton::String_View, Owning_Ptr<Overloaded_Function_Declaration>> overloads_dictionary;
         for(auto& fn_ptr: result.value()) {
-            Owning_Ptr<Function_Declaration> fn{static_cast<Function_Declaration*>(fn_ptr.release())};
+            Owning_Ptr<Function_Declaration> fn{downcast, ANTON_MOV(fn_ptr)};
             auto iter = overloads_dictionary.find(fn->identifier->value);
             if(iter == overloads_dictionary.end()) {
                 // We use the source information of the first overload to be able to provide diagnostics without
                 // having to complicate the code with special cases for handling Overloaded_Function_Declaration.
-                Owning_Ptr<Overloaded_Function_Declaration> overloaded_fn{new Overloaded_Function_Declaration(fn->identifier->clone(), {}, fn->source_info)};
+                Owning_Ptr<Overloaded_Function_Declaration> overloaded_fn =
+                    allocate_owning<Overloaded_Function_Declaration>(ctx.allocator, fn->identifier->clone(ctx.allocator), fn->source_info);
                 overloaded_fn->builtin = true;
                 overloaded_fn->overloads.emplace_back(ANTON_MOV(fn));
                 overloads_dictionary.emplace(overloaded_fn->identifier->value, ANTON_MOV(overloaded_fn));
@@ -2021,7 +2027,7 @@ bool allInvocationsEqual(bool value) {})";
             overloads.emplace_back(ANTON_MOV(overloaded_fn));
         }
 
-        anton::Array<Owning_Ptr<Variable_Declaration>> variables = generate_builtin_variables();
+        anton::Array<Owning_Ptr<Variable_Declaration>> variables = generate_builtin_variables(ctx);
         return {ANTON_MOV(overloads), ANTON_MOV(variables)};
     }
 } // namespace vush
