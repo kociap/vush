@@ -1296,14 +1296,14 @@ namespace vush {
 
         Owning_Ptr<Type> try_type() {
             Lexer_State const state_backup = _lexer.get_current_state();
-            anton::String type_name;
+            anton::String type_name(_allocator);
             if(!_lexer.match_identifier(type_name)) {
                 set_error(u8"expected type identifier");
                 return OWNING_NULL(Type);
             }
 
             if(is_keyword(type_name)) {
-                anton::String msg = u8"expected type name, got '" + type_name + "' instead";
+                anton::String msg = anton::concat(_allocator, u8"expected type name, got '"_sv, type_name, "' instead"_sv);
                 set_error(msg, state_backup);
                 _lexer.restore_state(state_backup);
                 return OWNING_NULL(Type);
@@ -2447,7 +2447,7 @@ namespace vush {
         Owning_Ptr<Float_Literal> try_float_literal() {
             Lexer_State const state_backup = _lexer.get_current_state();
 
-            anton::String number;
+            anton::String number(_allocator);
             if(char32 const next_char = _lexer.peek_next(); next_char == '-' || next_char == U'+') {
                 number += next_char;
                 _lexer.get_next();
@@ -2488,7 +2488,7 @@ namespace vush {
             }
 
             if(pre_point_digits == 0 && post_point_digits == 0) {
-                set_error(u8"not a floating point constant", state_backup);
+                set_error(u8"not a floating point constant"_sv, state_backup);
                 _lexer.restore_state(state_backup);
                 return OWNING_NULL(Float_Literal);
             }
@@ -2511,21 +2511,21 @@ namespace vush {
                 }
 
                 if(e_digits == 0) {
-                    set_error("exponent has no digits");
+                    set_error("exponent has no digits"_sv);
                     _lexer.restore_state(state_backup);
                     return OWNING_NULL(Float_Literal);
                 }
             }
 
             if(!has_e && !has_period) {
-                set_error(u8"not a floating point constant", state_backup);
+                set_error(u8"not a floating point constant"_sv, state_backup);
                 _lexer.restore_state(state_backup);
                 return OWNING_NULL(Float_Literal);
             }
 
             Float_Literal_Type type = Float_Literal_Type::f32;
             Lexer_State const suffix_backup = _lexer.get_current_state_no_skip();
-            anton::String suffix;
+            anton::String suffix(_allocator);
             for(char32 next = _lexer.peek_next(); is_identifier_character(next); next = _lexer.peek_next()) {
                 suffix += next;
                 _lexer.get_next();
@@ -2534,7 +2534,8 @@ namespace vush {
             if(suffix == u8"d" || suffix == u8"D") {
                 type = Float_Literal_Type::f64;
             } else if(suffix != u8"") {
-                set_error(u8"invalid suffix '" + suffix + u8"' on floating point literal", suffix_backup);
+                anton::String msg = anton::concat(_allocator, u8"invalid suffix '"_sv, suffix, u8"' on floating-point literal"_sv);
+                set_error(msg, suffix_backup);
                 _lexer.restore_state(state_backup);
                 return OWNING_NULL(Float_Literal);
             }
@@ -2552,21 +2553,22 @@ namespace vush {
             // Binary literal
             bool const has_bin_prefix = _lexer.match(u8"0b") || _lexer.match(u8"0B");
             if(has_bin_prefix) {
-                anton::String out;
+                anton::String out(_allocator);
                 while(is_binary_digit(_lexer.peek_next())) {
                     char32 const digit = _lexer.get_next();
                     out += digit;
                 }
 
                 if(char32 const next = _lexer.peek_next(); is_digit(next)) {
-                    set_error(u8"invalid digit '" + anton::String::from_utf32(&next, 4) + u8"' in binary integer literal");
+                    // TODO: Provide an overload with allocator parameter for String::from_utf32
+                    set_error(anton::concat(_allocator, u8"invalid digit '"_sv, anton::String::from_utf32(&next, 4), u8"' in binary integer literal"_sv));
                     _lexer.restore_state(state_backup);
                     return OWNING_NULL(Integer_Literal);
                 }
 
                 Integer_Literal_Type type = Integer_Literal_Type::i32;
                 Lexer_State const suffix_backup = _lexer.get_current_state_no_skip();
-                anton::String suffix;
+                anton::String suffix(_allocator);
                 for(char32 next = _lexer.peek_next(); is_identifier_character(next); next = _lexer.peek_next()) {
                     suffix += next;
                     _lexer.get_next();
@@ -2575,7 +2577,8 @@ namespace vush {
                 if(suffix == u8"u" || suffix == u8"U") {
                     type = Integer_Literal_Type::u32;
                 } else if(suffix != u8"") {
-                    set_error(u8"invalid suffix '" + suffix + u8"' on integer literal", suffix_backup);
+                    anton::String msg = anton::concat(_allocator, u8"invalid suffix '"_sv, suffix, u8"' on integer literal"_sv);
+                    set_error(msg, suffix_backup);
                     _lexer.restore_state(state_backup);
                     return OWNING_NULL(Integer_Literal);
                 }
@@ -2588,21 +2591,22 @@ namespace vush {
             // Octal literal
             bool const has_oct_prefix = _lexer.match(u8"0o") || _lexer.match(u8"0O");
             if(has_oct_prefix) {
-                anton::String out;
+                anton::String out(_allocator);
                 while(is_octal_digit(_lexer.peek_next())) {
                     char32 const digit = _lexer.get_next();
                     out += digit;
                 }
 
                 if(char32 const next = _lexer.peek_next(); is_digit(next)) {
-                    set_error(u8"invalid digit '" + anton::String::from_utf32(&next, 4) + u8"' in octal integer literal");
+                    // TODO: Provide an overload with allocator parameter for String::from_utf32
+                    set_error(anton::concat(u8"invalid digit '"_sv, anton::String::from_utf32(&next, 4), u8"' in octal integer literal"_sv));
                     _lexer.restore_state(state_backup);
                     return OWNING_NULL(Integer_Literal);
                 }
 
                 Integer_Literal_Type type = Integer_Literal_Type::i32;
                 Lexer_State const suffix_backup = _lexer.get_current_state_no_skip();
-                anton::String suffix;
+                anton::String suffix(_allocator);
                 for(char32 next = _lexer.peek_next(); is_identifier_character(next); next = _lexer.peek_next()) {
                     suffix += next;
                     _lexer.get_next();
@@ -2611,7 +2615,8 @@ namespace vush {
                 if(suffix == u8"u" || suffix == u8"U") {
                     type = Integer_Literal_Type::u32;
                 } else if(suffix != u8"") {
-                    set_error(u8"invalid suffix '" + suffix + u8"' on integer literal", suffix_backup);
+                    anton::String msg = anton::concat(_allocator, u8"invalid suffix '"_sv, suffix, u8"' on integer literal"_sv);
+                    set_error(msg, suffix_backup);
                     _lexer.restore_state(state_backup);
                     return OWNING_NULL(Integer_Literal);
                 }
@@ -2624,7 +2629,7 @@ namespace vush {
             // Hexadecimal literal
             bool const has_hex_prefix = _lexer.match(u8"0x") || _lexer.match(u8"0X");
             if(has_hex_prefix) {
-                anton::String out;
+                anton::String out(_allocator);
                 while(is_hexadecimal_digit(_lexer.peek_next())) {
                     char32 const digit = _lexer.get_next();
                     out += digit;
@@ -2632,7 +2637,7 @@ namespace vush {
 
                 Integer_Literal_Type type = Integer_Literal_Type::i32;
                 Lexer_State const suffix_backup = _lexer.get_current_state_no_skip();
-                anton::String suffix;
+                anton::String suffix(_allocator);
                 for(char32 next = _lexer.peek_next(); is_identifier_character(next); next = _lexer.peek_next()) {
                     suffix += next;
                     _lexer.get_next();
@@ -2641,7 +2646,8 @@ namespace vush {
                 if(suffix == u8"u" || suffix == u8"U") {
                     type = Integer_Literal_Type::u32;
                 } else if(suffix != u8"") {
-                    set_error(u8"invalid suffix '" + suffix + u8"' on integer literal", suffix_backup);
+                    anton::String msg = anton::concat(_allocator, u8"invalid suffix '"_sv, suffix, u8"' on integer literal"_sv);
+                    set_error(msg, suffix_backup);
                     _lexer.restore_state(state_backup);
                     return OWNING_NULL(Integer_Literal);
                 }
@@ -2652,9 +2658,9 @@ namespace vush {
             }
 
             // Decimal literal
-            anton::String out;
+            anton::String out(_allocator);
             if(char32 const next = _lexer.peek_next(); !is_digit(next)) {
-                set_error(u8"expected integer literal");
+                set_error(u8"expected integer literal"_sv);
                 _lexer.restore_state(state_backup);
                 return OWNING_NULL(Integer_Literal);
             }
@@ -2666,7 +2672,7 @@ namespace vush {
 
             Integer_Literal_Type type = Integer_Literal_Type::i32;
             Lexer_State const suffix_backup = _lexer.get_current_state_no_skip();
-            anton::String suffix;
+            anton::String suffix(_allocator);
             for(char32 next = _lexer.peek_next(); is_identifier_character(next); next = _lexer.peek_next()) {
                 suffix += next;
                 _lexer.get_next();
@@ -2675,7 +2681,8 @@ namespace vush {
             if(suffix == u8"u" || suffix == u8"U") {
                 type = Integer_Literal_Type::u32;
             } else if(suffix != u8"") {
-                set_error(u8"invalid suffix '" + suffix + "' on integer literal", suffix_backup);
+                anton::String msg = anton::concat(_allocator, u8"invalid suffix '"_sv, suffix, "' on integer literal"_sv);
+                set_error(msg, suffix_backup);
                 _lexer.restore_state(state_backup);
                 return OWNING_NULL(Integer_Literal);
             }
@@ -2696,7 +2703,7 @@ namespace vush {
                 Source_Info const src = src_info(state_backup, end_state);
                 return ALLOC(Bool_Literal, false, src);
             } else {
-                set_error("expected bool literal");
+                set_error("expected bool literal"_sv);
                 return OWNING_NULL(Bool_Literal);
             }
         }
@@ -2704,20 +2711,20 @@ namespace vush {
         Owning_Ptr<String_Literal> try_string_literal() {
             Lexer_State const state_backup = _lexer.get_current_state();
             if(!_lexer.match(token_double_quote)) {
-                set_error(u8"expected \"");
+                set_error(u8"expected \""_sv);
                 return OWNING_NULL(String_Literal);
             }
 
-            anton::String string;
+            anton::String string(_allocator);
             while(true) {
                 char32 next_char = _lexer.peek_next();
                 if(next_char == U'\n') {
                     // We disallow newlines inside string literals.
-                    set_error(u8"newlines are not allowed in string literals");
+                    set_error(u8"newlines are not allowed in string literals"_sv);
                     _lexer.restore_state(state_backup);
                     return OWNING_NULL(String_Literal);
                 } else if(next_char == eof_char32) {
-                    set_error(u8"unexpected end of file");
+                    set_error(u8"unexpected end of file"_sv);
                     _lexer.restore_state(state_backup);
                     return OWNING_NULL(String_Literal);
                 } else if(next_char == U'\\') {
@@ -2739,15 +2746,15 @@ namespace vush {
 
         Owning_Ptr<Identifier> try_identifier() {
             Lexer_State const state_backup = _lexer.get_current_state();
-            anton::String identifier;
+            anton::String identifier(_allocator);
             if(!_lexer.match_identifier(identifier)) {
-                set_error(u8"expected an identifier");
+                set_error(u8"expected an identifier"_sv);
                 _lexer.restore_state(state_backup);
                 return OWNING_NULL(Identifier);
             }
 
             if(is_keyword(identifier)) {
-                anton::String msg = u8"keyword '" + identifier + "' may not be used as identifier";
+                anton::String msg = anton::concat(_allocator, u8"keyword '"_sv, identifier, "' may not be used as identifier"_sv);
                 set_error(msg, state_backup);
                 _lexer.restore_state(state_backup);
                 return OWNING_NULL(Identifier);
@@ -2760,15 +2767,15 @@ namespace vush {
 
         Owning_Ptr<Identifier_Expression> try_identifier_expression() {
             Lexer_State const state_backup = _lexer.get_current_state();
-            anton::String identifier;
+            anton::String identifier(_allocator);
             if(!_lexer.match_identifier(identifier)) {
-                set_error(u8"expected an identifier");
+                set_error(u8"expected an identifier"_sv);
                 _lexer.restore_state(state_backup);
                 return OWNING_NULL(Identifier_Expression);
             }
 
             if(is_keyword(identifier)) {
-                anton::String msg = u8"keyword '" + identifier + "' may not be used as identifier";
+                anton::String msg = anton::concat(_allocator, u8"keyword '"_sv, identifier, "' may not be used as identifier"_sv);
                 set_error(msg, state_backup);
                 _lexer.restore_state(state_backup);
                 return OWNING_NULL(Identifier_Expression);
