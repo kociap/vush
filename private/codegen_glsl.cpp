@@ -1480,7 +1480,7 @@ namespace vush {
         return {anton::expected_value, ANTON_MOV(out)};
     }
 
-    anton::Expected<anton::Array<Pass_Data>, anton::String> generate_glsl(Context const& ctx, Codegen_Data const& data) {
+    anton::Expected<Array<Pass_Data>, anton::String> generate_glsl(Context const& ctx, Codegen_Data const& data) {
         Codegen_Context codegen_ctx{ctx, 0};
         anton::String stringified_extensions;
         if(data.extensions.size() > 0) {
@@ -1507,7 +1507,7 @@ namespace vush {
             stringified_extensions += U'\n';
         }
 
-        anton::Array<Pass_Data> pass_datas;
+        Array<Pass_Data> pass_datas{ctx.allocator};
         for(Pass_Context const& pass: data.passes) {
             Pass_Data& pass_data = pass_datas.emplace_back(Pass_Data{pass.name, {}});
             if(pass.vertex_context) {

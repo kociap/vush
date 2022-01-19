@@ -362,311 +362,311 @@ namespace vush {
     anton::String_View stringify(Builtin_GLSL_Type type) {
         switch(type) {
             case Builtin_GLSL_Type::glsl_void:
-                return u8"void";
+                return u8"void"_sv;
             case Builtin_GLSL_Type::glsl_bool:
-                return u8"bool";
+                return u8"bool"_sv;
             case Builtin_GLSL_Type::glsl_int:
-                return u8"int";
+                return u8"int"_sv;
             case Builtin_GLSL_Type::glsl_uint:
-                return u8"uint";
+                return u8"uint"_sv;
             case Builtin_GLSL_Type::glsl_float:
-                return u8"float";
+                return u8"float"_sv;
             case Builtin_GLSL_Type::glsl_double:
-                return u8"double";
+                return u8"double"_sv;
             case Builtin_GLSL_Type::glsl_vec2:
-                return u8"vec2";
+                return u8"vec2"_sv;
             case Builtin_GLSL_Type::glsl_vec3:
-                return u8"vec3";
+                return u8"vec3"_sv;
             case Builtin_GLSL_Type::glsl_vec4:
-                return u8"vec4";
+                return u8"vec4"_sv;
             case Builtin_GLSL_Type::glsl_dvec2:
-                return u8"dvec2";
+                return u8"dvec2"_sv;
             case Builtin_GLSL_Type::glsl_dvec3:
-                return u8"dvec3";
+                return u8"dvec3"_sv;
             case Builtin_GLSL_Type::glsl_dvec4:
-                return u8"dvec4";
+                return u8"dvec4"_sv;
             case Builtin_GLSL_Type::glsl_bvec2:
-                return u8"bvec2";
+                return u8"bvec2"_sv;
             case Builtin_GLSL_Type::glsl_bvec3:
-                return u8"bvec3";
+                return u8"bvec3"_sv;
             case Builtin_GLSL_Type::glsl_bvec4:
-                return u8"bvec4";
+                return u8"bvec4"_sv;
             case Builtin_GLSL_Type::glsl_ivec2:
-                return u8"ivec2";
+                return u8"ivec2"_sv;
             case Builtin_GLSL_Type::glsl_ivec3:
-                return u8"ivec3";
+                return u8"ivec3"_sv;
             case Builtin_GLSL_Type::glsl_ivec4:
-                return u8"ivec4";
+                return u8"ivec4"_sv;
             case Builtin_GLSL_Type::glsl_uvec2:
-                return u8"uvec2";
+                return u8"uvec2"_sv;
             case Builtin_GLSL_Type::glsl_uvec3:
-                return u8"uvec3";
+                return u8"uvec3"_sv;
             case Builtin_GLSL_Type::glsl_uvec4:
-                return u8"uvec4";
+                return u8"uvec4"_sv;
             case Builtin_GLSL_Type::glsl_mat2:
-                return u8"mat2";
+                return u8"mat2"_sv;
             case Builtin_GLSL_Type::glsl_mat3:
-                return u8"mat3";
+                return u8"mat3"_sv;
             case Builtin_GLSL_Type::glsl_mat4:
-                return u8"mat4";
+                return u8"mat4"_sv;
             case Builtin_GLSL_Type::glsl_mat2x3:
-                return u8"mat2x3";
+                return u8"mat2x3"_sv;
             case Builtin_GLSL_Type::glsl_mat2x4:
-                return u8"mat2x4";
+                return u8"mat2x4"_sv;
             case Builtin_GLSL_Type::glsl_mat3x2:
-                return u8"mat3x2";
+                return u8"mat3x2"_sv;
             case Builtin_GLSL_Type::glsl_mat3x4:
-                return u8"mat3x4";
+                return u8"mat3x4"_sv;
             case Builtin_GLSL_Type::glsl_mat4x2:
-                return u8"mat4x2";
+                return u8"mat4x2"_sv;
             case Builtin_GLSL_Type::glsl_mat4x3:
-                return u8"mat4x3";
+                return u8"mat4x3"_sv;
             case Builtin_GLSL_Type::glsl_dmat2:
-                return u8"dmat2";
+                return u8"dmat2"_sv;
             case Builtin_GLSL_Type::glsl_dmat3:
-                return u8"dmat3";
+                return u8"dmat3"_sv;
             case Builtin_GLSL_Type::glsl_dmat4:
-                return u8"dmat4";
+                return u8"dmat4"_sv;
             case Builtin_GLSL_Type::glsl_dmat2x3:
-                return u8"dmat2x3";
+                return u8"dmat2x3"_sv;
             case Builtin_GLSL_Type::glsl_dmat2x4:
-                return u8"dmat2x4";
+                return u8"dmat2x4"_sv;
             case Builtin_GLSL_Type::glsl_dmat3x2:
-                return u8"dmat3x2";
+                return u8"dmat3x2"_sv;
             case Builtin_GLSL_Type::glsl_dmat3x4:
-                return u8"dmat3x4";
+                return u8"dmat3x4"_sv;
             case Builtin_GLSL_Type::glsl_dmat4x2:
-                return u8"dmat4x2";
+                return u8"dmat4x2"_sv;
             case Builtin_GLSL_Type::glsl_dmat4x3:
-                return u8"dmat4x3";
+                return u8"dmat4x3"_sv;
             case Builtin_GLSL_Type::glsl_sampler1D:
-                return u8"sampler1D";
+                return u8"sampler1D"_sv;
             case Builtin_GLSL_Type::glsl_texture1D:
-                return u8"texture1D";
+                return u8"texture1D"_sv;
             case Builtin_GLSL_Type::glsl_image1D:
-                return u8"image1D";
+                return u8"image1D"_sv;
             case Builtin_GLSL_Type::glsl_sampler1DShadow:
-                return u8"sampler1DShadow";
+                return u8"sampler1DShadow"_sv;
             case Builtin_GLSL_Type::glsl_sampler1DArray:
-                return u8"sampler1DArray";
+                return u8"sampler1DArray"_sv;
             case Builtin_GLSL_Type::glsl_texture1DArray:
-                return u8"texture1DArray";
+                return u8"texture1DArray"_sv;
             case Builtin_GLSL_Type::glsl_image1DArray:
-                return u8"image1DArray";
+                return u8"image1DArray"_sv;
             case Builtin_GLSL_Type::glsl_sampler1DArrayShadow:
-                return u8"sampler1DArrayShadow";
+                return u8"sampler1DArrayShadow"_sv;
             case Builtin_GLSL_Type::glsl_sampler2D:
-                return u8"sampler2D";
+                return u8"sampler2D"_sv;
             case Builtin_GLSL_Type::glsl_texture2D:
-                return u8"texture2D";
+                return u8"texture2D"_sv;
             case Builtin_GLSL_Type::glsl_image2D:
-                return u8"image2D";
+                return u8"image2D"_sv;
             case Builtin_GLSL_Type::glsl_sampler2DShadow:
-                return u8"sampler2DShadow";
+                return u8"sampler2DShadow"_sv;
             case Builtin_GLSL_Type::glsl_sampler2DArray:
-                return u8"sampler2DArray";
+                return u8"sampler2DArray"_sv;
             case Builtin_GLSL_Type::glsl_texture2DArray:
-                return u8"texture2DArray";
+                return u8"texture2DArray"_sv;
             case Builtin_GLSL_Type::glsl_image2DArray:
-                return u8"image2DArray";
+                return u8"image2DArray"_sv;
             case Builtin_GLSL_Type::glsl_sampler2DArrayShadow:
-                return u8"sampler2DArrayShadow";
+                return u8"sampler2DArrayShadow"_sv;
             case Builtin_GLSL_Type::glsl_sampler2DMS:
-                return u8"sampler2DMS";
+                return u8"sampler2DMS"_sv;
             case Builtin_GLSL_Type::glsl_texture2DMS:
-                return u8"texture2DMS";
+                return u8"texture2DMS"_sv;
             case Builtin_GLSL_Type::glsl_image2DMS:
-                return u8"image2DMS";
+                return u8"image2DMS"_sv;
             case Builtin_GLSL_Type::glsl_sampler2DMSArray:
-                return u8"sampler2DMSArray";
+                return u8"sampler2DMSArray"_sv;
             case Builtin_GLSL_Type::glsl_texture2DMSArray:
-                return u8"texture2DMSArray";
+                return u8"texture2DMSArray"_sv;
             case Builtin_GLSL_Type::glsl_image2DMSArray:
-                return u8"image2DMSArray";
+                return u8"image2DMSArray"_sv;
             case Builtin_GLSL_Type::glsl_sampler2DRect:
-                return u8"sampler2DRect";
+                return u8"sampler2DRect"_sv;
             case Builtin_GLSL_Type::glsl_texture2DRect:
-                return u8"texture2DRect";
+                return u8"texture2DRect"_sv;
             case Builtin_GLSL_Type::glsl_image2DRect:
-                return u8"image2DRect";
+                return u8"image2DRect"_sv;
             case Builtin_GLSL_Type::glsl_sampler2DRectShadow:
-                return u8"sampler2DRectShadow";
+                return u8"sampler2DRectShadow"_sv;
             case Builtin_GLSL_Type::glsl_sampler3D:
-                return u8"sampler3D";
+                return u8"sampler3D"_sv;
             case Builtin_GLSL_Type::glsl_texture3D:
-                return u8"texture3D";
+                return u8"texture3D"_sv;
             case Builtin_GLSL_Type::glsl_image3D:
-                return u8"image3D";
+                return u8"image3D"_sv;
             case Builtin_GLSL_Type::glsl_samplerCube:
-                return u8"samplerCube";
+                return u8"samplerCube"_sv;
             case Builtin_GLSL_Type::glsl_textureCube:
-                return u8"textureCube";
+                return u8"textureCube"_sv;
             case Builtin_GLSL_Type::glsl_imageCube:
-                return u8"imageCube";
+                return u8"imageCube"_sv;
             case Builtin_GLSL_Type::glsl_samplerCubeShadow:
-                return u8"samplerCubeShadow";
+                return u8"samplerCubeShadow"_sv;
             case Builtin_GLSL_Type::glsl_samplerCubeArray:
-                return u8"samplerCubeArray";
+                return u8"samplerCubeArray"_sv;
             case Builtin_GLSL_Type::glsl_textureCubeArray:
-                return u8"textureCubeArray";
+                return u8"textureCubeArray"_sv;
             case Builtin_GLSL_Type::glsl_imageCubeArray:
-                return u8"imageCubeArray";
+                return u8"imageCubeArray"_sv;
             case Builtin_GLSL_Type::glsl_samplerCubeArrayShadow:
-                return u8"samplerCubeArrayShadow";
+                return u8"samplerCubeArrayShadow"_sv;
             case Builtin_GLSL_Type::glsl_samplerBuffer:
-                return u8"samplerBuffer";
+                return u8"samplerBuffer"_sv;
             case Builtin_GLSL_Type::glsl_textureBuffer:
-                return u8"textureBuffer";
+                return u8"textureBuffer"_sv;
             case Builtin_GLSL_Type::glsl_imageBuffer:
-                return u8"imageBuffer";
+                return u8"imageBuffer"_sv;
             case Builtin_GLSL_Type::glsl_subpassInput:
-                return u8"subpassInput";
+                return u8"subpassInput"_sv;
             case Builtin_GLSL_Type::glsl_subpassInputMS:
-                return u8"subpassInputMS";
+                return u8"subpassInputMS"_sv;
             case Builtin_GLSL_Type::glsl_isampler1D:
-                return u8"isampler1D";
+                return u8"isampler1D"_sv;
             case Builtin_GLSL_Type::glsl_itexture1D:
-                return u8"itexture1D";
+                return u8"itexture1D"_sv;
             case Builtin_GLSL_Type::glsl_iimage1D:
-                return u8"iimage1D";
+                return u8"iimage1D"_sv;
             case Builtin_GLSL_Type::glsl_isampler1DArray:
-                return u8"isampler1DArray";
+                return u8"isampler1DArray"_sv;
             case Builtin_GLSL_Type::glsl_itexture1DArray:
-                return u8"itexture1DArray";
+                return u8"itexture1DArray"_sv;
             case Builtin_GLSL_Type::glsl_iimage1DArray:
-                return u8"iimage1DArray";
+                return u8"iimage1DArray"_sv;
             case Builtin_GLSL_Type::glsl_isampler2D:
-                return u8"isampler2D";
+                return u8"isampler2D"_sv;
             case Builtin_GLSL_Type::glsl_itexture2D:
-                return u8"itexture2D";
+                return u8"itexture2D"_sv;
             case Builtin_GLSL_Type::glsl_iimage2D:
-                return u8"iimage2D";
+                return u8"iimage2D"_sv;
             case Builtin_GLSL_Type::glsl_isampler2DArray:
-                return u8"isampler2DArray";
+                return u8"isampler2DArray"_sv;
             case Builtin_GLSL_Type::glsl_itexture2DArray:
-                return u8"itexture2DArray";
+                return u8"itexture2DArray"_sv;
             case Builtin_GLSL_Type::glsl_iimage2DArray:
-                return u8"iimage2DArray";
+                return u8"iimage2DArray"_sv;
             case Builtin_GLSL_Type::glsl_isampler2DMS:
-                return u8"isampler2DMS";
+                return u8"isampler2DMS"_sv;
             case Builtin_GLSL_Type::glsl_itexture2DMS:
-                return u8"itexture2DMS";
+                return u8"itexture2DMS"_sv;
             case Builtin_GLSL_Type::glsl_iimage2DMS:
-                return u8"iimage2DMS";
+                return u8"iimage2DMS"_sv;
             case Builtin_GLSL_Type::glsl_isampler2DMSArray:
-                return u8"isampler2DMSArray";
+                return u8"isampler2DMSArray"_sv;
             case Builtin_GLSL_Type::glsl_itexture2DMSArray:
-                return u8"itexture2DMSArray";
+                return u8"itexture2DMSArray"_sv;
             case Builtin_GLSL_Type::glsl_iimage2DMSArray:
-                return u8"iimage2DMSArray";
+                return u8"iimage2DMSArray"_sv;
             case Builtin_GLSL_Type::glsl_isampler2DRect:
-                return u8"isampler2DRect";
+                return u8"isampler2DRect"_sv;
             case Builtin_GLSL_Type::glsl_itexture2DRect:
-                return u8"itexture2DRect";
+                return u8"itexture2DRect"_sv;
             case Builtin_GLSL_Type::glsl_iimage2DRect:
-                return u8"iimage2DRect";
+                return u8"iimage2DRect"_sv;
             case Builtin_GLSL_Type::glsl_isampler3D:
-                return u8"isampler3D";
+                return u8"isampler3D"_sv;
             case Builtin_GLSL_Type::glsl_itexture3D:
-                return u8"itexture3D";
+                return u8"itexture3D"_sv;
             case Builtin_GLSL_Type::glsl_iimage3D:
-                return u8"iimage3D";
+                return u8"iimage3D"_sv;
             case Builtin_GLSL_Type::glsl_isamplerCube:
-                return u8"isamplerCube";
+                return u8"isamplerCube"_sv;
             case Builtin_GLSL_Type::glsl_itextureCube:
-                return u8"itextureCube";
+                return u8"itextureCube"_sv;
             case Builtin_GLSL_Type::glsl_iimageCube:
-                return u8"iimageCube";
+                return u8"iimageCube"_sv;
             case Builtin_GLSL_Type::glsl_isamplerCubeArray:
-                return u8"isamplerCubeArray";
+                return u8"isamplerCubeArray"_sv;
             case Builtin_GLSL_Type::glsl_itextureCubeArray:
-                return u8"itextureCubeArray";
+                return u8"itextureCubeArray"_sv;
             case Builtin_GLSL_Type::glsl_iimageCubeArray:
-                return u8"iimageCubeArray";
+                return u8"iimageCubeArray"_sv;
             case Builtin_GLSL_Type::glsl_isamplerBuffer:
-                return u8"isamplerBuffer";
+                return u8"isamplerBuffer"_sv;
             case Builtin_GLSL_Type::glsl_itextureBuffer:
-                return u8"itextureBuffer";
+                return u8"itextureBuffer"_sv;
             case Builtin_GLSL_Type::glsl_iimageBuffer:
-                return u8"iimageBuffer";
+                return u8"iimageBuffer"_sv;
             case Builtin_GLSL_Type::glsl_isubpassInput:
-                return u8"isubpassInput";
+                return u8"isubpassInput"_sv;
             case Builtin_GLSL_Type::glsl_isubpassInputMS:
-                return u8"isubpassInputMS";
+                return u8"isubpassInputMS"_sv;
             case Builtin_GLSL_Type::glsl_usampler1D:
-                return u8"usampler1D";
+                return u8"usampler1D"_sv;
             case Builtin_GLSL_Type::glsl_utexture1D:
-                return u8"utexture1D";
+                return u8"utexture1D"_sv;
             case Builtin_GLSL_Type::glsl_uimage1D:
-                return u8"uimage1D";
+                return u8"uimage1D"_sv;
             case Builtin_GLSL_Type::glsl_usampler1DArray:
-                return u8"usampler1DArray";
+                return u8"usampler1DArray"_sv;
             case Builtin_GLSL_Type::glsl_utexture1DArray:
-                return u8"utexture1DArray";
+                return u8"utexture1DArray"_sv;
             case Builtin_GLSL_Type::glsl_uimage1DArray:
-                return u8"uimage1DArray";
+                return u8"uimage1DArray"_sv;
             case Builtin_GLSL_Type::glsl_usampler2D:
-                return u8"usampler2D";
+                return u8"usampler2D"_sv;
             case Builtin_GLSL_Type::glsl_utexture2D:
-                return u8"utexture2D";
+                return u8"utexture2D"_sv;
             case Builtin_GLSL_Type::glsl_uimage2D:
-                return u8"uimage2D";
+                return u8"uimage2D"_sv;
             case Builtin_GLSL_Type::glsl_usampler2DArray:
-                return u8"usampler2DArray";
+                return u8"usampler2DArray"_sv;
             case Builtin_GLSL_Type::glsl_utexture2DArray:
-                return u8"utexture2DArray";
+                return u8"utexture2DArray"_sv;
             case Builtin_GLSL_Type::glsl_uimage2DArray:
-                return u8"uimage2DArray";
+                return u8"uimage2DArray"_sv;
             case Builtin_GLSL_Type::glsl_usampler2DMS:
-                return u8"usampler2DMS";
+                return u8"usampler2DMS"_sv;
             case Builtin_GLSL_Type::glsl_utexture2DMS:
-                return u8"utexture2DMS";
+                return u8"utexture2DMS"_sv;
             case Builtin_GLSL_Type::glsl_uimage2DMS:
-                return u8"uimage2DMS";
+                return u8"uimage2DMS"_sv;
             case Builtin_GLSL_Type::glsl_usampler2DMSArray:
-                return u8"usampler2DMSArray";
+                return u8"usampler2DMSArray"_sv;
             case Builtin_GLSL_Type::glsl_utexture2DMSArray:
-                return u8"utexture2DMSArray";
+                return u8"utexture2DMSArray"_sv;
             case Builtin_GLSL_Type::glsl_uimage2DMSArray:
-                return u8"uimage2DMSArray";
+                return u8"uimage2DMSArray"_sv;
             case Builtin_GLSL_Type::glsl_usampler2DRect:
-                return u8"usampler2DRect";
+                return u8"usampler2DRect"_sv;
             case Builtin_GLSL_Type::glsl_utexture2DRect:
-                return u8"utexture2DRect";
+                return u8"utexture2DRect"_sv;
             case Builtin_GLSL_Type::glsl_uimage2DRect:
-                return u8"uimage2DRect";
+                return u8"uimage2DRect"_sv;
             case Builtin_GLSL_Type::glsl_usampler3D:
-                return u8"usampler3D";
+                return u8"usampler3D"_sv;
             case Builtin_GLSL_Type::glsl_utexture3D:
-                return u8"utexture3D";
+                return u8"utexture3D"_sv;
             case Builtin_GLSL_Type::glsl_uimage3D:
-                return u8"uimage3D";
+                return u8"uimage3D"_sv;
             case Builtin_GLSL_Type::glsl_usamplerCube:
-                return u8"usamplerCube";
+                return u8"usamplerCube"_sv;
             case Builtin_GLSL_Type::glsl_utextureCube:
-                return u8"utextureCube";
+                return u8"utextureCube"_sv;
             case Builtin_GLSL_Type::glsl_uimageCube:
-                return u8"uimageCube";
+                return u8"uimageCube"_sv;
             case Builtin_GLSL_Type::glsl_usamplerCubeArray:
-                return u8"usamplerCubeArray";
+                return u8"usamplerCubeArray"_sv;
             case Builtin_GLSL_Type::glsl_utextureCubeArray:
-                return u8"utextureCubeArray";
+                return u8"utextureCubeArray"_sv;
             case Builtin_GLSL_Type::glsl_uimageCubeArray:
-                return u8"uimageCubeArray";
+                return u8"uimageCubeArray"_sv;
             case Builtin_GLSL_Type::glsl_usamplerBuffer:
-                return u8"usamplerBuffer";
+                return u8"usamplerBuffer"_sv;
             case Builtin_GLSL_Type::glsl_utextureBuffer:
-                return u8"utextureBuffer";
+                return u8"utextureBuffer"_sv;
             case Builtin_GLSL_Type::glsl_uimageBuffer:
-                return u8"uimageBuffer";
+                return u8"uimageBuffer"_sv;
             case Builtin_GLSL_Type::glsl_usubpassInput:
-                return u8"usubpassInput";
+                return u8"usubpassInput"_sv;
             case Builtin_GLSL_Type::glsl_usubpassInputMS:
-                return u8"usubpassInputMS";
+                return u8"usubpassInputMS"_sv;
             case Builtin_GLSL_Type::glsl_sampler:
-                return u8"sampler";
+                return u8"sampler"_sv;
             case Builtin_GLSL_Type::glsl_samplerShadow:
-                return u8"samplerShadow";
+                return u8"samplerShadow"_sv;
         }
     }
 
@@ -783,83 +783,83 @@ namespace vush {
     anton::String_View stringify(Image_Layout_Type type) {
         switch(type) {
             case Image_Layout_Type::rgba32f:
-                return u8"rgba32f";
+                return u8"rgba32f"_sv;
             case Image_Layout_Type::rgba16f:
-                return u8"rgba16f";
+                return u8"rgba16f"_sv;
             case Image_Layout_Type::rg32f:
-                return u8"rg32f";
+                return u8"rg32f"_sv;
             case Image_Layout_Type::rg16f:
-                return u8"rg16f";
+                return u8"rg16f"_sv;
             case Image_Layout_Type::r11f_g11f_b10f:
-                return u8"r11f_g11f_b10f";
+                return u8"r11f_g11f_b10f"_sv;
             case Image_Layout_Type::r32f:
-                return u8"r32f";
+                return u8"r32f"_sv;
             case Image_Layout_Type::r16f:
-                return u8"r16f";
+                return u8"r16f"_sv;
             case Image_Layout_Type::rgba16:
-                return u8"rgba16";
+                return u8"rgba16"_sv;
             case Image_Layout_Type::rgb10_a2:
-                return u8"rgb10_a2";
+                return u8"rgb10_a2"_sv;
             case Image_Layout_Type::rgba8:
-                return u8"rgba8";
+                return u8"rgba8"_sv;
             case Image_Layout_Type::rg16:
-                return u8"rg16";
+                return u8"rg16"_sv;
             case Image_Layout_Type::rg8:
-                return u8"rg8";
+                return u8"rg8"_sv;
             case Image_Layout_Type::r16:
-                return u8"r16";
+                return u8"r16"_sv;
             case Image_Layout_Type::r8:
-                return u8"r8";
+                return u8"r8"_sv;
             case Image_Layout_Type::rgba16_snorm:
-                return u8"rgba16_snorm";
+                return u8"rgba16_snorm"_sv;
             case Image_Layout_Type::rgba8_snorm:
-                return u8"rgba8_snorm";
+                return u8"rgba8_snorm"_sv;
             case Image_Layout_Type::rg16_snorm:
-                return u8"rg16_snorm";
+                return u8"rg16_snorm"_sv;
             case Image_Layout_Type::rg8_snorm:
-                return u8"rg8_snorm";
+                return u8"rg8_snorm"_sv;
             case Image_Layout_Type::r16_snorm:
-                return u8"r16_snorm";
+                return u8"r16_snorm"_sv;
             case Image_Layout_Type::r8_snorm:
-                return u8"r8_snorm";
+                return u8"r8_snorm"_sv;
             case Image_Layout_Type::rgba32i:
-                return u8"rgba32i";
+                return u8"rgba32i"_sv;
             case Image_Layout_Type::rgba16i:
-                return u8"rgba16i";
+                return u8"rgba16i"_sv;
             case Image_Layout_Type::rgba8i:
-                return u8"rgba8i";
+                return u8"rgba8i"_sv;
             case Image_Layout_Type::rg32i:
-                return u8"rg32i";
+                return u8"rg32i"_sv;
             case Image_Layout_Type::rg16i:
-                return u8"rg16i";
+                return u8"rg16i"_sv;
             case Image_Layout_Type::rg8i:
-                return u8"rg8i";
+                return u8"rg8i"_sv;
             case Image_Layout_Type::r32i:
-                return u8"r32i";
+                return u8"r32i"_sv;
             case Image_Layout_Type::r16i:
-                return u8"r16i";
+                return u8"r16i"_sv;
             case Image_Layout_Type::r8i:
-                return u8"r8i";
+                return u8"r8i"_sv;
             case Image_Layout_Type::rgba32ui:
-                return u8"rgba32ui";
+                return u8"rgba32ui"_sv;
             case Image_Layout_Type::rgba16ui:
-                return u8"rgba16ui";
+                return u8"rgba16ui"_sv;
             case Image_Layout_Type::rgb10_a2ui:
-                return u8"rgb10_a2ui";
+                return u8"rgb10_a2ui"_sv;
             case Image_Layout_Type::rgba8ui:
-                return u8"rgba8ui";
+                return u8"rgba8ui"_sv;
             case Image_Layout_Type::rg32ui:
-                return u8"rg32ui";
+                return u8"rg32ui"_sv;
             case Image_Layout_Type::rg16ui:
-                return u8"rg16ui";
+                return u8"rg16ui"_sv;
             case Image_Layout_Type::rg8ui:
-                return u8"rg8ui";
+                return u8"rg8ui"_sv;
             case Image_Layout_Type::r32ui:
-                return u8"r32ui";
+                return u8"r32ui"_sv;
             case Image_Layout_Type::r16ui:
-                return u8"r16ui";
+                return u8"r16ui"_sv;
             case Image_Layout_Type::r8ui:
-                return u8"r8ui";
+                return u8"r8ui"_sv;
         }
     }
 
@@ -874,8 +874,8 @@ namespace vush {
 #define ALLOC(type, ...) allocate<type>(allocator, __VA_ARGS__)
 
     template<typename T>
-    anton::Array<Owning_Ptr<T>> clone(anton::Array<Owning_Ptr<T>> const& array, Allocator* const allocator) {
-        anton::Array<Owning_Ptr<T>> copy{anton::reserve, array.size()};
+    Array<Owning_Ptr<T>> clone(Array<Owning_Ptr<T>> const& array, Allocator* const allocator) {
+        Array<Owning_Ptr<T>> copy{anton::reserve, array.size(), array.get_allocator()};
         for(Owning_Ptr<T> const& object: array) {
             copy.emplace_back(object->clone(allocator));
         }
@@ -1014,7 +1014,7 @@ namespace vush {
         return ALLOC(Struct_Member, type->clone(allocator), identifier->clone(allocator), initializer->clone(allocator), interpolation, invariant, source_info);
     }
 
-    Struct_Declaration::Struct_Declaration(Owning_Ptr<Identifier> identifier, anton::Array<Owning_Ptr<Struct_Member>> members, Source_Info const& source_info)
+    Struct_Declaration::Struct_Declaration(Owning_Ptr<Identifier> identifier, Array<Owning_Ptr<Struct_Member>> members, Source_Info const& source_info)
         : Declaration(source_info, AST_Node_Type::struct_declaration), members(ANTON_MOV(members)), identifier(ANTON_MOV(identifier)) {}
 
     Owning_Ptr<Struct_Declaration> Struct_Declaration::clone(Allocator* const allocator) const {
@@ -1025,10 +1025,7 @@ namespace vush {
         return ALLOC(Struct_Declaration, identifier->clone(allocator), vush::clone(members, allocator), source_info);
     }
 
-    Settings_Declaration::Settings_Declaration(Owning_Ptr<Identifier> pass_name, Source_Info const& source_info)
-        : Declaration(source_info, AST_Node_Type::settings_declaration), pass_name(ANTON_MOV(pass_name)) {}
-
-    Settings_Declaration::Settings_Declaration(Owning_Ptr<Identifier> pass_name, anton::Array<Setting_Key_Value> settings, Source_Info const& source_info)
+    Settings_Declaration::Settings_Declaration(Owning_Ptr<Identifier> pass_name, Array<Setting_Key_Value> settings, Source_Info const& source_info)
         : Declaration(source_info, AST_Node_Type::settings_declaration), pass_name(ANTON_MOV(pass_name)), settings(ANTON_MOV(settings)) {}
 
     Owning_Ptr<Settings_Declaration> Settings_Declaration::clone(Allocator* const allocator) const {
@@ -1123,8 +1120,8 @@ namespace vush {
     Overloaded_Function_Declaration::Overloaded_Function_Declaration(Owning_Ptr<Identifier> identifier, Source_Info const& source_info)
         : Declaration(source_info, AST_Node_Type::overloaded_function_declaration), identifier(ANTON_MOV(identifier)) {}
 
-    Overloaded_Function_Declaration::Overloaded_Function_Declaration(Owning_Ptr<Identifier> identifier,
-                                                                     anton::Array<Owning_Ptr<Function_Declaration>> overloads, Source_Info const& source_info)
+    Overloaded_Function_Declaration::Overloaded_Function_Declaration(Owning_Ptr<Identifier> identifier, Array<Owning_Ptr<Function_Declaration>> overloads,
+                                                                     Source_Info const& source_info)
         : Declaration(source_info, AST_Node_Type::overloaded_function_declaration), identifier(ANTON_MOV(identifier)), overloads(ANTON_MOV(overloads)) {}
 
     Owning_Ptr<Overloaded_Function_Declaration> Overloaded_Function_Declaration::clone(Allocator* const allocator) const {
@@ -1257,8 +1254,7 @@ namespace vush {
         return ALLOC(Prefix_Decrement_Expression, expression->clone(allocator), source_info);
     }
 
-    Function_Call_Expression::Function_Call_Expression(Owning_Ptr<Identifier> identifier, anton::Array<Owning_Ptr<Expression>> arguments,
-                                                       Source_Info const& source_info)
+    Function_Call_Expression::Function_Call_Expression(Owning_Ptr<Identifier> identifier, Expression_List arguments, Source_Info const& source_info)
         : Expression(source_info, AST_Node_Type::function_call_expression), arguments(ANTON_MOV(arguments)), identifier(ANTON_MOV(identifier)) {}
 
     Owning_Ptr<Function_Call_Expression> Function_Call_Expression::clone(Allocator* const allocator) const {
@@ -1429,7 +1425,7 @@ namespace vush {
         return ALLOC(Case_Statement, vush::clone(labels, allocator), vush::clone(statements, allocator), source_info);
     }
 
-    Switch_Statement::Switch_Statement(Owning_Ptr<Expression> match_expression, anton::Array<Owning_Ptr<Case_Statement>> cases, Source_Info const& source_info)
+    Switch_Statement::Switch_Statement(Owning_Ptr<Expression> match_expression, Array<Owning_Ptr<Case_Statement>> cases, Source_Info const& source_info)
         : Statement(source_info, AST_Node_Type::switch_statement), cases(ANTON_MOV(cases)), match_expression(ANTON_MOV(match_expression)) {}
 
     Owning_Ptr<Switch_Statement> Switch_Statement::clone(Allocator* const allocator) const {

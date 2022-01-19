@@ -37,11 +37,11 @@ namespace vush {
         //       once we implement symbol referencing.
 
         // Functions used by the pass
-        anton::Array<Function_Declaration const*> functions;
+        Array<Function_Declaration const*> functions;
         // Structs and constants used by the pass
-        anton::Array<Declaration const*> structs_and_constants;
+        Array<Declaration const*> structs_and_constants;
 
-        Pass_Context(anton::String_View const name): name(name) {}
+        Pass_Context(Allocator* allocator, anton::String_View const name): name(name, allocator), functions(allocator), structs_and_constants(allocator) {}
     };
 
     struct Codegen_Data {
@@ -49,5 +49,5 @@ namespace vush {
         anton::Slice<Pass_Context const> passes;
     };
 
-    anton::Expected<anton::Array<Pass_Data>, anton::String> generate_glsl(Context const& ctx, Codegen_Data const& data);
+    anton::Expected<Array<Pass_Data>, anton::String> generate_glsl(Context const& ctx, Codegen_Data const& data);
 } // namespace vush

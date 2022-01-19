@@ -46,7 +46,7 @@ namespace vush {
 
     struct Pass_Settings {
         anton::String pass_name;
-        anton::Array<Setting_Key_Value> settings;
+        Array<Setting_Key_Value> settings;
     };
 
     struct Stage_Sourced_Data {
@@ -83,8 +83,8 @@ namespace vush {
 
     struct Configuration {
         anton::String source_name;
-        anton::Array<Constant_Define> defines;
-        anton::Array<Extension> extensions;
+        Array<Constant_Define> defines;
+        Array<Extension> extensions;
         source_definition_callback source_definition_cb = nullptr;
         void* source_definition_user_data = nullptr;
         Diagnostics_Options diagnostics;
@@ -107,12 +107,12 @@ namespace vush {
 
     struct Pass_Data {
         anton::String name;
-        anton::Array<GLSL_File> files;
+        Array<GLSL_File> files;
     };
 
     struct Build_Result {
-        anton::Array<Pass_Settings> settings;
-        anton::Array<Pass_Data> passes;
+        Array<Pass_Settings> settings;
+        Array<Pass_Data> passes;
     };
 
     struct Source_Request_Result {

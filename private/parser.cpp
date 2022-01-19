@@ -315,7 +315,7 @@ namespace vush {
             : _allocator(allocator), _source_name(source_name), _lexer(source_code) {}
 
         anton::Expected<Declaration_List, Parse_Error> build_ast() {
-            Declaration_List ast;
+            Declaration_List ast{_allocator};
             while(!_lexer.match_eof()) {
                 if(Owning_Ptr declaration = try_declaration()) {
                     ast.emplace_back(ANTON_MOV(declaration));
@@ -327,7 +327,7 @@ namespace vush {
         }
 
         anton::Expected<Declaration_List, Parse_Error> parse_builtin_functions() {
-            Declaration_List builtin_functions;
+            Declaration_List builtin_functions{_allocator};
             while(!_lexer.match_eof()) {
                 if(Owning_Ptr fn = try_function_declaration()) {
                     fn->builtin = true;
@@ -427,7 +427,7 @@ namespace vush {
                 return OWNING_NULL(Declaration_If);
             }
 
-            Declaration_List true_declarations;
+            Declaration_List true_declarations{_allocator};
             while(!_lexer.match(token_brace_close)) {
                 if(_lexer.match_eof()) {
                     set_error(u8"unexpected end of file");
@@ -442,7 +442,7 @@ namespace vush {
                 }
             }
 
-            Declaration_List false_declarations;
+            Declaration_List false_declarations{_allocator};
             if(_lexer.match(kw_else, true)) {
                 if(Owning_Ptr if_declaration = try_declaration_if()) {
                     false_declarations.emplace_back(ANTON_MOV(if_declaration));
@@ -672,7 +672,7 @@ namespace vush {
                 return OWNING_NULL(Struct_Declaration);
             }
 
-            anton::Array<Owning_Ptr<Struct_Member>> members;
+            Array<Owning_Ptr<Struct_Member>> members(_allocator);
             while(!_lexer.match(token_brace_close)) {
                 if(Owning_Ptr decl = try_struct_member()) {
                     members.emplace_back(ANTON_MOV(decl));
@@ -692,11 +692,11 @@ namespace vush {
 
             auto match_string = [this, &state_backup]() -> anton::Optional<anton::String> {
                 _lexer.ignore_whitespace_and_comments();
-                anton::String string;
+                anton::String string(_allocator);
                 while(true) {
                     char32 next_char = _lexer.peek_next();
                     if(next_char == eof_char32) {
-                        set_error(u8"unexpected end of file");
+                        set_error(u8"unexpected end of file"_sv);
                         _lexer.restore_state(state_backup);
                         return anton::null_optional;
                     } else if(is_whitespace(next_char) || next_char == U':' || next_char == U'}' || next_char == U'{') {
@@ -708,7 +708,7 @@ namespace vush {
                 }
             };
 
-            auto match_nested_settings = [this, &state_backup, &match_string](auto match_nested_settings, anton::Array<Setting_Key_Value>& settings,
+            auto match_nested_settings = [this, &state_backup, &match_string](auto match_nested_settings, Array<Setting_Key_Value>& settings,
                                                                               anton::String const& setting_name) -> bool {
                 while(true) {
                     if(_lexer.match(token_brace_close)) {
@@ -722,20 +722,20 @@ namespace vush {
                     }
 
                     if(key_name.value().size_bytes() == 0) {
-                        set_error(u8"expected name");
+                        set_error(u8"expected name"_sv);
                         _lexer.restore_state(state_backup);
                         return false;
                     }
 
                     if(!_lexer.match(token_colon)) {
-                        set_error(u8"expected ':'");
+                        set_error(u8"expected ':'"_sv);
                         _lexer.restore_state(state_backup);
                         return false;
                     }
 
-                    anton::String setting_key = setting_name;
+                    anton::String setting_key(setting_name);
                     if(setting_key.size_bytes() > 0) {
-                        setting_key += u8"_";
+                        setting_key += u8"_"_sv;
                     }
                     setting_key += key_name.value();
 
@@ -752,7 +752,7 @@ namespace vush {
                         }
 
                         if(value.value().size_bytes() == 0) {
-                            set_error(u8"expected value string after ':'");
+                            set_error(u8"expected value string after ':'"_sv);
                             _lexer.restore_state(state_backup);
                             return false;
                         }
@@ -763,7 +763,7 @@ namespace vush {
             };
 
             if(!_lexer.match(kw_settings, true)) {
-                set_error(u8"expected 'settings'");
+                set_error(u8"expected 'settings'"_sv);
                 _lexer.restore_state(state_backup);
                 return OWNING_NULL(Settings_Declaration);
             }
@@ -774,14 +774,15 @@ namespace vush {
                 return OWNING_NULL(Settings_Declaration);
             }
 
-            Owning_Ptr settings_declaration = ALLOC(Settings_Declaration, ANTON_MOV(pass_name), src_info(state_backup, state_backup));
+            Owning_Ptr settings_declaration =
+                ALLOC(Settings_Declaration, ANTON_MOV(pass_name), Array<Setting_Key_Value>(_allocator), src_info(state_backup, state_backup));
             if(!_lexer.match(token_brace_open)) {
-                set_error(u8"expected '{'");
+                set_error(u8"expected '{'"_sv);
                 _lexer.restore_state(state_backup);
                 return OWNING_NULL(Settings_Declaration);
             }
 
-            if(!match_nested_settings(match_nested_settings, settings_declaration->settings, anton::String{})) {
+            if(!match_nested_settings(match_nested_settings, settings_declaration->settings, anton::String(_allocator))) {
                 _lexer.restore_state(state_backup);
                 return OWNING_NULL(Settings_Declaration);
             }
@@ -858,7 +859,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            Attribute_List attributes;
+            Attribute_List attributes{_allocator};
             while(true) {
                 Owning_Ptr attribute = try_attribute();
                 if(!attribute) {
@@ -943,7 +944,7 @@ namespace vush {
             // Parse the attribute lists. We allow many attribute lists
             // to be present on a stage declaration. We merge the lists into
             // a single attribute array.
-            Attribute_List attributes;
+            Attribute_List attributes{_allocator};
             while(true) {
                 anton::Optional<Attribute_List> attributes_result = try_attribute_list();
                 if(!attributes_result) {
@@ -1020,7 +1021,7 @@ namespace vush {
             // Parse the attribute lists. We allow many attribute lists
             // to be present on a function declaration. We merge the lists
             // into a single attribute array.
-            Attribute_List attributes;
+            Attribute_List attributes{_allocator};
             while(true) {
                 anton::Optional<Attribute_List> attributes_result = try_attribute_list();
                 if(!attributes_result) {
@@ -1073,10 +1074,10 @@ namespace vush {
             }
 
             if(_lexer.match(token_paren_close)) {
-                return Parameter_List{};
+                return Parameter_List{_allocator};
             }
 
-            Parameter_List param_list;
+            Parameter_List param_list{_allocator};
             // Match parameters
             do {
                 Owning_Ptr param = try_function_parameter();
@@ -1273,7 +1274,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            Statement_List body;
+            Statement_List body{_allocator};
             while(true) {
                 if(_lexer.match(token_brace_close)) {
                     return {ANTON_MOV(body)};
@@ -1371,7 +1372,7 @@ namespace vush {
                 return OWNING_NULL(If_Statement);
             }
 
-            Statement_List false_statements;
+            Statement_List false_statements{_allocator};
             if(_lexer.match(kw_else, true)) {
                 if(Owning_Ptr if_statement = try_if_statement()) {
                     false_statements.emplace_back(ANTON_MOV(if_statement));
@@ -1409,7 +1410,7 @@ namespace vush {
                 return OWNING_NULL(Switch_Statement);
             }
 
-            anton::Array<Owning_Ptr<Case_Statement>> cases;
+            Array<Owning_Ptr<Case_Statement>> cases(_allocator);
             while(true) {
                 Lexer_State const case_state = _lexer.get_current_state();
 
@@ -1417,7 +1418,7 @@ namespace vush {
                     break;
                 }
 
-                Expression_List labels;
+                Expression_List labels{_allocator};
                 do {
                     Lexer_State const label_state = _lexer.get_current_state();
                     if(_lexer.match(kw_default, true)) {
@@ -2417,7 +2418,7 @@ namespace vush {
                 return OWNING_NULL(Function_Call_Expression);
             }
 
-            anton::Array<Owning_Ptr<Expression>> arguments;
+            Expression_List arguments{_allocator};
             if(_lexer.match(token_paren_close)) {
                 Lexer_State const end_state = _lexer.get_current_state_no_skip();
                 Source_Info const src = src_info(state_backup, end_state);

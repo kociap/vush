@@ -813,7 +813,7 @@ namespace vush {
                     };
 
                     Default_Expression* default_label = nullptr;
-                    anton::Array<Label> labels;
+                    Array<Label> labels{ctx.allocator};
                     for(auto& s: node.cases) {
                         for(auto& label: s->labels) {
                             anton::Expected<void, anton::String> label_res = process_expression(ctx, label);
@@ -1071,7 +1071,9 @@ namespace vush {
     }
 
     struct Function_Call_Aggregator: public Recursive_AST_Matcher, public AST_Action {
-        anton::Array<Function_Call_Expression*> function_calls;
+        Array<Function_Call_Expression*> function_calls;
+
+        Function_Call_Aggregator(Allocator* allocator): function_calls(allocator) {}
 
         [[nodiscard]] virtual Match_Result match(Function_Call_Expression const&) override {
             return {true};
@@ -1126,10 +1128,9 @@ namespace vush {
     //    to the symbol table.
     // After calling this function it is not safe to lookup non-global or function symbols anymore!
     //
-    static void perform_function_instantiations(Context& ctx, anton::Slice<Pass_Context> const passes,
-                                                anton::Array<Owning_Ptr<Function_Declaration>>& functions) {
-        Function_Call_Aggregator fn_call_aggregator;
-        anton::Array<Function_Call_Expression*>& function_calls = fn_call_aggregator.function_calls;
+    static void perform_function_instantiations(Context& ctx, anton::Slice<Pass_Context> const passes, Array<Owning_Ptr<Function_Declaration>>& functions) {
+        Function_Call_Aggregator fn_call_aggregator{ctx.allocator};
+        Array<Function_Call_Expression*>& function_calls = fn_call_aggregator.function_calls;
         // Stores hashes of the stringified signatures of the instances of the functions.
         anton::Flat_Hash_Set<u64> instantiated_functions;
         // Stores functions that do no require instantiation that have been added to a pass.
@@ -1226,7 +1227,7 @@ namespace vush {
                     // Rename the instance
                     instance->identifier->value = instance_name;
                     // Build replacements table
-                    anton::Array<Replacement_Rule> replacements;
+                    Array<Replacement_Rule> replacements{ctx.allocator};
                     for(i64 i = 0; i < instance->parameters.size(); ++i) {
                         Function_Parameter& p = static_cast<Function_Parameter&>(*instance->parameters[i]);
                         if(is_unsized_array(*p.type)) {
@@ -1269,9 +1270,8 @@ namespace vush {
     // partition_ast
     // Moves nodes based on their type into arrays.
     //
-    static void partition_ast(Declaration_List& ast, anton::Array<Owning_Ptr<Pass_Stage_Declaration>>& stages,
-                              anton::Array<Owning_Ptr<Function_Declaration>>& functions, anton::Array<Owning_Ptr<Declaration>>& structs_and_constants,
-                              anton::Array<Owning_Ptr<Settings_Declaration>>& settings) {
+    static void partition_ast(Declaration_List& ast, Array<Owning_Ptr<Pass_Stage_Declaration>>& stages, Array<Owning_Ptr<Function_Declaration>>& functions,
+                              Array<Owning_Ptr<Declaration>>& structs_and_constants, Array<Owning_Ptr<Settings_Declaration>>& settings) {
         for(auto& ast_node: ast) {
             switch(ast_node->node_type) {
                 case AST_Node_Type::struct_declaration:
@@ -1301,7 +1301,7 @@ namespace vush {
         }
     }
 
-    static void gather_settings(anton::Array<Pass_Settings>& settings, anton::Slice<Owning_Ptr<Settings_Declaration> const> setting_declarations) {
+    static void gather_settings(Array<Pass_Settings>& settings, anton::Slice<Owning_Ptr<Settings_Declaration> const> setting_declarations) {
         for(auto& declaration: setting_declarations) {
             Pass_Settings* pass_iter = anton::find_if(
                 settings.begin(), settings.end(), [&pass_name = declaration->pass_name->value](Pass_Settings const& v) { return v.pass_name == pass_name; });
@@ -1310,7 +1310,7 @@ namespace vush {
                 pass_iter = &v;
             }
 
-            anton::Array<Setting_Key_Value>& pass_settings = pass_iter->settings;
+            Array<Setting_Key_Value>& pass_settings = pass_iter->settings;
             // N^2 loop to overwrite duplicates in the order of occurence
             for(Setting_Key_Value const& kv_new: declaration->settings) {
                 auto end = pass_settings.end();
@@ -1324,7 +1324,7 @@ namespace vush {
         }
     }
 
-    static void gather_overloads(Context& ctx, anton::Array<Owning_Ptr<Overloaded_Function_Declaration>>& overloads,
+    static void gather_overloads(Context& ctx, Array<Owning_Ptr<Overloaded_Function_Declaration>>& overloads,
                                  anton::Slice<Owning_Ptr<Function_Declaration>> const functions) {
         anton::Flat_Hash_Map<anton::String_View, Owning_Ptr<Overloaded_Function_Declaration>> overloads_dictionary;
         for(auto& fn: functions) {
@@ -1347,10 +1347,12 @@ namespace vush {
     }
 
     struct AST_Build_Result {
-        anton::Array<Pass_Settings> settings;
-        anton::Array<Owning_Ptr<Pass_Stage_Declaration>> stages;
-        anton::Array<Owning_Ptr<Overloaded_Function_Declaration>> functions;
-        anton::Array<Owning_Ptr<Declaration>> structs_and_constants;
+        Array<Pass_Settings> settings;
+        Array<Owning_Ptr<Pass_Stage_Declaration>> stages;
+        Array<Owning_Ptr<Overloaded_Function_Declaration>> functions;
+        Array<Owning_Ptr<Declaration>> structs_and_constants;
+
+        AST_Build_Result(Allocator* allocator): settings(allocator), stages(allocator), functions(allocator), structs_and_constants(allocator) {}
     };
 
     // build_ast_from_sources
@@ -1396,9 +1398,9 @@ namespace vush {
             }
         }
 
-        AST_Build_Result result;
-        anton::Array<Owning_Ptr<Settings_Declaration>> settings;
-        anton::Array<Owning_Ptr<Function_Declaration>> functions;
+        AST_Build_Result result{ctx.allocator};
+        Array<Owning_Ptr<Settings_Declaration>> settings{ctx.allocator};
+        Array<Owning_Ptr<Function_Declaration>> functions{ctx.allocator};
         partition_ast(ast, result.stages, functions, result.structs_and_constants, settings);
         gather_settings(result.settings, settings);
         gather_overloads(ctx, result.functions, functions);
@@ -1461,14 +1463,14 @@ namespace vush {
         return {anton::expected_value, ANTON_MOV(result)};
     }
 
-    [[nodiscard]] static anton::Expected<anton::Array<Pass_Context>, anton::String>
+    [[nodiscard]] static anton::Expected<Array<Pass_Context>, anton::String>
     build_pass_contexts(Context const& ctx, anton::Slice<Owning_Ptr<Pass_Stage_Declaration> const> const stage_declarations) {
-        anton::Array<Pass_Context> passes;
+        Array<Pass_Context> passes{ctx.allocator};
         for(auto const& stage_declaration: stage_declarations) {
             anton::String_View const pass_name = stage_declaration->pass_name->value;
             Pass_Context* pass = anton::find_if(passes.begin(), passes.end(), [pass_name](Pass_Context const& v) { return v.name == pass_name; });
             if(pass == passes.end()) {
-                Pass_Context& v = passes.emplace_back(Pass_Context{pass_name});
+                Pass_Context& v = passes.push_back(Pass_Context{ctx.allocator, pass_name});
                 pass = &v;
             }
 
@@ -1582,13 +1584,14 @@ namespace vush {
         // Add global scope
         ctx.symbols.emplace_back();
         // Create symbols for the constant defines passed via config
-        anton::Array<Owning_Ptr<Declaration>> constant_defines;
+        Array<Owning_Ptr<Declaration>> constant_defines{ctx.allocator};
         for(Constant_Define const& define: config.defines) {
             Source_Info src = {config.source_name, 0, 0, 0};
             Owning_Ptr decl = allocate_owning<Constant_Declaration>(
-                &allocator, allocate_owning<Builtin_Type>(&allocator, Builtin_GLSL_Type::glsl_int, src),
-                allocate_owning<Identifier>(&allocator, anton::String(define.name), src),
-                allocate_owning<Integer_Literal>(&allocator, anton::to_string(define.value), Integer_Literal_Type::i32, Integer_Literal_Base::dec, src), src);
+                ctx.allocator, allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_int, src),
+                allocate_owning<Identifier>(ctx.allocator, anton::String(define.name), src),
+                allocate_owning<Integer_Literal>(ctx.allocator, anton::to_string(define.value), Integer_Literal_Type::i32, Integer_Literal_Base::dec, src),
+                src);
             ctx.symbols[0].emplace(define.name, decl.get());
             constant_defines.push_back(ANTON_MOV(decl));
         }
@@ -1614,7 +1617,7 @@ namespace vush {
         }
 
         AST_Build_Result& ast = build_res.value();
-        anton::Expected<anton::Array<Pass_Context>, anton::String> pass_build_res = build_pass_contexts(ctx, ast.stages);
+        anton::Expected<Array<Pass_Context>, anton::String> pass_build_res = build_pass_contexts(ctx, ast.stages);
         if(!pass_build_res) {
             return {anton::expected_error, ANTON_MOV(pass_build_res.error())};
         }
@@ -1650,13 +1653,13 @@ namespace vush {
         }
 
         // We persist the instantiated functions until the code generation is complete.
-        anton::Array<Owning_Ptr<Function_Declaration>> instantiated_functions;
+        Array<Owning_Ptr<Function_Declaration>> instantiated_functions{ctx.allocator};
         // BREAKS THE SYMBOL TABLE!
         // Make sure everything that requires the symbol table is done at this point.
         perform_function_instantiations(ctx, passes, instantiated_functions);
 
         Codegen_Data codegen_data{config.extensions, passes};
-        anton::Expected<anton::Array<Pass_Data>, anton::String> codegen_res = generate_glsl(ctx, codegen_data);
+        anton::Expected<Array<Pass_Data>, anton::String> codegen_res = generate_glsl(ctx, codegen_data);
         if(!codegen_res) {
             return {anton::expected_error, ANTON_MOV(codegen_res.error())};
         }

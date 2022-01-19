@@ -2,6 +2,7 @@
 
 #include <anton/array.hpp>
 #include <owning_ptr.hpp>
+#include <vush/types.hpp>
 
 namespace vush {
     enum struct AST_Node_Type;
@@ -68,9 +69,9 @@ namespace vush {
     struct Declaration_Statement;
     struct Expression_Statement;
 
-    using Declaration_List = anton::Array<Owning_Ptr<Declaration>>;
-    using Statement_List = anton::Array<Owning_Ptr<Statement>>;
-    using Parameter_List = anton::Array<Owning_Ptr<Function_Parameter_Node>>;
-    using Attribute_List = anton::Array<Owning_Ptr<Attribute>>;
-    using Expression_List = anton::Array<Owning_Ptr<Expression>>;
+    using Declaration_List = Array<Owning_Ptr<Declaration>>;
+    using Statement_List = Array<Owning_Ptr<Statement>>;
+    using Parameter_List = Array<Owning_Ptr<Function_Parameter_Node>>;
+    using Attribute_List = Array<Owning_Ptr<Attribute>>;
+    using Expression_List = Array<Owning_Ptr<Expression>>;
 } // namespace vush

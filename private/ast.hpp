@@ -414,10 +414,10 @@ namespace vush {
     };
 
     struct Struct_Declaration: public Declaration {
-        anton::Array<Owning_Ptr<Struct_Member>> members;
+        Array<Owning_Ptr<Struct_Member>> members;
         Owning_Ptr<Identifier> identifier;
 
-        Struct_Declaration(Owning_Ptr<Identifier> identifier, anton::Array<Owning_Ptr<Struct_Member>> members, Source_Info const& source_info);
+        Struct_Declaration(Owning_Ptr<Identifier> identifier, Array<Owning_Ptr<Struct_Member>> members, Source_Info const& source_info);
 
         [[nodiscard]] Owning_Ptr<Struct_Declaration> clone(Allocator* allocator) const;
 
@@ -427,10 +427,9 @@ namespace vush {
 
     struct Settings_Declaration: public Declaration {
         Owning_Ptr<Identifier> pass_name;
-        anton::Array<Setting_Key_Value> settings;
+        Array<Setting_Key_Value> settings;
 
-        Settings_Declaration(Owning_Ptr<Identifier> pass_name, Source_Info const& source_info);
-        Settings_Declaration(Owning_Ptr<Identifier> pass_name, anton::Array<Setting_Key_Value> settings, Source_Info const& source_info);
+        Settings_Declaration(Owning_Ptr<Identifier> pass_name, Array<Setting_Key_Value> settings, Source_Info const& source_info);
 
         [[nodiscard]] Owning_Ptr<Settings_Declaration> clone(Allocator* allocator) const;
 
@@ -589,13 +588,12 @@ namespace vush {
 
     struct Overloaded_Function_Declaration: public Declaration {
         Owning_Ptr<Identifier> identifier;
-        anton::Array<Owning_Ptr<Function_Declaration>> overloads;
+        Array<Owning_Ptr<Function_Declaration>> overloads;
         // Whether the function is a builtin function.
         bool builtin = false;
 
         Overloaded_Function_Declaration(Owning_Ptr<Identifier> identifier, Source_Info const& source_info);
-        Overloaded_Function_Declaration(Owning_Ptr<Identifier> identifier, anton::Array<Owning_Ptr<Function_Declaration>> overloads,
-                                        Source_Info const& source_info);
+        Overloaded_Function_Declaration(Owning_Ptr<Identifier> identifier, Array<Owning_Ptr<Function_Declaration>> overloads, Source_Info const& source_info);
 
         [[nodiscard]] Owning_Ptr<Overloaded_Function_Declaration> clone(Allocator* allocator) const;
 
@@ -797,10 +795,10 @@ namespace vush {
     };
 
     struct Function_Call_Expression: public Expression {
-        anton::Array<Owning_Ptr<Expression>> arguments;
+        Expression_List arguments;
         Owning_Ptr<Identifier> identifier;
 
-        Function_Call_Expression(Owning_Ptr<Identifier> identifier, anton::Array<Owning_Ptr<Expression>> arguments, Source_Info const& source_info);
+        Function_Call_Expression(Owning_Ptr<Identifier> identifier, Expression_List arguments, Source_Info const& source_info);
 
         [[nodiscard]] Owning_Ptr<Function_Call_Expression> clone(Allocator* allocator) const;
 
@@ -988,10 +986,10 @@ namespace vush {
     };
 
     struct Switch_Statement: public Statement {
-        anton::Array<Owning_Ptr<Case_Statement>> cases;
+        Array<Owning_Ptr<Case_Statement>> cases;
         Owning_Ptr<Expression> match_expression;
 
-        Switch_Statement(Owning_Ptr<Expression> match_expression, anton::Array<Owning_Ptr<Case_Statement>> cases, Source_Info const& source_info);
+        Switch_Statement(Owning_Ptr<Expression> match_expression, Array<Owning_Ptr<Case_Statement>> cases, Source_Info const& source_info);
 
         [[nodiscard]] Owning_Ptr<Switch_Statement> clone(Allocator* allocator) const;
 

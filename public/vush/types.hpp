@@ -1,5 +1,7 @@
 #pragma once
 
+#include <anton/allocator.hpp>
+#include <anton/array.hpp>
 #include <anton/types.hpp>
 
 namespace vush {
@@ -24,4 +26,7 @@ namespace vush {
     using char32 = anton::char32;
 
     using nullptr_t = anton::nullptr_t;
+
+    template<typename T>
+    using Array = anton::Array<T, anton::Polymorphic_Allocator>;
 } // namespace vush
