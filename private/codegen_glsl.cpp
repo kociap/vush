@@ -959,7 +959,7 @@ namespace vush {
     generate_vertex_stage(Context const& ctx, Codegen_Context& codegen_ctx, anton::String_View const pass_name, Stage_Context const& stage_ctx,
                           anton::String_View const stringified_extensions, anton::Slice<Function_Declaration const* const> const functions,
                           anton::Slice<Declaration const* const> const structs_and_constants) {
-        anton::String out{anton::reserve, 4096};
+        anton::String out{anton::reserve, 4096, codegen_ctx.ctx.allocator};
         out += "#version 460 core\n#pragma shader_stage(vertex)\n\n"_sv;
         out += stringified_extensions;
 
@@ -1155,7 +1155,7 @@ namespace vush {
     generate_fragment_stage(Context const& ctx, Codegen_Context& codegen_ctx, anton::String_View const pass_name, Stage_Context const& stage_ctx,
                             anton::String_View const stringified_extensions, anton::Slice<Function_Declaration const* const> const functions,
                             anton::Slice<Declaration const* const> const structs_and_constants) {
-        anton::String out{anton::reserve, 4096};
+        anton::String out{anton::reserve, 4096, codegen_ctx.ctx.allocator};
         out += "#version 460 core\n#pragma shader_stage(fragment)\n\n"_sv;
         out += stringified_extensions;
 
@@ -1344,7 +1344,7 @@ namespace vush {
     generate_compute_stage(Codegen_Context& codegen_ctx, anton::String_View const pass_name, Stage_Context const& stage_ctx,
                            anton::String_View const stringified_extensions, anton::Slice<Function_Declaration const* const> const functions,
                            anton::Slice<Declaration const* const> const structs_and_constants) {
-        anton::String out{anton::reserve, 4096};
+        anton::String out{anton::reserve, 4096, codegen_ctx.ctx.allocator};
         out += "#version 460 core\n#pragma shader_stage(compute)\n\n"_sv;
         out += stringified_extensions;
 
@@ -1485,21 +1485,21 @@ namespace vush {
         anton::String stringified_extensions;
         if(data.extensions.size() > 0) {
             for(Extension const& extension: data.extensions) {
-                stringified_extensions += u8"#extension ";
+                stringified_extensions += u8"#extension "_sv;
                 stringified_extensions += extension.name;
-                stringified_extensions += u8": ";
+                stringified_extensions += u8": "_sv;
                 switch(extension.behaviour) {
                     case Extension_Behaviour::require:
-                        stringified_extensions += u8"require";
+                        stringified_extensions += u8"require"_sv;
                         break;
                     case Extension_Behaviour::enable:
-                        stringified_extensions += u8"enable";
+                        stringified_extensions += u8"enable"_sv;
                         break;
                     case Extension_Behaviour::warn:
-                        stringified_extensions += u8"warn";
+                        stringified_extensions += u8"warn"_sv;
                         break;
                     case Extension_Behaviour::disable:
-                        stringified_extensions += u8"disable";
+                        stringified_extensions += u8"disable"_sv;
                         break;
                 }
                 stringified_extensions += U'\n';
