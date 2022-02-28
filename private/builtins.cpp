@@ -455,6 +455,16 @@ double distance(double x, double y) {}
 double distance(dvec2 x, dvec2 y) {}
 double distance(dvec3 x, dvec3 y) {}
 double distance(dvec4 x, dvec4 y) {}
+float dot(float x, float y) {}
+float dot(vec2 x, vec2 y) {}
+float dot(vec3 x, vec3 y) {}
+float dot(vec4 x, vec4 y) {}
+double dot(double x, double y) {}
+double dot(dvec2 x, dvec2 y) {}
+double dot(dvec3 x, dvec3 y) {}
+double dot(dvec4 x, dvec4 y) {}
+vec3 cross(vec3 x, vec3 y) {}
+dvec3 cross(dvec3 x, dvec3 y) {}
 float normalize(float x) {}
 vec2 normalize(vec2 x) {}
 vec3 normalize(vec3 x) {}
