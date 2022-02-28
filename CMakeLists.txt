@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
 include(FetchContent)
 
-project(vush)
+project(vush CXX)
 
 string(FIND "${CMAKE_CXX_COMPILER}" "clang++" VUSH_COMPILER_CLANGPP)
 if(VUSH_COMPILER_CLANGPP GREATER -1)
