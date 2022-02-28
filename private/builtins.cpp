@@ -1952,7 +1952,7 @@ bool anyInvocation(bool value) {}
 bool allInvocations(bool value) {}
 bool allInvocationsEqual(bool value) {})";
 
-    [[nodiscard]] static anton::Array<Owning_Ptr<Variable_Declaration>> generate_builtin_variables(Context& ctx) {
+    [[nodiscard]] static Array<Owning_Ptr<Variable_Declaration>> generate_builtin_variables(Context& ctx) {
         struct Builtin_Variable {
             anton::String_View name;
             Owning_Ptr<Type> type;
@@ -1998,7 +1998,7 @@ bool allInvocationsEqual(bool value) {})";
             {"gl_LocalInvocationIndex", allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_uint, src_info)}};
 
         // Populate storage.
-        anton::Array<Owning_Ptr<Variable_Declaration>> storage;
+        Array<Owning_Ptr<Variable_Declaration>> storage(anton::reserve, 256, ctx.allocator);
         constexpr i64 variable_count = sizeof(builtin_variables) / sizeof(Builtin_Variable);
         for(i64 i = 0; i < variable_count; ++i) {
             Builtin_Variable& var = builtin_variables[i];
@@ -2011,11 +2011,11 @@ bool allInvocationsEqual(bool value) {})";
 
     Builtin_Declarations get_builtin_declarations(Context& ctx) {
         anton::String functions_source{builtin_functions_declarations_source};
-        anton::Expected<Declaration_List, Parse_Error> result = parse_builtin_functions(ctx.allocator, "<builtin>"_sv, functions_source);
+        anton::Expected<Declaration_List, Parse_Error> result = PARSE(ctx.allocator, "<builtin>"_sv, functions_source);
         ANTON_ASSERT(result, "invalid builtin source code");
         ctx.source_registry.emplace("<builtin>"_sv, Source_Data{"<builtin>"_s, ANTON_MOV(functions_source)});
 
-        anton::Flat_Hash_Map<anton::String_View, Owning_Ptr<Overloaded_Function_Declaration>> overloads_dictionary;
+        anton::Flat_Hash_Map<anton::String_View, Owning_Ptr<Overloaded_Function_Declaration>> overloads_dictionary(anton::reserve, 1024, ctx.allocator);
         for(auto& fn_ptr: result.value()) {
             Owning_Ptr<Function_Declaration> fn{downcast, ANTON_MOV(fn_ptr)};
             auto iter = overloads_dictionary.find(fn->identifier->value);
@@ -2032,12 +2032,12 @@ bool allInvocationsEqual(bool value) {})";
             }
         }
 
-        anton::Array<Owning_Ptr<Overloaded_Function_Declaration>> overloads;
+        Array<Owning_Ptr<Overloaded_Function_Declaration>> overloads(anton::reserve, 1024, ctx.allocator);
         for(auto& [key, overloaded_fn]: overloads_dictionary) {
             overloads.emplace_back(ANTON_MOV(overloaded_fn));
         }
 
-        anton::Array<Owning_Ptr<Variable_Declaration>> variables = generate_builtin_variables(ctx);
+        Array<Owning_Ptr<Variable_Declaration>> variables = generate_builtin_variables(ctx);
         return {ANTON_MOV(overloads), ANTON_MOV(variables)};
     }
 } // namespace vush
