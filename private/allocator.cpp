@@ -61,6 +61,7 @@ namespace vush {
             Block* block = allocate_block(size, alignment);
             first = block;
             last = block;
+            owned_memory_amount += difference(block->end, block);
         }
 
         void* const aligned = align(last->free, alignment);
@@ -72,10 +73,17 @@ namespace vush {
             Block* const block = allocate_block(size, alignment);
             last->next = block;
             last = block;
+            owned_memory_amount += difference(block->end, block);
             void* const aligned2 = align(block->free, alignment);
             block->free = advance(aligned2, size);
             return aligned2;
         }
+    }
+
+    void Arena_Allocator::deallocate(void*, i64, i64) {}
+
+    bool Arena_Allocator::is_equal(Memory_Allocator const& allocator) const {
+        return this == &allocator;
     }
 
     void Arena_Allocator::reset() {
@@ -87,11 +95,11 @@ namespace vush {
 
         first = nullptr;
         last = nullptr;
+        owned_memory_amount = 0;
     }
 
-    void Arena_Allocator::deallocate(void*, i64, i64) {}
-
-    bool Arena_Allocator::is_equal(Memory_Allocator const& allocator) const {
-        return this == &allocator;
+    i64 Arena_Allocator::owned_memory() const {
+        return owned_memory_amount;
     }
+
 } // namespace vush

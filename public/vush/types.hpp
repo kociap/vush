@@ -29,4 +29,6 @@ namespace vush {
 
     template<typename T>
     using Array = anton::Array<T, anton::Polymorphic_Allocator>;
+
+    using Allocator = anton::Memory_Allocator;
 } // namespace vush

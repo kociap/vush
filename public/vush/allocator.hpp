@@ -1,11 +1,8 @@
 #pragma once
 
-#include <anton/allocator.hpp>
 #include <vush/types.hpp>
 
 namespace vush {
-    using Allocator = anton::Memory_Allocator;
-
     // Arena_Allocator
     //
     struct Arena_Allocator: public Allocator {
@@ -34,8 +31,18 @@ namespace vush {
         [[nodiscard]] virtual bool is_equal(Memory_Allocator const& allocator) const override;
 
         // reset
+        // Frees all memory owned by the allocator without calling
+        // destructors and restores the allocator to the default state.
         //
         void reset();
+
+        // owned_memory
+        // Obtains the total amount of memory owned by the allocator.
+        //
+        // Returns:
+        // The amount of memory owned by the allocator in bytes.
+        //
+        [[nodiscard]] i64 owned_memory() const;
 
     private:
         struct Block {
@@ -50,6 +57,7 @@ namespace vush {
         Block* last = nullptr;
         i64 default_block_size;
         i64 default_block_alignment;
+        i64 owned_memory_amount = 0;
 
         Block* allocate_block(i64 size, i64 alignment);
     };
