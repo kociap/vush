@@ -7,13 +7,6 @@
 #include <owning_ptr.hpp>
 
 namespace vush {
-    struct Parse_Error {
-        anton::String message;
-        i64 line = 0;
-        i64 column = 0;
-        i64 stream_offset = 0;
-    };
-
     // parse_source
     // Builds ast from the contents of stream.
     //
@@ -22,8 +15,7 @@ namespace vush {
     // source_code - The source code to be parsed. Must consist of ASCII only. Must be address-stable and
     //               persist for at least as long as the AST.
     //
-    anton::Expected<Declaration_List, Parse_Error> parse_source(Allocator* allocator, anton::String_View source_name, anton::String_View source_code);
+    anton::Expected<Declaration_List, Error> parse_source(Allocator* allocator, anton::String_View source_name, anton::String_View source_code);
 
-    anton::Expected<Declaration_List, Parse_Error> parse_builtin_functions(Allocator* allocator, anton::String_View source_name,
-                                                                           anton::String_View source_code);
+    anton::Expected<Declaration_List, Error> parse_builtin_functions(Allocator* allocator, anton::String_View source_name, anton::String_View source_code);
 } // namespace vush

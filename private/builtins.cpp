@@ -2011,7 +2011,7 @@ bool allInvocationsEqual(bool value) {})";
 
     Builtin_Declarations get_builtin_declarations(Context& ctx) {
         anton::String functions_source{builtin_functions_declarations_source};
-        anton::Expected<Declaration_List, Parse_Error> result = PARSE(ctx.allocator, "<builtin>"_sv, functions_source);
+        anton::Expected<Declaration_List, Error> result = parse_builtin_functions(ctx.allocator, "<builtin>"_sv, functions_source);
         ANTON_ASSERT(result, "invalid builtin source code");
         ctx.source_registry.emplace("<builtin>"_sv, Source_Data{"<builtin>"_s, ANTON_MOV(functions_source)});
 

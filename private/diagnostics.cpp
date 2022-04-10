@@ -6,6 +6,18 @@
 namespace vush {
     using namespace anton::literals;
 
+    anton::String Error::format(bool const include_extended_diagnostic) const {
+        // Add 32 bytes for line and column numbers, colons, spaces and newlines.
+        i64 const size = source.size_bytes() + diagnostic.size_bytes() + extended_diagnostic.size_bytes() + 32;
+        anton::String error_message{anton::reserve, size};
+        error_message += source + u8":" + anton::to_string(line) + u8":" + anton::to_string(column) + u8": ";
+        error_message += diagnostic;
+        if(include_extended_diagnostic && extended_diagnostic.size_bytes() > 0) {
+            error_message += extended_diagnostic;
+        }
+        return error_message;
+    }
+
     static void print_underline(anton::String& out, i64 const padding, i64 const underline_length) {
         for(i64 i = 0; i < padding; ++i) {
             out += U' ';

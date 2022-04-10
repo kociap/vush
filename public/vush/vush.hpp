@@ -9,6 +9,33 @@
 #include <vush/types.hpp>
 
 namespace vush {
+    struct Error {
+        // Name of the source where the error was generated.
+        anton::String source;
+        // The diagnostic message.
+        anton::String diagnostic;
+        // A more thorough explanation of the error.
+        // Empty string if extended diagnostics are disabled.
+        anton::String extended_diagnostic;
+        i64 line;
+        i64 column;
+
+        // format
+        // Format diagnostic message with source, line and column.
+        //   <source>:<line>:<column>: error: <diagnostic>
+        // The extended diagnostic will be included if include_extended_diagnostic is true.
+        //   <source>:<line>:<column>: error: <diagnostic>
+        //   <extended_diagnostic>
+        //
+        // Parameters:
+        // include_extended_diagnostic - whether to include the extended diagnostic message.
+        //
+        // Returns:
+        // Formatted diagnostic message.
+        //
+        [[nodiscard]] anton::String format(bool include_extended_diagnostic) const;
+    };
+
     struct Constant_Define {
         anton::String name;
         i32 value;
