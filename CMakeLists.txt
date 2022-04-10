@@ -19,12 +19,13 @@ if(VUSH_COMPILER_CLANGPP)
         -fno-exceptions
         -Wall -Wextra -pedantic
         -ferror-limit=1
-        
+
         -Werror=return-type
         -Werror=uninitialized
 
         -Wnon-virtual-dtor
         -Wnewline-eof
+        # -Wunreachable-code-break
 
         -Wno-reorder-init-list # Supress warnings about reordering in designated initializers
     )
@@ -64,6 +65,8 @@ target_sources(vush
     "${CMAKE_CURRENT_SOURCE_DIR}/private/context.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/diagnostics.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/diagnostics.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/private/lexer.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/private/lexer.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/memory.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/sources.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/sources.cpp"

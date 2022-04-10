@@ -1028,10 +1028,10 @@ namespace vush {
                 auto iter = ctx.source_registry.find(request_res.source_name);
                 if(iter == ctx.source_registry.end()) {
                     Source_Data source{ANTON_MOV(request_res.source_name), ANTON_MOV(request_res.data)};
-                    anton::Expected<Declaration_List, Parse_Error> parse_result = parse_source(ctx.allocator, source.name, source.data);
+                    anton::Expected<Declaration_List, Error> parse_result = parse_source(ctx.allocator, source.name, source.data);
                     if(!parse_result) {
-                        Parse_Error const& error = parse_result.error();
-                        anton::String error_msg = build_error_message(source.name, error.line, error.column, error.message);
+                        Error const& error = parse_result.error();
+                        anton::String error_msg = error.format(ctx.diagnostics.extended);
                         return {anton::expected_error, ANTON_MOV(error_msg)};
                     }
 
@@ -1370,10 +1370,10 @@ namespace vush {
 
             Source_Request_Result& request_res = source_request_res.value();
             Source_Data source{ANTON_MOV(request_res.source_name), ANTON_MOV(request_res.data)};
-            anton::Expected<Declaration_List, Parse_Error> parse_result = parse_source(ctx.allocator, source.name, source.data);
+            anton::Expected<Declaration_List, Error> parse_result = parse_source(ctx.allocator, source.name, source.data);
             if(!parse_result) {
-                Parse_Error const& error = parse_result.error();
-                anton::String error_msg = build_error_message(source.name, error.line, error.column, error.message);
+                Error const& error = parse_result.error();
+                anton::String error_msg = error.format(ctx.diagnostics.extended);
                 return {anton::expected_error, ANTON_MOV(error_msg)};
             }
 
