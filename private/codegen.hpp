@@ -49,5 +49,6 @@ namespace vush {
         anton::Slice<Pass_Context const> passes;
     };
 
-    anton::Expected<Array<Pass_Data>, anton::String> generate_glsl(Context const& ctx, Codegen_Data const& data);
+    [[nodiscard]] anton::Expected<Array<Pass_Data>, anton::String> generate_glsl(Context const& ctx, Codegen_Data const& data);
+    [[nodiscard]] anton::Expected<Array<SPIRV_Pass>, Error> generate_spirv(Context const& ctx, Codegen_Data const& data);
 } // namespace vush

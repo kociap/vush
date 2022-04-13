@@ -46,7 +46,14 @@ add_library(vush)
 set_target_properties(vush PROPERTIES CXX_STANDARD 17 CXX_EXTENSIONS OFF)
 target_compile_options(vush PRIVATE ${VUSH_COMPILE_FLAGS})
 target_link_libraries(vush PUBLIC anton_core)
-target_include_directories(vush PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/public" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/private")
+target_include_directories(vush 
+    PUBLIC
+    "${CMAKE_CURRENT_SOURCE_DIR}/public"
+    PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/private"
+    # Add the include directory of spirv-headers from the Vulkan SDK.
+    "$ENV{VULKAN_SDK}/Include"
+)
 target_sources(vush 
     PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/private/allocator.cpp"
@@ -58,6 +65,7 @@ target_sources(vush
     "${CMAKE_CURRENT_SOURCE_DIR}/private/builtins.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/builtins.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/codegen_glsl.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/private/codegen_spirv.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/codegen.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/const_expr_eval.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/const_expr_eval.hpp"

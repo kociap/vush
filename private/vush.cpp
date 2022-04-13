@@ -1667,6 +1667,101 @@ namespace vush {
         return {anton::expected_value, Build_Result{ANTON_MOV(ast.settings), ANTON_MOV(codegen_res.value())}};
     }
 
+    anton::Expected<SPIRV_Build_Result, anton::String> compile_to_spirv(Configuration const& config, Allocator& allocator, source_request_callback callback,
+                                                                        void* user_data) {
+        Context ctx = {};
+        ctx.source_request_cb = callback;
+        ctx.source_request_user_data = user_data;
+        ctx.source_definition_cb = config.source_definition_cb;
+        ctx.source_definition_user_data = config.source_definition_user_data;
+        ctx.diagnostics = config.diagnostics;
+        ctx.allocator = &allocator;
+        // Add global scope
+        ctx.symbols.emplace_back();
+        // Create symbols for the constant defines passed via config
+        Array<Owning_Ptr<Declaration>> constant_defines{ctx.allocator};
+        for(Constant_Define const& define: config.defines) {
+            Source_Info src = {config.source_name, 0, 0, 0};
+            Owning_Ptr decl = allocate_owning<Constant_Declaration>(
+                ctx.allocator, allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_int, src),
+                allocate_owning<Identifier>(ctx.allocator, anton::String(define.name), src),
+                allocate_owning<Integer_Literal>(ctx.allocator, anton::to_string(define.value), Integer_Literal_Type::i32, Integer_Literal_Base::dec, src),
+                src);
+            ctx.symbols[0].emplace(define.name, decl.get());
+            constant_defines.push_back(ANTON_MOV(decl));
+        }
+
+        Builtin_Declarations builtins = get_builtin_declarations(ctx);
+        for(auto& fn: builtins.functions) {
+            anton::Expected<void, anton::String> result = check_and_add_symbol(ctx, fn->identifier->value, fn.get());
+            if(!result) {
+                return {anton::expected_error, ANTON_MOV(result.error())};
+            }
+        }
+
+        for(auto& var: builtins.variables) {
+            anton::Expected<void, anton::String> result = check_and_add_symbol(ctx, var->identifier->value, var.get());
+            if(!result) {
+                return {anton::expected_error, ANTON_MOV(result.error())};
+            }
+        }
+
+        anton::Expected<AST_Build_Result, anton::String> build_res = build_ast_from_sources(ctx, config.source_name);
+        if(!build_res) {
+            return {anton::expected_error, ANTON_MOV(build_res.error())};
+        }
+
+        AST_Build_Result& ast = build_res.value();
+        anton::Expected<Array<Pass_Context>, anton::String> pass_build_res = build_pass_contexts(ctx, ast.stages);
+        if(!pass_build_res) {
+            return {anton::expected_error, ANTON_MOV(pass_build_res.error())};
+        }
+
+        anton::Slice<Pass_Context> const passes = pass_build_res.value();
+        anton::Expected<void, anton::String> pass_validation_res = validate_passes(ctx, passes);
+        if(!pass_validation_res) {
+            return {anton::expected_error, ANTON_MOV(pass_validation_res.error())};
+        }
+
+        anton::Slice<Pass_Settings const> const settings = ast.settings;
+        // Request source definitions for implicit sources.
+        for(Pass_Context& pass: passes) {
+            Pass_Settings const* const this_pass_settings =
+                anton::find_if(settings.begin(), settings.end(), [&name = pass.name](Pass_Settings const& settings) { return settings.pass_name == name; });
+            anton::Slice<Setting_Key_Value const> skv;
+            if(this_pass_settings != settings.end()) {
+                skv = this_pass_settings->settings;
+            }
+
+            anton::Expected<void, anton::String> result = request_source_definitions(ctx, pass, skv);
+            if(!result) {
+                return {anton::expected_error, ANTON_MOV(result.error())};
+            }
+        }
+
+        // TODO: Temporary
+        // Copy structs and constants over to each pass regardless of whether they are used or not.
+        for(Pass_Context& pass: passes) {
+            for(auto& node: ast.structs_and_constants) {
+                pass.structs_and_constants.emplace_back(node.get());
+            }
+        }
+
+        // We persist the instantiated functions until the code generation is complete.
+        Array<Owning_Ptr<Function_Declaration>> instantiated_functions{ctx.allocator};
+        // BREAKS THE SYMBOL TABLE!
+        // Make sure everything that requires the symbol table is done at this point.
+        perform_function_instantiations(ctx, passes, instantiated_functions);
+
+        Codegen_Data codegen_data{config.extensions, passes};
+        anton::Expected<Array<SPIRV_Pass>, Error> codegen_res = generate_spirv(ctx, codegen_data);
+        if(!codegen_res) {
+            return {anton::expected_error, ANTON_MOV(codegen_res.error().format(ctx.diagnostics.extended))};
+        }
+
+        return {anton::expected_value, SPIRV_Build_Result{ANTON_MOV(ast.settings), ANTON_MOV(codegen_res.value())}};
+    }
+
     [[nodiscard]] static anton::Expected<anton::String, anton::String> resolve_import_path(anton::String const& source_name,
                                                                                            anton::Slice<anton::String const> const import_directories) {
         bool found = false;
@@ -1717,7 +1812,12 @@ namespace vush {
     }
 
     anton::Expected<Build_Result, anton::String> compile_to_glsl(Configuration const& config, Allocator& allocator,
-                                                                 anton::Slice<anton::String const> const& import_directories) {
-        return compile_to_glsl(config, allocator, file_read_callback, (void*)&import_directories);
+                                                                 anton::Slice<anton::String const> import_directories) {
+        return compile_to_glsl(config, allocator, file_read_callback, reinterpret_cast<void*>(&import_directories));
+    }
+
+    anton::Expected<SPIRV_Build_Result, anton::String> compile_to_spirv(Configuration const& config, Allocator& allocator,
+                                                                        anton::Slice<anton::String const> import_directories) {
+        return compile_to_spirv(config, allocator, file_read_callback, reinterpret_cast<void*>(&import_directories));
     }
 } // namespace vush

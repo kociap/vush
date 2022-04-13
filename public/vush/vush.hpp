@@ -142,6 +142,21 @@ namespace vush {
         Array<Pass_Data> passes;
     };
 
+    struct SPIRV_File {
+        Array<u32> data;
+        Stage_Type stage_type;
+    };
+
+    struct SPIRV_Pass {
+        anton::String name;
+        Array<SPIRV_File> files;
+    };
+
+    struct SPIRV_Build_Result {
+        Array<Pass_Settings> settings;
+        Array<SPIRV_Pass> passes;
+    };
+
     struct Source_Request_Result {
         anton::String source_name;
         anton::String data;
@@ -155,8 +170,8 @@ namespace vush {
     //
     // Returns compiled glsl files or error message.
     //
-    anton::Expected<Build_Result, anton::String> compile_to_glsl(Configuration const& config, Allocator& allocator, source_request_callback callback,
-                                                                 void* user_data);
+    [[nodiscard]] anton::Expected<Build_Result, anton::String> compile_to_glsl(Configuration const& config, Allocator& allocator,
+                                                                               source_request_callback callback, void* user_data);
 
     // compile_to_glsl
     // Compiles given vush shader to glsl shader.
@@ -165,6 +180,16 @@ namespace vush {
     //
     // Returns compiled glsl files or error message.
     //
-    anton::Expected<Build_Result, anton::String> compile_to_glsl(Configuration const& config, Allocator& allocator,
-                                                                 anton::Slice<anton::String const> const& import_directories);
+    [[nodiscard]] anton::Expected<Build_Result, anton::String> compile_to_glsl(Configuration const& config, Allocator& allocator,
+                                                                               anton::Slice<anton::String const> import_directories);
+
+    // compile_to_spirv
+    //
+    [[nodiscard]] anton::Expected<SPIRV_Build_Result, anton::String> compile_to_spirv(Configuration const& config, Allocator& allocator,
+                                                                                      source_request_callback callback, void* user_data);
+
+    // compile_to_spirv
+    //
+    [[nodiscard]] anton::Expected<SPIRV_Build_Result, anton::String> compile_to_spirv(Configuration const& config, Allocator& allocator,
+                                                                                      anton::Slice<anton::String const> import_directories);
 } // namespace vush
