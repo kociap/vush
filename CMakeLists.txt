@@ -3,6 +3,8 @@ include(FetchContent)
 
 project(vush CXX)
 
+SET(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 string(FIND "${CMAKE_CXX_COMPILER}" "clang++" VUSH_COMPILER_CLANGPP)
 if(VUSH_COMPILER_CLANGPP GREATER -1)
     set(VUSH_COMPILER_CLANGPP ON)
@@ -65,6 +67,7 @@ target_sources(vush
     "${CMAKE_CURRENT_SOURCE_DIR}/private/context.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/diagnostics.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/diagnostics.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/private/either.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/lexer.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/lexer.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/memory.hpp"
@@ -73,6 +76,7 @@ target_sources(vush
     "${CMAKE_CURRENT_SOURCE_DIR}/private/owning_ptr.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/parser.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/parser.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/private/parser2.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/vush.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/public/vush/allocator.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/public/vush/types.hpp"
