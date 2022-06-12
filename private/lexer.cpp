@@ -406,22 +406,22 @@ namespace vush {
                         token_type = Token_Type::tk_brace_close;
                         break;
                     case '[':
-                        token_type = Token_Type::tk_bracket_open;
+                        token_type = Token_Type::tk_lbracket;
                         break;
                     case ']':
-                        token_type = Token_Type::tk_bracket_close;
+                        token_type = Token_Type::tk_rbracket;
                         break;
                     case '(':
-                        token_type = Token_Type::tk_paren_open;
+                        token_type = Token_Type::tk_lparen;
                         break;
                     case ')':
-                        token_type = Token_Type::tk_paren_close;
+                        token_type = Token_Type::tk_rparen;
                         break;
                     case '<':
-                        token_type = Token_Type::tk_angle_open;
+                        token_type = Token_Type::tk_langle;
                         break;
                     case '>':
-                        token_type = Token_Type::tk_angle_close;
+                        token_type = Token_Type::tk_rangle;
                         break;
                     case ';':
                         token_type = Token_Type::tk_semicolon;
@@ -454,7 +454,7 @@ namespace vush {
                         token_type = Token_Type::tk_percent;
                         break;
                     case '&':
-                        token_type = Token_Type::tk_ampresand;
+                        token_type = Token_Type::tk_amp;
                         break;
                     case '|':
                         token_type = Token_Type::tk_pipe;
@@ -463,7 +463,7 @@ namespace vush {
                         token_type = Token_Type::tk_hat;
                         break;
                     case '!':
-                        token_type = Token_Type::tk_exclamation;
+                        token_type = Token_Type::tk_bang;
                         break;
                     case '~':
                         token_type = Token_Type::tk_tilde;

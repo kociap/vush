@@ -873,6 +873,12 @@ namespace vush {
 
 #define ALLOC(type, ...) allocate<type>(allocator, __VA_ARGS__)
 
+    Syntax_Token::Syntax_Token(Syntax_Node_Type type, anton::String value, Source_Info const& source_info)
+        : value(ANTON_MOV(value)), source_info(source_info), type(type) {}
+
+    Syntax_Node::Syntax_Node(Syntax_Node_Type type, Array<SNOT> array, Source_Info const& source_info)
+        : children(ANTON_MOV(array)), source_info(source_info), type(type) {}
+
     template<typename T>
     Array<Owning_Ptr<T>> clone(Array<Owning_Ptr<T>> const& array, Allocator* const allocator) {
         Array<Owning_Ptr<T>> copy{anton::reserve, array.size(), array.get_allocator()};

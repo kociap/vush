@@ -2,10 +2,198 @@
 
 #include <anton/optional.hpp>
 #include <ast_fwd.hpp>
+#include <either.hpp>
 #include <owning_ptr.hpp>
 #include <vush/vush.hpp>
 
 namespace vush {
+    struct Source_Info {
+        anton::String_View source_path;
+        i64 line = 0;
+        i64 column = 0;
+        // The offset into the source at which the matched node starts
+        i64 start_offset = 0;
+        i64 end_line = 0;
+        i64 end_column = 0;
+        // The offset into the source at which the matched node ends
+        i64 end_offset = 0;
+    };
+
+    // Syntax_Node_Type
+    // Overlaps with lexer's Token_Type.
+    //
+    enum struct Syntax_Node_Type {
+        identifier,
+        comment,
+        whitespace,
+        // keywords
+        kw_if,
+        kw_else,
+        kw_switch,
+        kw_case,
+        kw_default,
+        kw_for,
+        kw_while,
+        kw_do,
+        kw_return,
+        kw_break,
+        kw_continue,
+        kw_discard,
+        kw_from,
+        kw_struct,
+        kw_import,
+        kw_const,
+        kw_settings,
+        kw_reinterpret,
+        kw_invariant,
+        kw_smooth,
+        kw_flat,
+        kw_noperspective,
+        // separators
+        tk_brace_open,
+        tk_brace_close,
+        tk_lbracket,
+        tk_rbracket,
+        tk_lparen,
+        tk_rparen,
+        tk_langle,
+        tk_rangle,
+        tk_semicolon,
+        tk_colon,
+        tk_comma,
+        tk_dot,
+        tk_double_quote,
+        tk_plus,
+        tk_minus,
+        tk_asterisk,
+        tk_slash,
+        tk_percent,
+        tk_amp,
+        tk_pipe,
+        tk_hat,
+        tk_bang,
+        tk_tilde,
+        tk_equals,
+        // literals
+        lt_bin_integer,
+        lt_oct_integer,
+        lt_dec_integer,
+        lt_hex_integer,
+        lt_float,
+        lt_string,
+        lt_bool,
+
+        // compound tokens
+        tk_plus2, // ++
+        tk_minus2, // --
+        tk_amp2, // &&
+        tk_pipe2, // ||
+        tk_hat2, // ^^
+        tk_shl, // <<
+        tk_shr, // >>
+        tk_eq2, // ==
+        tk_neq, // !=
+        tk_lteq, // <=
+        tk_gteq, // >=
+        tk_pluseq, // +=
+        tk_minuseq, // -=
+        tk_asteriskeq, // *=
+        tk_slasheq, // /=
+        tk_percenteq, // %=
+        tk_ampeq, // &=
+        tk_pipeeq, // |=
+        tk_hateq, // ^=
+        tk_shleq, // <<=
+        tk_shreq, // >>=
+        tk_thick_arrow, // =>
+        tk_thin_arrow, // ->
+        tk_colon2, // ::
+
+        type_builtin,
+        type_user_defined,
+        type_array,
+
+        decl_block,
+        decl_if,
+        decl_import,
+        decl_constant,
+        decl_struct_member,
+        decl_struct_member_block,
+        decl_struct,
+        decl_settings,
+        decl_function,
+        decl_pass_stage,
+
+        func_parameter_if,
+        func_parameter,
+        func_parameter_list,
+
+        attr_workgroup,
+        attr_attribute_list,
+
+        expr_block,
+        expr_if,
+        expr_identifier,
+        expr_binary,
+        expr_prefix,
+        expr_postfix,
+        expr_member_access,
+        expr_array_access,
+        expr_parentheses,
+        expr_reinterpret,
+        expr_call,
+        expr_literal,
+        // expr_default
+        // The 'default' label in stmt_case.
+        //
+        expr_default,
+
+        call_arg_list,
+
+        stmt_block,
+        stmt_if,
+        stmt_case,
+        stmt_switch,
+        stmt_for,
+        stmt_while,
+        stmt_do_while,
+        stmt_return,
+        stmt_break,
+        stmt_continue,
+        stmt_discard,
+        stmt_variable,
+        stmt_expression,
+        stmt_empty,
+
+        switch_case_list,
+        switch_case,
+    };
+
+    struct Syntax_Token;
+    struct Syntax_Node;
+
+    // Syntax Node Or Token
+    using SNOT = Either<Syntax_Node, Syntax_Token>;
+
+    struct Syntax_Token {
+        anton::String value;
+        Source_Info source_info;
+        Syntax_Node_Type type;
+
+        Syntax_Token(Syntax_Node_Type type, anton::String value, Source_Info const& source_info);
+    };
+
+    // Syntax_Node
+    // Untyped syntax node containing syntax information.
+    //
+    struct Syntax_Node {
+        Array<SNOT> children;
+        Source_Info source_info;
+        Syntax_Node_Type type;
+
+        Syntax_Node(Syntax_Node_Type type, Array<SNOT> array, Source_Info const& source_info);
+    };
+
     enum struct AST_Node_Type {
         identifier,
         builtin_type,
@@ -61,18 +249,9 @@ namespace vush {
         expression_statement,
     };
 
-    struct Source_Info {
-        anton::String_View source_path;
-        i64 line = 0;
-        i64 column = 0;
-        // The offset into the source at which the matched node starts
-        i64 start_offset = 0;
-        i64 end_line = 0;
-        i64 end_column = 0;
-        // The offset into the source at which the matched node ends
-        i64 end_offset = 0;
-    };
-
+    // AST_Node
+    // Base class of all typed syntax nodes.
+    //
     struct AST_Node {
         Source_Info source_info;
         AST_Node_Type node_type;

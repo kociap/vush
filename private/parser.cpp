@@ -162,11 +162,11 @@ namespace vush {
                 }
 
                 case Operator::logic_and: {
-                    return match_many(Token_Type::tk_ampresand, Token_Type::tk_ampresand);
+                    return match_many(Token_Type::tk_amp, Token_Type::tk_amp);
                 }
 
                 case Operator::bit_and: {
-                    return match(Token_Type::tk_ampresand);
+                    return match(Token_Type::tk_amp);
                 }
 
                 case Operator::logic_or: {
@@ -186,7 +186,7 @@ namespace vush {
                 }
 
                 case Operator::logic_not: {
-                    return match(Token_Type::tk_exclamation);
+                    return match(Token_Type::tk_bang);
                 }
 
                 case Operator::bit_not: {
@@ -194,11 +194,11 @@ namespace vush {
                 }
 
                 case Operator::bit_lshift: {
-                    return match_many(Token_Type::tk_angle_open, Token_Type::tk_angle_open);
+                    return match_many(Token_Type::tk_langle, Token_Type::tk_langle);
                 }
 
                 case Operator::bit_rshift: {
-                    return match_many(Token_Type::tk_angle_close, Token_Type::tk_angle_close);
+                    return match_many(Token_Type::tk_rangle, Token_Type::tk_rangle);
                 }
 
                 case Operator::equal: {
@@ -206,23 +206,23 @@ namespace vush {
                 }
 
                 case Operator::not_equal: {
-                    return match_many(Token_Type::tk_exclamation, Token_Type::tk_equals);
+                    return match_many(Token_Type::tk_bang, Token_Type::tk_equals);
                 }
 
                 case Operator::less: {
-                    return match(Token_Type::tk_angle_open);
+                    return match(Token_Type::tk_langle);
                 }
 
                 case Operator::greater: {
-                    return match(Token_Type::tk_angle_close);
+                    return match(Token_Type::tk_rangle);
                 }
 
                 case Operator::less_equal: {
-                    return match_many(Token_Type::tk_angle_open, Token_Type::tk_equals);
+                    return match_many(Token_Type::tk_langle, Token_Type::tk_equals);
                 }
 
                 case Operator::greater_equal: {
-                    return match_many(Token_Type::tk_angle_close, Token_Type::tk_equals);
+                    return match_many(Token_Type::tk_rangle, Token_Type::tk_equals);
                 }
 
                 case Operator::assign: {
@@ -258,7 +258,7 @@ namespace vush {
                 }
 
                 case Operator::compound_bit_and: {
-                    return match_many(Token_Type::tk_ampresand, Token_Type::tk_equals);
+                    return match_many(Token_Type::tk_amp, Token_Type::tk_equals);
                 }
 
                 case Operator::compound_bit_or: {
@@ -270,11 +270,11 @@ namespace vush {
                 }
 
                 case Operator::compound_bit_lshift: {
-                    return match_many(Token_Type::tk_angle_open, Token_Type::tk_angle_open, Token_Type::tk_equals);
+                    return match_many(Token_Type::tk_langle, Token_Type::tk_langle, Token_Type::tk_equals);
                 }
 
                 case Operator::compound_bit_rshift: {
-                    return match_many(Token_Type::tk_angle_close, Token_Type::tk_angle_close, Token_Type::tk_equals);
+                    return match_many(Token_Type::tk_rangle, Token_Type::tk_rangle, Token_Type::tk_equals);
                 }
             }
         }
@@ -322,7 +322,6 @@ namespace vush {
         }
 
         [[nodiscard]] bool match_eof() {
-            ignore_whitespace_and_comments();
             return current == end;
         }
 
@@ -370,19 +369,26 @@ namespace vush {
 
         anton::Expected<Declaration_List, Error> build_ast() {
             Declaration_List ast{_allocator};
-            while(!_lexer.match_eof()) {
+            while(true) {
+                _lexer.ignore_whitespace_and_comments();
+                if(_lexer.match_eof()) {
+                    return {anton::expected_value, ANTON_MOV(ast)};
+                }
                 if(Owning_Ptr declaration = try_declaration()) {
                     ast.emplace_back(ANTON_MOV(declaration));
                 } else {
                     return {anton::expected_error, _last_error.to_error(_source_name)};
                 }
             }
-            return {anton::expected_value, ANTON_MOV(ast)};
         }
 
         anton::Expected<Declaration_List, Error> parse_builtin_functions() {
             Declaration_List builtin_functions{_allocator};
-            while(!_lexer.match_eof()) {
+            while(true) {
+                _lexer.ignore_whitespace_and_comments();
+                if(_lexer.match_eof()) {
+                    return {anton::expected_value, ANTON_MOV(builtin_functions)};
+                }
                 if(Owning_Ptr fn = try_function_declaration()) {
                     fn->builtin = true;
                     fn->source_info.line = 1;
@@ -392,7 +398,6 @@ namespace vush {
                     return {anton::expected_error, _last_error.to_error(_source_name)};
                 }
             }
-            return {anton::expected_value, ANTON_MOV(builtin_functions)};
         }
 
     private:
@@ -515,6 +520,7 @@ namespace vush {
 
             Declaration_List true_declarations{_allocator};
             while(!_lexer.match(Token_Type::tk_brace_close)) {
+                _lexer.ignore_whitespace_and_comments();
                 if(_lexer.match_eof()) {
                     set_error(u8"unexpected end of file");
                     _lexer.restore_state(state_backup);
@@ -889,7 +895,7 @@ namespace vush {
 
             // workgroup attribute
             if(_lexer.match_identifier(attrib_workgroup)) {
-                if(!_lexer.match(Token_Type::tk_paren_open)) {
+                if(!_lexer.match(Token_Type::tk_lparen)) {
                     set_error(u8"expected '('");
                     _lexer.restore_state(state_backup);
                     return OWNING_NULL(Attribute);
@@ -919,7 +925,7 @@ namespace vush {
                     }
                 }
 
-                if(!_lexer.match(Token_Type::tk_paren_close)) {
+                if(!_lexer.match(Token_Type::tk_rparen)) {
                     set_error(u8"expected ')'");
                     _lexer.restore_state(state_backup);
                     return OWNING_NULL(Attribute);
@@ -938,13 +944,13 @@ namespace vush {
 
         anton::Optional<Attribute_List> try_attribute_list() {
             Lexer_State const state_backup = _lexer.get_current_state();
-            if(!_lexer.match(Token_Type::tk_bracket_open)) {
+            if(!_lexer.match(Token_Type::tk_lbracket)) {
                 set_error(u8"expected '['");
                 _lexer.restore_state(state_backup);
                 return anton::null_optional;
             }
 
-            if(_lexer.match(Token_Type::tk_bracket_close)) {
+            if(_lexer.match(Token_Type::tk_rbracket)) {
                 set_error(u8"empty attribute list (TODO: PROVIDE A PROPER DIAGNOSTIC MESSAGE WITH EXACT LOCATION AND CODE SNIPPET)");
                 _lexer.restore_state(state_backup);
                 return anton::null_optional;
@@ -965,7 +971,7 @@ namespace vush {
                 }
             }
 
-            if(!_lexer.match(Token_Type::tk_bracket_close)) {
+            if(!_lexer.match(Token_Type::tk_rbracket)) {
                 _lexer.restore_state(state_backup);
                 return anton::null_optional;
             }
@@ -1159,13 +1165,13 @@ namespace vush {
 
         anton::Optional<Parameter_List> try_function_param_list() {
             Lexer_State const state_backup = _lexer.get_current_state();
-            if(!_lexer.match(Token_Type::tk_paren_open)) {
+            if(!_lexer.match(Token_Type::tk_lparen)) {
                 set_error(u8"expected '('");
                 _lexer.restore_state(state_backup);
                 return anton::null_optional;
             }
 
-            if(_lexer.match(Token_Type::tk_paren_close)) {
+            if(_lexer.match(Token_Type::tk_rparen)) {
                 return Parameter_List{_allocator};
             }
 
@@ -1181,7 +1187,7 @@ namespace vush {
                 }
             } while(_lexer.match(Token_Type::tk_comma));
 
-            if(!_lexer.match(Token_Type::tk_paren_close)) {
+            if(!_lexer.match(Token_Type::tk_rparen)) {
                 set_error(u8"expected ')' after function parameter list");
                 _lexer.restore_state(state_backup);
                 return anton::null_optional;
@@ -1408,11 +1414,11 @@ namespace vush {
                 base_type = ALLOC(User_Defined_Type, anton::String{type_name, _allocator}, src);
             }
 
-            if(!_lexer.match(Token_Type::tk_bracket_open)) {
+            if(!_lexer.match(Token_Type::tk_lbracket)) {
                 return base_type;
             } else {
                 Owning_Ptr array_size = try_integer_literal();
-                if(!_lexer.match(Token_Type::tk_bracket_close)) {
+                if(!_lexer.match(Token_Type::tk_rbracket)) {
                     set_error(u8"expected ']'");
                     _lexer.restore_state(state_backup);
                     return OWNING_NULL(Type);
@@ -1520,7 +1526,7 @@ namespace vush {
                     }
                 } while(_lexer.match(Token_Type::tk_comma));
 
-                bool const arrow = _lexer.match(Token_Type::tk_equals) && _lexer.match(Token_Type::tk_angle_close);
+                bool const arrow = _lexer.match(Token_Type::tk_equals) && _lexer.match(Token_Type::tk_rangle);
                 if(!arrow) {
                     set_error(u8"expected '=>'"_sv);
                     _lexer.restore_state(state_backup);
@@ -1552,7 +1558,7 @@ namespace vush {
                 return OWNING_NULL(For_Statement);
             }
 
-            if(_lexer.match(Token_Type::tk_paren_open)) {
+            if(_lexer.match(Token_Type::tk_lparen)) {
                 set_error("unexpected '(' after 'for'");
                 _lexer.restore_state(state_backup);
                 return OWNING_NULL(For_Statement);
@@ -1836,7 +1842,7 @@ namespace vush {
                     type = Arithmetic_Assignment_Type::remainder;
                 } break;
                 // &=
-                case Token_Type::tk_ampresand: {
+                case Token_Type::tk_amp: {
                     matched = _lexer.match(Token_Type::tk_equals);
                     type = Arithmetic_Assignment_Type::bit_and;
                 } break;
@@ -1851,13 +1857,13 @@ namespace vush {
                     type = Arithmetic_Assignment_Type::bit_xor;
                 } break;
                 // <<=
-                case Token_Type::tk_angle_open: {
-                    matched = _lexer.match(Token_Type::tk_angle_open) && _lexer.match(Token_Type::tk_equals);
+                case Token_Type::tk_langle: {
+                    matched = _lexer.match(Token_Type::tk_langle) && _lexer.match(Token_Type::tk_equals);
                     type = Arithmetic_Assignment_Type::lshift;
                 } break;
                 // >>=
-                case Token_Type::tk_angle_close: {
-                    matched = _lexer.match(Token_Type::tk_angle_close) && _lexer.match(Token_Type::tk_equals);
+                case Token_Type::tk_rangle: {
+                    matched = _lexer.match(Token_Type::tk_rangle) && _lexer.match(Token_Type::tk_equals);
                     type = Arithmetic_Assignment_Type::rshift;
                 } break;
 
@@ -2306,14 +2312,14 @@ namespace vush {
                         _lexer.restore_state(state_backup);
                         return OWNING_NULL(Expression);
                     }
-                } else if(_lexer.match(Token_Type::tk_bracket_open)) {
+                } else if(_lexer.match(Token_Type::tk_lbracket)) {
                     Owning_Ptr index = try_expression();
                     if(!index) {
                         _lexer.restore_state(state_backup);
                         return OWNING_NULL(Expression);
                     }
 
-                    if(!_lexer.match(Token_Type::tk_bracket_close)) {
+                    if(!_lexer.match(Token_Type::tk_rbracket)) {
                         set_error(u8"expected ']'");
                         _lexer.restore_state(state_backup);
                         return OWNING_NULL(Expression);
@@ -2376,7 +2382,7 @@ namespace vush {
 
         Owning_Ptr<Parenthesised_Expression> try_paren_expr() {
             Lexer_State const state_backup = _lexer.get_current_state();
-            if(!_lexer.match(Token_Type::tk_paren_open)) {
+            if(!_lexer.match(Token_Type::tk_lparen)) {
                 set_error(u8"expected '('");
                 _lexer.restore_state(state_backup);
                 return OWNING_NULL(Parenthesised_Expression);
@@ -2388,7 +2394,7 @@ namespace vush {
                 return OWNING_NULL(Parenthesised_Expression);
             }
 
-            if(!_lexer.match(Token_Type::tk_paren_close)) {
+            if(!_lexer.match(Token_Type::tk_rparen)) {
                 set_error(u8"expected ')'");
                 _lexer.restore_state(state_backup);
                 return OWNING_NULL(Parenthesised_Expression);
@@ -2407,7 +2413,7 @@ namespace vush {
                 return OWNING_NULL(Reinterpret_Expression);
             }
 
-            if(!_lexer.match(Token_Type::tk_angle_open)) {
+            if(!_lexer.match(Token_Type::tk_langle)) {
                 set_error(u8"expected '<'");
                 _lexer.restore_state(state_backup);
                 return OWNING_NULL(Reinterpret_Expression);
@@ -2419,13 +2425,13 @@ namespace vush {
                 return OWNING_NULL(Reinterpret_Expression);
             }
 
-            if(!_lexer.match(Token_Type::tk_angle_close)) {
+            if(!_lexer.match(Token_Type::tk_rangle)) {
                 set_error(u8"expected '>'");
                 _lexer.restore_state(state_backup);
                 return OWNING_NULL(Reinterpret_Expression);
             }
 
-            if(!_lexer.match(Token_Type::tk_paren_open)) {
+            if(!_lexer.match(Token_Type::tk_lparen)) {
                 set_error(u8"expected '('");
                 _lexer.restore_state(state_backup);
                 return OWNING_NULL(Reinterpret_Expression);
@@ -2449,7 +2455,7 @@ namespace vush {
                 return OWNING_NULL(Reinterpret_Expression);
             }
 
-            if(!_lexer.match(Token_Type::tk_paren_close)) {
+            if(!_lexer.match(Token_Type::tk_rparen)) {
                 set_error(u8"expected ')'");
                 _lexer.restore_state(state_backup);
                 return OWNING_NULL(Reinterpret_Expression);
@@ -2548,14 +2554,14 @@ namespace vush {
                 return OWNING_NULL(Function_Call_Expression);
             }
 
-            if(!_lexer.match(Token_Type::tk_paren_open)) {
+            if(!_lexer.match(Token_Type::tk_lparen)) {
                 set_error(u8"expected '(' after function name");
                 _lexer.restore_state(state_backup);
                 return OWNING_NULL(Function_Call_Expression);
             }
 
             Expression_List arguments{_allocator};
-            if(_lexer.match(Token_Type::tk_paren_close)) {
+            if(_lexer.match(Token_Type::tk_rparen)) {
                 Lexer_State const end_state = _lexer.get_current_state_noskip();
                 Source_Info const src = src_info(state_backup, end_state);
                 return ALLOC(Function_Call_Expression, ANTON_MOV(identifier), ANTON_MOV(arguments), src);
@@ -2570,7 +2576,7 @@ namespace vush {
                 }
             } while(_lexer.match(Token_Type::tk_comma));
 
-            if(!_lexer.match(Token_Type::tk_paren_close)) {
+            if(!_lexer.match(Token_Type::tk_rparen)) {
                 set_error(u8"expected ')'");
                 _lexer.restore_state(state_backup);
                 return OWNING_NULL(Function_Call_Expression);
@@ -2721,123 +2727,6 @@ namespace vush {
             return ALLOC(Identifier_Expression, anton::String{value, _allocator}, src);
         }
     };
-
-    anton::String_View stringify(Token_Type type) {
-        switch(type) {
-            case Token_Type::identifier:
-                return "identifier"_sv;
-            case Token_Type::comment:
-                return "comment"_sv;
-            case Token_Type::whitespace:
-                return "whitespace"_sv;
-            case Token_Type::kw_if:
-                return "kw_if"_sv;
-            case Token_Type::kw_else:
-                return "kw_else"_sv;
-            case Token_Type::kw_switch:
-                return "kw_switch"_sv;
-            case Token_Type::kw_case:
-                return "kw_case"_sv;
-            case Token_Type::kw_default:
-                return "kw_default"_sv;
-            case Token_Type::kw_for:
-                return "kw_for"_sv;
-            case Token_Type::kw_while:
-                return "kw_while"_sv;
-            case Token_Type::kw_do:
-                return "kw_do"_sv;
-            case Token_Type::kw_return:
-                return "kw_return"_sv;
-            case Token_Type::kw_break:
-                return "kw_break"_sv;
-            case Token_Type::kw_continue:
-                return "kw_continue"_sv;
-            case Token_Type::kw_discard:
-                return "kw_discard"_sv;
-            case Token_Type::kw_from:
-                return "kw_from"_sv;
-            case Token_Type::kw_struct:
-                return "kw_struct"_sv;
-            case Token_Type::kw_import:
-                return "kw_import"_sv;
-            case Token_Type::kw_const:
-                return "kw_const"_sv;
-            case Token_Type::kw_settings:
-                return "kw_settings"_sv;
-            case Token_Type::kw_reinterpret:
-                return "kw_reinterpret"_sv;
-            case Token_Type::kw_invariant:
-                return "kw_invariant"_sv;
-            case Token_Type::kw_smooth:
-                return "kw_smooth"_sv;
-            case Token_Type::kw_flat:
-                return "kw_flat"_sv;
-            case Token_Type::kw_noperspective:
-                return "kw_noperspective"_sv;
-            case Token_Type::tk_brace_open:
-                return "tk_brace_open"_sv;
-            case Token_Type::tk_brace_close:
-                return "tk_brace_close"_sv;
-            case Token_Type::tk_bracket_open:
-                return "tk_bracket_open"_sv;
-            case Token_Type::tk_bracket_close:
-                return "tk_bracket_close"_sv;
-            case Token_Type::tk_paren_open:
-                return "tk_paren_open"_sv;
-            case Token_Type::tk_paren_close:
-                return "tk_paren_close"_sv;
-            case Token_Type::tk_angle_open:
-                return "tk_angle_open"_sv;
-            case Token_Type::tk_angle_close:
-                return "tk_angle_close"_sv;
-            case Token_Type::tk_semicolon:
-                return "tk_semicolon"_sv;
-            case Token_Type::tk_colon:
-                return "tk_colon"_sv;
-            case Token_Type::tk_comma:
-                return "tk_comma"_sv;
-            case Token_Type::tk_dot:
-                return "tk_dot"_sv;
-            case Token_Type::tk_double_quote:
-                return "tk_double_quote"_sv;
-            case Token_Type::tk_plus:
-                return "tk_plus"_sv;
-            case Token_Type::tk_minus:
-                return "tk_minus"_sv;
-            case Token_Type::tk_asterisk:
-                return "tk_asterisk"_sv;
-            case Token_Type::tk_slash:
-                return "tk_slash"_sv;
-            case Token_Type::tk_percent:
-                return "tk_percent"_sv;
-            case Token_Type::tk_ampresand:
-                return "tk_ampresand"_sv;
-            case Token_Type::tk_pipe:
-                return "tk_pipe"_sv;
-            case Token_Type::tk_hat:
-                return "tk_hat"_sv;
-            case Token_Type::tk_exclamation:
-                return "tk_exclamation"_sv;
-            case Token_Type::tk_tilde:
-                return "tk_tilde"_sv;
-            case Token_Type::tk_equals:
-                return "tk_equals"_sv;
-            case Token_Type::lt_bin_integer:
-                return "lt_bin_integer"_sv;
-            case Token_Type::lt_oct_integer:
-                return "lt_oct_integer"_sv;
-            case Token_Type::lt_dec_integer:
-                return "lt_dec_integer"_sv;
-            case Token_Type::lt_hex_integer:
-                return "lt_hex_integer"_sv;
-            case Token_Type::lt_float:
-                return "lt_float"_sv;
-            case Token_Type::lt_string:
-                return "lt_string"_sv;
-            case Token_Type::lt_bool:
-                return "lt_bool"_sv;
-        }
-    }
 
     anton::Expected<Declaration_List, Error> parse_source(Allocator* allocator, anton::String_View const source_name, anton::String_View const source_code) {
         anton::Expected<Lexed_Source, Error> lex_result = lex_source(allocator, anton::String7_View{source_code.bytes_begin(), source_code.bytes_end()});
