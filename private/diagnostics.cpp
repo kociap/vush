@@ -86,7 +86,7 @@ namespace vush {
     }
 
     static void print_source_snippet(Context const& ctx, anton::String& out, anton::String_View const source, Source_Info const& src_info) {
-        Line_Limits const line = find_line_limits(source, src_info.start_offset);
+        Line_Limits const line = find_line_limits(source, src_info.offset);
         anton::String_View const source_bit{source.data() + line.start, source.data() + line.end};
         if(ctx.diagnostics.display_line_numbers) {
             i64 const line_number = src_info.line;
@@ -97,20 +97,20 @@ namespace vush {
             out += source_bit;
             out += '\n';
             print_line_number(out, line_number_width, anton::null_optional);
-            i64 const padding = src_info.start_offset - line.start;
-            i64 const underline = src_info.end_offset - src_info.start_offset;
+            i64 const padding = src_info.offset - line.start;
+            i64 const underline = src_info.end_offset - src_info.offset;
             print_underline(out, padding, underline);
         } else {
             out += source_bit;
             out += U'\n';
-            i64 const padding = src_info.start_offset - line.start;
-            i64 const underline = src_info.end_offset - src_info.start_offset;
+            i64 const padding = src_info.offset - line.start;
+            i64 const underline = src_info.end_offset - src_info.offset;
             print_underline(out, padding, underline);
         }
     }
 
     static anton::String_View get_source_bit(anton::String_View const source, Source_Info const& src_info) {
-        anton::String_View const source_bit{source.data() + src_info.start_offset, source.data() + src_info.end_offset};
+        anton::String_View const source_bit{source.data() + src_info.offset, source.data() + src_info.end_offset};
         return source_bit;
     }
 
