@@ -194,9 +194,9 @@ namespace vush {
                                .line = start_source.line,
                                .column = start_source.column,
                                .start_offset = start_source.offset,
-                               .end_line = end_source.line,
-                               .end_column = end_source.column,
-                               .end_offset = end_source.offset};
+                               .end_line = end_source.end_line,
+                               .end_column = end_source.end_column,
+                               .end_offset = end_source.end_offset};
         }
 
         // match
