@@ -109,6 +109,13 @@ namespace vush {
         tk_thin_arrow, // ->
         tk_colon2, // ::
 
+        // tk_setting_string
+        // A special type of string only used by setting key and values.
+        // This token contains anything other than comments, whitespace,
+        // colons, left braces or right braces.
+        //
+        tk_setting_string,
+
         type_builtin,
         type_user_defined,
         type_array,
@@ -129,7 +136,13 @@ namespace vush {
         func_parameter_list,
 
         attr_workgroup,
-        attr_attribute_list,
+        // attribute_list
+        // List of attributes.
+        //
+        attribute_list,
+
+        setting_block,
+        setting_keyval,
 
         expr_block,
         expr_if,

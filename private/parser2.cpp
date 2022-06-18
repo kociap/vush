@@ -402,6 +402,42 @@ namespace vush {
             return match(result_type, tk_type1, tk_type2, tk_type3);
         }
 
+        // match_setting_string
+        // Matches and combines a series of tokens in the stream
+        // that are allowed within tk_setting_string.
+        //
+        // Returns:
+        // tk_setting_string or null_optional.
+        //
+        [[nodiscard]] Optional<Syntax_Token> match_setting_string() {
+            Lexer_State const begin_state = _lexer.get_current_state_noskip();
+            anton::String value{_allocator};
+            // We require at least one token to be present.
+            if(!_lexer.peek_token()) {
+                return anton::null_optional;
+            }
+
+            while(true) {
+                anton::Optional<Token_Data> const token_data = _lexer.peek_token();
+                if(!token_data) {
+                    break;
+                }
+
+                Token_Type const token_type = token_data->token.type;
+                if(token_type == Token_Type::whitespace || token_type == Token_Type::comment || token_type == Token_Type::tk_colon ||
+                   token_type == Token_Type::tk_brace_close || token_type == Token_Type::tk_brace_open) {
+                    break;
+                }
+
+                value += anton::String_View{token_data->token.value.begin(), token_data->token.value.end()};
+                _lexer.advance_token();
+            }
+
+            Lexer_State const end_state = _lexer.get_current_state_noskip();
+            Source_Info const source = src_info(begin_state, end_state);
+            return Syntax_Token(Syntax_Node_Type::tk_setting_string, ANTON_MOV(value), source);
+        }
+
         Optional<Syntax_Node> try_declaration() {
             if(Optional decl_if = try_decl_if()) {
                 return ANTON_MOV(*decl_if);
@@ -411,9 +447,9 @@ namespace vush {
                 return ANTON_MOV(*decl_import);
             }
 
-            // if(Optional settings_declaration = try_settings_declaration()) {
-            //     return ANTON_MOV(*settings_declaration);
-            // }
+            if(Optional decl_settings = try_decl_settings()) {
+                return ANTON_MOV(*decl_settings);
+            }
 
             if(Optional decl_struct = try_decl_struct()) {
                 return ANTON_MOV(*decl_struct);
@@ -720,116 +756,100 @@ namespace vush {
             return Syntax_Node(Syntax_Node_Type::decl_struct, ANTON_MOV(snots), source);
         }
 
-        // Owning_Ptr<Settings_Declaration> try_settings_declaration() {
-        //     Lexer_State const state_backup = _lexer.get_current_state();
+        Optional<Syntax_Node> try_setting() {
+            Lexer_State const begin_state = _lexer.get_current_state();
+            Array<SNOT> snots{_allocator};
+            if(Optional key = match_setting_string()) {
+                snots.push_back(ANTON_MOV(*key));
+            } else {
+                _lexer.restore_state(begin_state);
+                return anton::null_optional;
+            }
 
-        //     auto match_string = [this, &state_backup]() -> anton::Optional<anton::String> {
-        //         _lexer.ignore_whitespace_and_comments();
-        //         anton::String string(_allocator);
-        //         while(true) {
-        //             anton::Optional<Token_Data> token = _lexer.peek_token();
-        //             if(!token) {
-        //                 set_error(u8"unexpected end of file"_sv);
-        //                 _lexer.restore_state(state_backup);
-        //                 return anton::null_optional;
-        //             }
+            if(Optional tk_colon = match(Token_Type::tk_colon)) {
+                snots.push_back(ANTON_MOV(*tk_colon));
+            } else {
+                set_error(u8"expected ':'"_sv);
+                _lexer.restore_state(begin_state);
+                return anton::null_optional;
+            }
 
-        //             Token_Type const type = token->token.type;
-        //             if(type == Token_Type::whitespace || type == Token_Type::comment || type == Token_Type::tk_colon || type == Token_Type::tk_brace_close ||
-        //                type == Token_Type::tk_brace_open) {
-        //                 return {ANTON_MOV(string)};
-        //             } else {
-        //                 anton::String_View const value{token->token.value.begin(), token->token.value.end()};
-        //                 string += value;
-        //                 _lexer.advance_token();
-        //             }
-        //         }
-        //     };
+            // TODO: Flatten setting keys.
 
-        //     auto match_nested_settings = [this, &state_backup, &match_string](auto match_nested_settings, Array<Setting_Key_Value>& settings,
-        //                                                                       anton::String const& setting_name) -> bool {
-        //         while(true) {
-        //             if(_lexer.match(Token_Type::tk_brace_close)) {
-        //                 return true;
-        //             }
+            if(Optional block = try_setting_block()) {
+                snots.push_back(ANTON_MOV(*block));
+            } else if(Optional value = match_setting_string()) {
+                snots.push_back(ANTON_MOV(*value));
+            } else {
+                set_error("expected value string after ':'"_sv);
+                _lexer.restore_state(begin_state);
+                return anton::null_optional;
+            }
 
-        //             auto key_name = match_string();
-        //             if(!key_name) {
-        //                 _lexer.restore_state(state_backup);
-        //                 return false;
-        //             }
+            Lexer_State const end_state = _lexer.get_current_state_noskip();
+            Source_Info const source = src_info(begin_state, end_state);
+            return Syntax_Node(Syntax_Node_Type::setting_keyval, ANTON_MOV(snots), source);
+        }
 
-        //             if(key_name.value().size_bytes() == 0) {
-        //                 set_error(u8"expected a name"_sv);
-        //                 _lexer.restore_state(state_backup);
-        //                 return false;
-        //             }
+        Optional<Syntax_Node> try_setting_block() {
+            Lexer_State const begin_state = _lexer.get_current_state();
+            Array<SNOT> snots{_allocator};
+            if(Optional tk_brace_open = match(Token_Type::tk_brace_open)) {
+                snots.push_back(ANTON_MOV(*tk_brace_open));
+            } else {
+                set_error(u8"expected '{'");
+                _lexer.restore_state(begin_state);
+                return anton::null_optional;
+            }
 
-        //             if(!_lexer.match(Token_Type::tk_colon)) {
-        //                 set_error(u8"expected ':'"_sv);
-        //                 _lexer.restore_state(state_backup);
-        //                 return false;
-        //             }
+            while(true) {
+                if(Optional tk_brace_close = skipmatch(Token_Type::tk_brace_close)) {
+                    snots.push_back(ANTON_MOV(*tk_brace_close));
+                    break;
+                }
 
-        //             anton::String setting_key(setting_name);
-        //             if(setting_key.size_bytes() > 0) {
-        //                 setting_key += u8"_"_sv;
-        //             }
-        //             setting_key += key_name.value();
+                if(Optional statement = try_setting()) {
+                    snots.push_back(ANTON_MOV(*statement));
+                } else {
+                    _lexer.restore_state(begin_state);
+                    return anton::null_optional;
+                }
+            }
 
-        //             if(_lexer.match(Token_Type::tk_brace_open)) {
-        //                 if(!match_nested_settings(match_nested_settings, settings, setting_key)) {
-        //                     _lexer.restore_state(state_backup);
-        //                     return false;
-        //                 }
-        //             } else {
-        //                 auto value = match_string();
-        //                 if(!value) {
-        //                     _lexer.restore_state(state_backup);
-        //                     return false;
-        //                 }
+            Lexer_State const end_state = _lexer.get_current_state_noskip();
+            Source_Info const source = src_info(begin_state, end_state);
+            return Syntax_Node(Syntax_Node_Type::setting_block, ANTON_MOV(snots), source);
+        }
 
-        //                 if(value.value().size_bytes() == 0) {
-        //                     set_error(u8"expected value string after ':'"_sv);
-        //                     _lexer.restore_state(state_backup);
-        //                     return false;
-        //                 }
+        Optional<Syntax_Node> try_decl_settings() {
+            Lexer_State const begin_state = _lexer.get_current_state();
+            Array<SNOT> snots{_allocator};
+            if(Optional kw_settings = match(Token_Type::kw_settings)) {
+                snots.push_back(ANTON_MOV(*kw_settings));
+            } else {
+                set_error("expected 'settings'"_sv);
+                _lexer.restore_state(begin_state);
+                return anton::null_optional;
+            }
 
-        //                 settings.emplace_back(Setting_Key_Value{ANTON_MOV(setting_key), ANTON_MOV(value.value())});
-        //             }
-        //         }
-        //     };
+            if(Optional pass = try_identifier()) {
+                snots.push_back(ANTON_MOV(*pass));
+            } else {
+                _lexer.restore_state(begin_state);
+                return anton::null_optional;
+            }
 
-        //     if(!_lexer.match(Token_Type::kw_settings)) {
-        //         set_error(u8"expected 'settings'"_sv);
-        //         _lexer.restore_state(state_backup);
-        //         return OWNING_NULL(Settings_Declaration);
-        //     }
+            if(Optional setting_block = try_setting_block()) {
+                snots.push_back(ANTON_MOV(*setting_block));
+            } else {
+                _lexer.restore_state(begin_state);
+                return anton::null_optional;
+            }
 
-        //     Owning_Ptr pass_name = try_identifier();
-        //     if(!pass_name) {
-        //         _lexer.restore_state(state_backup);
-        //         return OWNING_NULL(Settings_Declaration);
-        //     }
-
-        //     Owning_Ptr settings_declaration =
-        //         ALLOC(Settings_Declaration, ANTON_MOV(pass_name), Array<Setting_Key_Value>(_allocator), src_info(state_backup, state_backup));
-        //     if(!_lexer.match(Token_Type::tk_brace_open)) {
-        //         set_error(u8"expected '{'"_sv);
-        //         _lexer.restore_state(state_backup);
-        //         return OWNING_NULL(Settings_Declaration);
-        //     }
-
-        //     if(!match_nested_settings(match_nested_settings, settings_declaration->settings, anton::String(_allocator))) {
-        //         _lexer.restore_state(state_backup);
-        //         return OWNING_NULL(Settings_Declaration);
-        //     }
-
-        //     Lexer_State const end_state = _lexer.get_current_state_noskip();
-        //     Source_Info const src = src_info(state_backup, end_state);
-        //     settings_declaration->source_info = src;
-        //     return settings_declaration;
-        // }
+            Lexer_State const end_state = _lexer.get_current_state_noskip();
+            Source_Info const source = src_info(begin_state, end_state);
+            return Syntax_Node(Syntax_Node_Type::decl_settings, ANTON_MOV(snots), source);
+        }
 
         Optional<Syntax_Node> try_attribute() {
             Lexer_State const begin_state = _lexer.get_current_state();
@@ -900,7 +920,7 @@ namespace vush {
             return anton::null_optional;
         }
 
-        Optional<Syntax_Node> try_attr_attribute_list() {
+        Optional<Syntax_Node> try_attribute_list() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
             if(Optional tk_lbracket = match(Token_Type::tk_lbracket)) {
@@ -936,7 +956,7 @@ namespace vush {
 
             Lexer_State const end_state = _lexer.get_current_state_noskip();
             Source_Info const source = src_info(begin_state, end_state);
-            return Syntax_Node(Syntax_Node_Type::attr_attribute_list, ANTON_MOV(snots), source);
+            return Syntax_Node(Syntax_Node_Type::attribute_list, ANTON_MOV(snots), source);
         }
 
         Optional<Syntax_Node> try_func_parameter() {
@@ -1106,7 +1126,7 @@ namespace vush {
             Array<SNOT> snots{_allocator};
             // We allow many attribute lists to be present.
             while(true) {
-                if(Optional attribute_list = try_attr_attribute_list()) {
+                if(Optional attribute_list = try_attribute_list()) {
                     snots.push_back(ANTON_MOV(*attribute_list));
                 } else {
                     break;
@@ -1173,7 +1193,7 @@ namespace vush {
             Array<SNOT> snots{_allocator};
             // We allow many attribute lists to be present.
             while(true) {
-                if(Optional attribute_list = try_attr_attribute_list()) {
+                if(Optional attribute_list = try_attribute_list()) {
                     snots.push_back(ANTON_MOV(*attribute_list));
                 } else {
                     break;
