@@ -193,7 +193,7 @@ namespace vush {
             return Source_Info{.source_path = _source_name,
                                .line = start_source.line,
                                .column = start_source.column,
-                               .start_offset = start_source.offset,
+                               .offset = start_source.offset,
                                .end_line = end_source.end_line,
                                .end_column = end_source.end_column,
                                .end_offset = end_source.end_offset};
@@ -309,7 +309,7 @@ namespace vush {
             source_info.source_path = token1.source_info.source_path;
             source_info.line = anton::math::min(token1.source_info.line, token2.source_info.line);
             source_info.column = anton::math::min(token1.source_info.column, token2.source_info.column);
-            source_info.start_offset = anton::math::min(token1.source_info.start_offset, token2.source_info.start_offset);
+            source_info.offset = anton::math::min(token1.source_info.offset, token2.source_info.offset);
             source_info.end_line = anton::math::max(token1.source_info.end_line, token2.source_info.end_line);
             source_info.end_column = anton::math::max(token1.source_info.end_column, token2.source_info.end_column);
             source_info.end_offset = anton::math::max(token1.source_info.end_offset, token2.source_info.end_offset);
@@ -335,7 +335,7 @@ namespace vush {
             source_info.source_path = token1.source_info.source_path;
             source_info.line = anton::math::min(token1.source_info.line, token2.source_info.line, token3.source_info.line);
             source_info.column = anton::math::min(token1.source_info.column, token2.source_info.column, token3.source_info.column);
-            source_info.start_offset = anton::math::min(token1.source_info.start_offset, token2.source_info.start_offset, token3.source_info.start_offset);
+            source_info.offset = anton::math::min(token1.source_info.offset, token2.source_info.offset, token3.source_info.offset);
             source_info.end_line = anton::math::max(token1.source_info.end_line, token2.source_info.end_line, token3.source_info.end_line);
             source_info.end_column = anton::math::max(token1.source_info.end_column, token2.source_info.end_column, token3.source_info.end_column);
             source_info.end_offset = anton::math::max(token1.source_info.end_offset, token2.source_info.end_offset, token3.source_info.end_offset);
@@ -2091,7 +2091,7 @@ namespace vush {
                 node.source_info.source_path = left.source_path;
                 node.source_info.line = left.line;
                 node.source_info.column = left.column;
-                node.source_info.start_offset = left.start_offset;
+                node.source_info.offset = left.offset;
                 node.source_info.end_line = right.end_line;
                 node.source_info.end_column = right.end_column;
                 node.source_info.end_offset = right.end_offset;
