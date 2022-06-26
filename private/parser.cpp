@@ -1892,43 +1892,6 @@ namespace vush {
             }
         }
 
-        // Owning_Ptr<Expression> try_elvis_expression() {
-        //     Lexer_State const state_backup = _lexer.get_current_state();
-        //     Owning_Ptr cond = try_logic_or_expr();
-        //     if(!cond) {
-        //         _lexer.restore_state(state_backup);
-        //         return nullptr;
-        //     }
-
-        //     if(!_lexer.match(token_question)) {
-        //         return cond;
-        //     }
-
-        //     // TODO: is using try_expression here correct?
-
-        //     Owning_Ptr true_expression = try_expression();
-        //     if(!true_expression) {
-        //         _lexer.restore_state(state_backup);
-        //         return nullptr;
-        //     }
-
-        //     if(!_lexer.match(token_colon)) {
-        //         set_error(u8"expected ':'");
-        //         _lexer.restore_state(state_backup);
-        //         return nullptr;
-        //     }
-
-        //     Owning_Ptr false_expression = try_expression();
-        //     if(!false_expression) {
-        //         _lexer.restore_state(state_backup);
-        //         return nullptr;
-        //     }
-
-        //     Lexer_State const end_state = _lexer.get_current_state_noskip();
-        //     Source_Info const src = src_info(state_backup, end_state);
-        //     return ALLOC(Elvis_Expression, ANTON_MOV(cond), ANTON_MOV(true_expression), ANTON_MOV(false_expression), src);
-        // }
-
         Owning_Ptr<Expression> try_binary_expression() {
             auto insert_node = [](Owning_Ptr<Expression> root, Owning_Ptr<Binary_Expression> node) -> Owning_Ptr<Expression> {
                 auto get_precedence = [](Binary_Expression& expression) -> i32 {

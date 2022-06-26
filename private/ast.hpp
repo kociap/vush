@@ -11,11 +11,11 @@ namespace vush {
         anton::String_View source_path;
         i64 line = 0;
         i64 column = 0;
-        // The offset into the source at which the matched node starts
+        // The offset into the source at which the matched node starts.
         i64 offset = 0;
         i64 end_line = 0;
         i64 end_column = 0;
-        // The offset into the source at which the matched node ends
+        // The offset into the source at which the matched node ends.
         i64 end_offset = 0;
     };
 
@@ -230,7 +230,6 @@ namespace vush {
         identifier_expression,
         assignment_expression,
         arithmetic_assignment_expression,
-        elvis_expression,
         binary_expression,
         unary_expression,
         prefix_increment_expression,
@@ -894,20 +893,6 @@ namespace vush {
 
     private:
         [[nodiscard]] virtual Arithmetic_Assignment_Expression* _clone(Allocator* allocator) const override;
-    };
-
-    struct Elvis_Expression: public Expression {
-        Owning_Ptr<Expression> condition;
-        Owning_Ptr<Expression> true_expression;
-        Owning_Ptr<Expression> false_expression;
-
-        Elvis_Expression(Owning_Ptr<Expression> condition, Owning_Ptr<Expression> true_expression, Owning_Ptr<Expression> false_expression,
-                         Source_Info const& source_info);
-
-        [[nodiscard]] Owning_Ptr<Elvis_Expression> clone(Allocator* allocator) const;
-
-    private:
-        [[nodiscard]] virtual Elvis_Expression* _clone(Allocator* allocator) const override;
     };
 
     enum struct Binary_Expression_Type {

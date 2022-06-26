@@ -36,7 +36,6 @@ namespace vush {
         [[nodiscard]] virtual Match_Result match(Identifier_Expression const& node);
         [[nodiscard]] virtual Match_Result match(Assignment_Expression const& node);
         [[nodiscard]] virtual Match_Result match(Arithmetic_Assignment_Expression const& node);
-        [[nodiscard]] virtual Match_Result match(Elvis_Expression const& node);
         [[nodiscard]] virtual Match_Result match(Binary_Expression const& node);
         [[nodiscard]] virtual Match_Result match(Unary_Expression const& node);
         [[nodiscard]] virtual Match_Result match(Prefix_Increment_Expression const& node);
@@ -93,7 +92,6 @@ namespace vush {
         virtual Owning_Ptr<AST_Node> execute(Owning_Ptr<Identifier_Expression> node);
         virtual Owning_Ptr<AST_Node> execute(Owning_Ptr<Assignment_Expression> node);
         virtual Owning_Ptr<AST_Node> execute(Owning_Ptr<Arithmetic_Assignment_Expression> node);
-        virtual Owning_Ptr<AST_Node> execute(Owning_Ptr<Elvis_Expression> node);
         virtual Owning_Ptr<AST_Node> execute(Owning_Ptr<Binary_Expression> node);
         virtual Owning_Ptr<AST_Node> execute(Owning_Ptr<Unary_Expression> node);
         virtual Owning_Ptr<AST_Node> execute(Owning_Ptr<Prefix_Increment_Expression> node);

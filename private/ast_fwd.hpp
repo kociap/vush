@@ -38,7 +38,6 @@ namespace vush {
     struct Identifier_Expression;
     struct Assignment_Expression;
     struct Arithmetic_Assignment_Expression;
-    struct Elvis_Expression;
     struct Binary_Expression;
     struct Unary_Expression;
     struct Prefix_Increment_Expression;
