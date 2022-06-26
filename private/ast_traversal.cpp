@@ -92,10 +92,6 @@ namespace vush {
         return {};
     }
 
-    Recursive_AST_Matcher::Match_Result Recursive_AST_Matcher::match(Elvis_Expression const&) {
-        return {};
-    }
-
     Recursive_AST_Matcher::Match_Result Recursive_AST_Matcher::match(Binary_Expression const&) {
         return {};
     }
@@ -297,10 +293,6 @@ namespace vush {
     }
 
     Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Arithmetic_Assignment_Expression> node) {
-        return ANTON_MOV(node);
-    }
-
-    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Elvis_Expression> node) {
         return ANTON_MOV(node);
     }
 
@@ -948,32 +940,6 @@ namespace vush {
                         return true;
                     }
                     if(traverse_node_internal(matcher, action, n.rhs)) {
-                        return true;
-                    }
-                }
-                return false;
-            } break;
-
-            case AST_Node_Type::elvis_expression: {
-                Elvis_Expression& n = static_cast<Elvis_Expression&>(*node);
-                Match_Result const result = matcher.match(n);
-                if(result.matched) {
-                    Owning_Ptr<Elvis_Expression> node_typed{downcast, ANTON_MOV(node)};
-                    node = action.execute(ANTON_MOV(node_typed));
-                }
-
-                if(result.break_matching) {
-                    return true;
-                }
-
-                if(!result.ignore_children) {
-                    if(traverse_node_internal(matcher, action, n.condition)) {
-                        return true;
-                    }
-                    if(traverse_node_internal(matcher, action, n.true_expression)) {
-                        return true;
-                    }
-                    if(traverse_node_internal(matcher, action, n.false_expression)) {
                         return true;
                     }
                 }

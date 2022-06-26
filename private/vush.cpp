@@ -436,26 +436,6 @@ namespace vush {
                 return {anton::expected_value};
             }
 
-            case AST_Node_Type::elvis_expression: {
-                Owning_Ptr<Elvis_Expression>& node = (Owning_Ptr<Elvis_Expression>&)expression;
-                anton::Expected<void, anton::String> condition_res = process_expression(ctx, node->condition);
-                if(!condition_res) {
-                    return condition_res;
-                }
-
-                anton::Expected<void, anton::String> true_expr_res = process_expression(ctx, node->true_expression);
-                if(!true_expr_res) {
-                    return true_expr_res;
-                }
-
-                anton::Expected<void, anton::String> false_expr_res = process_expression(ctx, node->false_expression);
-                if(!false_expr_res) {
-                    return false_expr_res;
-                }
-
-                return {anton::expected_value};
-            }
-
             case AST_Node_Type::unary_expression: {
                 Owning_Ptr<Unary_Expression>& node = (Owning_Ptr<Unary_Expression>&)expression;
                 anton::Expected<void, anton::String> res = process_expression(ctx, node->expression);

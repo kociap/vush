@@ -6,6 +6,12 @@
 namespace vush {
     using namespace anton::literals;
 
+    Syntax_Token::Syntax_Token(Syntax_Node_Type type, anton::String value, Source_Info const& source_info)
+        : value(ANTON_MOV(value)), source_info(source_info), type(type) {}
+
+    Syntax_Node::Syntax_Node(Syntax_Node_Type type, Array<SNOT> array, Source_Info const& source_info)
+        : children(ANTON_MOV(array)), source_info(source_info), type(type) {}
+
     bool is_opaque_type(Builtin_GLSL_Type const type) {
         return static_cast<i32>(type) >= static_cast<i32>(Builtin_GLSL_Type::glsl_sampler1D);
     }
@@ -873,12 +879,6 @@ namespace vush {
 
 #define ALLOC(type, ...) allocate<type>(allocator, __VA_ARGS__)
 
-    Syntax_Token::Syntax_Token(Syntax_Node_Type type, anton::String value, Source_Info const& source_info)
-        : value(ANTON_MOV(value)), source_info(source_info), type(type) {}
-
-    Syntax_Node::Syntax_Node(Syntax_Node_Type type, Array<SNOT> array, Source_Info const& source_info)
-        : children(ANTON_MOV(array)), source_info(source_info), type(type) {}
-
     template<typename T>
     Array<Owning_Ptr<T>> clone(Array<Owning_Ptr<T>> const& array, Allocator* const allocator) {
         Array<Owning_Ptr<T>> copy{anton::reserve, array.size(), array.get_allocator()};
@@ -1201,19 +1201,6 @@ namespace vush {
 
     Arithmetic_Assignment_Expression* Arithmetic_Assignment_Expression::_clone(Allocator* const allocator) const {
         return ALLOC(Arithmetic_Assignment_Expression, type, lhs->clone(allocator), rhs->clone(allocator), source_info);
-    }
-
-    Elvis_Expression::Elvis_Expression(Owning_Ptr<Expression> condition, Owning_Ptr<Expression> true_expression, Owning_Ptr<Expression> false_expression,
-                                       Source_Info const& source_info)
-        : Expression(source_info, AST_Node_Type::elvis_expression), condition(ANTON_MOV(condition)), true_expression(ANTON_MOV(true_expression)),
-          false_expression(ANTON_MOV(false_expression)) {}
-
-    Owning_Ptr<Elvis_Expression> Elvis_Expression::clone(Allocator* const allocator) const {
-        return Owning_Ptr{_clone(allocator), allocator};
-    }
-
-    Elvis_Expression* Elvis_Expression::_clone(Allocator* const allocator) const {
-        return ALLOC(Elvis_Expression, condition->clone(allocator), true_expression->clone(allocator), false_expression->clone(allocator), source_info);
     }
 
     Binary_Expression::Binary_Expression(Binary_Expression_Type type, Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info)

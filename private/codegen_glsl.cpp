@@ -560,16 +560,6 @@ namespace vush {
                 return;
             }
 
-            case AST_Node_Type::elvis_expression: {
-                Elvis_Expression& node = (Elvis_Expression&)ast_node;
-                stringify(out, *node.condition, ctx);
-                out += u8" ? ";
-                stringify(out, *node.true_expression, ctx);
-                out += u8" : ";
-                stringify(out, *node.false_expression, ctx);
-                return;
-            }
-
             case AST_Node_Type::binary_expression: {
                 Binary_Expression& node = (Binary_Expression&)ast_node;
                 stringify(out, *node.lhs, ctx);
