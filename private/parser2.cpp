@@ -1,17 +1,18 @@
-#include "anton/assert.hpp"
-#include "anton/intrinsics.hpp"
-#include "anton/memory.hpp"
-#include "anton/string.hpp"
-#include "anton/type_traits/utility.hpp"
-#include "ast.hpp"
+
 #include <parser.hpp>
 
+#include <ast.hpp>
 #include <lexer.hpp>
 #include <memory.hpp>
 
+#include <anton/assert.hpp>
+#include <anton/intrinsics.hpp>
+#include <anton/memory.hpp>
 #include <anton/optional.hpp>
+#include <anton/string.hpp>
 #include <anton/string7_stream.hpp>
 #include <anton/string7_view.hpp>
+#include <anton/type_traits/utility.hpp>
 
 // TODO: Figure out a way to match operators that use overlapping symbols (+ and +=) in a clean way.
 // TODO: const types.
@@ -2667,15 +2668,89 @@ namespace vush {
         }
     };
 
-    anton::Expected<Array<SNOT>, Error> parse_source_to_syntax_tree(Allocator* allocator, anton::String_View const source_name,
-                                                                    anton::String_View const source_code) {
+    struct Insert_Location {
+        Array<SNOT>* array;
+        Array<SNOT>::iterator location;
+    };
+
+    // find_insert_location
+    //
+    [[nodiscard]] static Insert_Location find_insert_location(Array<SNOT>& snots, Syntax_Token const& token) {
+        auto get_snot_source_info = [](SNOT const& snot) {
+            if(snot.is_left()) {
+                return snot.left().source_info;
+            } else {
+                return snot.right().source_info;
+            }
+        };
+
+        Array<SNOT>::iterator i = snots.begin();
+        for(Array<SNOT>::iterator const e = snots.end(); i != e; ++i) {
+            Source_Info const snot_src = get_snot_source_info(*i);
+            // Check whether token is before i.
+            if(token.source_info.offset < snot_src.offset) {
+                break;
+            }
+            // Check whether token is contained within a node.
+            // Note that this may only happen when snot is a node
+            // since tokens by definition are strings of contiguous symbols.
+            if(token.source_info.offset >= snot_src.offset && token.source_info.end_offset < snot_src.end_offset) {
+                Syntax_Node& node = i->left();
+                return find_insert_location(node.children, token);
+            }
+        }
+
+        return {.array = &snots, .location = i};
+    }
+
+    struct Insert_Comments_And_Whitespace_Parameters {
+        Allocator* const allocator;
+        anton::String_View source_path;
+        Array<SNOT>& tl_node;
+        Lexed_Source::const_token_iterator const begin;
+        Lexed_Source::const_token_iterator const end;
+    };
+
+    // insert_comments_and_whitespace
+    //
+    static void insert_comments_and_whitespace(Insert_Comments_And_Whitespace_Parameters const& p) {
+        for(auto [token, source]: anton::Range(p.begin, p.end)) {
+            if(token.type == Token_Type::comment || token.type == Token_Type::whitespace) {
+                Source_Info source_info{
+                    .source_path = p.source_path,
+                    .line = source.line,
+                    .column = source.column,
+                    .offset = source.offset,
+                    .end_line = source.end_line,
+                    .end_column = source.end_column,
+                    .end_offset = source.end_offset,
+                };
+                Syntax_Token syntax_token(static_cast<Syntax_Node_Type>(token.type), anton::String(token.value.begin(), token.value.end(), p.allocator),
+                                          source_info);
+                Insert_Location const insert = find_insert_location(p.tl_node, syntax_token);
+                insert.array->insert(insert.location, ANTON_MOV(syntax_token));
+            }
+        }
+    }
+
+    anton::Expected<Array<SNOT>, Error> parse_source_to_syntax_tree(Allocator* const allocator, anton::String_View const source_path,
+                                                                    anton::String_View const source_code, Parse_Syntax_Options const options) {
         anton::Expected<Lexed_Source, Error> lex_result = lex_source(allocator, anton::String7_View{source_code.bytes_begin(), source_code.bytes_end()});
         if(!lex_result) {
             return {anton::expected_error, ANTON_MOV(lex_result.error())};
         }
-        Lexer lexer(lex_result->cbegin(), lex_result->cend());
-        Parser parser(allocator, source_name, ANTON_MOV(lexer));
+        Parser parser(allocator, source_path, Lexer(lex_result->cbegin(), lex_result->cend()));
         anton::Expected<Array<SNOT>, Error> ast = parser.build_syntax_tree();
+        if(ast && options.include_whitespace_and_comments) {
+            Insert_Comments_And_Whitespace_Parameters p{
+                .allocator = allocator,
+                .source_path = source_path,
+                .tl_node = ast.value(),
+                .begin = lex_result->cbegin(),
+                .end = lex_result->cend(),
+            };
+            insert_comments_and_whitespace(p);
+        }
         return ast;
     }
 } // namespace vush
