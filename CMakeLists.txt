@@ -45,7 +45,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(anton_core)
 
 add_library(vush)
-set_target_properties(vush PROPERTIES CXX_STANDARD 17 CXX_EXTENSIONS OFF)
+set_target_properties(vush PROPERTIES CXX_STANDARD 20 CXX_EXTENSIONS OFF)
 target_compile_options(vush PRIVATE ${VUSH_COMPILE_FLAGS})
 target_link_libraries(vush PUBLIC anton_core)
 target_include_directories(vush PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/public" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/private")
