@@ -39,14 +39,11 @@ namespace vush {
     struct Assignment_Expression;
     struct Arithmetic_Assignment_Expression;
     struct Binary_Expression;
-    struct Unary_Expression;
-    struct Prefix_Increment_Expression;
-    struct Prefix_Decrement_Expression;
+    struct Prefix_Expression;
     struct Function_Call_Expression;
     struct Member_Access_Expression;
     struct Array_Access_Expression;
-    struct Postfix_Increment_Expression;
-    struct Postfix_Decrement_Expression;
+    struct Postfix_Expression;
     struct Parenthesised_Expression;
     struct Reinterpret_Expression;
     struct Default_Expression;

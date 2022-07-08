@@ -8,6 +8,8 @@
 #include <anton/iterators/range.hpp>
 #include <anton/iterators/zip.hpp>
 #include <anton/string_stream.hpp>
+
+#include <ast.hpp>
 #include <ast_traversal.hpp>
 #include <builtins.hpp>
 #include <codegen.hpp>
@@ -406,39 +408,9 @@ namespace vush {
                 return {anton::expected_value};
             }
 
-            case AST_Node_Type::assignment_expression: {
-                Owning_Ptr<Assignment_Expression>& node = (Owning_Ptr<Assignment_Expression>&)expression;
-                anton::Expected<void, anton::String> lhs_res = process_expression(ctx, node->lhs);
-                if(!lhs_res) {
-                    return lhs_res;
-                }
-
-                anton::Expected<void, anton::String> rhs_res = process_expression(ctx, node->rhs);
-                if(!rhs_res) {
-                    return rhs_res;
-                }
-
-                return {anton::expected_value};
-            }
-
-            case AST_Node_Type::arithmetic_assignment_expression: {
-                Owning_Ptr<Arithmetic_Assignment_Expression>& node = (Owning_Ptr<Arithmetic_Assignment_Expression>&)expression;
-                anton::Expected<void, anton::String> lhs_res = process_expression(ctx, node->lhs);
-                if(!lhs_res) {
-                    return lhs_res;
-                }
-
-                anton::Expected<void, anton::String> rhs_res = process_expression(ctx, node->rhs);
-                if(!rhs_res) {
-                    return rhs_res;
-                }
-
-                return {anton::expected_value};
-            }
-
-            case AST_Node_Type::unary_expression: {
-                Owning_Ptr<Unary_Expression>& node = (Owning_Ptr<Unary_Expression>&)expression;
-                anton::Expected<void, anton::String> res = process_expression(ctx, node->expression);
+            case AST_Node_Type::prefix_expression: {
+                Prefix_Expression& node = static_cast<Prefix_Expression&>(*expression);
+                anton::Expected<void, anton::String> res = process_expression(ctx, node.expression);
                 if(!res) {
                     return res;
                 }
@@ -446,39 +418,9 @@ namespace vush {
                 return {anton::expected_value};
             }
 
-            case AST_Node_Type::prefix_increment_expression: {
-                Owning_Ptr<Prefix_Increment_Expression>& node = (Owning_Ptr<Prefix_Increment_Expression>&)expression;
-                anton::Expected<void, anton::String> res = process_expression(ctx, node->expression);
-                if(!res) {
-                    return res;
-                }
-
-                return {anton::expected_value};
-            }
-
-            case AST_Node_Type::prefix_decrement_expression: {
-                Owning_Ptr<Prefix_Decrement_Expression>& node = (Owning_Ptr<Prefix_Decrement_Expression>&)expression;
-                anton::Expected<void, anton::String> res = process_expression(ctx, node->expression);
-                if(!res) {
-                    return res;
-                }
-
-                return {anton::expected_value};
-            }
-
-            case AST_Node_Type::postfix_increment_expression: {
-                Owning_Ptr<Postfix_Increment_Expression>& node = (Owning_Ptr<Postfix_Increment_Expression>&)expression;
-                anton::Expected<void, anton::String> res = process_expression(ctx, node->expression);
-                if(!res) {
-                    return res;
-                }
-
-                return {anton::expected_value};
-            }
-
-            case AST_Node_Type::postfix_decrement_expression: {
-                Owning_Ptr<Postfix_Decrement_Expression>& node = (Owning_Ptr<Postfix_Decrement_Expression>&)expression;
-                anton::Expected<void, anton::String> res = process_expression(ctx, node->expression);
+            case AST_Node_Type::postfix_expression: {
+                Postfix_Expression& node = static_cast<Postfix_Expression&>(*expression);
+                anton::Expected<void, anton::String> res = process_expression(ctx, node.expression);
                 if(!res) {
                     return res;
                 }

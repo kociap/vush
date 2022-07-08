@@ -504,160 +504,127 @@ namespace vush {
                 return;
             }
 
-            case AST_Node_Type::assignment_expression: {
-                Assignment_Expression& node = (Assignment_Expression&)ast_node;
-                stringify(out, *node.lhs, ctx);
-                out += u8" = ";
-                stringify(out, *node.rhs, ctx);
-                return;
-            }
-
-            case AST_Node_Type::arithmetic_assignment_expression: {
-                Arithmetic_Assignment_Expression& node = (Arithmetic_Assignment_Expression&)ast_node;
-                stringify(out, *node.lhs, ctx);
-                switch(node.type) {
-                    case Arithmetic_Assignment_Type::plus: {
-                        out += u8" += ";
-                    } break;
-
-                    case Arithmetic_Assignment_Type::minus: {
-                        out += u8" -= ";
-                    } break;
-
-                    case Arithmetic_Assignment_Type::multiply: {
-                        out += u8" *= ";
-                    } break;
-
-                    case Arithmetic_Assignment_Type::divide: {
-                        out += u8" /= ";
-                    } break;
-
-                    case Arithmetic_Assignment_Type::remainder: {
-                        out += u8" %= ";
-                    } break;
-
-                    case Arithmetic_Assignment_Type::lshift: {
-                        out += u8" <<= ";
-                    } break;
-
-                    case Arithmetic_Assignment_Type::rshift: {
-                        out += u8" >>= ";
-                    } break;
-
-                    case Arithmetic_Assignment_Type::bit_and: {
-                        out += u8" &= ";
-                    } break;
-
-                    case Arithmetic_Assignment_Type::bit_xor: {
-                        out += u8" ^= ";
-                    } break;
-
-                    case Arithmetic_Assignment_Type::bit_or: {
-                        out += u8" |= ";
-                    } break;
-                }
-                stringify(out, *node.rhs, ctx);
-                return;
-            }
-
             case AST_Node_Type::binary_expression: {
                 Binary_Expression& node = (Binary_Expression&)ast_node;
                 stringify(out, *node.lhs, ctx);
                 switch(node.type) {
-                    case Binary_Expression_Type::logic_or:
-                        out += u8" || ";
+                    case Binary_Expression_Type::assign:
+                        out += "="_sv;
                         break;
-                    case Binary_Expression_Type::logic_xor:
-                        out += u8" ^^ ";
+                    case Binary_Expression_Type::add_assign:
+                        out += "+="_sv;
                         break;
-                    case Binary_Expression_Type::logic_and:
-                        out += u8" && ";
+                    case Binary_Expression_Type::sub_assign:
+                        out += "-="_sv;
                         break;
-                    case Binary_Expression_Type::equal:
-                        out += u8" == ";
+                    case Binary_Expression_Type::mul_assign:
+                        out += "*="_sv;
                         break;
-                    case Binary_Expression_Type::unequal:
-                        out += u8" != ";
+                    case Binary_Expression_Type::div_assign:
+                        out += "/="_sv;
                         break;
-                    case Binary_Expression_Type::greater_than:
-                        out += u8" > ";
+                    case Binary_Expression_Type::mod_assign:
+                        out += "%="_sv;
                         break;
-                    case Binary_Expression_Type::less_than:
-                        out += u8" < ";
+                    case Binary_Expression_Type::shl_assign:
+                        out += "<<="_sv;
                         break;
-                    case Binary_Expression_Type::greater_equal:
-                        out += u8" >= ";
+                    case Binary_Expression_Type::shr_assign:
+                        out += ">>="_sv;
                         break;
-                    case Binary_Expression_Type::less_equal:
-                        out += u8" <= ";
+                    case Binary_Expression_Type::band_assign:
+                        out += "&="_sv;
                         break;
-                    case Binary_Expression_Type::bit_or:
-                        out += u8" | ";
+                    case Binary_Expression_Type::bor_assign:
+                        out += "|="_sv;
                         break;
-                    case Binary_Expression_Type::bit_xor:
-                        out += u8" ^ ";
+                    case Binary_Expression_Type::bxor_assign:
+                        out += "^="_sv;
                         break;
-                    case Binary_Expression_Type::bit_and:
-                        out += u8" & ";
+                    case Binary_Expression_Type::lor:
+                        out += "||"_sv;
                         break;
-                    case Binary_Expression_Type::lshift:
-                        out += u8" << ";
+                    case Binary_Expression_Type::lxor:
+                        out += "^^"_sv;
                         break;
-                    case Binary_Expression_Type::rshift:
-                        out += u8" >> ";
+                    case Binary_Expression_Type::land:
+                        out += "&&"_sv;
+                        break;
+                    case Binary_Expression_Type::eq:
+                        out += "=="_sv;
+                        break;
+                    case Binary_Expression_Type::neq:
+                        out += "!="_sv;
+                        break;
+                    case Binary_Expression_Type::gt:
+                        out += ">"_sv;
+                        break;
+                    case Binary_Expression_Type::lt:
+                        out += "<"_sv;
+                        break;
+                    case Binary_Expression_Type::gteq:
+                        out += ">="_sv;
+                        break;
+                    case Binary_Expression_Type::lteq:
+                        out += "<="_sv;
+                        break;
+                    case Binary_Expression_Type::bor:
+                        out += "|"_sv;
+                        break;
+                    case Binary_Expression_Type::bxor:
+                        out += "^"_sv;
+                        break;
+                    case Binary_Expression_Type::band:
+                        out += "&"_sv;
+                        break;
+                    case Binary_Expression_Type::shl:
+                        out += "<<"_sv;
+                        break;
+                    case Binary_Expression_Type::shr:
+                        out += ">>"_sv;
                         break;
                     case Binary_Expression_Type::add:
-                        out += u8" + ";
+                        out += "+"_sv;
                         break;
                     case Binary_Expression_Type::sub:
-                        out += u8" - ";
+                        out += "-"_sv;
                         break;
                     case Binary_Expression_Type::mul:
-                        out += u8" * ";
+                        out += "*"_sv;
                         break;
                     case Binary_Expression_Type::div:
-                        out += u8" / ";
+                        out += "/"_sv;
                         break;
                     case Binary_Expression_Type::mod:
-                        out += u8" % ";
+                        out += "%"_sv;
                         break;
                 }
                 stringify(out, *node.rhs, ctx);
                 return;
             }
 
-            case AST_Node_Type::unary_expression: {
-                Unary_Expression& node = (Unary_Expression&)ast_node;
+            case AST_Node_Type::prefix_expression: {
+                Prefix_Expression& node = (Prefix_Expression&)ast_node;
                 switch(node.type) {
-                    case Unary_Type::plus:
+                    case Prefix_Expression_Type::plus:
+                        // Do not emit anything.
                         break;
-
-                    case Unary_Type::minus: {
+                    case Prefix_Expression_Type::minus:
                         out += u8"-";
-                    } break;
-
-                    case Unary_Type::logic_not: {
+                        break;
+                    case Prefix_Expression_Type::lnot:
                         out += u8"!";
-                    } break;
-
-                    case Unary_Type::bit_not: {
+                        break;
+                    case Prefix_Expression_Type::bnot:
                         out += u8"~";
-                    } break;
+                        break;
+                    case Prefix_Expression_Type::inc:
+                        out += "++"_sv;
+                        break;
+                    case Prefix_Expression_Type::dec:
+                        out += "--"_sv;
+                        break;
                 }
-                stringify(out, *node.expression, ctx);
-                return;
-            }
-
-            case AST_Node_Type::prefix_increment_expression: {
-                Prefix_Increment_Expression& node = (Prefix_Increment_Expression&)ast_node;
-                out += u8"++";
-                stringify(out, *node.expression, ctx);
-                return;
-            }
-
-            case AST_Node_Type::prefix_decrement_expression: {
-                Prefix_Decrement_Expression& node = (Prefix_Decrement_Expression&)ast_node;
-                out += u8"--";
                 stringify(out, *node.expression, ctx);
                 return;
             }
@@ -695,17 +662,17 @@ namespace vush {
                 return;
             }
 
-            case AST_Node_Type::postfix_increment_expression: {
-                Postfix_Increment_Expression& node = (Postfix_Increment_Expression&)ast_node;
+            case AST_Node_Type::postfix_expression: {
+                Postfix_Expression& node = (Postfix_Expression&)ast_node;
                 stringify(out, *node.expression, ctx);
-                out += u8"++";
-                return;
-            }
-
-            case AST_Node_Type::postfix_decrement_expression: {
-                Postfix_Decrement_Expression& node = (Postfix_Decrement_Expression&)ast_node;
-                stringify(out, *node.expression, ctx);
-                out += u8"--";
+                switch(node.type) {
+                    case Postfix_Expression_Type::inc:
+                        out += "++"_sv;
+                        break;
+                    case Postfix_Expression_Type::dec:
+                        out += "--"_sv;
+                        break;
+                }
                 return;
             }
 

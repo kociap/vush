@@ -207,6 +207,12 @@ namespace vush {
         Syntax_Node(Syntax_Node_Type type, Array<SNOT> array, Source_Info const& source_info);
     };
 
+    struct AST_Node;
+
+    // transform_syntax_tree_to_ast
+    //
+    [[nodiscard]] anton::Expected<Array<Owning_Ptr<AST_Node>>, Error> transform_syntax_tree_to_ast(Allocator* allocator, Array<SNOT> const& syntax);
+
     enum struct AST_Node_Type {
         identifier,
         builtin_type,
@@ -228,17 +234,12 @@ namespace vush {
         pass_stage_declaration,
         expression_if,
         identifier_expression,
-        assignment_expression,
-        arithmetic_assignment_expression,
         binary_expression,
-        unary_expression,
-        prefix_increment_expression,
-        prefix_decrement_expression,
+        prefix_expression,
         function_call_expression,
         member_access_expression,
         array_access_expression,
-        postfix_increment_expression,
-        postfix_decrement_expression,
+        postfix_expression,
         parenthesised_expression,
         reinterpret_expression,
         default_expression,
@@ -856,65 +857,37 @@ namespace vush {
         [[nodiscard]] virtual Identifier_Expression* _clone(Allocator* allocator) const override;
     };
 
-    struct Assignment_Expression: public Expression {
-        Owning_Ptr<Expression> lhs;
-        Owning_Ptr<Expression> rhs;
-
-        Assignment_Expression(Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info);
-
-        [[nodiscard]] Owning_Ptr<Assignment_Expression> clone(Allocator* allocator) const;
-
-    private:
-        [[nodiscard]] virtual Assignment_Expression* _clone(Allocator* allocator) const override;
-    };
-
-    enum struct Arithmetic_Assignment_Type {
-        plus,
-        minus,
-        multiply,
-        divide,
-        remainder,
-        lshift,
-        rshift,
-        bit_and,
-        bit_or,
-        bit_xor,
-    };
-
-    struct Arithmetic_Assignment_Expression: public Expression {
-        Owning_Ptr<Expression> lhs;
-        Owning_Ptr<Expression> rhs;
-        Arithmetic_Assignment_Type type;
-
-        Arithmetic_Assignment_Expression(Arithmetic_Assignment_Type type, Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs,
-                                         Source_Info const& source_info);
-
-        [[nodiscard]] Owning_Ptr<Arithmetic_Assignment_Expression> clone(Allocator* allocator) const;
-
-    private:
-        [[nodiscard]] virtual Arithmetic_Assignment_Expression* _clone(Allocator* allocator) const override;
-    };
-
     enum struct Binary_Expression_Type {
-        logic_or,
-        logic_xor,
-        logic_and,
-        equal,
-        unequal,
-        greater_than,
-        less_than,
-        greater_equal,
-        less_equal,
-        bit_or,
-        bit_xor,
-        bit_and,
-        lshift,
-        rshift,
+        assign,
+        add_assign,
+        sub_assign,
+        mul_assign,
+        div_assign,
+        mod_assign,
+        shl_assign,
+        shr_assign,
+        band_assign,
+        bor_assign,
+        bxor_assign,
+        lor,
+        lxor,
+        land,
+        eq,
+        neq,
+        gt,
+        lt,
+        gteq,
+        lteq,
+        bor,
+        bxor,
+        band,
+        shl,
+        shr,
         add,
         sub,
         mul,
         div,
-        mod,
+        mod
     };
 
     struct Binary_Expression: public Expression {
@@ -930,45 +903,18 @@ namespace vush {
         [[nodiscard]] virtual Binary_Expression* _clone(Allocator* allocator) const override;
     };
 
-    enum struct Unary_Type {
-        plus,
-        minus,
-        bit_not,
-        logic_not,
-    };
+    enum struct Prefix_Expression_Type { plus, minus, bnot, lnot, inc, dec };
 
-    struct Unary_Expression: public Expression {
+    struct Prefix_Expression: public Expression {
         Owning_Ptr<Expression> expression;
-        Unary_Type type;
+        Prefix_Expression_Type type;
 
-        Unary_Expression(Unary_Type type, Owning_Ptr<Expression> expression, Source_Info const& source_info);
+        Prefix_Expression(Prefix_Expression_Type type, Owning_Ptr<Expression> expression, Source_Info const& source_info);
 
-        [[nodiscard]] Owning_Ptr<Unary_Expression> clone(Allocator* allocator) const;
+        [[nodiscard]] Owning_Ptr<Prefix_Expression> clone(Allocator* allocator) const;
 
     private:
-        [[nodiscard]] virtual Unary_Expression* _clone(Allocator* allocator) const override;
-    };
-
-    struct Prefix_Increment_Expression: public Expression {
-        Owning_Ptr<Expression> expression;
-
-        Prefix_Increment_Expression(Owning_Ptr<Expression> expression, Source_Info const& source_info);
-
-        [[nodiscard]] Owning_Ptr<Prefix_Increment_Expression> clone(Allocator* allocator) const;
-
-    private:
-        [[nodiscard]] virtual Prefix_Increment_Expression* _clone(Allocator* allocator) const override;
-    };
-
-    struct Prefix_Decrement_Expression: public Expression {
-        Owning_Ptr<Expression> expression;
-
-        Prefix_Decrement_Expression(Owning_Ptr<Expression> expression, Source_Info const& source_info);
-
-        [[nodiscard]] Owning_Ptr<Prefix_Decrement_Expression> clone(Allocator* allocator) const;
-
-    private:
-        [[nodiscard]] virtual Prefix_Decrement_Expression* _clone(Allocator* allocator) const override;
+        [[nodiscard]] virtual Prefix_Expression* _clone(Allocator* allocator) const override;
     };
 
     struct Function_Call_Expression: public Expression {
@@ -1007,26 +953,18 @@ namespace vush {
         [[nodiscard]] virtual Array_Access_Expression* _clone(Allocator* allocator) const override;
     };
 
-    struct Postfix_Increment_Expression: public Expression {
+    enum struct Postfix_Expression_Type { inc, dec };
+
+    struct Postfix_Expression: public Expression {
         Owning_Ptr<Expression> expression;
+        Postfix_Expression_Type type;
 
-        Postfix_Increment_Expression(Owning_Ptr<Expression> expression, Source_Info const& source_info);
+        Postfix_Expression(Postfix_Expression_Type type, Owning_Ptr<Expression> expression, Source_Info const& source_info);
 
-        [[nodiscard]] Owning_Ptr<Postfix_Increment_Expression> clone(Allocator* allocator) const;
+        [[nodiscard]] Owning_Ptr<Postfix_Expression> clone(Allocator* allocator) const;
 
     private:
-        [[nodiscard]] virtual Postfix_Increment_Expression* _clone(Allocator* allocator) const override;
-    };
-
-    struct Postfix_Decrement_Expression: public Expression {
-        Owning_Ptr<Expression> expression;
-
-        Postfix_Decrement_Expression(Owning_Ptr<Expression> expression, Source_Info const& source_info);
-
-        [[nodiscard]] Owning_Ptr<Postfix_Decrement_Expression> clone(Allocator* allocator) const;
-
-    private:
-        [[nodiscard]] virtual Postfix_Decrement_Expression* _clone(Allocator* allocator) const override;
+        [[nodiscard]] virtual Postfix_Expression* _clone(Allocator* allocator) const override;
     };
 
     struct Parenthesised_Expression: public Expression {
