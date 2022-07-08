@@ -1180,29 +1180,6 @@ namespace vush {
         return ALLOC(Identifier_Expression, value, source_info);
     }
 
-    Assignment_Expression::Assignment_Expression(Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info)
-        : Expression(source_info, AST_Node_Type::assignment_expression), lhs(ANTON_MOV(lhs)), rhs(ANTON_MOV(rhs)) {}
-
-    Owning_Ptr<Assignment_Expression> Assignment_Expression::clone(Allocator* const allocator) const {
-        return Owning_Ptr{_clone(allocator), allocator};
-    }
-
-    Assignment_Expression* Assignment_Expression::_clone(Allocator* const allocator) const {
-        return ALLOC(Assignment_Expression, lhs->clone(allocator), rhs->clone(allocator), source_info);
-    }
-
-    Arithmetic_Assignment_Expression::Arithmetic_Assignment_Expression(Arithmetic_Assignment_Type type, Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs,
-                                                                       Source_Info const& source_info)
-        : Expression(source_info, AST_Node_Type::arithmetic_assignment_expression), lhs(ANTON_MOV(lhs)), rhs(ANTON_MOV(rhs)), type(ANTON_MOV(type)) {}
-
-    Owning_Ptr<Arithmetic_Assignment_Expression> Arithmetic_Assignment_Expression::clone(Allocator* const allocator) const {
-        return Owning_Ptr{_clone(allocator), allocator};
-    }
-
-    Arithmetic_Assignment_Expression* Arithmetic_Assignment_Expression::_clone(Allocator* const allocator) const {
-        return ALLOC(Arithmetic_Assignment_Expression, type, lhs->clone(allocator), rhs->clone(allocator), source_info);
-    }
-
     Binary_Expression::Binary_Expression(Binary_Expression_Type type, Owning_Ptr<Expression> lhs, Owning_Ptr<Expression> rhs, Source_Info const& source_info)
         : Expression(source_info, AST_Node_Type::binary_expression), lhs(ANTON_MOV(lhs)), rhs(ANTON_MOV(rhs)), type(type) {}
 
@@ -1214,37 +1191,15 @@ namespace vush {
         return ALLOC(Binary_Expression, type, lhs->clone(allocator), rhs->clone(allocator), source_info);
     }
 
-    Unary_Expression::Unary_Expression(Unary_Type type, Owning_Ptr<Expression> expression, Source_Info const& source_info)
-        : Expression(source_info, AST_Node_Type::unary_expression), expression(ANTON_MOV(expression)), type(type) {}
+    Prefix_Expression::Prefix_Expression(Prefix_Expression_Type const type, Owning_Ptr<Expression> expression, Source_Info const& source_info)
+        : Expression(source_info, AST_Node_Type::prefix_expression), expression(ANTON_MOV(expression)), type(type) {}
 
-    Owning_Ptr<Unary_Expression> Unary_Expression::clone(Allocator* const allocator) const {
+    Owning_Ptr<Prefix_Expression> Prefix_Expression::clone(Allocator* const allocator) const {
         return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Unary_Expression* Unary_Expression::_clone(Allocator* const allocator) const {
-        return ALLOC(Unary_Expression, type, expression->clone(allocator), source_info);
-    }
-
-    Prefix_Increment_Expression::Prefix_Increment_Expression(Owning_Ptr<Expression> expression, Source_Info const& source_info)
-        : Expression(source_info, AST_Node_Type::prefix_increment_expression), expression(ANTON_MOV(expression)) {}
-
-    Owning_Ptr<Prefix_Increment_Expression> Prefix_Increment_Expression::clone(Allocator* const allocator) const {
-        return Owning_Ptr{_clone(allocator), allocator};
-    }
-
-    Prefix_Increment_Expression* Prefix_Increment_Expression::_clone(Allocator* const allocator) const {
-        return ALLOC(Prefix_Increment_Expression, expression->clone(allocator), source_info);
-    }
-
-    Prefix_Decrement_Expression::Prefix_Decrement_Expression(Owning_Ptr<Expression> expression, Source_Info const& source_info)
-        : Expression(source_info, AST_Node_Type::prefix_decrement_expression), expression(ANTON_MOV(expression)) {}
-
-    Owning_Ptr<Prefix_Decrement_Expression> Prefix_Decrement_Expression::clone(Allocator* const allocator) const {
-        return Owning_Ptr{_clone(allocator), allocator};
-    }
-
-    Prefix_Decrement_Expression* Prefix_Decrement_Expression::_clone(Allocator* const allocator) const {
-        return ALLOC(Prefix_Decrement_Expression, expression->clone(allocator), source_info);
+    Prefix_Expression* Prefix_Expression::_clone(Allocator* const allocator) const {
+        return ALLOC(Prefix_Expression, type, expression->clone(allocator), source_info);
     }
 
     Function_Call_Expression::Function_Call_Expression(Owning_Ptr<Identifier> identifier, Expression_List arguments, Source_Info const& source_info)
@@ -1280,26 +1235,15 @@ namespace vush {
         return ALLOC(Array_Access_Expression, base->clone(allocator), index->clone(allocator), source_info);
     }
 
-    Postfix_Increment_Expression::Postfix_Increment_Expression(Owning_Ptr<Expression> expression, Source_Info const& source_info)
-        : Expression(source_info, AST_Node_Type::postfix_increment_expression), expression(ANTON_MOV(expression)) {}
+    Postfix_Expression::Postfix_Expression(Postfix_Expression_Type const type, Owning_Ptr<Expression> expression, Source_Info const& source_info)
+        : Expression(source_info, AST_Node_Type::postfix_expression), expression(ANTON_MOV(expression)), type(type) {}
 
-    Owning_Ptr<Postfix_Increment_Expression> Postfix_Increment_Expression::clone(Allocator* const allocator) const {
+    Owning_Ptr<Postfix_Expression> Postfix_Expression::clone(Allocator* const allocator) const {
         return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Postfix_Increment_Expression* Postfix_Increment_Expression::_clone(Allocator* const allocator) const {
-        return ALLOC(Postfix_Increment_Expression, expression->clone(allocator), source_info);
-    }
-
-    Postfix_Decrement_Expression::Postfix_Decrement_Expression(Owning_Ptr<Expression> expression, Source_Info const& source_info)
-        : Expression(source_info, AST_Node_Type::postfix_decrement_expression), expression(ANTON_MOV(expression)) {}
-
-    Owning_Ptr<Postfix_Decrement_Expression> Postfix_Decrement_Expression::clone(Allocator* const allocator) const {
-        return Owning_Ptr{_clone(allocator), allocator};
-    }
-
-    Postfix_Decrement_Expression* Postfix_Decrement_Expression::_clone(Allocator* const allocator) const {
-        return ALLOC(Postfix_Decrement_Expression, expression->clone(allocator), source_info);
+    Postfix_Expression* Postfix_Expression::_clone(Allocator* const allocator) const {
+        return ALLOC(Postfix_Expression, type, expression->clone(allocator), source_info);
     }
 
     Parenthesised_Expression::Parenthesised_Expression(Owning_Ptr<Expression> expression, Source_Info const& source_info)

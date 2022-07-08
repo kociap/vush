@@ -9,9 +9,17 @@ namespace vush {
     }
 
     anton::Expected<bool, anton::String> is_compiletime_evaluable(Context& ctx, Expression& expression) {
-        // postfix/prefix increment and decrement, assignment and arithmetic assignment are not compiletime because they don't operate on constants.
-        // function call is not compiletime because functions are not compiletime (with the exception of constructor calls which are TODO).
+        // Postfix expressions, assignment binary expressions, prefix increment and decrement are not compiletime expressions.
+        // Function calls are not compiletime because functions are not compiletime (with the exception of constructor calls which are TODO).
         switch(expression.node_type) {
+            // We currently do not handle floats, member access
+            // or array access and report them as non-compiletime.
+            case AST_Node_Type::float_literal:
+            case AST_Node_Type::member_access_expression:
+            case AST_Node_Type::array_access_expression:
+            default:
+                return {anton::expected_value, false};
+
             case AST_Node_Type::bool_literal:
             case AST_Node_Type::integer_literal: {
                 return {anton::expected_value, true};
@@ -50,24 +58,30 @@ namespace vush {
                 return {anton::expected_value, lhs_res.value() && rhs_res.value()};
             }
 
-            case AST_Node_Type::unary_expression: {
-                Unary_Expression& expr = (Unary_Expression&)expression;
+            case AST_Node_Type::prefix_expression: {
+                Prefix_Expression& expr = static_cast<Prefix_Expression&>(expression);
+                if(expr.type == Prefix_Expression_Type::dec || expr.type == Prefix_Expression_Type::inc) {
+                    return {anton::expected_value, false};
+                }
+
                 anton::Expected<bool, anton::String> res = is_compiletime_evaluable(ctx, *expr.expression);
                 return res;
-            }
-
-                // case AST_Node_Type::member_access_expression:
-
-                // case AST_Node_Type::array_access_expression:
-
-            default: {
-                return {anton::expected_value, false};
             }
         }
     }
 
     anton::Expected<Expr_Value, anton::String> evaluate_const_expr(Context& ctx, Expression& expression) {
         switch(expression.node_type) {
+            // We currently do not handle floats, member access
+            // or array access and reject them as non-constant expressions.
+            case AST_Node_Type::float_literal:
+            case AST_Node_Type::member_access_expression:
+            case AST_Node_Type::array_access_expression:
+            default: {
+                Source_Info const& src = expression.source_info;
+                return {anton::expected_error, build_error_message(src.source_path, src.line, src.column, u8"non-constant expression")};
+            }
+
             case AST_Node_Type::bool_literal: {
                 Bool_Literal& expr = (Bool_Literal&)expression;
                 Expr_Value e;
@@ -80,19 +94,18 @@ namespace vush {
                 Integer_Literal& expr = (Integer_Literal&)expression;
                 i64 const value = str_to_i64(expr.value, (u64)expr.base);
                 Expr_Value e;
-                if(expr.type == Integer_Literal_Type::i32) {
-                    e.type = Expr_Value_Type::int32;
-                    e.int32 = value;
-                } else if(expr.type == Integer_Literal_Type::u32) {
-                    e.type = Expr_Value_Type::uint32;
-                    e.uint32 = value;
-                } else {
-                    ANTON_UNREACHABLE();
+                switch(expr.type) {
+                    case Integer_Literal_Type::i32:
+                        e.type = Expr_Value_Type::int32;
+                        e.int32 = value;
+                        break;
+                    case Integer_Literal_Type::u32:
+                        e.type = Expr_Value_Type::uint32;
+                        e.uint32 = value;
+                        break;
                 }
                 return {anton::expected_value, e};
             }
-
-                // case AST_Node_Type::float_literal: {}
 
             case AST_Node_Type::identifier_expression: {
                 Identifier_Expression& expr = (Identifier_Expression&)expression;
@@ -121,7 +134,32 @@ namespace vush {
             case AST_Node_Type::binary_expression: {
                 Binary_Expression& expr = (Binary_Expression&)expression;
                 switch(expr.type) {
-                    case Binary_Expression_Type::logic_or: {
+                    // Assignments are not compiletime expressions.
+                    case Binary_Expression_Type::assign:
+                    case Binary_Expression_Type::add_assign:
+                    case Binary_Expression_Type::sub_assign:
+                    case Binary_Expression_Type::mul_assign:
+                    case Binary_Expression_Type::div_assign:
+                    case Binary_Expression_Type::mod_assign:
+                    case Binary_Expression_Type::shl_assign:
+                    case Binary_Expression_Type::shr_assign:
+                    case Binary_Expression_Type::band_assign:
+                    case Binary_Expression_Type::bor_assign:
+                    case Binary_Expression_Type::bxor_assign: {
+                        Source_Info const& src = expression.source_info;
+                        return {anton::expected_error, build_error_message(src.source_path, src.line, src.column, u8"non-constant expression")};
+                    }
+
+                    // We currently do not handle bitwise binary expressions and
+                    // reject them as non-constant expressions.
+                    case Binary_Expression_Type::bor:
+                    case Binary_Expression_Type::bxor:
+                    case Binary_Expression_Type::band: {
+                        Source_Info const& src = expression.source_info;
+                        return {anton::expected_error, build_error_message(src.source_path, src.line, src.column, u8"non-constant expression")};
+                    }
+
+                    case Binary_Expression_Type::lor: {
                         anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                         if(!lhs_res) {
                             return lhs_res;
@@ -150,7 +188,7 @@ namespace vush {
                         return {anton::expected_value, e};
                     }
 
-                    case Binary_Expression_Type::logic_xor: {
+                    case Binary_Expression_Type::lxor: {
                         anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                         if(!lhs_res) {
                             return lhs_res;
@@ -179,7 +217,7 @@ namespace vush {
                         return {anton::expected_value, e};
                     }
 
-                    case Binary_Expression_Type::logic_and: {
+                    case Binary_Expression_Type::land: {
                         anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                         if(!lhs_res) {
                             return lhs_res;
@@ -208,7 +246,7 @@ namespace vush {
                         return {anton::expected_value, e};
                     }
 
-                    case Binary_Expression_Type::equal: {
+                    case Binary_Expression_Type::eq: {
                         anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                         if(!lhs_res) {
                             return lhs_res;
@@ -256,7 +294,7 @@ namespace vush {
                         }
                     }
 
-                    case Binary_Expression_Type::unequal: {
+                    case Binary_Expression_Type::neq: {
                         anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                         if(!lhs_res) {
                             return lhs_res;
@@ -304,7 +342,7 @@ namespace vush {
                         }
                     }
 
-                    case Binary_Expression_Type::greater_than: {
+                    case Binary_Expression_Type::gt: {
                         anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                         if(!lhs_res) {
                             return lhs_res;
@@ -352,7 +390,7 @@ namespace vush {
                         }
                     }
 
-                    case Binary_Expression_Type::greater_equal: {
+                    case Binary_Expression_Type::gteq: {
                         anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                         if(!lhs_res) {
                             return lhs_res;
@@ -400,7 +438,7 @@ namespace vush {
                         }
                     }
 
-                    case Binary_Expression_Type::less_than: {
+                    case Binary_Expression_Type::lt: {
                         anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                         if(!lhs_res) {
                             return lhs_res;
@@ -448,7 +486,7 @@ namespace vush {
                         }
                     }
 
-                    case Binary_Expression_Type::less_equal: {
+                    case Binary_Expression_Type::lteq: {
                         anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                         if(!lhs_res) {
                             return lhs_res;
@@ -496,13 +534,7 @@ namespace vush {
                         }
                     }
 
-                        // case Binary_Expression_Type::bit_or_expr: {}
-
-                        // case Binary_Expression_Type::bit_xor_expr: {}
-
-                        // case Binary_Expression_Type::bit_and_expr: {}
-
-                    case Binary_Expression_Type::lshift: {
+                    case Binary_Expression_Type::shl: {
                         anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                         if(!lhs_res) {
                             return {anton::expected_error, ANTON_MOV(lhs_res.error())};
@@ -546,7 +578,7 @@ namespace vush {
                         return {anton::expected_value, e};
                     }
 
-                    case Binary_Expression_Type::rshift: {
+                    case Binary_Expression_Type::shr: {
                         anton::Expected<Expr_Value, anton::String> lhs_res = evaluate_const_expr(ctx, *expr.lhs);
                         if(!lhs_res) {
                             return lhs_res;
@@ -856,23 +888,24 @@ namespace vush {
                             return {anton::expected_value, e};
                         }
                     }
-
-                    default: {
-                        Source_Info const& src = expression.source_info;
-                        return {anton::expected_error, build_error_message(src.source_path, src.line, src.column, u8"non-constant expression")};
-                    }
                 }
             }
 
-            case AST_Node_Type::unary_expression: {
-                Unary_Expression& expr = (Unary_Expression&)expression;
+            case AST_Node_Type::prefix_expression: {
+                Prefix_Expression& expr = static_cast<Prefix_Expression&>(expression);
                 switch(expr.type) {
-                    case Unary_Type::plus: {
+                    case Prefix_Expression_Type::inc:
+                    case Prefix_Expression_Type::dec: {
+                        Source_Info const& src = expression.source_info;
+                        return {anton::expected_error, build_error_message(src.source_path, src.line, src.column, u8"non-constant expression")};
+                    }
+
+                    case Prefix_Expression_Type::plus: {
                         anton::Expected<Expr_Value, anton::String> base = evaluate_const_expr(ctx, *expr.expression);
                         return base;
                     }
 
-                    case Unary_Type::minus: {
+                    case Prefix_Expression_Type::minus: {
                         anton::Expected<Expr_Value, anton::String> base_res = evaluate_const_expr(ctx, *expr.expression);
                         if(!base_res) {
                             return base_res;
@@ -909,7 +942,7 @@ namespace vush {
                         }
                     }
 
-                    case Unary_Type::logic_not: {
+                    case Prefix_Expression_Type::lnot: {
                         anton::Expected<Expr_Value, anton::String> base_res = evaluate_const_expr(ctx, *expr.expression);
                         if(!base_res) {
                             return base_res;
@@ -928,7 +961,7 @@ namespace vush {
                         return {anton::expected_value, e};
                     }
 
-                    case Unary_Type::bit_not: {
+                    case Prefix_Expression_Type::bnot: {
                         anton::Expected<Expr_Value, anton::String> base_res = evaluate_const_expr(ctx, *expr.expression);
                         if(!base_res) {
                             return {anton::expected_error, ANTON_MOV(base_res.error())};
@@ -946,23 +979,14 @@ namespace vush {
                         Expr_Value e;
                         if(base.type == Expr_Value_Type::uint32) {
                             e.type = Expr_Value_Type::uint32;
-                            e.uint32 = !base.uint32;
+                            e.uint32 = ~base.uint32;
                         } else {
                             e.type = Expr_Value_Type::int32;
-                            e.int32 = !base.int32;
+                            e.int32 = ~base.int32;
                         }
                         return {anton::expected_value, e};
                     }
                 }
-            }
-
-                // case AST_Node_Type::member_access_expression: {}
-
-                // case AST_Node_Type::array_access_expression: {}
-
-            default: {
-                Source_Info const& src = expression.source_info;
-                return {anton::expected_error, build_error_message(src.source_path, src.line, src.column, u8"non-constant expression")};
             }
         }
     }

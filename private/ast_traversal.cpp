@@ -84,27 +84,11 @@ namespace vush {
         return {};
     }
 
-    Recursive_AST_Matcher::Match_Result Recursive_AST_Matcher::match(Assignment_Expression const&) {
-        return {};
-    }
-
-    Recursive_AST_Matcher::Match_Result Recursive_AST_Matcher::match(Arithmetic_Assignment_Expression const&) {
-        return {};
-    }
-
     Recursive_AST_Matcher::Match_Result Recursive_AST_Matcher::match(Binary_Expression const&) {
         return {};
     }
 
-    Recursive_AST_Matcher::Match_Result Recursive_AST_Matcher::match(Unary_Expression const&) {
-        return {};
-    }
-
-    Recursive_AST_Matcher::Match_Result Recursive_AST_Matcher::match(Prefix_Increment_Expression const&) {
-        return {};
-    }
-
-    Recursive_AST_Matcher::Match_Result Recursive_AST_Matcher::match(Prefix_Decrement_Expression const&) {
+    Recursive_AST_Matcher::Match_Result Recursive_AST_Matcher::match(Prefix_Expression const&) {
         return {};
     }
 
@@ -120,11 +104,7 @@ namespace vush {
         return {};
     }
 
-    Recursive_AST_Matcher::Match_Result Recursive_AST_Matcher::match(Postfix_Increment_Expression const&) {
-        return {};
-    }
-
-    Recursive_AST_Matcher::Match_Result Recursive_AST_Matcher::match(Postfix_Decrement_Expression const&) {
+    Recursive_AST_Matcher::Match_Result Recursive_AST_Matcher::match(Postfix_Expression const&) {
         return {};
     }
 
@@ -288,27 +268,11 @@ namespace vush {
         return ANTON_MOV(node);
     }
 
-    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Assignment_Expression> node) {
-        return ANTON_MOV(node);
-    }
-
-    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Arithmetic_Assignment_Expression> node) {
-        return ANTON_MOV(node);
-    }
-
     Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Binary_Expression> node) {
         return ANTON_MOV(node);
     }
 
-    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Unary_Expression> node) {
-        return ANTON_MOV(node);
-    }
-
-    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Prefix_Increment_Expression> node) {
-        return ANTON_MOV(node);
-    }
-
-    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Prefix_Decrement_Expression> node) {
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Prefix_Expression> node) {
         return ANTON_MOV(node);
     }
 
@@ -324,11 +288,7 @@ namespace vush {
         return ANTON_MOV(node);
     }
 
-    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Postfix_Increment_Expression> node) {
-        return ANTON_MOV(node);
-    }
-
-    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Postfix_Decrement_Expression> node) {
+    Owning_Ptr<AST_Node> AST_Action::execute(Owning_Ptr<Postfix_Expression> node) {
         return ANTON_MOV(node);
     }
 
@@ -900,52 +860,6 @@ namespace vush {
                 return result.break_matching;
             } break;
 
-            case AST_Node_Type::assignment_expression: {
-                Assignment_Expression& n = static_cast<Assignment_Expression&>(*node);
-                Match_Result const result = matcher.match(n);
-                if(result.matched) {
-                    Owning_Ptr<Assignment_Expression> node_typed{downcast, ANTON_MOV(node)};
-                    node = action.execute(ANTON_MOV(node_typed));
-                }
-
-                if(result.break_matching) {
-                    return true;
-                }
-
-                if(!result.ignore_children) {
-                    if(traverse_node_internal(matcher, action, n.lhs)) {
-                        return true;
-                    }
-                    if(traverse_node_internal(matcher, action, n.rhs)) {
-                        return true;
-                    }
-                }
-                return false;
-            } break;
-
-            case AST_Node_Type::arithmetic_assignment_expression: {
-                Arithmetic_Assignment_Expression& n = static_cast<Arithmetic_Assignment_Expression&>(*node);
-                Match_Result const result = matcher.match(n);
-                if(result.matched) {
-                    Owning_Ptr<Arithmetic_Assignment_Expression> node_typed{downcast, ANTON_MOV(node)};
-                    node = action.execute(ANTON_MOV(node_typed));
-                }
-
-                if(result.break_matching) {
-                    return true;
-                }
-
-                if(!result.ignore_children) {
-                    if(traverse_node_internal(matcher, action, n.lhs)) {
-                        return true;
-                    }
-                    if(traverse_node_internal(matcher, action, n.rhs)) {
-                        return true;
-                    }
-                }
-                return false;
-            } break;
-
             case AST_Node_Type::binary_expression: {
                 Binary_Expression& n = static_cast<Binary_Expression&>(*node);
                 Match_Result const result = matcher.match(n);
@@ -969,51 +883,11 @@ namespace vush {
                 return false;
             } break;
 
-            case AST_Node_Type::unary_expression: {
-                Unary_Expression& n = static_cast<Unary_Expression&>(*node);
+            case AST_Node_Type::prefix_expression: {
+                Prefix_Expression& n = static_cast<Prefix_Expression&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Unary_Expression> node_typed{downcast, ANTON_MOV(node)};
-                    node = action.execute(ANTON_MOV(node_typed));
-                }
-
-                if(result.break_matching) {
-                    return true;
-                }
-
-                if(!result.ignore_children) {
-                    if(traverse_node_internal(matcher, action, n.expression)) {
-                        return true;
-                    }
-                }
-                return false;
-            } break;
-
-            case AST_Node_Type::prefix_increment_expression: {
-                Prefix_Increment_Expression& n = static_cast<Prefix_Increment_Expression&>(*node);
-                Match_Result const result = matcher.match(n);
-                if(result.matched) {
-                    Owning_Ptr<Prefix_Increment_Expression> node_typed{downcast, ANTON_MOV(node)};
-                    node = action.execute(ANTON_MOV(node_typed));
-                }
-
-                if(result.break_matching) {
-                    return true;
-                }
-
-                if(!result.ignore_children) {
-                    if(traverse_node_internal(matcher, action, n.expression)) {
-                        return true;
-                    }
-                }
-                return false;
-            } break;
-
-            case AST_Node_Type::prefix_decrement_expression: {
-                Prefix_Decrement_Expression& n = static_cast<Prefix_Decrement_Expression&>(*node);
-                Match_Result const result = matcher.match(n);
-                if(result.matched) {
-                    Owning_Ptr<Prefix_Decrement_Expression> node_typed{downcast, ANTON_MOV(node)};
+                    Owning_Ptr<Prefix_Expression> node_typed{downcast, ANTON_MOV(node)};
                     node = action.execute(ANTON_MOV(node_typed));
                 }
 
@@ -1097,31 +971,11 @@ namespace vush {
                 return false;
             } break;
 
-            case AST_Node_Type::postfix_increment_expression: {
-                Postfix_Increment_Expression& n = static_cast<Postfix_Increment_Expression&>(*node);
+            case AST_Node_Type::postfix_expression: {
+                Postfix_Expression& n = static_cast<Postfix_Expression&>(*node);
                 Match_Result const result = matcher.match(n);
                 if(result.matched) {
-                    Owning_Ptr<Postfix_Increment_Expression> node_typed{downcast, ANTON_MOV(node)};
-                    node = action.execute(ANTON_MOV(node_typed));
-                }
-
-                if(result.break_matching) {
-                    return true;
-                }
-
-                if(!result.ignore_children) {
-                    if(traverse_node_internal(matcher, action, n.expression)) {
-                        return true;
-                    }
-                }
-                return false;
-            } break;
-
-            case AST_Node_Type::postfix_decrement_expression: {
-                Postfix_Decrement_Expression& n = static_cast<Postfix_Decrement_Expression&>(*node);
-                Match_Result const result = matcher.match(n);
-                if(result.matched) {
-                    Owning_Ptr<Postfix_Decrement_Expression> node_typed{downcast, ANTON_MOV(node)};
+                    Owning_Ptr<Postfix_Expression> node_typed{downcast, ANTON_MOV(node)};
                     node = action.execute(ANTON_MOV(node_typed));
                 }
 
