@@ -6,10 +6,10 @@
 namespace vush {
     using namespace anton::literals;
 
-    anton::String Error::format(bool const include_extended_diagnostic) const {
+    anton::String Error::format(Allocator* const allocator, bool const include_extended_diagnostic) const {
         // Add 32 bytes for line and column numbers, colons, spaces and newlines.
         i64 const size = source.size_bytes() + diagnostic.size_bytes() + extended_diagnostic.size_bytes() + 32;
-        anton::String error_message{anton::reserve, size};
+        anton::String error_message{anton::reserve, size, allocator};
         error_message += source + u8":" + anton::to_string(line) + u8":" + anton::to_string(column) + u8": ";
         error_message += diagnostic;
         if(include_extended_diagnostic && extended_diagnostic.size_bytes() > 0) {
@@ -72,10 +72,10 @@ namespace vush {
         return length;
     }
 
-    static void print_line_number(anton::String& out, i64 const width, anton::Optional<i64> const number) {
+    static void print_left_margin(Allocator* const allocator, anton::String& out, i64 const width, anton::Optional<i64> const number = anton::null_optional) {
         if(number) {
             out += ' ';
-            out += anton::to_string(number.value());
+            out += anton::to_string(allocator, number.value());
             out += u8" | "_sv;
         } else {
             for(i64 i = 0; i < width + 1; ++i) {
@@ -91,12 +91,12 @@ namespace vush {
         if(ctx.diagnostics.display_line_numbers) {
             i64 const line_number = src_info.line;
             i64 const line_number_width = calculate_integer_length(line_number);
-            print_line_number(out, line_number_width, anton::null_optional);
+            print_left_margin(ctx.allocator, out, line_number_width);
             out += '\n';
-            print_line_number(out, line_number_width, line_number);
+            print_left_margin(ctx.allocator, out, line_number_width, line_number);
             out += source_bit;
             out += '\n';
-            print_line_number(out, line_number_width, anton::null_optional);
+            print_left_margin(ctx.allocator, out, line_number_width);
             i64 const padding = src_info.offset - line.start;
             i64 const underline = src_info.end_offset - src_info.offset;
             print_underline(out, padding, underline);
@@ -116,6 +116,11 @@ namespace vush {
 
     [[nodiscard]] static anton::String format_diagnostic_location(Source_Info const& info) {
         return anton::String{info.source_path} + u8":" + anton::to_string(info.line) + u8":" + anton::to_string(info.column) + u8": ";
+    }
+
+    [[nodiscard]] static anton::String format_diagnostic_location(Allocator* const allocator, Source_Info const& info) {
+        return anton::concat(allocator, anton::String{info.source_path, allocator}, u8":"_sv, anton::to_string(allocator, info.line), u8":"_sv,
+                             anton::to_string(allocator, info.column), u8": "_sv);
     }
 
     anton::String format_diagnostic_location(anton::String_View const path, i64 const line, i64 const column) {
@@ -416,16 +421,29 @@ namespace vush {
         return message;
     }
 
-    anton::String format_source_import_failed(Context const& ctx, Source_Info const& import_info, anton::String_View const source_callback_message) {
-        anton::String message = format_diagnostic_location(import_info);
-        message += u8"error: source import failed with the following error: ";
-        message += source_callback_message;
-        message += '\n';
-        if(ctx.diagnostics.extended) {
-            anton::String_View const source = ctx.source_registry.find(import_info.source_path)->value.data;
-            print_source_snippet(ctx, message, source, import_info);
-        }
-        return message;
+    Error format_import_source_failed(Context const& ctx, Source_Info const& import_info, anton::String_View const source_callback_message) {
+        Error error;
+        error.line = import_info.line;
+        error.column = import_info.column;
+        error.source = anton::String(import_info.source_path, ctx.allocator);
+        error.diagnostic = format_diagnostic_location(ctx.allocator, import_info);
+        error.diagnostic += "error: source import failed with the following error: "_sv;
+        error.diagnostic += source_callback_message;
+        error.diagnostic += '\n';
+        anton::String_View const source = ctx.source_registry.find(import_info.source_path)->value.data;
+        print_source_snippet(ctx, error.extended_diagnostic, source, import_info);
+        return error;
+    }
+
+    Error format_import_source_failed_no_location(Context const& ctx, anton::String_View const source_callback_message) {
+        Error error;
+        error.line = 1;
+        error.column = 1;
+        error.source = anton::String("<vush>"_sv);
+        error.diagnostic = anton::String("error: source import failed with the following error: "_sv, ctx.allocator);
+        error.diagnostic += source_callback_message;
+        error.diagnostic += '\n';
+        return error;
     }
 
     anton::String format_duplicate_sourced_parameter(Context const& ctx, Source_Info const& first, Source_Info const& first_type, Source_Info const& second,

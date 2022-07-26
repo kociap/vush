@@ -14,8 +14,8 @@ namespace vush {
         anton::String source;
         // The diagnostic message.
         anton::String diagnostic;
-        // A more thorough explanation of the error.
-        // Empty string if extended diagnostics are disabled.
+        // A more thorough explanation of the error that contains
+        // source code snippets with the exact locations highlighted.
         anton::String extended_diagnostic;
         i64 line;
         i64 column;
@@ -28,12 +28,13 @@ namespace vush {
         //   <extended_diagnostic>
         //
         // Parameters:
+        //                   allocator - allocator to use for allocating the string.
         // include_extended_diagnostic - whether to include the extended diagnostic message.
         //
         // Returns:
         // Formatted diagnostic message.
         //
-        [[nodiscard]] anton::String format(bool include_extended_diagnostic) const;
+        [[nodiscard]] anton::String format(Allocator* allocator, bool include_extended_diagnostic) const;
     };
 
     struct Constant_Define {
@@ -147,7 +148,7 @@ namespace vush {
         anton::String data;
     };
 
-    using source_request_callback = anton::Expected<Source_Request_Result, anton::String> (*)(anton::String const& path, void* user_data);
+    using source_request_callback = anton::Expected<Source_Request_Result, anton::String> (*)(anton::String_View path, void* user_data);
 
     // compile_to_glsl
     // Compiles given vush shader to glsl shader.

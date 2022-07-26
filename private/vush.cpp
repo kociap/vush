@@ -1,27 +1,76 @@
 #include <vush/vush.hpp>
 
 #include <anton/algorithm.hpp>
+#include <anton/expected.hpp>
 #include <anton/filesystem.hpp>
 #include <anton/flat_hash_set.hpp>
 #include <anton/format.hpp>
 #include <anton/iterators.hpp>
 #include <anton/iterators/range.hpp>
 #include <anton/iterators/zip.hpp>
+#include <anton/optional.hpp>
 #include <anton/string_stream.hpp>
 
 #include <ast.hpp>
 #include <ast_traversal.hpp>
-#include <builtins.hpp>
+#include <builtin_symbols.hpp>
 #include <codegen.hpp>
 #include <const_expr_eval.hpp>
 #include <context.hpp>
 #include <diagnostics.hpp>
 #include <memory.hpp>
+#include <owning_ptr.hpp>
 #include <parser.hpp>
 #include <sources.hpp>
 
 namespace vush {
     using namespace anton::literals;
+
+    // import_source_code
+    // Imports source code.
+    //
+    // Parameters:
+    //         ctx -
+    // source_name -
+    // source_info -
+    //
+    // Returns:
+    // Declaration_List containing AST_Node's of the source (the Array will be
+    // empty if the source has already been imported before) or Error.
+    //
+    [[nodiscard]] static anton::Expected<Declaration_List, Error> import_source_code(Context& ctx, anton::String_View const source_name,
+                                                                                     anton::Optional<Source_Info> source_info = anton::null_optional) {
+        anton::Expected<Source_Request_Result, anton::String> source_request_res = ctx.source_request_cb(source_name, ctx.source_request_user_data);
+        if(!source_request_res) {
+            if(source_info) {
+                return {anton::expected_error, format_import_source_failed(ctx, *source_info, source_request_res.error())};
+            } else {
+                return {anton::expected_error, format_import_source_failed_no_location(ctx, source_request_res.error())};
+            }
+        }
+
+        Source_Request_Result& request_res = source_request_res.value();
+        // Ensure we're not importing the same source multiple times
+        auto iter = ctx.source_registry.find(request_res.source_name);
+        if(iter == ctx.source_registry.end()) {
+            Source_Data source{ANTON_MOV(request_res.source_name), ANTON_MOV(request_res.data)};
+            Parse_Syntax_Options options{.include_whitespace_and_comments = false};
+            anton::Expected<Array<SNOT>, Error> parse_result = parse_source_to_syntax_tree(ctx.allocator, source.name, source.data, options);
+            if(!parse_result) {
+                return {anton::expected_error, ANTON_MOV(parse_result.error())};
+            }
+
+            anton::Expected<Declaration_List, Error> transform_result = transform_syntax_tree_to_ast(ctx, parse_result.value());
+            if(!transform_result) {
+                return {anton::expected_error, ANTON_MOV(transform_result.error())};
+            }
+
+            ctx.source_registry.emplace(source.name, ANTON_MOV(source));
+            return {anton::expected_value, ANTON_MOV(transform_result.value())};
+        } else {
+            return {anton::expected_value, Declaration_List(ctx.allocator)};
+        }
+    }
 
     // check_and_add_symbol
     // Checks whether a symbol already exists and if not, adds it to the symbol table.
@@ -938,33 +987,16 @@ namespace vush {
             if(ast[i]->node_type == AST_Node_Type::import_declaration) {
                 Owning_Ptr<Import_Declaration> node{downcast, ANTON_MOV(ast[i])};
                 ast.erase(ast.begin() + i, ast.begin() + i + 1);
-
-                anton::Expected<Source_Request_Result, anton::String> source_request_res =
-                    ctx.source_request_cb(node->path->value, ctx.source_request_user_data);
-                if(!source_request_res) {
-                    return {anton::expected_error, format_source_import_failed(ctx, node->source_info, source_request_res.error())};
+                anton::Expected<Declaration_List, Error> import_result = import_source_code(ctx, node->path->value, node->source_info);
+                if(!import_result) {
+                    return {anton::expected_error, import_result.error().format(ctx.allocator, ctx.diagnostics.extended)};
                 }
 
-                Source_Request_Result& request_res = source_request_res.value();
-                // Ensure we're not importing the same source multiple times
-                auto iter = ctx.source_registry.find(request_res.source_name);
-                if(iter == ctx.source_registry.end()) {
-                    Source_Data source{ANTON_MOV(request_res.source_name), ANTON_MOV(request_res.data)};
-                    anton::Expected<Declaration_List, Error> parse_result = parse_source(ctx.allocator, source.name, source.data);
-                    if(!parse_result) {
-                        Error const& error = parse_result.error();
-                        anton::String error_msg = error.format(ctx.diagnostics.extended);
-                        return {anton::expected_error, ANTON_MOV(error_msg)};
-                    }
-
-                    ctx.source_registry.emplace(source.name, ANTON_MOV(source));
-
-                    // Insert the result of parsing into the ast
-                    Declaration_List& decls = parse_result.value();
-                    anton::Move_Iterator begin(decls.begin());
-                    anton::Move_Iterator end(decls.end());
-                    ast.insert(i, begin, end);
-                }
+                // Insert the result of parsing into the ast.
+                Declaration_List& decls = import_result.value();
+                anton::Move_Iterator begin(decls.begin());
+                anton::Move_Iterator end(decls.end());
+                ast.insert(i, begin, end);
             } else if(ast[i]->node_type == AST_Node_Type::declaration_if) {
                 Owning_Ptr<Declaration_If> node{downcast, ANTON_MOV(ast[i])};
                 ast.erase(ast.begin() + i, ast.begin() + i + 1);
@@ -1255,7 +1287,7 @@ namespace vush {
                 // We use the source information of the first overload to be able to provide diagnostics without
                 // having to complicate the code with special cases for handling Overloaded_Function_Declaration.
                 Owning_Ptr<Overloaded_Function_Declaration> overloaded_fn =
-                    allocate_owning<Overloaded_Function_Declaration>(ctx.allocator, fn->identifier->clone(ctx.allocator), fn->source_info);
+                    allocate_owning<Overloaded_Function_Declaration>(ctx.allocator, fn->identifier->clone(ctx.allocator), false, fn->source_info);
                 overloaded_fn->overloads.emplace_back(ANTON_MOV(fn));
                 overloads_dictionary.emplace(overloaded_fn->identifier->value, ANTON_MOV(overloaded_fn));
             } else {
@@ -1281,33 +1313,19 @@ namespace vush {
     // Parse sources, process imports and declaration ifs, validate functions, fold constants, extract settings.
     // Builds top-level symbol table.
     //
-    [[nodiscard]] static anton::Expected<AST_Build_Result, anton::String> build_ast_from_sources(Context& ctx, anton::String const& path) {
-        Declaration_List ast;
-        // Parse the entry source
-        {
-            anton::Expected<Source_Request_Result, anton::String> source_request_res = ctx.source_request_cb(path, ctx.source_request_user_data);
-            if(!source_request_res) {
-                return {anton::expected_error, u8"error: " + source_request_res.error()};
-            }
-
-            Source_Request_Result& request_res = source_request_res.value();
-            Source_Data source{ANTON_MOV(request_res.source_name), ANTON_MOV(request_res.data)};
-            anton::Expected<Declaration_List, Error> parse_result = parse_source(ctx.allocator, source.name, source.data);
-            if(!parse_result) {
-                Error const& error = parse_result.error();
-                anton::String error_msg = error.format(ctx.diagnostics.extended);
-                return {anton::expected_error, ANTON_MOV(error_msg)};
-            }
-
-            ctx.source_registry.emplace(source.name, ANTON_MOV(source));
-            ast = ANTON_MOV(parse_result.value());
+    [[nodiscard]] static anton::Expected<AST_Build_Result, anton::String> build_ast_from_sources(Context& ctx, anton::String_View const source_name) {
+        // Parse the entry source.
+        anton::Expected<Declaration_List, Error> import_result = import_source_code(ctx, source_name);
+        if(!import_result) {
+            return {anton::expected_error, import_result.error().format(ctx.allocator, ctx.diagnostics.extended)};
         }
 
+        Declaration_List ast = ANTON_MOV(import_result.value());
         if(anton::Expected<void, anton::String> res = resolve_imports_and_declaration_ifs(ctx, ast); !res) {
             return {anton::expected_error, ANTON_MOV(res.error())};
         }
 
-        // Check whether no declarations disallowed in the TL AST are present.
+        // Check whether no declarations disallowed in the top-level AST are present.
         for(auto& ast_node: ast) {
             switch(ast_node->node_type) {
                 case AST_Node_Type::variable_declaration: {
@@ -1589,7 +1607,7 @@ namespace vush {
         return {anton::expected_value, Build_Result{ANTON_MOV(ast.settings), ANTON_MOV(codegen_res.value())}};
     }
 
-    [[nodiscard]] static anton::Expected<anton::String, anton::String> resolve_import_path(anton::String const& source_name,
+    [[nodiscard]] static anton::Expected<anton::String, anton::String> resolve_import_path(anton::String_View const source_name,
                                                                                            anton::Slice<anton::String const> const import_directories) {
         bool found = false;
         anton::String out_path;
@@ -1615,7 +1633,7 @@ namespace vush {
         }
     }
 
-    [[nodiscard]] static anton::Expected<Source_Request_Result, anton::String> file_read_callback(anton::String const& source_name, void* user_data) {
+    [[nodiscard]] static anton::Expected<Source_Request_Result, anton::String> file_read_callback(anton::String_View const source_name, void* user_data) {
         anton::Slice<anton::String const> const& import_directories = *(anton::Slice<anton::String const> const*)user_data;
         anton::Expected<anton::String, anton::String> res = resolve_import_path(source_name, import_directories);
         if(!res) {

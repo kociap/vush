@@ -2,6 +2,7 @@
 
 #include <anton/string.hpp>
 #include <anton/string_view.hpp>
+#include <ast_fwd.hpp>
 #include <context.hpp>
 #include <vush/vush.hpp>
 
@@ -20,6 +21,7 @@ namespace vush {
     [[nodiscard]] anton::String format_called_symbol_does_not_name_function(Context const& ctx, Source_Info const& symbol);
     [[nodiscard]] anton::String format_symbol_redefinition(Context const& ctx, Source_Info const& first, Source_Info const& second);
 
+    [[nodiscard]] Error format_invalid_float_suffix(Context const& ctx, Source_Info const& source);
     [[nodiscard]] anton::String format_integer_literal_overflow(Context const& ctx, Source_Info const& integer);
     [[nodiscard]] anton::String format_integer_literal_leading_zeros(Context const& ctx, Source_Info const& integer);
     [[nodiscard]] anton::String format_overload_identical_parameters_different_return_types(Context const& ctx, Function_Declaration const& overload1,
@@ -49,7 +51,8 @@ namespace vush {
     [[nodiscard]] anton::String format_empty_struct(Context const& ctx, Source_Info const& struct_name);
 
     [[nodiscard]] anton::String format_compute_return_type_must_be_void(Context const& ctx, Source_Info const& return_type);
-    [[nodiscard]] anton::String format_source_import_failed(Context const& ctx, Source_Info const& import_info, anton::String_View source_callback_message);
+    [[nodiscard]] Error format_import_source_failed(Context const& ctx, Source_Info const& import_info, anton::String_View source_callback_message);
+    [[nodiscard]] Error format_import_source_failed_no_location(Context const& ctx, anton::String_View source_callback_message);
     [[nodiscard]] anton::String format_duplicate_sourced_parameter(Context const& ctx, Source_Info const& first, Source_Info const& first_type,
                                                                    Source_Info const& second, Source_Info const& second_type);
     [[nodiscard]] anton::String format_duplicate_default_label(Context const& ctx, Source_Info const& first, Source_Info const& second);

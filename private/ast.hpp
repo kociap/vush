@@ -7,6 +7,8 @@
 #include <vush/vush.hpp>
 
 namespace vush {
+    struct Context;
+
     struct Source_Info {
         anton::String_View source_path;
         i64 line = 0;
@@ -207,11 +209,9 @@ namespace vush {
         Syntax_Node(Syntax_Node_Type type, Array<SNOT> array, Source_Info const& source_info);
     };
 
-    struct AST_Node;
-
     // transform_syntax_tree_to_ast
     //
-    [[nodiscard]] anton::Expected<Array<Owning_Ptr<AST_Node>>, Error> transform_syntax_tree_to_ast(Allocator* allocator, Array<SNOT> const& syntax);
+    [[nodiscard]] anton::Expected<Declaration_List, Error> transform_syntax_tree_to_ast(Context const& ctx, Array<SNOT> const& syntax);
 
     enum struct AST_Node_Type {
         identifier,
@@ -770,7 +770,7 @@ namespace vush {
         bool builtin = false;
 
         Function_Declaration(Attribute_List attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> identifier, Parameter_List parameters,
-                             Statement_List body, Source_Info const& source_info);
+                             Statement_List body, bool builtin, Source_Info const& source_info);
 
         [[nodiscard]] Owning_Ptr<Function_Declaration> clone(Allocator* allocator) const;
 
@@ -784,8 +784,9 @@ namespace vush {
         // Whether the function is a builtin function.
         bool builtin = false;
 
-        Overloaded_Function_Declaration(Owning_Ptr<Identifier> identifier, Source_Info const& source_info);
-        Overloaded_Function_Declaration(Owning_Ptr<Identifier> identifier, Array<Owning_Ptr<Function_Declaration>> overloads, Source_Info const& source_info);
+        Overloaded_Function_Declaration(Owning_Ptr<Identifier> identifier, bool builtin, Source_Info const& source_info);
+        Overloaded_Function_Declaration(Owning_Ptr<Identifier> identifier, Array<Owning_Ptr<Function_Declaration>> overloads, bool builtin,
+                                        Source_Info const& source_info);
 
         [[nodiscard]] Owning_Ptr<Overloaded_Function_Declaration> clone(Allocator* allocator) const;
 

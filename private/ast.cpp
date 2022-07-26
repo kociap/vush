@@ -1110,9 +1110,9 @@ namespace vush {
     }
 
     Function_Declaration::Function_Declaration(Attribute_List attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> identifier,
-                                               Parameter_List parameters, Statement_List body, Source_Info const& source_info)
+                                               Parameter_List parameters, Statement_List body, bool builtin, Source_Info const& source_info)
         : Declaration(source_info, AST_Node_Type::function_declaration), attributes(ANTON_MOV(attributes)), parameters(ANTON_MOV(parameters)),
-          body(ANTON_MOV(body)), identifier(ANTON_MOV(identifier)), return_type(ANTON_MOV(return_type)) {}
+          body(ANTON_MOV(body)), identifier(ANTON_MOV(identifier)), return_type(ANTON_MOV(return_type)), builtin(builtin) {}
 
     Owning_Ptr<Function_Declaration> Function_Declaration::clone(Allocator* const allocator) const {
         return Owning_Ptr{_clone(allocator), allocator};
@@ -1120,22 +1120,23 @@ namespace vush {
 
     Function_Declaration* Function_Declaration::_clone(Allocator* const allocator) const {
         return ALLOC(Function_Declaration, vush::clone(attributes, allocator), return_type->clone(allocator), identifier->clone(allocator),
-                     vush::clone(parameters, allocator), vush::clone(body, allocator), source_info);
+                     vush::clone(parameters, allocator), vush::clone(body, allocator), builtin, source_info);
     }
 
-    Overloaded_Function_Declaration::Overloaded_Function_Declaration(Owning_Ptr<Identifier> identifier, Source_Info const& source_info)
-        : Declaration(source_info, AST_Node_Type::overloaded_function_declaration), identifier(ANTON_MOV(identifier)) {}
+    Overloaded_Function_Declaration::Overloaded_Function_Declaration(Owning_Ptr<Identifier> identifier, bool builtin, Source_Info const& source_info)
+        : Declaration(source_info, AST_Node_Type::overloaded_function_declaration), identifier(ANTON_MOV(identifier)), builtin(builtin) {}
 
     Overloaded_Function_Declaration::Overloaded_Function_Declaration(Owning_Ptr<Identifier> identifier, Array<Owning_Ptr<Function_Declaration>> overloads,
-                                                                     Source_Info const& source_info)
-        : Declaration(source_info, AST_Node_Type::overloaded_function_declaration), identifier(ANTON_MOV(identifier)), overloads(ANTON_MOV(overloads)) {}
+                                                                     bool builtin, Source_Info const& source_info)
+        : Declaration(source_info, AST_Node_Type::overloaded_function_declaration), identifier(ANTON_MOV(identifier)), overloads(ANTON_MOV(overloads)),
+          builtin(builtin) {}
 
     Owning_Ptr<Overloaded_Function_Declaration> Overloaded_Function_Declaration::clone(Allocator* const allocator) const {
         return Owning_Ptr{_clone(allocator), allocator};
     }
 
     Overloaded_Function_Declaration* Overloaded_Function_Declaration::_clone(Allocator* const allocator) const {
-        return ALLOC(Overloaded_Function_Declaration, identifier->clone(allocator), vush::clone(overloads, allocator), source_info);
+        return ALLOC(Overloaded_Function_Declaration, identifier->clone(allocator), vush::clone(overloads, allocator), builtin, source_info);
     }
 
     Pass_Stage_Declaration::Pass_Stage_Declaration(Attribute_List attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> pass_name,

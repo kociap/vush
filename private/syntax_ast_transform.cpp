@@ -1,55 +1,77 @@
 #include <ast.hpp>
 
-#include <ast_fwd.hpp>
-#include <memory.hpp>
-#include <owning_ptr.hpp>
-#include <vush/vush.hpp>
-
 #include <anton/expected.hpp>
 #include <anton/intrinsics.hpp>
+#include <anton/optional.hpp>
 
+#include <ast_fwd.hpp>
+#include <context.hpp>
+#include <diagnostics.hpp>
+#include <memory.hpp>
+#include <owning_ptr.hpp>
 #include <syntax_accessors.hpp>
+#include <vush/vush.hpp>
+
 
 namespace vush {
-    [[nodiscard]] static anton::Expected<Owning_Ptr<Expression>, Error> transform_expr_block(Allocator* const allocator, Syntax_Node const& node);
-    [[nodiscard]] static anton::Expected<Owning_Ptr<Expression>, Error> transform_expr(Allocator* const allocator, Syntax_Node const& node);
+    using namespace anton::literals;
 
-    anton::Expected<Owning_Ptr<Expression>, Error> transform_expr_block(Allocator* const allocator, Syntax_Node const& node) {
+    [[nodiscard]] static anton::Expected<Expression_List, Error> transform_call_arg_list(Context const& ctx, Syntax_Node const& node);
+    [[nodiscard]] static anton::Expected<Owning_Ptr<Expression>, Error> transform_expr_block(Context const& ctx, Syntax_Node const& node);
+    [[nodiscard]] static anton::Expected<Owning_Ptr<Expression>, Error> transform_expr(Context const& ctx, Syntax_Node const& node);
+    [[nodiscard]] static anton::Expected<Declaration_List, Error> transform_decl_block(Context const& ctx, Syntax_Node const& node);
+
+    anton::Expected<Expression_List, Error> transform_call_arg_list(Context const& ctx, Syntax_Node const& node) {
+        Expression_List arguments;
+        for(SNOT const& snot: node.children) {
+            if(snot.is_left()) {
+                anton::Expected<Owning_Ptr<Expression>, Error> expression = transform_expr(ctx, snot.left());
+                if(expression) {
+                    arguments.push_back(ANTON_MOV(*expression));
+                } else {
+                    return {anton::expected_error, ANTON_MOV(expression.error())};
+                }
+            }
+        }
+        return {anton::expected_value, ANTON_MOV(arguments)};
+    }
+
+    anton::Expected<Owning_Ptr<Expression>, Error> transform_expr_block(Context const& ctx, Syntax_Node const& node) {
         Syntax_Node const& expr_node = get_expr_block_expression(node);
-        anton::Expected<Owning_Ptr<Expression>, Error> expr = transform_expr(allocator, expr_node);
+        anton::Expected<Owning_Ptr<Expression>, Error> expr = transform_expr(ctx, expr_node);
         return expr;
     }
 
-    anton::Expected<Owning_Ptr<Expression>, Error> transform_expr(Allocator* const allocator, Syntax_Node const& node) {
+    anton::Expected<Owning_Ptr<Expression>, Error> transform_expr(Context const& ctx, Syntax_Node const& node) {
         switch(node.type) {
             case Syntax_Node_Type::expr_if: {
                 Syntax_Node const& condition_node = get_expr_if_condition(node);
-                anton::Expected<Owning_Ptr<Expression>, Error> condition = transform_expr(allocator, condition_node);
+                anton::Expected<Owning_Ptr<Expression>, Error> condition = transform_expr(ctx, condition_node);
                 if(!condition) {
                     return ANTON_MOV(condition);
                 }
 
                 Syntax_Node const& then_branch_node = get_expr_if_then_branch(node);
-                anton::Expected<Owning_Ptr<Expression>, Error> then_branch = transform_expr_block(allocator, then_branch_node);
+                anton::Expected<Owning_Ptr<Expression>, Error> then_branch = transform_expr_block(ctx, then_branch_node);
                 if(!then_branch) {
                     return ANTON_MOV(then_branch);
                 }
 
                 Syntax_Node const& else_branch_node = get_expr_if_else_branch(node);
-                anton::Expected<Owning_Ptr<Expression>, Error> else_branch = transform_expr_block(allocator, else_branch_node);
+                anton::Expected<Owning_Ptr<Expression>, Error> else_branch = transform_expr_block(ctx, else_branch_node);
                 if(!else_branch) {
                     return ANTON_MOV(else_branch);
                 }
 
                 return {anton::expected_value,
-                        Owning_Ptr<Expression>{downcast, allocate_owning<Expression_If>(allocator, ANTON_MOV(*condition), ANTON_MOV(*then_branch),
+                        Owning_Ptr<Expression>{downcast, allocate_owning<Expression_If>(ctx.allocator, ANTON_MOV(*condition), ANTON_MOV(*then_branch),
                                                                                         ANTON_MOV(*else_branch), node.source_info)}};
             } break;
 
             case Syntax_Node_Type::expr_identifier: {
                 Syntax_Token const& identifier_token = get_expr_identifier_identifier(node);
                 return {anton::expected_value,
-                        Owning_Ptr<Expression>{downcast, allocate_owning<Identifier_Expression>(allocator, identifier_token.value, node.source_info)}};
+                        Owning_Ptr<Expression>{downcast, allocate_owning<Identifier_Expression>(ctx.allocator, identifier_token.value, node.source_info)}};
             } break;
 
             case Syntax_Node_Type::expr_binary: {
@@ -125,18 +147,18 @@ namespace vush {
                 Binary_Expression_Type const type = translate_type(operator_token.type);
 
                 Syntax_Node const& lhs_node = get_expr_binary_lhs(node);
-                anton::Expected<Owning_Ptr<Expression>, Error> lhs = transform_expr(allocator, lhs_node);
+                anton::Expected<Owning_Ptr<Expression>, Error> lhs = transform_expr(ctx, lhs_node);
                 if(!lhs) {
                     return ANTON_MOV(lhs);
                 }
 
                 Syntax_Node const& rhs_node = get_expr_binary_rhs(node);
-                anton::Expected<Owning_Ptr<Expression>, Error> rhs = transform_expr(allocator, rhs_node);
+                anton::Expected<Owning_Ptr<Expression>, Error> rhs = transform_expr(ctx, rhs_node);
                 if(!rhs) {
                     return ANTON_MOV(rhs);
                 }
 
-                return {anton::expected_value, Owning_Ptr<Expression>{downcast, allocate_owning<Binary_Expression>(allocator, type, ANTON_MOV(*lhs),
+                return {anton::expected_value, Owning_Ptr<Expression>{downcast, allocate_owning<Binary_Expression>(ctx.allocator, type, ANTON_MOV(*lhs),
                                                                                                                    ANTON_MOV(*rhs), node.source_info)}};
             } break;
 
@@ -165,13 +187,13 @@ namespace vush {
                 Prefix_Expression_Type const type = translate_type(operator_token.type);
 
                 Syntax_Node const& expression_node = get_expr_prefix_expression(node);
-                anton::Expected<Owning_Ptr<Expression>, Error> expression = transform_expr(allocator, expression_node);
+                anton::Expected<Owning_Ptr<Expression>, Error> expression = transform_expr(ctx, expression_node);
                 if(!expression) {
                     return ANTON_MOV(expression);
                 }
 
                 return {anton::expected_value,
-                        Owning_Ptr<Expression>{downcast, allocate_owning<Prefix_Expression>(allocator, type, ANTON_MOV(*expression), node.source_info)}};
+                        Owning_Ptr<Expression>{downcast, allocate_owning<Prefix_Expression>(ctx.allocator, type, ANTON_MOV(*expression), node.source_info)}};
             } break;
 
             case Syntax_Node_Type::expr_postfix: {
@@ -191,34 +213,152 @@ namespace vush {
                 Postfix_Expression_Type const type = translate_type(operator_token.type);
 
                 Syntax_Node const& expression_node = get_expr_postfix_expression(node);
-                anton::Expected<Owning_Ptr<Expression>, Error> expression = transform_expr(allocator, expression_node);
+                anton::Expected<Owning_Ptr<Expression>, Error> expression = transform_expr(ctx, expression_node);
                 if(!expression) {
                     return ANTON_MOV(expression);
                 }
 
                 return {anton::expected_value,
-                        Owning_Ptr<Expression>{downcast, allocate_owning<Postfix_Expression>(allocator, type, ANTON_MOV(*expression), node.source_info)}};
+                        Owning_Ptr<Expression>{downcast, allocate_owning<Postfix_Expression>(ctx.allocator, type, ANTON_MOV(*expression), node.source_info)}};
             } break;
 
             case Syntax_Node_Type::expr_member_access: {
+                Syntax_Node const& expression_node = get_expr_member_access_expression(node);
+                anton::Expected<Owning_Ptr<Expression>, Error> expression = transform_expr(ctx, expression_node);
+                if(!expression) {
+                    return ANTON_MOV(expression);
+                }
+
+                Syntax_Token const& identifier_token = get_expr_member_access_identifier(node);
+                Owning_Ptr identifier = allocate_owning<Identifier>(ctx.allocator, identifier_token.value, identifier_token.source_info);
+
+                Owning_Ptr result = allocate_owning<Member_Access_Expression>(ctx.allocator, ANTON_MOV(*expression), ANTON_MOV(identifier), node.source_info);
+                return {anton::expected_value, Owning_Ptr<Expression>{downcast, ANTON_MOV(result)}};
             } break;
 
             case Syntax_Node_Type::expr_array_access: {
+                Syntax_Node const& expression_node = get_expr_array_access_expression(node);
+                anton::Expected<Owning_Ptr<Expression>, Error> expression = transform_expr(ctx, expression_node);
+                if(!expression) {
+                    return ANTON_MOV(expression);
+                }
+
+                Syntax_Node const& index_node = get_expr_array_access_index(node);
+                anton::Expected<Owning_Ptr<Expression>, Error> index = transform_expr(ctx, index_node);
+                if(!index) {
+                    return ANTON_MOV(index);
+                }
+
+                Owning_Ptr result = allocate_owning<Array_Access_Expression>(ctx.allocator, ANTON_MOV(*expression), ANTON_MOV(*index), node.source_info);
+                return {anton::expected_value, Owning_Ptr<Expression>{downcast, ANTON_MOV(result)}};
             } break;
 
             case Syntax_Node_Type::expr_parentheses: {
+                Syntax_Node const& expression_node = get_expr_parentheses_expression(node);
+                anton::Expected<Owning_Ptr<Expression>, Error> expression = transform_expr(ctx, expression_node);
+                if(!expression) {
+                    return ANTON_MOV(expression);
+                }
+
+                Owning_Ptr result = allocate_owning<Parenthesised_Expression>(ctx.allocator, ANTON_MOV(*expression), node.source_info);
+                return {anton::expected_value, Owning_Ptr<Expression>{downcast, ANTON_MOV(result)}};
             } break;
 
             case Syntax_Node_Type::expr_reinterpret: {
+                ANTON_UNREACHABLE();
             } break;
 
             case Syntax_Node_Type::expr_call: {
+                Syntax_Token const& identifier_token = get_expr_call_identifier(node);
+                Owning_Ptr identifier = allocate_owning<Identifier>(ctx.allocator, identifier_token.value, identifier_token.source_info);
+
+                Syntax_Node const& arguments_node = get_expr_call_arguments(node);
+                anton::Expected<Expression_List, Error> arguments = transform_call_arg_list(ctx, arguments_node);
+                if(!arguments) {
+                    return {anton::expected_error, ANTON_MOV(arguments.error())};
+                }
+
+                Owning_Ptr result = allocate_owning<Function_Call_Expression>(ctx.allocator, ANTON_MOV(identifier), ANTON_MOV(*arguments), node.source_info);
+                return {anton::expected_value, Owning_Ptr<Expression>{downcast, ANTON_MOV(result)}};
             } break;
 
             case Syntax_Node_Type::expr_literal: {
+                Syntax_Token const& value_token = get_expr_literal_value(node);
+                switch(value_token.type) {
+                    case Syntax_Node_Type::lt_bool: {
+                        bool const value = value_token.value == "true"_sv;
+                        Owning_Ptr result = allocate_owning<Bool_Literal>(ctx.allocator, value, node.source_info);
+                        return {anton::expected_value, Owning_Ptr<Expression>{downcast, ANTON_MOV(result)}};
+                    }
+
+                    case Syntax_Node_Type::lt_string: {
+                        Owning_Ptr result = allocate_owning<String_Literal>(ctx.allocator, value_token.value, node.source_info);
+                        return {anton::expected_value, Owning_Ptr<Expression>{downcast, ANTON_MOV(result)}};
+                    }
+
+                    case Syntax_Node_Type::lt_float: {
+                        // The default float literal type is f32.
+                        Float_Literal_Type type = Float_Literal_Type::f32;
+                        if(anton::Optional<Syntax_Token const&> suffix_token = get_expr_literal_suffix(node)) {
+                            anton::String_View const suffix = suffix_token->value;
+                            if(suffix == "d"_sv || suffix == "D"_sv) {
+                                type = Float_Literal_Type::f64;
+                            } else {
+                                return {anton::expected_error, format_invalid_float_suffix(ctx, suffix_token->source_info)};
+                            }
+                        }
+
+                        Owning_Ptr result = allocate_owning<Float_Literal>(ctx.allocator, value_token.value, type, node.source_info);
+                        return {anton::expected_value, Owning_Ptr<Expression>{downcast, ANTON_MOV(result)}};
+                    }
+
+                    case Syntax_Node_Type::lt_bin_integer:
+                    case Syntax_Node_Type::lt_oct_integer:
+                    case Syntax_Node_Type::lt_dec_integer:
+                    case Syntax_Node_Type::lt_hex_integer: {
+                        // The default integer literal type is i32.
+                        Integer_Literal_Type type = Integer_Literal_Type::i32;
+                        if(anton::Optional<Syntax_Token const&> suffix_token = get_expr_literal_suffix(node)) {
+                            anton::String_View const suffix = suffix_token->value;
+                            if(suffix == "u"_sv || suffix == "U"_sv) {
+                                type = Integer_Literal_Type::u32;
+                            } else {
+                                return {anton::expected_error, format_invalid_float_suffix(ctx, suffix_token->source_info)};
+                            }
+                        }
+
+                        Integer_Literal_Base base;
+                        switch(value_token.type) {
+                            case Syntax_Node_Type::lt_bin_integer:
+                                base = Integer_Literal_Base::bin;
+                                break;
+                            case Syntax_Node_Type::lt_oct_integer:
+                                base = Integer_Literal_Base::oct;
+                                break;
+                            case Syntax_Node_Type::lt_dec_integer:
+                                base = Integer_Literal_Base::dec;
+                                break;
+                            case Syntax_Node_Type::lt_hex_integer:
+                                base = Integer_Literal_Base::hex;
+                                break;
+
+                            default:
+                                ANTON_ASSERT(false, ""); // TODO: Error
+                                ANTON_UNREACHABLE();
+                        }
+
+                        Owning_Ptr result = allocate_owning<Integer_Literal>(ctx.allocator, value_token.value, type, base, node.source_info);
+                        return {anton::expected_value, Owning_Ptr<Expression>{downcast, ANTON_MOV(result)}};
+                    }
+
+                    default:
+                        ANTON_UNREACHABLE();
+                }
             } break;
 
             case Syntax_Node_Type::expr_default: {
+                Owning_Ptr result = allocate_owning<Default_Expression>(ctx.allocator, node.source_info);
+                return {anton::expected_value, Owning_Ptr<Expression>{downcast, ANTON_MOV(result)}};
             } break;
 
             default:
@@ -226,16 +366,35 @@ namespace vush {
         }
     }
 
-    [[nodiscard]] static anton::Expected<Owning_Ptr<AST_Node>, Error> transform_decl_if(Allocator* const allocator, Syntax_Node const& node) {
-        anton::Expected<Owning_Ptr<Expression>, Error> condition = transform_expr();
-        anton::Expected<Declaration_List, Error> then_branch = transform_decl_block();
-        anton::Expected<Declaration_List, Error> else_branch = transform_decl_block();
-        return {anton::expected_value,
-                allocate_owning<Declaration_If>(allocator, ANTON_MOV(condition), ANTON_MOV(then_branch), ANTON_MOV(else_branch), node.source_info)};
+    anton::Expected<Declaration_List, Error> transform_decl_block(Context const& ctx, Syntax_Node const& node) {
+        return {anton::expected_error, Error{}};
     }
 
-    anton::Expected<Array<Owning_Ptr<AST_Node>>, Error> transform_syntax_tree_to_ast(Allocator* const allocator, Array<SNOT> const& syntax) {
-        Array<Owning_Ptr<AST_Node>> ast;
+    [[nodiscard]] static anton::Expected<Owning_Ptr<AST_Node>, Error> transform_decl_if(Context const& ctx, Syntax_Node const& node) {
+        Syntax_Node const& condition_node = get_decl_if_condition(node);
+        anton::Expected<Owning_Ptr<Expression>, Error> condition = transform_expr(ctx, condition_node);
+        if(!condition) {
+            return {anton::expected_error, ANTON_MOV(condition.error())};
+        }
+
+        Syntax_Node const& then_branch_node = get_decl_if_then_branch(node);
+        anton::Expected<Declaration_List, Error> then_branch = transform_decl_block(ctx, then_branch_node);
+        if(!then_branch) {
+            return {anton::expected_error, ANTON_MOV(then_branch.error())};
+        }
+
+        Syntax_Node const& else_branch_node = get_decl_if_else_branch(node);
+        anton::Expected<Declaration_List, Error> else_branch = transform_decl_block(ctx, else_branch_node);
+        if(!else_branch) {
+            return {anton::expected_error, ANTON_MOV(else_branch.error())};
+        }
+
+        return {anton::expected_value,
+                allocate_owning<Declaration_If>(ctx.allocator, ANTON_MOV(*condition), ANTON_MOV(*then_branch), ANTON_MOV(*else_branch), node.source_info)};
+    }
+
+    anton::Expected<Declaration_List, Error> transform_syntax_tree_to_ast(Context const& ctx, Array<SNOT> const& syntax) {
+        Declaration_List ast;
         for(SNOT const& snot: syntax) {
             if(!snot.is_left()) {
                 return {anton::expected_error};
