@@ -20,6 +20,8 @@ namespace vush {
 
     template<typename Left, typename Right>
     struct Either {
+        static_assert(!anton::is_same<Left, Right>, "Left and Right must not be the same types");
+
     public:
         using left_type = Left;
         using right_type = Right;
