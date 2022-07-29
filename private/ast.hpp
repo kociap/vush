@@ -269,7 +269,7 @@ namespace vush {
         Source_Info source_info;
         AST_Node_Type node_type;
 
-        AST_Node(Source_Info const& source_info, AST_Node_Type node_type);
+        constexpr AST_Node(Source_Info const& source_info, AST_Node_Type node_type): source_info(source_info), node_type(node_type) {}
         AST_Node(AST_Node const&) = delete;
         virtual ~AST_Node() = default;
 
@@ -280,9 +280,9 @@ namespace vush {
     };
 
     struct Identifier: public AST_Node {
-        anton::String value;
+        anton::String_View value;
 
-        Identifier(anton::String value, Source_Info const& source_info);
+        constexpr Identifier(anton::String_View value, Source_Info const& source_info): AST_Node(source_info, AST_Node_Type::identifier), value(value) {}
 
         [[nodiscard]] Owning_Ptr<Identifier> clone(Allocator* allocator) const;
 
@@ -463,7 +463,7 @@ namespace vush {
     struct Builtin_Type: public Type {
         Builtin_GLSL_Type type;
 
-        Builtin_Type(Builtin_GLSL_Type type, Source_Info const& source_info);
+        constexpr Builtin_Type(Builtin_GLSL_Type type, Source_Info const& source_info): Type(source_info, AST_Node_Type::builtin_type), type(type) {}
 
         [[nodiscard]] Owning_Ptr<Builtin_Type> clone(Allocator* allocator) const;
 
@@ -472,9 +472,10 @@ namespace vush {
     };
 
     struct User_Defined_Type: public Type {
-        anton::String identifier;
+        // TODO: Consider using Identifier to preserve source info.
+        anton::String_View identifier;
 
-        User_Defined_Type(anton::String identifier, Source_Info const& source_info);
+        User_Defined_Type(anton::String_View identifier, Source_Info const& source_info);
 
         [[nodiscard]] Owning_Ptr<User_Defined_Type> clone(Allocator* allocator) const;
 
@@ -502,7 +503,7 @@ namespace vush {
     [[nodiscard]] bool is_unsized_array(Type const& type);
     [[nodiscard]] bool is_sized_array(Type const& type);
     [[nodiscard]] bool is_image_type(Type const& type);
-    [[nodiscard]] anton::String stringify_type(Type const& type);
+    [[nodiscard]] anton::String stringify_type(Allocator* const allocator, Type const& type);
 
     struct Declaration: public AST_Node {
         using AST_Node::AST_Node;
@@ -848,9 +849,9 @@ namespace vush {
     };
 
     struct Identifier_Expression: public Expression {
-        anton::String value;
+        anton::String_View value;
 
-        Identifier_Expression(anton::String value, Source_Info const& source_info);
+        Identifier_Expression(anton::String_View value, Source_Info const& source_info);
 
         [[nodiscard]] Owning_Ptr<Identifier_Expression> clone(Allocator* allocator) const;
 
@@ -1005,9 +1006,9 @@ namespace vush {
     };
 
     struct String_Literal: public Expression {
-        anton::String value;
+        anton::String_View value;
 
-        String_Literal(anton::String value, Source_Info const& source_info);
+        String_Literal(anton::String_View value, Source_Info const& source_info);
 
         [[nodiscard]] Owning_Ptr<String_Literal> clone(Allocator* allocator) const;
 
@@ -1030,11 +1031,11 @@ namespace vush {
     enum struct Integer_Literal_Base { dec = 10, bin = 2, oct = 8, hex = 16 };
 
     struct Integer_Literal: public Expression {
-        anton::String value;
+        anton::String_View value;
         Integer_Literal_Type type;
         Integer_Literal_Base base;
 
-        Integer_Literal(anton::String value, Integer_Literal_Type type, Integer_Literal_Base base, Source_Info const& source_info);
+        Integer_Literal(anton::String_View value, Integer_Literal_Type type, Integer_Literal_Base base, Source_Info const& source_info);
 
         [[nodiscard]] Owning_Ptr<Integer_Literal> clone(Allocator* allocator) const;
 
@@ -1045,10 +1046,10 @@ namespace vush {
     enum struct Float_Literal_Type { f32, f64 };
 
     struct Float_Literal: public Expression {
-        anton::String value;
+        anton::String_View value;
         Float_Literal_Type type;
 
-        Float_Literal(anton::String value, Float_Literal_Type type, Source_Info const& source_info);
+        Float_Literal(anton::String_View value, Float_Literal_Type type, Source_Info const& source_info);
 
         [[nodiscard]] Owning_Ptr<Float_Literal> clone(Allocator* allocator) const;
 

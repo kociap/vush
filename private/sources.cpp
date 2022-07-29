@@ -14,7 +14,8 @@ namespace vush {
         }
     };
 
-    static void gather_stage_data(anton::Flat_Hash_Map<anton::String, anton::Fixed_Array<Stage_Sourced_Data_Internal, stage_type_count>>& sourced_data,
+    static void gather_stage_data(Allocator* const allocator,
+                                  anton::Flat_Hash_Map<anton::String_View, anton::Fixed_Array<Stage_Sourced_Data_Internal, stage_type_count>>& sourced_data,
                                   Pass_Stage_Declaration& stage_declaration, i64 const stage_index) {
         Parameter_List& parameters = stage_declaration.parameters;
         for(i64 i = 0; i < parameters.size(); ++i) {
@@ -23,18 +24,18 @@ namespace vush {
                 auto iter = sourced_data.find_or_emplace(p.source->value, anton::Fixed_Array<Stage_Sourced_Data_Internal, stage_type_count>{stage_type_count});
                 Stage_Sourced_Data_Internal& ssdi = iter->value[stage_index];
                 if(!is_opaque_type(*p.type)) {
-                    anton::String name = p.identifier->value;
-                    anton::String type = stringify_type(*p.type);
+                    anton::String name{p.identifier->value, allocator};
+                    anton::String type = stringify_type(allocator, *p.type);
                     bool const unsized = is_unsized_array(*p.type);
                     Sourced_Variable variable{ANTON_MOV(name), ANTON_MOV(type), unsized};
                     ssdi.variables.push_back(ANTON_MOV(variable));
                 } else {
-                    anton::String name = p.identifier->value;
-                    anton::String type = stringify_type(*p.type);
+                    anton::String name{p.identifier->value, allocator};
+                    anton::String type = stringify_type(allocator, *p.type);
                     bool const unsized = is_unsized_array(*p.type);
                     anton::String image_layout;
                     if(p.image_layout) {
-                        image_layout = anton::String{stringify(p.image_layout->type)};
+                        image_layout = anton::String{stringify(p.image_layout->type), allocator};
                     }
                     Sourced_Opaque_Variable variable{ANTON_MOV(name), ANTON_MOV(type), ANTON_MOV(image_layout), unsized};
                     ssdi.opaque_variables.push_back(ANTON_MOV(variable));
@@ -45,18 +46,18 @@ namespace vush {
 
     anton::Expected<void, anton::String> request_source_definitions(Context const& ctx, Pass_Context& pass,
                                                                     anton::Slice<Setting_Key_Value const> const settings) {
-        anton::Flat_Hash_Map<anton::String, anton::Fixed_Array<Stage_Sourced_Data_Internal, stage_type_count>> sourced_data;
+        anton::Flat_Hash_Map<anton::String_View, anton::Fixed_Array<Stage_Sourced_Data_Internal, stage_type_count>> sourced_data(ctx.allocator);
 
         if(pass.vertex_context) {
-            gather_stage_data(sourced_data, *pass.vertex_context.declaration, (i64)Stage_Type::vertex);
+            gather_stage_data(ctx.allocator, sourced_data, *pass.vertex_context.declaration, (i64)Stage_Type::vertex);
         }
 
         if(pass.fragment_context) {
-            gather_stage_data(sourced_data, *pass.fragment_context.declaration, (i64)Stage_Type::fragment);
+            gather_stage_data(ctx.allocator, sourced_data, *pass.fragment_context.declaration, (i64)Stage_Type::fragment);
         }
 
         if(pass.compute_context) {
-            gather_stage_data(sourced_data, *pass.compute_context.declaration, (i64)Stage_Type::compute);
+            gather_stage_data(ctx.allocator, sourced_data, *pass.compute_context.declaration, (i64)Stage_Type::compute);
         }
 
         for(auto [source, data]: sourced_data) {

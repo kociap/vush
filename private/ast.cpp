@@ -763,20 +763,20 @@ namespace vush {
         return is_image_type(*t.base);
     }
 
-    anton::String stringify_type(Type const& type) {
+    anton::String stringify_type(Allocator* const allocator, Type const& type) {
         ANTON_ASSERT(type.node_type == AST_Node_Type::builtin_type || type.node_type == AST_Node_Type::user_defined_type ||
                          type.node_type == AST_Node_Type::array_type,
                      u8"unknown ast node type");
         if(type.node_type == AST_Node_Type::builtin_type) {
             Builtin_Type const& t = static_cast<Builtin_Type const&>(type);
             anton::String_View sv = stringify(t.type);
-            return anton::String(sv);
+            return anton::String(sv, allocator);
         } else if(type.node_type == AST_Node_Type::user_defined_type) {
             User_Defined_Type const& t = static_cast<User_Defined_Type const&>(type);
-            return t.identifier;
+            return anton::String(t.identifier, allocator);
         } else {
             Array_Type const& t = static_cast<Array_Type const&>(type);
-            anton::String str = stringify_type(*t.base);
+            anton::String str = stringify_type(allocator, *t.base);
             str += u8"[";
             if(t.size) {
                 str += t.size->value;
@@ -888,13 +888,9 @@ namespace vush {
         return copy;
     }
 
-    AST_Node::AST_Node(Source_Info const& source_info, AST_Node_Type node_type): source_info(source_info), node_type(node_type) {}
-
     Owning_Ptr<AST_Node> AST_Node::clone(Allocator* const allocator) const {
         return Owning_Ptr{_clone(allocator), allocator};
     }
-
-    Identifier::Identifier(anton::String value, Source_Info const& source_info): AST_Node(source_info, AST_Node_Type::identifier), value(ANTON_MOV(value)) {}
 
     Owning_Ptr<Identifier> Identifier::clone(Allocator* const allocator) const {
         return Owning_Ptr{_clone(allocator), allocator};
@@ -908,8 +904,6 @@ namespace vush {
         return Owning_Ptr{_clone(allocator), allocator};
     }
 
-    Builtin_Type::Builtin_Type(Builtin_GLSL_Type type, Source_Info const& source_info): Type(source_info, AST_Node_Type::builtin_type), type(type) {}
-
     Owning_Ptr<Builtin_Type> Builtin_Type::clone(Allocator* const allocator) const {
         return Owning_Ptr{_clone(allocator), allocator};
     }
@@ -918,7 +912,7 @@ namespace vush {
         return ALLOC(Builtin_Type, type, source_info);
     }
 
-    User_Defined_Type::User_Defined_Type(anton::String identifier, Source_Info const& source_info)
+    User_Defined_Type::User_Defined_Type(anton::String_View identifier, Source_Info const& source_info)
         : Type(source_info, AST_Node_Type::user_defined_type), identifier(ANTON_MOV(identifier)) {}
 
     Owning_Ptr<User_Defined_Type> User_Defined_Type::clone(Allocator* const allocator) const {
@@ -1170,7 +1164,7 @@ namespace vush {
         return ALLOC(Expression_If, condition->clone(allocator), true_expression->clone(allocator), false_expression->clone(allocator), source_info);
     }
 
-    Identifier_Expression::Identifier_Expression(anton::String value, Source_Info const& source_info)
+    Identifier_Expression::Identifier_Expression(anton::String_View value, Source_Info const& source_info)
         : Expression(source_info, AST_Node_Type::identifier_expression), value(ANTON_MOV(value)) {}
 
     Owning_Ptr<Identifier_Expression> Identifier_Expression::clone(Allocator* const allocator) const {
@@ -1281,7 +1275,7 @@ namespace vush {
         return ALLOC(Default_Expression, source_info);
     }
 
-    String_Literal::String_Literal(anton::String value, Source_Info const& source_info)
+    String_Literal::String_Literal(anton::String_View value, Source_Info const& source_info)
         : Expression(source_info, AST_Node_Type::string_literal), value(ANTON_MOV(value)) {}
 
     Owning_Ptr<String_Literal> String_Literal::clone(Allocator* const allocator) const {
@@ -1302,7 +1296,7 @@ namespace vush {
         return ALLOC(Bool_Literal, value, source_info);
     }
 
-    Integer_Literal::Integer_Literal(anton::String value, Integer_Literal_Type type, Integer_Literal_Base base, Source_Info const& source_info)
+    Integer_Literal::Integer_Literal(anton::String_View value, Integer_Literal_Type type, Integer_Literal_Base base, Source_Info const& source_info)
         : Expression(source_info, AST_Node_Type::integer_literal), value(ANTON_MOV(value)), type(type), base(base) {}
 
     Owning_Ptr<Integer_Literal> Integer_Literal::clone(Allocator* const allocator) const {
@@ -1313,7 +1307,7 @@ namespace vush {
         return ALLOC(Integer_Literal, value, type, base, source_info);
     }
 
-    Float_Literal::Float_Literal(anton::String value, Float_Literal_Type type, Source_Info const& source_info)
+    Float_Literal::Float_Literal(anton::String_View value, Float_Literal_Type type, Source_Info const& source_info)
         : Expression(source_info, AST_Node_Type::float_literal), value(ANTON_MOV(value)), type(type) {}
 
     Owning_Ptr<Float_Literal> Float_Literal::clone(Allocator* const allocator) const {

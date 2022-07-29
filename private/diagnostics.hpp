@@ -15,8 +15,6 @@ namespace vush {
         return anton::String{path} + u8":" + anton::to_string(line) + u8":" + anton::to_string(column) + u8": error: " + message;
     }
 
-    [[nodiscard]] anton::String format_diagnostic_location(anton::String_View path, i64 line, i64 column);
-
     [[nodiscard]] anton::String format_undefined_symbol(Context const& ctx, Source_Info const& symbol);
     [[nodiscard]] anton::String format_called_symbol_does_not_name_function(Context const& ctx, Source_Info const& symbol);
     [[nodiscard]] anton::String format_symbol_redefinition(Context const& ctx, Source_Info const& first, Source_Info const& second);
@@ -57,4 +55,7 @@ namespace vush {
                                                                    Source_Info const& second, Source_Info const& second_type);
     [[nodiscard]] anton::String format_duplicate_default_label(Context const& ctx, Source_Info const& first, Source_Info const& second);
     [[nodiscard]] anton::String format_duplicate_label(Context const& ctx, Source_Info const& first, Source_Info const& second);
+
+    [[nodiscard]] Error err_identifier_does_not_name_constant(Context const& ctx, Source_Info const& identifier_source);
+    [[nodiscard]] Error err_expression_is_not_constant_evaluable(Context const& ctx, Source_Info const& expression);
 } // namespace vush
