@@ -6,36 +6,63 @@ def indent_multiline(string, level):
     return "\n".join(("    " * level + s for s in string.splitlines()))
 
 def generate_function_constructors(fn):
-    def allocate_identifier(value):
-        return f"allocate_owning<Identifier>(allocator, anton::String(\"{value}\"_sv, allocator), Source_Info{{}})"
-    def allocate_builtin_type(t):
-        return f"allocate_owning<Builtin_Type>(allocator, Builtin_GLSL_Type::glsl_{t}, Source_Info{{}})"
-    def allocate_integer_literal(v):
-        return f"allocate_owning<Integer_Literal>(allocator, anton::String(\"{v}\"_sv, allocator), Integer_Literal_Type::i32, Integer_Literal_Base::dec, Source_Info{{}})"
-    def allocate_array_type(t):
-        return f"allocate_owning<Array_Type>(allocator,\n    {allocate_builtin_type(t.base)},\n    {allocate_integer_literal(t.size)}, Source_Info{{}})"
-    def allocate_function_parameter(identifier_value, type_value):
-        if isinstance(type_value, Array_Type):
-            return f"allocate_owning<Function_Parameter>(allocator,\n    {allocate_identifier(identifier_value)},\n{indent_multiline(allocate_array_type(type_value), 1)},\n    nullptr, nullptr, Source_Info{{}})"
-        else:
-            return f"allocate_owning<Function_Parameter>(allocator,\n    {allocate_identifier(identifier_value)},\n    {allocate_builtin_type(type_value)},\n    nullptr, nullptr, Source_Info{{}})"
+    def create_static_string(name, value):
+        return f"str_{name}", f"static constexpr anton::String_View str_{name} = \"{value}\"_sv;"
+    def create_static_identifier(name, ss_identifier):
+        return f"ident_{name}", f"static constexpr Identifier ident_{name} = Identifier({ss_identifier}, Source_Info{{}});"
+    def create_static_builtin(name):
+        return f"builtin_{name}", f"static constexpr Builtin_Type builtin_{name} = Builtin_Type(Builtin_GLSL_Type::glsl_{name}, Source_Info{{}});"
+        
+    def allocate_integer_literal(ss_value):
+        return f"allocate_owning<Integer_Literal>(user_allocator, {ss_value}, Integer_Literal_Type::i32, Integer_Literal_Base::dec, Source_Info{{}})"
+    def allocate_array_type(sb_base, ss_size):
+        return f"allocate_owning<Array_Type>(user_allocator, {create_owning('Builtin_Type', sb_base)}, {allocate_integer_literal(ss_size)}, Source_Info{{}})"
+    def allocate_function_parameter(ss_identifier, ss_type):
+        return f"allocate_owning<Function_Parameter>(user_allocator, {ss_identifier},\n    {ss_type}, nullptr, nullptr, Source_Info{{}})"
+
+    def create_owning(t, value):
+        return f"Owning_Ptr(const_cast<{t}*>(&{value}), &alloc)"
     def allocate_function_declaration(identifier, return_type, parameter_generator):
-        result = "allocate_owning<Function_Declaration>(allocator, Attribute_List(allocator),\n"
+        static_strings = set()
+        static_identifiers = set()
+        static_builtins = set()
+        result = "allocate_owning<Function_Declaration>(user_allocator, Attribute_List(user_allocator),\n"
+        sb_return, sb_return_string = create_static_builtin(return_type)
+        static_builtins.add(sb_return_string)
         result += "    " # 1 level of indent.
-        result += allocate_builtin_type(return_type)
+        result += create_owning("Builtin_Type", sb_return)
+        result += ", "
+        ss_identifier, ss_identifier_string = create_static_string(identifier, identifier)
+        static_strings.add(ss_identifier_string)
+        si_identifier, si_identifier_string = create_static_identifier(identifier, ss_identifier)
+        static_identifiers.add(si_identifier_string)
+        result += create_owning("Identifier", si_identifier)
         result += ",\n"
         result += "    " # 1 level of indent.
-        result += allocate_identifier(identifier)
-        result += ",\n"
-        result += "    " # 1 level of indent.
-        result += "Parameter_List(allocator, anton::variadic_construct"
-        for parameter in (allocate_function_parameter(n, t) for n, t in parameter_generator):
+        result += "Parameter_List(user_allocator, anton::variadic_construct"
+        # We use 2 levels of indent as base in this loop.
+        for n, t in parameter_generator:
             result += ",\n"
-            result += indent_multiline(parameter, 2)
+            ss_pidentifier, ss_pidentifier_string = create_static_string(n, n)
+            static_strings.add(ss_pidentifier_string)
+            si_pidentifier, si_pidentifier_string = create_static_identifier(n, ss_pidentifier)
+            static_identifiers.add(si_pidentifier_string)
+            if isinstance(t, Array_Type):
+                sb_base, sb_base_string = create_static_builtin(t.base)
+                static_builtins.add(sb_base_string)
+                ss_size, ss_size_string = create_static_string(t.size, t.size)
+                static_strings.add(ss_size_string)
+                result += indent_multiline(allocate_function_parameter(create_owning("Identifier", si_pidentifier), 
+                                                                       allocate_array_type(sb_base, ss_size)), 2)
+            else:
+                sb_t, sb_t_string = create_static_builtin(t)
+                static_builtins.add(sb_t_string)
+                result += indent_multiline(allocate_function_parameter(create_owning("Identifier", si_pidentifier), 
+                                                                       create_owning("Builtin_Type", sb_t)), 2)
         result += "),\n"
         result += "    " # 1 level of indent.
-        result += "Statement_List(allocator), true, Source_Info{})" 
-        return result
+        result += "Statement_List(user_allocator), true, Source_Info{})" 
+        return result, static_strings, static_identifiers, static_builtins
 
     def generate_name(signature):
         for v in signature:
@@ -95,45 +122,83 @@ def generate_function_constructors(fn):
         for type_gen in generate_type_generator(fn.signature, replacement):
             yield allocate_function_declaration(fn.name, next(type_gen), zip(generate_name(fn.signature), type_gen))
 
-def write_preamble(file, function_count):
+def write_get_builtin_functions_declarations(file, functions):
     file.write(f"""\
+    Array<Owning_Ptr<Function_Declaration>> get_builtin_functions_declarations(Allocator* const user_allocator) {{
+        Array<Owning_Ptr<Function_Declaration>> result{{anton::reserve, {len(functions)}, user_allocator}};
+        Dummy_Allocator alloc;
+""")
+
+    for f in functions:
+        string = "    " * 2 + "result.push_back("
+        # We may indent by 2 levels only since the inner part of allocate_owning is
+        # already indented and we want an indentation level of 3. We lstrip whitespace
+        # in order to remove indentation from the first line, so that it follows the
+        # opening lparen immediately.
+        string += indent_multiline(f, 2).lstrip()
+        string += ");\n"
+        file.write(string)
+
+    file.write("""\
+        return result;
+    }
+""")
+
+def write_statics(file, statics):
+    for ss in statics:
+        file.write("    ")
+        file.write(ss)
+        file.write("\n")
+
+def write_preamble(file):
+    file.write("""\
 #include <ast.hpp>
 #include <memory.hpp>
 
-namespace vush {{
+namespace vush {
     using namespace anton::literals;
 
-    Array<Owning_Ptr<Function_Declaration>> get_builtin_functions_declarations(Allocator* const allocator) {{
-        Array<Owning_Ptr<Function_Declaration>> result{{anton::reserve, {function_count}, allocator}};
+    struct Dummy_Allocator: public Allocator {
+        void* allocate([[maybe_unused]] i64 size, [[maybe_unused]] i64 alignment) override { return nullptr; }
+        virtual void deallocate([[maybe_unused]] void* memory, [[maybe_unused]] i64 size, [[maybe_unused]] i64 alignment) override {}
+        bool is_equal([[maybe_unused]] Memory_Allocator const& allocator) const override { return true; }
+    };
+
 """)
 
 def write_epilogue(file):
-    file.write(f"""\
-        return result;
-    }}
-}}
+    file.write("""\
+}
 """)
 
 def main():
     # TODO: --directory,-d option with default ./private/
     # TODO: --filename,-f option with default builtin_symbols_autogen.cpp
 
-    functions = ""
-    function_count = 0
+    static_strings = set()
+    static_identifiers = set()
+    static_builtins = set()
+    functions = []
     for fn in fn_definitions:
-        for f in generate_function_constructors(fn):
-            functions += "    " * 2 + "result.push_back("
-            # We may indent by 2 levels only since the inner part of allocate_owning is
-            # already indented and we want an indentation level of 3. We lstrip whitespace
-            # in order to remove indentation from the first line, so that it follows the
-            # opening lparen immediately.
-            functions += indent_multiline(f, 2).lstrip()
-            functions += ");\n"
-            function_count += 1
+        for f, ss, si, sb in generate_function_constructors(fn):
+            functions.append(f)
+            static_strings.update(ss)
+            static_identifiers.update(si)
+            static_builtins.update(sb)
 
     file = open("./private/builtin_symbols_autogen.cpp", "w")
-    write_preamble(file, function_count)
-    file.write(functions)
+    write_preamble(file)
+    write_statics(file, static_strings)
+    if len(static_strings) > 0:
+        file.write("\n")
+    write_statics(file, static_identifiers)
+    if len(static_identifiers) > 0:
+        file.write("\n")
+    write_statics(file, static_builtins)
+    if len(static_builtins) > 0:
+        file.write("\n")
+    write_get_builtin_functions_declarations(file, functions)
+    file.write("\n")
     write_epilogue(file)
     file.close()
 

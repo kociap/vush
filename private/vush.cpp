@@ -391,7 +391,7 @@ namespace vush {
                 // Section 4.1.3 of The OpenGL Shading Language 4.60.7 states that integer literals must require at most 32 bits.
                 switch(node->base) {
                     case Integer_Literal_Base::dec: {
-                        anton::String const& value = node->value;
+                        anton::String_View const value = node->value;
                         // The max number of digits in a 32 bit decimal number is 10, which corresponds to 9999999999
                         if(value.size_bytes() > 10) {
                             return {anton::expected_error, format_integer_literal_overflow(ctx, node->source_info)};
@@ -1124,14 +1124,14 @@ namespace vush {
 
                 for(auto& overload: fn.overloads) {
                     Function_Declaration& fn_template = *overload;
-                    anton::String stringified_signature = stringify_type(*fn_template.return_type) + fn_template.identifier->value;
-                    anton::String instance_name = fn_template.identifier->value;
+                    anton::String stringified_signature = stringify_type(ctx.allocator, *fn_template.return_type) + fn_template.identifier->value;
+                    anton::String instance_name = anton::String(fn_template.identifier->value, ctx.allocator);
                     // Check whether the function requires instantiation, i.e. has any unsized array parameters.
                     // Stringify the signature and generate instance name.
                     bool requires_instantiation = false;
                     for(i64 i = 0; i < fn_template.parameters.size(); ++i) {
                         Function_Parameter& p = static_cast<Function_Parameter&>(*fn_template.parameters[i]);
-                        stringified_signature += stringify_type(*p.type);
+                        stringified_signature += stringify_type(ctx.allocator, *p.type);
                         if(is_unsized_array(*p.type)) {
                             ANTON_ASSERT(function_call.arguments[i]->node_type == AST_Node_Type::identifier_expression,
                                          "unsized array argument must be an identifier expression");
@@ -1255,12 +1255,14 @@ namespace vush {
         }
     }
 
-    static void gather_settings(Array<Pass_Settings>& settings, anton::Slice<Owning_Ptr<Settings_Declaration> const> setting_declarations) {
+    static void gather_settings(Allocator* const allocator, Array<Pass_Settings>& settings,
+                                anton::Slice<Owning_Ptr<Settings_Declaration> const> setting_declarations) {
         for(auto& declaration: setting_declarations) {
             Pass_Settings* pass_iter = anton::find_if(
                 settings.begin(), settings.end(), [&pass_name = declaration->pass_name->value](Pass_Settings const& v) { return v.pass_name == pass_name; });
             if(pass_iter == settings.end()) {
-                Pass_Settings& v = settings.emplace_back(Pass_Settings{declaration->pass_name->value, {}});
+                Pass_Settings& v =
+                    settings.emplace_back(Pass_Settings{anton::String(declaration->pass_name->value, allocator), Array<Setting_Key_Value>(allocator)});
                 pass_iter = &v;
             }
 
@@ -1342,7 +1344,7 @@ namespace vush {
         Array<Owning_Ptr<Settings_Declaration>> settings{ctx.allocator};
         Array<Owning_Ptr<Function_Declaration>> functions{ctx.allocator};
         partition_ast(ast, result.stages, functions, result.structs_and_constants, settings);
-        gather_settings(result.settings, settings);
+        gather_settings(ctx.allocator, result.settings, settings);
         gather_overloads(ctx, result.functions, functions);
         // Populate the symbol table and perform basic validation in the meantime.
         for(auto& ast_node: result.structs_and_constants) {

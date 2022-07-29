@@ -194,7 +194,7 @@ namespace vush {
             case AST_Node_Type::array_type: {
                 Array_Type& t = (Array_Type&)type;
                 // We made sure that the array is sized during validation stage
-                out += stringify_type(t);
+                out += stringify_type(codegen_ctx.ctx.allocator, t);
                 out += u8"(";
                 stringify_type_reinterpret(out, *t.base, codegen_ctx, reinterpret_ctx);
                 out += u8")";
@@ -845,8 +845,9 @@ namespace vush {
         _explode_type(_explode_type, ctx, type, name_components, Interpolation::none, false, member_info);
     }
 
-    static anton::Expected<anton::String, anton::String> format_bind_string(anton::String_View string, Identifier const& identifier, Type const& type) {
-        anton::String out;
+    static anton::Expected<anton::String, anton::String> format_bind_string(Allocator* const allocator, anton::String_View string, Identifier const& identifier,
+                                                                            Type const& type) {
+        anton::String out(allocator);
         auto iter1 = string.bytes_begin();
         auto iter2 = string.bytes_begin();
         auto const end = string.bytes_end();
@@ -878,28 +879,28 @@ namespace vush {
 
             // Check for unterminated placeholder
             if(iter2 == end || iter2 + 1 == end || *(iter2 + 1) != U'}') {
-                return {anton::expected_error, anton::String(u8"error: unterminated placeholder in bind string")};
+                return {anton::expected_error, anton::String(u8"error: unterminated placeholder in bind string", allocator)};
             }
 
             anton::String_View const symbol_name = {iter1, iter2};
             i64 const dot_pos = anton::find_substring(symbol_name, u8".");
             if(dot_pos == anton::npos) {
                 // If it's not a builtin and doesn't have a dot, what is it?
-                return {anton::expected_error, anton::String(u8"error: invalid placeholder in bind string")};
+                return {anton::expected_error, anton::String(u8"error: invalid placeholder in bind string", allocator)};
             }
 
             anton::String_View const iterator_name = {symbol_name.data(), dot_pos};
             anton::String_View const property_name = {symbol_name.data() + dot_pos + 1, symbol_name.bytes_end()};
             if(iterator_name != u8"$variable") {
-                return {anton::expected_error, anton::String(u8"error: unknown placeholder in bind string")};
+                return {anton::expected_error, anton::String(u8"error: unknown placeholder in bind string", allocator)};
             }
 
             if(property_name == u8"name") {
                 out += identifier.value;
             } else if(property_name == u8"type") {
-                out += stringify_type(type);
+                out += stringify_type(allocator, type);
             } else {
-                return {anton::expected_error, anton::String(u8"error: unknown property name in bind string")};
+                return {anton::expected_error, anton::String(u8"error: unknown property name in bind string", allocator)};
             }
 
             // Skip the terminating }}
@@ -1001,11 +1002,12 @@ namespace vush {
                     explode_type(ctx, *p.type, members_info);
                     i64 location = 0;
                     for(Member_Info const& m: members_info) {
-                        anton::String location_str = anton::to_string(location);
-                        anton::String_View type_str = stringify(m.type);
+                        anton::String location_str = anton::to_string(ctx.allocator, location);
+                        anton::String_View const type_str = stringify(m.type);
                         // We attach parameter names to the vertex inputs
-                        anton::String const& param_name = p.identifier->value;
-                        out += anton::format(u8"layout(location = {}) in {} _pass_{}_{}{};\n"_sv, location_str, type_str, pass_name, param_name, m.name);
+                        anton::String_View const param_name = p.identifier->value;
+                        out += anton::format(ctx.allocator, "layout(location = {}) in {} _pass_{}_{}{};\n"_sv, location_str, type_str, pass_name, param_name,
+                                             m.name);
                         location += m.location_slots;
                     }
                     members_info.clear();
@@ -1053,8 +1055,8 @@ namespace vush {
                     // write vertex input assignments
                     for(Member_Info const& m: members_info) {
                         write_indent(out, codegen_ctx.indent);
-                        anton::String const& param_name = p.identifier->value;
-                        out += anton::format(u8"{}{} = _pass_{}_{}{};\n"_sv, arg_name, m.accessor, pass_name, param_name, m.name);
+                        anton::String_View const param_name = p.identifier->value;
+                        out += anton::format(ctx.allocator, u8"{}{} = _pass_{}_{}{};\n"_sv, arg_name, m.accessor, pass_name, param_name, m.name);
                     }
                     members_info.clear();
                     arguments.emplace_back(ANTON_MOV(arg_name));
@@ -1063,7 +1065,7 @@ namespace vush {
                     auto iter = stage_ctx.source_definitions.find(p.source->value);
                     ANTON_ASSERT(iter != stage_ctx.source_definitions.end(), u8"sourced parameter doesn't have an existing source");
                     anton::String_View bind_string = iter->value.bind;
-                    anton::Expected<anton::String, anton::String> res = format_bind_string(bind_string, *p.identifier, *p.type);
+                    anton::Expected<anton::String, anton::String> res = format_bind_string(ctx.allocator, bind_string, *p.identifier, *p.type);
                     if(res) {
                         arguments.emplace_back(ANTON_MOV(res.value()));
                     } else {
@@ -1076,7 +1078,7 @@ namespace vush {
 
         write_indent(out, codegen_ctx.indent);
         if(!return_type_is_void) {
-            out += stringify_type(*stage_ctx.declaration->return_type);
+            out += stringify_type(ctx.allocator, *stage_ctx.declaration->return_type);
             out += u8" _res = "_sv;
         }
 
@@ -1218,7 +1220,7 @@ namespace vush {
             auto iter = stage_ctx.source_definitions.find(p.source->value);
             ANTON_ASSERT(iter != stage_ctx.source_definitions.end(), u8"sourced parameter doesn't have an existing source");
             anton::String_View bind_string = iter->value.bind;
-            anton::Expected<anton::String, anton::String> res = format_bind_string(bind_string, *p.identifier, *p.type);
+            anton::Expected<anton::String, anton::String> res = format_bind_string(ctx.allocator, bind_string, *p.identifier, *p.type);
             if(res) {
                 arguments.emplace_back(ANTON_MOV(res.value()));
             } else {
@@ -1249,7 +1251,7 @@ namespace vush {
         if(has_prev_stage_input) {
             Function_Parameter const& p = (Function_Parameter const&)*stage_ctx.declaration->parameters[0];
             write_indent(out, codegen_ctx.indent);
-            out += stringify_type(*p.type);
+            out += stringify_type(ctx.allocator, *p.type);
             out += u8" _arg0;\n"_sv;
             anton::Array<Member_Info> members_info;
             explode_type(ctx, *p.type, members_info);
@@ -1418,7 +1420,8 @@ namespace vush {
             auto iter = stage_ctx.source_definitions.find(parameter.source->value);
             ANTON_ASSERT(iter != stage_ctx.source_definitions.end(), u8"sourced parameter doesn't have an existing source");
             anton::String_View bind_string = iter->value.bind;
-            anton::Expected<anton::String, anton::String> res = format_bind_string(bind_string, *parameter.identifier, *parameter.type);
+            anton::Expected<anton::String, anton::String> res =
+                format_bind_string(codegen_ctx.ctx.allocator, bind_string, *parameter.identifier, *parameter.type);
             if(!res) {
                 return {anton::expected_error, ANTON_MOV(res.error())};
             }

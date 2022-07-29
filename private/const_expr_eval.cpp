@@ -1,3 +1,4 @@
+#include "anton/expected.hpp"
 #include <const_expr_eval.hpp>
 
 #include <diagnostics.hpp>
@@ -29,9 +30,7 @@ namespace vush {
                 Identifier_Expression& expr = (Identifier_Expression&)expression;
                 Symbol* symbol = find_symbol(ctx, expr.value);
                 if(!symbol) {
-                    anton::String msg = u8"unknown identifier '" + expr.value + u8"'";
-                    Source_Info const& src = expr.source_info;
-                    return {anton::expected_error, build_error_message(src.source_path, src.line, src.column, msg)};
+                    return {anton::expected_error, format_undefined_symbol(ctx, expr.source_info)};
                 }
 
                 return {anton::expected_value, symbol->node_type == Symbol_Type::constant_declaration};
@@ -78,8 +77,8 @@ namespace vush {
             case AST_Node_Type::member_access_expression:
             case AST_Node_Type::array_access_expression:
             default: {
-                Source_Info const& src = expression.source_info;
-                return {anton::expected_error, build_error_message(src.source_path, src.line, src.column, u8"non-constant expression")};
+                return {anton::expected_error,
+                        err_expression_is_not_constant_evaluable(ctx, expression.source_info).format(ctx.allocator, ctx.diagnostics.extended)};
             }
 
             case AST_Node_Type::bool_literal: {
@@ -111,15 +110,12 @@ namespace vush {
                 Identifier_Expression& expr = (Identifier_Expression&)expression;
                 Symbol* symbol = find_symbol(ctx, expr.value);
                 if(!symbol) {
-                    anton::String msg = u8"unknown identifier '" + expr.value + u8"'";
-                    Source_Info const& src = expr.source_info;
-                    return {anton::expected_error, build_error_message(src.source_path, src.line, src.column, msg)};
+                    return {anton::expected_error, format_undefined_symbol(ctx, expr.source_info)};
                 }
 
                 if(symbol->node_type != Symbol_Type::constant_declaration) {
-                    Source_Info const& src = expr.source_info;
-                    anton::String msg = u8"identifier '" + expr.value + u8"' does not name a constant";
-                    return {anton::expected_error, build_error_message(src.source_path, src.line, src.column, msg)};
+                    return {anton::expected_error,
+                            err_identifier_does_not_name_constant(ctx, expr.source_info).format(ctx.allocator, ctx.diagnostics.extended)};
                 }
 
                 Constant_Declaration* decl = (Constant_Declaration*)symbol;
@@ -146,8 +142,8 @@ namespace vush {
                     case Binary_Expression_Type::band_assign:
                     case Binary_Expression_Type::bor_assign:
                     case Binary_Expression_Type::bxor_assign: {
-                        Source_Info const& src = expression.source_info;
-                        return {anton::expected_error, build_error_message(src.source_path, src.line, src.column, u8"non-constant expression")};
+                        return {anton::expected_error,
+                                err_expression_is_not_constant_evaluable(ctx, expression.source_info).format(ctx.allocator, ctx.diagnostics.extended)};
                     }
 
                     // We currently do not handle bitwise binary expressions and
@@ -155,8 +151,8 @@ namespace vush {
                     case Binary_Expression_Type::bor:
                     case Binary_Expression_Type::bxor:
                     case Binary_Expression_Type::band: {
-                        Source_Info const& src = expression.source_info;
-                        return {anton::expected_error, build_error_message(src.source_path, src.line, src.column, u8"non-constant expression")};
+                        return {anton::expected_error,
+                                err_expression_is_not_constant_evaluable(ctx, expression.source_info).format(ctx.allocator, ctx.diagnostics.extended)};
                     }
 
                     case Binary_Expression_Type::lor: {
@@ -896,8 +892,8 @@ namespace vush {
                 switch(expr.type) {
                     case Prefix_Expression_Type::inc:
                     case Prefix_Expression_Type::dec: {
-                        Source_Info const& src = expression.source_info;
-                        return {anton::expected_error, build_error_message(src.source_path, src.line, src.column, u8"non-constant expression")};
+                        return {anton::expected_error,
+                                err_expression_is_not_constant_evaluable(ctx, expression.source_info).format(ctx.allocator, ctx.diagnostics.extended)};
                     }
 
                     case Prefix_Expression_Type::plus: {
