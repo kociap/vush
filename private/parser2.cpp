@@ -595,7 +595,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional identifier = try_identifier()) {
+            if(Optional identifier = skipmatch(Token_Type::identifier)) {
                 snots.push_back(ANTON_MOV(*identifier));
             } else {
                 set_error(u8"expected variable identifier");
@@ -648,7 +648,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional identifier = try_identifier()) {
+            if(Optional identifier = skipmatch(Token_Type::identifier)) {
                 snots.push_back(ANTON_MOV(*identifier));
             } else {
                 set_error(u8"expected variable identifier");
@@ -724,7 +724,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional identifier = try_identifier()) {
+            if(Optional identifier = skipmatch(Token_Type::identifier)) {
                 snots.push_back(ANTON_MOV(*identifier));
             } else {
                 set_error(u8"expected struct name");
@@ -820,7 +820,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional pass = try_identifier()) {
+            if(Optional pass = skipmatch(Token_Type::identifier)) {
                 snots.push_back(ANTON_MOV(*pass));
             } else {
                 _lexer.restore_state(begin_state);
@@ -994,7 +994,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional identifier = try_identifier()) {
+            if(Optional identifier = skipmatch(Token_Type::identifier)) {
                 snots.push_back(ANTON_MOV(*identifier));
             } else {
                 set_error(u8"expected parameter identifier");
@@ -1004,7 +1004,7 @@ namespace vush {
 
             if(Optional kw_from = skipmatch(Token_Type::kw_from)) {
                 snots.push_back(ANTON_MOV(*kw_from));
-                if(Optional source = try_identifier()) {
+                if(Optional source = skipmatch(Token_Type::identifier)) {
                     snots.push_back(ANTON_MOV(*source));
                 } else {
                     set_error(u8"expected parameter source after 'from'");
@@ -1161,7 +1161,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional pass_identifier = try_identifier()) {
+            if(Optional pass_identifier = skipmatch(Token_Type::identifier)) {
                 snots.push_back(ANTON_MOV(*pass_identifier));
             } else {
                 set_error(u8"expected pass identifier");
@@ -1228,7 +1228,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional identifier = try_identifier()) {
+            if(Optional identifier = skipmatch(Token_Type::identifier)) {
                 snots.push_back(ANTON_MOV(*identifier));
             } else {
                 set_error(u8"expected function identifier");
@@ -1341,7 +1341,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional identifier = try_identifier()) {
+            if(Optional identifier = skipmatch(Token_Type::identifier)) {
                 snots.push_back(ANTON_MOV(*identifier));
             } else {
                 set_error(u8"expected variable identifier");
@@ -1567,7 +1567,7 @@ namespace vush {
                     return anton::null_optional;
                 }
 
-                if(Optional identifier = try_identifier()) {
+                if(Optional identifier = skipmatch(Token_Type::identifier)) {
                     snots.push_back(ANTON_MOV(*identifier));
                 } else {
                     set_error("expected variable identifier");
@@ -2199,7 +2199,7 @@ namespace vush {
 
             while(true) {
                 if(Optional tk_dot = skipmatch(Token_Type::tk_dot)) {
-                    Optional identifier = try_identifier();
+                    Optional identifier = skipmatch(Token_Type::identifier);
                     if(!identifier) {
                         set_error(u8"expected identifier");
                         _lexer.restore_state(begin_state);
@@ -2528,7 +2528,7 @@ namespace vush {
         Optional<Syntax_Node> try_expr_call() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional identifier = try_identifier()) {
+            if(Optional identifier = skipmatch(Token_Type::identifier)) {
                 snots.push_back(ANTON_MOV(*identifier));
             } else {
                 set_error(u8"expected identifier");
@@ -2634,10 +2634,6 @@ namespace vush {
             Lexer_State const end_state = _lexer.get_current_state_noskip();
             Source_Info const source = src_info(begin_state, end_state);
             return Syntax_Node(Syntax_Node_Type::expr_lt_string, ANTON_MOV(snots), source);
-        }
-
-        Optional<Syntax_Token> try_identifier() {
-            return skipmatch(Token_Type::identifier);
         }
 
         Optional<Syntax_Node> try_type() {

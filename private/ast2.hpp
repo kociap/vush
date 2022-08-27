@@ -78,7 +78,6 @@ namespace vush {
         tk_equals,
         // literals
         lt_bin_integer,
-        lt_oct_integer,
         lt_dec_integer,
         lt_hex_integer,
         lt_float,
