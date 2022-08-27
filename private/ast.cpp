@@ -1147,16 +1147,16 @@ namespace vush {
     }
 
     Pass_Stage_Declaration::Pass_Stage_Declaration(Attribute_List attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> pass_name,
-                                                   Stage_Type stage_type, Parameter_List parameters, Statement_List body, Source_Info const& source_info)
+                                                   Stage_Kind stage_kind, Parameter_List parameters, Statement_List body, Source_Info const& source_info)
         : Declaration(source_info, AST_Node_Type::pass_stage_declaration), attributes(ANTON_MOV(attributes)), parameters(ANTON_MOV(parameters)),
-          body(ANTON_MOV(body)), pass_name(ANTON_MOV(pass_name)), return_type(ANTON_MOV(return_type)), stage_type(ANTON_MOV(stage_type)) {}
+          body(ANTON_MOV(body)), pass_name(ANTON_MOV(pass_name)), return_type(ANTON_MOV(return_type)), stage_kind(ANTON_MOV(stage_kind)) {}
 
     Owning_Ptr<Pass_Stage_Declaration> Pass_Stage_Declaration::clone(Allocator* const allocator) const {
         return Owning_Ptr{_clone(allocator), allocator};
     }
 
     Pass_Stage_Declaration* Pass_Stage_Declaration::_clone(Allocator* const allocator) const {
-        return ALLOC(Pass_Stage_Declaration, vush::clone(attributes, allocator), return_type->clone(allocator), pass_name->clone(allocator), stage_type,
+        return ALLOC(Pass_Stage_Declaration, vush::clone(attributes, allocator), return_type->clone(allocator), pass_name->clone(allocator), stage_kind,
                      vush::clone(parameters, allocator), vush::clone(body, allocator), source_info);
     }
 

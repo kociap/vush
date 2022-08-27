@@ -977,13 +977,13 @@ namespace vush {
     }
 
     [[nodiscard]] static anton::Expected<ast::Decl_Stage_Function const*, Error> transform_decl_stage_function(Context const& ctx, Syntax_Node const& node) {
-        auto transform_stage_kind = [](Syntax_Token const& token) -> ast::With_Source<Stage_Type> {
+        auto transform_stage_kind = [](Syntax_Token const& token) -> ast::With_Source<Stage_Kind> {
             if(token.value == "vertex"_sv) {
-                return {Stage_Type::vertex, token.source_info};
+                return {Stage_Kind::vertex, token.source_info};
             } else if(token.value == "fragment"_sv) {
-                return {Stage_Type::fragment, token.source_info};
+                return {Stage_Kind::fragment, token.source_info};
             } else if(token.value == "compute"_sv) {
-                return {Stage_Type::compute, token.source_info};
+                return {Stage_Kind::compute, token.source_info};
             } else {
                 // TODO: Error
                 ANTON_ASSERT(false, "unreachable");
@@ -998,7 +998,7 @@ namespace vush {
 
         i64 const offset = get_past_attribute_lists_offset(node);
         ast::Identifier const* const pass = transform_identifier(ctx, get_decl_stage_function_pass(node, offset));
-        ast::With_Source<Stage_Type> const stage = transform_stage_kind(get_decl_stage_function_stage(node, offset));
+        ast::With_Source<Stage_Kind> const stage = transform_stage_kind(get_decl_stage_function_stage(node, offset));
         anton::Expected<ast::Func_Parameter_List, Error> parameters = transform_parameter_list(ctx, get_decl_stage_function_parameter_list(node, offset));
         if(!parameters) {
             return {anton::expected_error, ANTON_MOV(parameters.error())};

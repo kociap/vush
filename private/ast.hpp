@@ -571,13 +571,13 @@ namespace vush {
         [[nodiscard]] virtual Overloaded_Function_Declaration* _clone(Allocator* allocator) const override;
     };
 
-    constexpr anton::String_View stringify(Stage_Type type) {
+    constexpr anton::String_View stringify(Stage_Kind type) {
         switch(type) {
-            case Stage_Type::vertex:
+            case Stage_Kind::vertex:
                 return u8"vertex";
-            case Stage_Type::fragment:
+            case Stage_Kind::fragment:
                 return u8"fragment";
-            case Stage_Type::compute:
+            case Stage_Kind::compute:
                 return u8"compute";
         }
     }
@@ -588,9 +588,9 @@ namespace vush {
         Statement_List body;
         Owning_Ptr<Identifier> pass_name;
         Owning_Ptr<Type> return_type;
-        Stage_Type stage_type;
+        Stage_Kind stage_kind;
 
-        Pass_Stage_Declaration(Attribute_List attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> pass_name, Stage_Type stage_type,
+        Pass_Stage_Declaration(Attribute_List attributes, Owning_Ptr<Type> return_type, Owning_Ptr<Identifier> pass_name, Stage_Kind stage_kind,
                                Parameter_List parameters, Statement_List body, Source_Info const& source_info);
 
         [[nodiscard]] Owning_Ptr<Pass_Stage_Declaration> clone(Allocator* allocator) const;

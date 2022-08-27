@@ -174,14 +174,14 @@ namespace vush {
             }
         }
 
-        switch(function.stage_type) {
-            case Stage_Type::vertex: {
+        switch(function.stage_kind) {
+            case Stage_Kind::vertex: {
                 for(auto& param: parameters) {
                     ANTON_ASSERT(param->node_type == AST_Node_Type::function_parameter, u8"unknown parameter type");
                     Function_Parameter& p = (Function_Parameter&)*param;
                     if(!is_sourced_parameter(p)) {
                         Source_Info const& src = p.source_info;
-                        return {anton::expected_error, format_ordinary_parameter_not_allowed_on_stage(ctx, src, Stage_Type::vertex)};
+                        return {anton::expected_error, format_ordinary_parameter_not_allowed_on_stage(ctx, src, Stage_Kind::vertex)};
                     }
 
                     if(is_vertex_input_parameter(p)) {
@@ -217,13 +217,13 @@ namespace vush {
                 }
             } break;
 
-            case Stage_Type::fragment: {
+            case Stage_Kind::fragment: {
                 bool const has_ordinary_parameter = parameters.size() > 0 && !is_sourced_parameter((Function_Parameter const&)*parameters[0]);
                 if(has_ordinary_parameter) {
                     Function_Parameter& p = (Function_Parameter&)*parameters[0];
                     bool const udt_type = p.type->node_type == AST_Node_Type::user_defined_type;
                     if(!udt_type) {
-                        return {anton::expected_error, format_stage_input_parameter_must_be_udt(ctx, function.pass_name->value, Stage_Type::fragment, p)};
+                        return {anton::expected_error, format_stage_input_parameter_must_be_udt(ctx, function.pass_name->value, Stage_Kind::fragment, p)};
                     }
 
                     anton::Expected<void, anton::String> symbol_res = check_and_add_symbol(ctx, p.identifier->value, &p);
@@ -236,12 +236,12 @@ namespace vush {
                     Function_Parameter& p = (Function_Parameter&)*parameters[i];
                     if(is_vertex_input_parameter(p)) {
                         Source_Info const& src = p.source_info;
-                        return {anton::expected_error, format_vertex_input_not_allowed_on_stage(ctx, src, Stage_Type::fragment)};
+                        return {anton::expected_error, format_vertex_input_not_allowed_on_stage(ctx, src, Stage_Kind::fragment)};
                     }
 
                     if(!is_sourced_parameter(p)) {
                         Source_Info const& src = p.source_info;
-                        return {anton::expected_error, format_ordinary_parameter_not_allowed_on_stage(ctx, src, Stage_Type::fragment)};
+                        return {anton::expected_error, format_ordinary_parameter_not_allowed_on_stage(ctx, src, Stage_Kind::fragment)};
                     }
 
                     if(p.image_layout) {
@@ -260,17 +260,17 @@ namespace vush {
                 }
             } break;
 
-            case Stage_Type::compute: {
+            case Stage_Kind::compute: {
                 for(auto& param: parameters) {
                     Function_Parameter& p = (Function_Parameter&)*param;
                     if(is_vertex_input_parameter(p)) {
                         Source_Info const& src = p.source_info;
-                        return {anton::expected_error, format_vertex_input_not_allowed_on_stage(ctx, src, Stage_Type::fragment)};
+                        return {anton::expected_error, format_vertex_input_not_allowed_on_stage(ctx, src, Stage_Kind::fragment)};
                     }
 
                     if(!is_sourced_parameter(p)) {
                         Source_Info const& src = p.source_info;
-                        return {anton::expected_error, format_ordinary_parameter_not_allowed_on_stage(ctx, src, Stage_Type::fragment)};
+                        return {anton::expected_error, format_ordinary_parameter_not_allowed_on_stage(ctx, src, Stage_Kind::fragment)};
                     }
 
                     if(p.image_layout) {
@@ -309,8 +309,8 @@ namespace vush {
     }
 
     static anton::Expected<void, anton::String> validate_function_attributes([[maybe_unused]] Context& ctx, Pass_Stage_Declaration const& fn) {
-        switch(fn.stage_type) {
-            case Stage_Type::compute: {
+        switch(fn.stage_kind) {
+            case Stage_Kind::compute: {
                 bool has_workgroup = false;
                 for(auto& attribute: fn.attributes) {
                     if(attribute->node_type == AST_Node_Type::workgroup_attribute) {
@@ -848,23 +848,23 @@ namespace vush {
         bool const void_return = is_void(*fn.return_type);
         // TODO: Add symbol lookup to ensure the return types actually exist
         bool const udt_return = fn.return_type->node_type == AST_Node_Type::user_defined_type;
-        switch(fn.stage_type) {
-            case Stage_Type::vertex: {
+        switch(fn.stage_kind) {
+            case Stage_Kind::vertex: {
                 // The return type of a vertex stage must always be void or a UDT.
                 if(!void_return && !udt_return) {
-                    return {anton::expected_error, format_stage_return_type_must_be_void_or_udt(ctx, fn.pass_name->value, Stage_Type::vertex, *fn.return_type)};
+                    return {anton::expected_error, format_stage_return_type_must_be_void_or_udt(ctx, fn.pass_name->value, Stage_Kind::vertex, *fn.return_type)};
                 }
             } break;
 
-            case Stage_Type::fragment: {
+            case Stage_Kind::fragment: {
                 // The return type of a vertex stage must always be void or a UDT.
                 if(!void_return && !udt_return) {
                     return {anton::expected_error,
-                            format_stage_return_type_must_be_void_or_udt(ctx, fn.pass_name->value, Stage_Type::fragment, *fn.return_type)};
+                            format_stage_return_type_must_be_void_or_udt(ctx, fn.pass_name->value, Stage_Kind::fragment, *fn.return_type)};
                 }
             } break;
 
-            case Stage_Type::compute: {
+            case Stage_Kind::compute: {
                 // The return type of a compute stage must always be void.
                 if(!void_return) {
                     Source_Info const& src = fn.return_type->source_info;
@@ -1229,32 +1229,32 @@ namespace vush {
             }
 
             // Ensure there is only 1 stage of each type
-            switch(stage_declaration->stage_type) {
-                case Stage_Type::vertex: {
+            switch(stage_declaration->stage_kind) {
+                case Stage_Kind::vertex: {
                     if(pass->vertex_context) {
                         Source_Info const& src1 = pass->vertex_context.declaration->source_info;
                         Source_Info const& src2 = stage_declaration->source_info;
-                        return {anton::expected_error, format_duplicate_pass_stage_error(ctx, src1, src2, pass->name, Stage_Type::vertex)};
+                        return {anton::expected_error, format_duplicate_pass_stage_error(ctx, src1, src2, pass->name, Stage_Kind::vertex)};
                     }
 
                     pass->vertex_context.declaration = stage_declaration.get();
                 } break;
 
-                case Stage_Type::fragment: {
+                case Stage_Kind::fragment: {
                     if(pass->fragment_context) {
                         Source_Info const& src1 = pass->fragment_context.declaration->source_info;
                         Source_Info const& src2 = stage_declaration->source_info;
-                        return {anton::expected_error, format_duplicate_pass_stage_error(ctx, src1, src2, pass->name, Stage_Type::fragment)};
+                        return {anton::expected_error, format_duplicate_pass_stage_error(ctx, src1, src2, pass->name, Stage_Kind::fragment)};
                     }
 
                     pass->fragment_context.declaration = stage_declaration.get();
                 } break;
 
-                case Stage_Type::compute: {
+                case Stage_Kind::compute: {
                     if(pass->compute_context) {
                         Source_Info const& src1 = pass->compute_context.declaration->source_info;
                         Source_Info const& src2 = stage_declaration->source_info;
-                        return {anton::expected_error, format_duplicate_pass_stage_error(ctx, src1, src2, pass->name, Stage_Type::compute)};
+                        return {anton::expected_error, format_duplicate_pass_stage_error(ctx, src1, src2, pass->name, Stage_Kind::compute)};
                     }
 
                     pass->compute_context.declaration = stage_declaration.get();
