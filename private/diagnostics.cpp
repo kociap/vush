@@ -307,7 +307,7 @@ namespace vush {
         return message;
     }
 
-    anton::String format_ordinary_parameter_not_allowed_on_stage(Context const& ctx, Source_Info const& src, Stage_Type const stage) {
+    anton::String format_ordinary_parameter_not_allowed_on_stage(Context const& ctx, Source_Info const& src, Stage_Kind const stage) {
         anton::String message = format_diagnostic_location(ctx.allocator, src);
         message += u8"ordinary parameters are not allowed on "_sv;
         message += stringify(stage);
@@ -320,7 +320,7 @@ namespace vush {
         return message;
     }
 
-    anton::String format_vertex_input_not_allowed_on_stage(Context const& ctx, Source_Info const& src, Stage_Type const stage) {
+    anton::String format_vertex_input_not_allowed_on_stage(Context const& ctx, Source_Info const& src, Stage_Kind const stage) {
         anton::String message = format_diagnostic_location(ctx.allocator, src);
         message += u8"vertex input parameters are not allowed on "_sv;
         message += stringify(stage);
@@ -367,7 +367,7 @@ namespace vush {
     }
 
     anton::String format_duplicate_pass_stage_error(Context const& ctx, Source_Info const& first, Source_Info const& second, anton::String const& pass_name,
-                                                    Stage_Type const& stage) {
+                                                    Stage_Kind const& stage) {
         anton::String message = format_diagnostic_location(ctx.allocator, second);
         message += anton::format(ctx.allocator, u8"error: duplicate {} stage in pass '{}'\n"_sv, stringify(stage), pass_name);
         if(ctx.diagnostics.extended) {
@@ -387,7 +387,7 @@ namespace vush {
         return anton::format(ctx.allocator, u8"error: pass must have either compute or graphics (vertex, fragment) stages. '{}' has both\n"_sv, pass_name);
     }
 
-    anton::String format_stage_return_type_must_be_void_or_udt(Context const& ctx, anton::String_View const pass_name, Stage_Type const stage,
+    anton::String format_stage_return_type_must_be_void_or_udt(Context const& ctx, anton::String_View const pass_name, Stage_Kind const stage,
                                                                Type const& return_type) {
         anton::String_View const source = ctx.source_registry.find(return_type.source_info.source_path)->value.data;
         anton::String_View const stage_string = stringify(stage);
@@ -405,7 +405,7 @@ namespace vush {
         return message;
     }
 
-    anton::String format_stage_input_parameter_must_be_udt(Context const& ctx, anton::String_View const pass_name, Stage_Type const stage,
+    anton::String format_stage_input_parameter_must_be_udt(Context const& ctx, anton::String_View const pass_name, Stage_Kind const stage,
                                                            Function_Parameter const& parameter) {
         anton::String_View const source = ctx.source_registry.find(parameter.source_info.source_path)->value.data;
         anton::String_View const stage_string = stringify(stage);

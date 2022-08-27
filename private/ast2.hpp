@@ -629,12 +629,12 @@ namespace vush {
         struct Decl_Stage_Function: public Decl {
             Attr_List attributes;
             Identifier const* pass;
-            With_Source<Stage_Type> stage;
+            With_Source<Stage_Kind> stage;
             Func_Parameter_List parameters;
             Type const* return_type;
             Stmt_List body;
 
-            constexpr Decl_Stage_Function(Attr_List attributes, Identifier const* pass, With_Source<Stage_Type> stage, Func_Parameter_List parameters,
+            constexpr Decl_Stage_Function(Attr_List attributes, Identifier const* pass, With_Source<Stage_Kind> stage, Func_Parameter_List parameters,
                                           Type const* return_type, Stmt_List body, Source_Info const& source_info)
                 : Decl(source_info, Node_Kind::decl_stage_function), attributes(attributes), pass(pass), stage(stage), parameters(parameters),
                   return_type(return_type), body(body) {}

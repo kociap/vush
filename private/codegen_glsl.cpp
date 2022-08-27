@@ -1474,7 +1474,7 @@ namespace vush {
                 anton::Expected<anton::String, anton::String> res =
                     generate_vertex_stage(ctx, codegen_ctx, pass.name, pass.vertex_context, stringified_extensions, pass.functions, pass.structs_and_constants);
                 if(res) {
-                    pass_data.files.emplace_back(GLSL_File{ANTON_MOV(res.value()), Stage_Type::vertex});
+                    pass_data.files.emplace_back(GLSL_File{ANTON_MOV(res.value()), Stage_Kind::vertex});
                 } else {
                     return {anton::expected_error, ANTON_MOV(res.error())};
                 }
@@ -1484,7 +1484,7 @@ namespace vush {
                 anton::Expected<anton::String, anton::String> res = generate_fragment_stage(ctx, codegen_ctx, pass.name, pass.fragment_context,
                                                                                             stringified_extensions, pass.functions, pass.structs_and_constants);
                 if(res) {
-                    pass_data.files.emplace_back(GLSL_File{ANTON_MOV(res.value()), Stage_Type::fragment});
+                    pass_data.files.emplace_back(GLSL_File{ANTON_MOV(res.value()), Stage_Kind::fragment});
                 } else {
                     return {anton::expected_error, ANTON_MOV(res.error())};
                 }
@@ -1494,7 +1494,7 @@ namespace vush {
                 anton::Expected<anton::String, anton::String> res =
                     generate_compute_stage(codegen_ctx, pass.name, pass.compute_context, stringified_extensions, pass.functions, pass.structs_and_constants);
                 if(res) {
-                    pass_data.files.emplace_back(GLSL_File{ANTON_MOV(res.value()), Stage_Type::compute});
+                    pass_data.files.emplace_back(GLSL_File{ANTON_MOV(res.value()), Stage_Kind::compute});
                 } else {
                     return {anton::expected_error, ANTON_MOV(res.error())};
                 }

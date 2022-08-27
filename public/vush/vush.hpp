@@ -88,7 +88,7 @@ namespace vush {
         anton::String_View pass_name;
         anton::String_View source_name;
         anton::Slice<Setting_Key_Value const> settings;
-        // Per stage sourced data. Index by casting Stage_Type to i64.
+        // Per stage sourced data. Index by casting Stage_Kind to i64.
         anton::Slice<Stage_Sourced_Data const> sourced_data;
         void* user_data;
     };
@@ -98,7 +98,7 @@ namespace vush {
     // Parameters:
     //     context - the definition context of a source.
     // definitions - output parameter for per-stage source definitions.
-    //               The slice is always presized to stage_type_count.
+    //               The slice is always presized to stage_kind_count.
     //
     using source_definition_callback = anton::Expected<void, anton::String> (*)(Source_Definition_Context const& context,
                                                                                 anton::Slice<Source_Definition> definitions);
@@ -120,20 +120,19 @@ namespace vush {
         Diagnostics_Options diagnostics;
     };
 
-    // TODO: Rename to 'Stage'.
-    enum struct Stage_Type {
+    enum struct Stage_Kind {
         vertex,
         fragment,
         compute,
     };
 
-    // stage_type_count
-    // The number of enumerations in Stage_Type.
-    constexpr i64 stage_type_count = 3;
+    // stage_kind_count
+    // The number of enumerations in Stage_Kind.
+    constexpr i64 stage_kind_count = 3;
 
     struct GLSL_File {
         anton::String data;
-        Stage_Type stage_type;
+        Stage_Kind stage_kind;
     };
 
     struct Pass_Data {

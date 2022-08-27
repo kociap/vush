@@ -8,7 +8,7 @@
 
 namespace vush {
     enum struct AST_Node_Type;
-    enum struct Stage_Type;
+    enum struct Stage_Kind;
     struct Source_Info;
     struct AST_Node;
     struct Declaration;
