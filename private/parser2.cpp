@@ -2587,8 +2587,6 @@ namespace vush {
             Array<SNOT> snots{_allocator};
             if(Optional lt_bin_integer = match(Token_Type::lt_bin_integer)) {
                 snots.push_back(ANTON_MOV(*lt_bin_integer));
-            } else if(Optional lt_oct_integer = match(Token_Type::lt_oct_integer)) {
-                snots.push_back(ANTON_MOV(*lt_oct_integer));
             } else if(Optional lt_dec_integer = match(Token_Type::lt_dec_integer)) {
                 snots.push_back(ANTON_MOV(*lt_dec_integer));
             } else if(Optional lt_hex_integer = match(Token_Type::lt_hex_integer)) {
