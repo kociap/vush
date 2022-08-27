@@ -85,7 +85,7 @@ namespace vush {
         void ignore_whitespace_and_comments() {
             while(current != end) {
                 auto [token, source] = *current;
-                if(token.type == Token_Type::comment | token.type == Token_Type::whitespace) {
+                if(token.type == Token_Kind::comment | token.type == Token_Kind::whitespace) {
                     ++current;
                 } else {
                     break;
@@ -212,20 +212,20 @@ namespace vush {
         // Syntax_Token of the specified type or null_optional
         // if the next token's type is not type.
         //
-        [[nodiscard]] Optional<Syntax_Token> match(Token_Type const type) {
+        [[nodiscard]] Optional<Syntax_Token> match(Token_Kind const type) {
             Lexer_State const begin_state = _lexer.get_current_state_noskip();
             anton::Optional<Token_Data> const token_data = _lexer.peek_token();
             if(!token_data) {
                 return anton::null_optional;
             }
 
-            Token_Type const token_type = token_data->token.type;
-            if(token_type == type) {
+            Token_Kind const token_kind = token_data->token.type;
+            if(token_kind == type) {
                 _lexer.advance_token();
                 Lexer_State const end_state = _lexer.get_current_state_noskip();
                 anton::String7_View const value = token_data->token.value;
-                // Token_Type and Syntax_Node_Kind have overlapping values, therefore we convert one to the other via a cast.
-                Syntax_Node_Kind const syntax_kind = static_cast<Syntax_Node_Kind>(token_type);
+                // Token_Kind and Syntax_Node_Kind have overlapping values, therefore we convert one to the other via a cast.
+                Syntax_Node_Kind const syntax_kind = static_cast<Syntax_Node_Kind>(token_kind);
                 Source_Info const source = src_info(begin_state, end_state);
                 return Syntax_Token(syntax_kind, anton::String(value.begin(), value.end(), _allocator), source);
             } else {
@@ -239,13 +239,13 @@ namespace vush {
         //
         // Parameters:
         // type - the type of the token to match. Must not be
-        //        Token_Type::comment or Token_Type::whitespace.
+        //        Token_Kind::comment or Token_Kind::whitespace.
         //
         // Returns:
         // Syntax_Token of the specified type or null_optional
         // if the next token's type is not type.
         //
-        [[nodiscard]] Optional<Syntax_Token> skipmatch(Token_Type const type) {
+        [[nodiscard]] Optional<Syntax_Token> skipmatch(Token_Kind const type) {
             _lexer.ignore_whitespace_and_comments();
             return match(type);
         }
@@ -267,9 +267,9 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            Token_Type const token_type = token_data->token.type;
+            Token_Kind const token_kind = token_data->token.type;
             anton::String7_View const token_value = token_data->token.value;
-            if(token_type == Token_Type::identifier && token_value == value) {
+            if(token_kind == Token_Kind::identifier && token_value == value) {
                 _lexer.advance_token();
                 Lexer_State const end_state = _lexer.get_current_state_noskip();
                 Source_Info const source = src_info(begin_state, end_state);
@@ -347,7 +347,7 @@ namespace vush {
 
         // match
         //
-        [[nodiscard]] Optional<Syntax_Token> match(Syntax_Node_Kind const result_type, Token_Type const tk_type1, Token_Type const tk_type2) {
+        [[nodiscard]] Optional<Syntax_Token> match(Syntax_Node_Kind const result_type, Token_Kind const tk_type1, Token_Kind const tk_type2) {
             Lexer_State const begin_state = _lexer.get_current_state_noskip();
             Optional tk1 = match(tk_type1);
             if(!tk1) {
@@ -366,8 +366,8 @@ namespace vush {
 
         // match
         //
-        [[nodiscard]] Optional<Syntax_Token> match(Syntax_Node_Kind const result_type, Token_Type const tk_type1, Token_Type const tk_type2,
-                                                   Token_Type const tk_type3) {
+        [[nodiscard]] Optional<Syntax_Token> match(Syntax_Node_Kind const result_type, Token_Kind const tk_type1, Token_Kind const tk_type2,
+                                                   Token_Kind const tk_type3) {
             Lexer_State const begin_state = _lexer.get_current_state_noskip();
             Optional tk1 = match(tk_type1);
             if(!tk1) {
@@ -392,15 +392,15 @@ namespace vush {
 
         // skipmatch
         //
-        [[nodiscard]] Optional<Syntax_Token> skipmatch(Syntax_Node_Kind const result_type, Token_Type const tk_type1, Token_Type const tk_type2) {
+        [[nodiscard]] Optional<Syntax_Token> skipmatch(Syntax_Node_Kind const result_type, Token_Kind const tk_type1, Token_Kind const tk_type2) {
             _lexer.ignore_whitespace_and_comments();
             return match(result_type, tk_type1, tk_type2);
         }
 
         // skipmatch
         //
-        [[nodiscard]] Optional<Syntax_Token> skipmatch(Syntax_Node_Kind const result_type, Token_Type const tk_type1, Token_Type const tk_type2,
-                                                       Token_Type const tk_type3) {
+        [[nodiscard]] Optional<Syntax_Token> skipmatch(Syntax_Node_Kind const result_type, Token_Kind const tk_type1, Token_Kind const tk_type2,
+                                                       Token_Kind const tk_type3) {
             _lexer.ignore_whitespace_and_comments();
             return match(result_type, tk_type1, tk_type2, tk_type3);
         }
@@ -426,9 +426,9 @@ namespace vush {
                     break;
                 }
 
-                Token_Type const token_type = token_data->token.type;
-                if(token_type == Token_Type::whitespace || token_type == Token_Type::comment || token_type == Token_Type::tk_colon ||
-                   token_type == Token_Type::tk_brace_close || token_type == Token_Type::tk_brace_open) {
+                Token_Kind const token_kind = token_data->token.type;
+                if(token_kind == Token_Kind::whitespace || token_kind == Token_Kind::comment || token_kind == Token_Kind::tk_colon ||
+                   token_kind == Token_Kind::tk_brace_close || token_kind == Token_Kind::tk_brace_open) {
                     break;
                 }
 
@@ -481,7 +481,7 @@ namespace vush {
         Optional<Syntax_Node> try_decl_block() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional tk_brace_open = match(Token_Type::tk_brace_open)) {
+            if(Optional tk_brace_open = match(Token_Kind::tk_brace_open)) {
                 snots.push_back(ANTON_MOV(*tk_brace_open));
             } else {
                 set_error(u8"expected '{'");
@@ -490,7 +490,7 @@ namespace vush {
             }
 
             while(true) {
-                if(Optional tk_brace_close = skipmatch(Token_Type::tk_brace_close)) {
+                if(Optional tk_brace_close = skipmatch(Token_Kind::tk_brace_close)) {
                     snots.push_back(ANTON_MOV(*tk_brace_close));
                     break;
                 }
@@ -515,7 +515,7 @@ namespace vush {
         Optional<Syntax_Node> try_decl_import() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional kw_import = match(Token_Type::kw_import)) {
+            if(Optional kw_import = match(Token_Kind::kw_import)) {
                 snots.push_back(ANTON_MOV(*kw_import));
             } else {
                 set_error(u8"expected 'import'");
@@ -538,7 +538,7 @@ namespace vush {
         Optional<Syntax_Node> try_decl_if() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional kw_if = match(Token_Type::kw_if)) {
+            if(Optional kw_if = match(Token_Kind::kw_if)) {
                 snots.push_back(ANTON_MOV(*kw_if));
             } else {
                 set_error(u8"expected 'if'");
@@ -560,7 +560,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional kw_else = skipmatch(Token_Type::kw_else)) {
+            if(Optional kw_else = skipmatch(Token_Kind::kw_else)) {
                 snots.push_back(ANTON_MOV(*kw_else));
                 if(Optional decl_if = try_decl_if()) {
                     snots.push_back(ANTON_MOV(*decl_if));
@@ -580,7 +580,7 @@ namespace vush {
         Optional<Syntax_Node> try_decl_constant() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional kw_const = match(Token_Type::kw_const)) {
+            if(Optional kw_const = match(Token_Kind::kw_const)) {
                 snots.push_back(ANTON_MOV(*kw_const));
             } else {
                 set_error(u8"expected 'const'");
@@ -595,7 +595,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional identifier = skipmatch(Token_Type::identifier)) {
+            if(Optional identifier = skipmatch(Token_Kind::identifier)) {
                 snots.push_back(ANTON_MOV(*identifier));
             } else {
                 set_error(u8"expected variable identifier");
@@ -603,7 +603,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional tk_equals = skipmatch(Token_Type::tk_equals)) {
+            if(Optional tk_equals = skipmatch(Token_Kind::tk_equals)) {
                 snots.push_back(ANTON_MOV(*tk_equals));
                 if(Optional initializer = try_expression()) {
                     snots.push_back(ANTON_MOV(*initializer));
@@ -613,7 +613,7 @@ namespace vush {
                 }
             }
 
-            if(Optional tk_semicolon = skipmatch(Token_Type::tk_semicolon)) {
+            if(Optional tk_semicolon = skipmatch(Token_Kind::tk_semicolon)) {
                 snots.push_back(ANTON_MOV(*tk_semicolon));
             } else {
                 set_error(u8"expected ';' after constant declaration");
@@ -648,7 +648,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional identifier = skipmatch(Token_Type::identifier)) {
+            if(Optional identifier = skipmatch(Token_Kind::identifier)) {
                 snots.push_back(ANTON_MOV(*identifier));
             } else {
                 set_error(u8"expected variable identifier");
@@ -656,7 +656,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional tk_equals = skipmatch(Token_Type::tk_equals)) {
+            if(Optional tk_equals = skipmatch(Token_Kind::tk_equals)) {
                 snots.push_back(ANTON_MOV(*tk_equals));
                 if(Optional initializer = try_expression()) {
                     snots.push_back(ANTON_MOV(*initializer));
@@ -666,7 +666,7 @@ namespace vush {
                 }
             }
 
-            if(Optional tk_semicolon = skipmatch(Token_Type::tk_semicolon)) {
+            if(Optional tk_semicolon = skipmatch(Token_Kind::tk_semicolon)) {
                 snots.push_back(ANTON_MOV(*tk_semicolon));
             } else {
                 set_error(u8"expected ';' after member declaration");
@@ -682,7 +682,7 @@ namespace vush {
         Optional<Syntax_Node> try_struct_member_block() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional tk_brace_open = match(Token_Type::tk_brace_open)) {
+            if(Optional tk_brace_open = match(Token_Kind::tk_brace_open)) {
                 snots.push_back(ANTON_MOV(*tk_brace_open));
             } else {
                 set_error(u8"expected '{'");
@@ -691,7 +691,7 @@ namespace vush {
             }
 
             while(true) {
-                if(Optional tk_brace_close = skipmatch(Token_Type::tk_brace_close)) {
+                if(Optional tk_brace_close = skipmatch(Token_Kind::tk_brace_close)) {
                     snots.push_back(ANTON_MOV(*tk_brace_close));
                     break;
                 }
@@ -716,7 +716,7 @@ namespace vush {
         Optional<Syntax_Node> try_decl_struct() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional kw_struct = match(Token_Type::kw_struct)) {
+            if(Optional kw_struct = match(Token_Kind::kw_struct)) {
                 snots.push_back(ANTON_MOV(*kw_struct));
             } else {
                 set_error(u8"expected 'struct'");
@@ -724,7 +724,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional identifier = skipmatch(Token_Type::identifier)) {
+            if(Optional identifier = skipmatch(Token_Kind::identifier)) {
                 snots.push_back(ANTON_MOV(*identifier));
             } else {
                 set_error(u8"expected struct name");
@@ -754,7 +754,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional tk_colon = match(Token_Type::tk_colon)) {
+            if(Optional tk_colon = match(Token_Kind::tk_colon)) {
                 snots.push_back(ANTON_MOV(*tk_colon));
             } else {
                 set_error(u8"expected ':'"_sv);
@@ -782,7 +782,7 @@ namespace vush {
         Optional<Syntax_Node> try_setting_block() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional tk_brace_open = match(Token_Type::tk_brace_open)) {
+            if(Optional tk_brace_open = match(Token_Kind::tk_brace_open)) {
                 snots.push_back(ANTON_MOV(*tk_brace_open));
             } else {
                 set_error(u8"expected '{'");
@@ -791,7 +791,7 @@ namespace vush {
             }
 
             while(true) {
-                if(Optional tk_brace_close = skipmatch(Token_Type::tk_brace_close)) {
+                if(Optional tk_brace_close = skipmatch(Token_Kind::tk_brace_close)) {
                     snots.push_back(ANTON_MOV(*tk_brace_close));
                     break;
                 }
@@ -812,7 +812,7 @@ namespace vush {
         Optional<Syntax_Node> try_decl_settings() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional kw_settings = match(Token_Type::kw_settings)) {
+            if(Optional kw_settings = match(Token_Kind::kw_settings)) {
                 snots.push_back(ANTON_MOV(*kw_settings));
             } else {
                 set_error("expected 'settings'"_sv);
@@ -820,7 +820,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional pass = skipmatch(Token_Type::identifier)) {
+            if(Optional pass = skipmatch(Token_Kind::identifier)) {
                 snots.push_back(ANTON_MOV(*pass));
             } else {
                 _lexer.restore_state(begin_state);
@@ -842,7 +842,7 @@ namespace vush {
         Optional<Syntax_Node> try_attribute() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            Optional identifier = match(Token_Type::identifier);
+            Optional identifier = match(Token_Kind::identifier);
             if(!identifier) {
                 set_error("expected identifier"_sv);
                 _lexer.restore_state(begin_state);
@@ -852,7 +852,7 @@ namespace vush {
             if(identifier->value == attr_workgroup) {
                 Array<SNOT> snots{_allocator};
                 snots.push_back(ANTON_MOV(*identifier));
-                if(Optional tk_lparen = skipmatch(Token_Type::tk_lparen)) {
+                if(Optional tk_lparen = skipmatch(Token_Kind::tk_lparen)) {
                     snots.push_back(ANTON_MOV(*tk_lparen));
                 } else {
                     set_error(u8"expected '('");
@@ -867,7 +867,7 @@ namespace vush {
                     return anton::null_optional;
                 }
 
-                if(Optional y_comma = skipmatch(Token_Type::tk_comma)) {
+                if(Optional y_comma = skipmatch(Token_Kind::tk_comma)) {
                     snots.push_back(ANTON_MOV(*y_comma));
                     if(Optional y = try_expr_lt_integer()) {
                         snots.push_back(ANTON_MOV(*y));
@@ -876,7 +876,7 @@ namespace vush {
                         return anton::null_optional;
                     }
 
-                    if(Optional z_comma = skipmatch(Token_Type::tk_comma)) {
+                    if(Optional z_comma = skipmatch(Token_Kind::tk_comma)) {
                         snots.push_back(ANTON_MOV(*z_comma));
                         if(Optional z = try_expr_lt_integer()) {
                             snots.push_back(ANTON_MOV(*z));
@@ -887,7 +887,7 @@ namespace vush {
                     }
                 }
 
-                if(Optional tk_rparen = skipmatch(Token_Type::tk_rparen)) {
+                if(Optional tk_rparen = skipmatch(Token_Kind::tk_rparen)) {
                     snots.push_back(ANTON_MOV(*tk_rparen));
                 } else {
                     set_error(u8"expected ')'");
@@ -943,7 +943,7 @@ namespace vush {
         Optional<Syntax_Node> try_attribute_list() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional tk_lbracket = match(Token_Type::tk_lbracket)) {
+            if(Optional tk_lbracket = match(Token_Kind::tk_lbracket)) {
                 snots.push_back(ANTON_MOV(*tk_lbracket));
             } else {
                 set_error(u8"expected '['");
@@ -960,14 +960,14 @@ namespace vush {
                     break;
                 }
 
-                if(Optional tk_comma = skipmatch(Token_Type::tk_comma)) {
+                if(Optional tk_comma = skipmatch(Token_Kind::tk_comma)) {
                     snots.push_back(ANTON_MOV(*tk_comma));
                 } else {
                     break;
                 }
             }
 
-            if(Optional tk_rbracket = skipmatch(Token_Type::tk_rbracket)) {
+            if(Optional tk_rbracket = skipmatch(Token_Kind::tk_rbracket)) {
                 snots.push_back(ANTON_MOV(*tk_rbracket));
             } else {
                 _lexer.restore_state(begin_state);
@@ -994,7 +994,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional identifier = skipmatch(Token_Type::identifier)) {
+            if(Optional identifier = skipmatch(Token_Kind::identifier)) {
                 snots.push_back(ANTON_MOV(*identifier));
             } else {
                 set_error(u8"expected parameter identifier");
@@ -1002,9 +1002,9 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional kw_from = skipmatch(Token_Type::kw_from)) {
+            if(Optional kw_from = skipmatch(Token_Kind::kw_from)) {
                 snots.push_back(ANTON_MOV(*kw_from));
-                if(Optional source = skipmatch(Token_Type::identifier)) {
+                if(Optional source = skipmatch(Token_Kind::identifier)) {
                     snots.push_back(ANTON_MOV(*source));
                 } else {
                     set_error(u8"expected parameter source after 'from'");
@@ -1021,7 +1021,7 @@ namespace vush {
         Optional<Syntax_Node> try_func_parameter_if() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional kw_if = match(Token_Type::kw_if)) {
+            if(Optional kw_if = match(Token_Kind::kw_if)) {
                 snots.push_back(ANTON_MOV(*kw_if));
             } else {
                 set_error(u8"expected 'if'");
@@ -1036,7 +1036,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional tk_brace_open = skipmatch(Token_Type::tk_brace_open)) {
+            if(Optional tk_brace_open = skipmatch(Token_Kind::tk_brace_open)) {
                 snots.push_back(ANTON_MOV(*tk_brace_open));
             } else {
                 set_error(u8"expected '{'");
@@ -1051,7 +1051,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional tk_brace_close = skipmatch(Token_Type::tk_brace_close)) {
+            if(Optional tk_brace_close = skipmatch(Token_Kind::tk_brace_close)) {
                 snots.push_back(ANTON_MOV(*tk_brace_close));
             } else {
                 set_error(u8"expected '}'");
@@ -1059,12 +1059,12 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional kw_else = skipmatch(Token_Type::kw_else)) {
+            if(Optional kw_else = skipmatch(Token_Kind::kw_else)) {
                 snots.push_back(ANTON_MOV(*kw_else));
                 if(Optional param_if = try_func_parameter_if()) {
                     snots.push_back(ANTON_MOV(*param_if));
                 } else {
-                    if(Optional tk_brace_open = skipmatch(Token_Type::tk_brace_open)) {
+                    if(Optional tk_brace_open = skipmatch(Token_Kind::tk_brace_open)) {
                         snots.push_back(ANTON_MOV(*tk_brace_open));
                     } else {
                         set_error(u8"expected '{'");
@@ -1079,7 +1079,7 @@ namespace vush {
                         return anton::null_optional;
                     }
 
-                    if(Optional tk_brace_close = skipmatch(Token_Type::tk_brace_close)) {
+                    if(Optional tk_brace_close = skipmatch(Token_Kind::tk_brace_close)) {
                         snots.push_back(ANTON_MOV(*tk_brace_close));
                     } else {
                         set_error(u8"expected '}'");
@@ -1097,7 +1097,7 @@ namespace vush {
         Optional<Syntax_Node> try_func_parameter_list() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional tk_lparen = match(Token_Type::tk_lparen)) {
+            if(Optional tk_lparen = match(Token_Kind::tk_lparen)) {
                 snots.push_back(ANTON_MOV(*tk_lparen));
             } else {
                 set_error(u8"expected '('");
@@ -1106,7 +1106,7 @@ namespace vush {
             }
 
             // Match closing paren to allow empty parameter lists.
-            if(Optional tk_rparen = skipmatch(Token_Type::tk_rparen)) {
+            if(Optional tk_rparen = skipmatch(Token_Kind::tk_rparen)) {
                 snots.push_back(ANTON_MOV(*tk_rparen));
                 Lexer_State const end_state = _lexer.get_current_state_noskip();
                 Source_Info const source = src_info(begin_state, end_state);
@@ -1121,14 +1121,14 @@ namespace vush {
                     return anton::null_optional;
                 }
 
-                if(Optional tk_comma = skipmatch(Token_Type::tk_comma)) {
+                if(Optional tk_comma = skipmatch(Token_Kind::tk_comma)) {
                     snots.push_back(ANTON_MOV(*tk_comma));
                 } else {
                     break;
                 }
             }
 
-            if(Optional tk_rparen = skipmatch(Token_Type::tk_rparen)) {
+            if(Optional tk_rparen = skipmatch(Token_Kind::tk_rparen)) {
                 snots.push_back(ANTON_MOV(*tk_rparen));
             } else {
                 set_error(u8"expected ')' after function parameter list");
@@ -1161,7 +1161,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional pass_identifier = skipmatch(Token_Type::identifier)) {
+            if(Optional pass_identifier = skipmatch(Token_Kind::identifier)) {
                 snots.push_back(ANTON_MOV(*pass_identifier));
             } else {
                 set_error(u8"expected pass identifier");
@@ -1169,7 +1169,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional tk_colon2 = skipmatch(Syntax_Node_Kind::tk_colon2, Token_Type::tk_colon, Token_Type::tk_colon)) {
+            if(Optional tk_colon2 = skipmatch(Syntax_Node_Kind::tk_colon2, Token_Kind::tk_colon, Token_Kind::tk_colon)) {
                 snots.push_back(ANTON_MOV(*tk_colon2));
             } else {
                 set_error(u8"expected '::'");
@@ -1228,7 +1228,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional identifier = skipmatch(Token_Type::identifier)) {
+            if(Optional identifier = skipmatch(Token_Kind::identifier)) {
                 snots.push_back(ANTON_MOV(*identifier));
             } else {
                 set_error(u8"expected function identifier");
@@ -1319,7 +1319,7 @@ namespace vush {
         Optional<Syntax_Node> try_stmt_empty() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional tk_semicolon = match(Token_Type::tk_semicolon)) {
+            if(Optional tk_semicolon = match(Token_Kind::tk_semicolon)) {
                 snots.push_back(ANTON_MOV(*tk_semicolon));
             } else {
                 set_error("expected ';'"_sv);
@@ -1341,7 +1341,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional identifier = skipmatch(Token_Type::identifier)) {
+            if(Optional identifier = skipmatch(Token_Kind::identifier)) {
                 snots.push_back(ANTON_MOV(*identifier));
             } else {
                 set_error(u8"expected variable identifier");
@@ -1349,7 +1349,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional tk_equals = skipmatch(Token_Type::tk_equals)) {
+            if(Optional tk_equals = skipmatch(Token_Kind::tk_equals)) {
                 snots.push_back(ANTON_MOV(*tk_equals));
                 if(Optional initializer = try_expression()) {
                     snots.push_back(ANTON_MOV(*initializer));
@@ -1359,7 +1359,7 @@ namespace vush {
                 }
             }
 
-            if(Optional tk_semicolon = skipmatch(Token_Type::tk_semicolon)) {
+            if(Optional tk_semicolon = skipmatch(Token_Kind::tk_semicolon)) {
                 snots.push_back(ANTON_MOV(*tk_semicolon));
             } else {
                 set_error(u8"expected ';' after variable declaration");
@@ -1378,7 +1378,7 @@ namespace vush {
         Optional<Syntax_Node> try_stmt_block() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional tk_brace_open = match(Token_Type::tk_brace_open)) {
+            if(Optional tk_brace_open = match(Token_Kind::tk_brace_open)) {
                 snots.push_back(ANTON_MOV(*tk_brace_open));
             } else {
                 set_error(u8"expected '{'");
@@ -1387,7 +1387,7 @@ namespace vush {
             }
 
             while(true) {
-                if(Optional tk_brace_close = skipmatch(Token_Type::tk_brace_close)) {
+                if(Optional tk_brace_close = skipmatch(Token_Kind::tk_brace_close)) {
                     snots.push_back(ANTON_MOV(*tk_brace_close));
                     break;
                 }
@@ -1408,7 +1408,7 @@ namespace vush {
         Optional<Syntax_Node> try_stmt_if() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional kw_if = match(Token_Type::kw_if)) {
+            if(Optional kw_if = match(Token_Kind::kw_if)) {
                 snots.push_back(ANTON_MOV(*kw_if));
             } else {
                 set_error(u8"expected 'if'");
@@ -1430,7 +1430,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional kw_else = skipmatch(Token_Type::kw_else)) {
+            if(Optional kw_else = skipmatch(Token_Kind::kw_else)) {
                 snots.push_back(ANTON_MOV(*kw_else));
                 if(Optional stmt_if = try_stmt_if()) {
                     snots.emplace_back(ANTON_MOV(*stmt_if));
@@ -1455,7 +1455,7 @@ namespace vush {
                     Lexer_State const begin_state = _lexer.get_current_state();
                     Array<SNOT> snots{_allocator};
                     while(true) {
-                        if(Optional kw_default = skipmatch(Token_Type::kw_default)) {
+                        if(Optional kw_default = skipmatch(Token_Kind::kw_default)) {
                             Source_Info const source_info = kw_default->source_info;
                             Syntax_Node expr_default(Syntax_Node_Kind::expr_default, Array<SNOT>(_allocator, anton::variadic_construct, ANTON_MOV(*kw_default)),
                                                      source_info);
@@ -1471,14 +1471,14 @@ namespace vush {
                             return anton::null_optional;
                         }
 
-                        if(Optional tk_comma = skipmatch(Token_Type::tk_comma)) {
+                        if(Optional tk_comma = skipmatch(Token_Kind::tk_comma)) {
                             snots.push_back(ANTON_MOV(*tk_comma));
                         } else {
                             break;
                         }
                     }
 
-                    if(Optional tk_thick_arrow = skipmatch(Syntax_Node_Kind::tk_thick_arrow, Token_Type::tk_equals, Token_Type::tk_rangle)) {
+                    if(Optional tk_thick_arrow = skipmatch(Syntax_Node_Kind::tk_thick_arrow, Token_Kind::tk_equals, Token_Kind::tk_rangle)) {
                         snots.push_back(ANTON_MOV(*tk_thick_arrow));
                     } else {
                         set_error(u8"expected '=>'"_sv);
@@ -1500,7 +1500,7 @@ namespace vush {
 
                 Lexer_State const begin_state = _lexer.get_current_state();
                 Array<SNOT> snots{_allocator};
-                if(Optional tk_brace_close = match(Token_Type::tk_brace_open)) {
+                if(Optional tk_brace_close = match(Token_Kind::tk_brace_open)) {
                     snots.push_back(ANTON_MOV(*tk_brace_close));
                 } else {
                     set_error(u8"expected '{'");
@@ -1509,7 +1509,7 @@ namespace vush {
                 }
 
                 while(true) {
-                    if(Optional tk_brace_close = skipmatch(Token_Type::tk_brace_close)) {
+                    if(Optional tk_brace_close = skipmatch(Token_Kind::tk_brace_close)) {
                         snots.push_back(ANTON_MOV(*tk_brace_close));
                         break;
                     }
@@ -1529,7 +1529,7 @@ namespace vush {
 
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional kw_switch = match(Token_Type::kw_switch)) {
+            if(Optional kw_switch = match(Token_Kind::kw_switch)) {
                 snots.push_back(ANTON_MOV(*kw_switch));
             } else {
                 set_error(u8"expected 'switch'");
@@ -1567,7 +1567,7 @@ namespace vush {
                     return anton::null_optional;
                 }
 
-                if(Optional identifier = skipmatch(Token_Type::identifier)) {
+                if(Optional identifier = skipmatch(Token_Kind::identifier)) {
                     snots.push_back(ANTON_MOV(*identifier));
                 } else {
                     set_error("expected variable identifier");
@@ -1575,7 +1575,7 @@ namespace vush {
                     return anton::null_optional;
                 }
 
-                if(Optional tk_equals = skipmatch(Token_Type::tk_equals)) {
+                if(Optional tk_equals = skipmatch(Token_Kind::tk_equals)) {
                     snots.push_back(ANTON_MOV(*tk_equals));
                     if(Optional initializer = try_expression()) {
                         snots.push_back(ANTON_MOV(*initializer));
@@ -1592,7 +1592,7 @@ namespace vush {
 
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional kw_for = match(Token_Type::kw_for)) {
+            if(Optional kw_for = match(Token_Kind::kw_for)) {
                 snots.push_back(ANTON_MOV(*kw_for));
             } else {
                 set_error("expected 'for'");
@@ -1600,7 +1600,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional tk_lparen = skipmatch(Token_Type::tk_lparen)) {
+            if(Optional tk_lparen = skipmatch(Token_Kind::tk_lparen)) {
                 set_error("unexpected '(' after 'for'");
                 _lexer.restore_state(begin_state);
                 return anton::null_optional;
@@ -1610,7 +1610,7 @@ namespace vush {
                 snots.push_back(ANTON_MOV(*for_stmt_variable));
             }
 
-            if(Optional tk_semicolon = skipmatch(Token_Type::tk_semicolon)) {
+            if(Optional tk_semicolon = skipmatch(Token_Kind::tk_semicolon)) {
                 snots.push_back(ANTON_MOV(*tk_semicolon));
             } else {
                 set_error("expected ';'");
@@ -1624,7 +1624,7 @@ namespace vush {
                     Syntax_Node(Syntax_Node_Kind::for_condition, Array<SNOT>(_allocator, anton::variadic_construct, ANTON_MOV(*condition)), source_info));
             }
 
-            if(Optional tk_semicolon = skipmatch(Token_Type::tk_semicolon)) {
+            if(Optional tk_semicolon = skipmatch(Token_Kind::tk_semicolon)) {
                 snots.push_back(ANTON_MOV(*tk_semicolon));
             } else {
                 set_error("expected ';'");
@@ -1653,7 +1653,7 @@ namespace vush {
         Optional<Syntax_Node> try_stmt_while() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional kw_while = match(Token_Type::kw_while)) {
+            if(Optional kw_while = match(Token_Kind::kw_while)) {
                 snots.push_back(ANTON_MOV(*kw_while));
             } else {
                 set_error("expected 'while'");
@@ -1683,7 +1683,7 @@ namespace vush {
         Optional<Syntax_Node> try_stmt_do_while() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional kw_do = match(Token_Type::kw_do)) {
+            if(Optional kw_do = match(Token_Kind::kw_do)) {
                 snots.push_back(ANTON_MOV(*kw_do));
             } else {
                 set_error("expected 'do'");
@@ -1698,7 +1698,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional kw_while = skipmatch(Token_Type::kw_while)) {
+            if(Optional kw_while = skipmatch(Token_Kind::kw_while)) {
                 snots.push_back(ANTON_MOV(*kw_while));
             } else {
                 set_error("expected 'while'");
@@ -1713,7 +1713,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional tk_semicolon = skipmatch(Token_Type::tk_semicolon)) {
+            if(Optional tk_semicolon = skipmatch(Token_Kind::tk_semicolon)) {
                 snots.push_back(ANTON_MOV(*tk_semicolon));
             } else {
                 set_error("expected ';' after do-while statement");
@@ -1729,7 +1729,7 @@ namespace vush {
         Optional<Syntax_Node> try_stmt_return() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional kw_return = match(Token_Type::kw_return)) {
+            if(Optional kw_return = match(Token_Kind::kw_return)) {
                 snots.push_back(ANTON_MOV(*kw_return));
             } else {
                 set_error(u8"expected 'return'");
@@ -1743,7 +1743,7 @@ namespace vush {
                                             Array<SNOT>(_allocator, anton::variadic_construct, ANTON_MOV(*return_expression)), source_info));
             }
 
-            if(Optional tk_semicolon = skipmatch(Token_Type::tk_semicolon)) {
+            if(Optional tk_semicolon = skipmatch(Token_Kind::tk_semicolon)) {
                 snots.push_back(ANTON_MOV(*tk_semicolon));
             } else {
                 set_error(u8"expected ';' after return statement");
@@ -1759,7 +1759,7 @@ namespace vush {
         Optional<Syntax_Node> try_stmt_break() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional kw_break = match(Token_Type::kw_break)) {
+            if(Optional kw_break = match(Token_Kind::kw_break)) {
                 snots.push_back(ANTON_MOV(*kw_break));
             } else {
                 set_error(u8"expected 'break'");
@@ -1767,7 +1767,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional tk_semicolon = skipmatch(Token_Type::tk_semicolon)) {
+            if(Optional tk_semicolon = skipmatch(Token_Kind::tk_semicolon)) {
                 snots.push_back(ANTON_MOV(*tk_semicolon));
             } else {
                 set_error(u8"expected ';' after break statement");
@@ -1783,7 +1783,7 @@ namespace vush {
         Optional<Syntax_Node> try_stmt_continue() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional kw_continue = match(Token_Type::kw_continue)) {
+            if(Optional kw_continue = match(Token_Kind::kw_continue)) {
                 snots.push_back(ANTON_MOV(*kw_continue));
             } else {
                 set_error(u8"expected 'continue'");
@@ -1791,7 +1791,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional tk_semicolon = skipmatch(Token_Type::tk_semicolon)) {
+            if(Optional tk_semicolon = skipmatch(Token_Kind::tk_semicolon)) {
                 snots.push_back(ANTON_MOV(*tk_semicolon));
             } else {
                 set_error(u8"expected ';' after continue statement");
@@ -1807,7 +1807,7 @@ namespace vush {
         Optional<Syntax_Node> try_stmt_discard() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional kw_discard = match(Token_Type::kw_discard)) {
+            if(Optional kw_discard = match(Token_Kind::kw_discard)) {
                 snots.push_back(ANTON_MOV(*kw_discard));
             } else {
                 set_error(u8"expected 'discard'");
@@ -1815,7 +1815,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional tk_semicolon = skipmatch(Token_Type::tk_semicolon)) {
+            if(Optional tk_semicolon = skipmatch(Token_Kind::tk_semicolon)) {
                 snots.push_back(ANTON_MOV(*tk_semicolon));
             } else {
                 set_error(u8"expected ';' after discard statement");
@@ -1838,7 +1838,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional tk_semicolon = skipmatch(Token_Type::tk_semicolon)) {
+            if(Optional tk_semicolon = skipmatch(Token_Kind::tk_semicolon)) {
                 snots.push_back(ANTON_MOV(*tk_semicolon));
             } else {
                 set_error("expected ';'");
@@ -2006,102 +2006,102 @@ namespace vush {
                 // 5. Shift
                 // 6. Remaining operators (assignment, bitwise, relational, additive, multiplicative)
 
-                if(Optional op = match(Token_Type::tk_equals)) {
+                if(Optional op = match(Token_Kind::tk_equals)) {
                     return ANTON_MOV(op);
                 }
-                if(Optional op = match(Syntax_Node_Kind::tk_ampeq, Token_Type::tk_amp, Token_Type::tk_equals)) {
+                if(Optional op = match(Syntax_Node_Kind::tk_ampeq, Token_Kind::tk_amp, Token_Kind::tk_equals)) {
                     return ANTON_MOV(op);
                 }
-                if(Optional op = match(Syntax_Node_Kind::tk_pipeeq, Token_Type::tk_pipe, Token_Type::tk_equals)) {
+                if(Optional op = match(Syntax_Node_Kind::tk_pipeeq, Token_Kind::tk_pipe, Token_Kind::tk_equals)) {
                     return ANTON_MOV(op);
                 }
-                if(Optional op = match(Syntax_Node_Kind::tk_hateq, Token_Type::tk_hat, Token_Type::tk_equals)) {
+                if(Optional op = match(Syntax_Node_Kind::tk_hateq, Token_Kind::tk_hat, Token_Kind::tk_equals)) {
                     return ANTON_MOV(op);
                 }
-                if(Optional op = match(Syntax_Node_Kind::tk_shleq, Token_Type::tk_langle, Token_Type::tk_langle, Token_Type::tk_equals)) {
+                if(Optional op = match(Syntax_Node_Kind::tk_shleq, Token_Kind::tk_langle, Token_Kind::tk_langle, Token_Kind::tk_equals)) {
                     return ANTON_MOV(op);
                 }
-                if(Optional op = match(Syntax_Node_Kind::tk_shreq, Token_Type::tk_rangle, Token_Type::tk_rangle, Token_Type::tk_equals)) {
+                if(Optional op = match(Syntax_Node_Kind::tk_shreq, Token_Kind::tk_rangle, Token_Kind::tk_rangle, Token_Kind::tk_equals)) {
                     return ANTON_MOV(op);
                 }
-                if(Optional op = match(Syntax_Node_Kind::tk_percenteq, Token_Type::tk_percent, Token_Type::tk_equals)) {
+                if(Optional op = match(Syntax_Node_Kind::tk_percenteq, Token_Kind::tk_percent, Token_Kind::tk_equals)) {
                     return ANTON_MOV(op);
                 }
-                if(Optional op = match(Syntax_Node_Kind::tk_slasheq, Token_Type::tk_slash, Token_Type::tk_equals)) {
+                if(Optional op = match(Syntax_Node_Kind::tk_slasheq, Token_Kind::tk_slash, Token_Kind::tk_equals)) {
                     return ANTON_MOV(op);
                 }
-                if(Optional op = match(Syntax_Node_Kind::tk_asteriskeq, Token_Type::tk_asterisk, Token_Type::tk_equals)) {
+                if(Optional op = match(Syntax_Node_Kind::tk_asteriskeq, Token_Kind::tk_asterisk, Token_Kind::tk_equals)) {
                     return ANTON_MOV(op);
                 }
-                if(Optional op = match(Syntax_Node_Kind::tk_pluseq, Token_Type::tk_plus, Token_Type::tk_equals)) {
+                if(Optional op = match(Syntax_Node_Kind::tk_pluseq, Token_Kind::tk_plus, Token_Kind::tk_equals)) {
                     return ANTON_MOV(op);
                 }
-                if(Optional op = match(Syntax_Node_Kind::tk_minuseq, Token_Type::tk_minus, Token_Type::tk_equals)) {
-                    return ANTON_MOV(op);
-                }
-
-                if(Optional op = match(Syntax_Node_Kind::tk_amp2, Token_Type::tk_amp, Token_Type::tk_amp)) {
-                    return ANTON_MOV(op);
-                }
-                if(Optional op = match(Syntax_Node_Kind::tk_pipe2, Token_Type::tk_pipe, Token_Type::tk_pipe)) {
-                    return ANTON_MOV(op);
-                }
-                if(Optional op = match(Syntax_Node_Kind::tk_hat2, Token_Type::tk_hat, Token_Type::tk_hat)) {
+                if(Optional op = match(Syntax_Node_Kind::tk_minuseq, Token_Kind::tk_minus, Token_Kind::tk_equals)) {
                     return ANTON_MOV(op);
                 }
 
-                if(Optional op = match(Syntax_Node_Kind::tk_eq2, Token_Type::tk_equals, Token_Type::tk_equals)) {
+                if(Optional op = match(Syntax_Node_Kind::tk_amp2, Token_Kind::tk_amp, Token_Kind::tk_amp)) {
                     return ANTON_MOV(op);
                 }
-                if(Optional op = match(Syntax_Node_Kind::tk_neq, Token_Type::tk_bang, Token_Type::tk_equals)) {
+                if(Optional op = match(Syntax_Node_Kind::tk_pipe2, Token_Kind::tk_pipe, Token_Kind::tk_pipe)) {
                     return ANTON_MOV(op);
                 }
-
-                if(Optional op = match(Syntax_Node_Kind::tk_lteq, Token_Type::tk_langle, Token_Type::tk_equals)) {
-                    return ANTON_MOV(op);
-                }
-                if(Optional op = match(Syntax_Node_Kind::tk_gteq, Token_Type::tk_rangle, Token_Type::tk_equals)) {
+                if(Optional op = match(Syntax_Node_Kind::tk_hat2, Token_Kind::tk_hat, Token_Kind::tk_hat)) {
                     return ANTON_MOV(op);
                 }
 
-                if(Optional op = match(Syntax_Node_Kind::tk_shl, Token_Type::tk_langle, Token_Type::tk_langle)) {
+                if(Optional op = match(Syntax_Node_Kind::tk_eq2, Token_Kind::tk_equals, Token_Kind::tk_equals)) {
                     return ANTON_MOV(op);
                 }
-                if(Optional op = match(Syntax_Node_Kind::tk_shr, Token_Type::tk_rangle, Token_Type::tk_rangle)) {
+                if(Optional op = match(Syntax_Node_Kind::tk_neq, Token_Kind::tk_bang, Token_Kind::tk_equals)) {
                     return ANTON_MOV(op);
                 }
 
-                if(Optional op = match(Token_Type::tk_equals)) {
+                if(Optional op = match(Syntax_Node_Kind::tk_lteq, Token_Kind::tk_langle, Token_Kind::tk_equals)) {
                     return ANTON_MOV(op);
                 }
-                if(Optional op = match(Token_Type::tk_amp)) {
+                if(Optional op = match(Syntax_Node_Kind::tk_gteq, Token_Kind::tk_rangle, Token_Kind::tk_equals)) {
                     return ANTON_MOV(op);
                 }
-                if(Optional op = match(Token_Type::tk_hat)) {
+
+                if(Optional op = match(Syntax_Node_Kind::tk_shl, Token_Kind::tk_langle, Token_Kind::tk_langle)) {
                     return ANTON_MOV(op);
                 }
-                if(Optional op = match(Token_Type::tk_pipe)) {
+                if(Optional op = match(Syntax_Node_Kind::tk_shr, Token_Kind::tk_rangle, Token_Kind::tk_rangle)) {
                     return ANTON_MOV(op);
                 }
-                if(Optional op = match(Token_Type::tk_langle)) {
+
+                if(Optional op = match(Token_Kind::tk_equals)) {
                     return ANTON_MOV(op);
                 }
-                if(Optional op = match(Token_Type::tk_rangle)) {
+                if(Optional op = match(Token_Kind::tk_amp)) {
                     return ANTON_MOV(op);
                 }
-                if(Optional op = match(Token_Type::tk_plus)) {
+                if(Optional op = match(Token_Kind::tk_hat)) {
                     return ANTON_MOV(op);
                 }
-                if(Optional op = match(Token_Type::tk_minus)) {
+                if(Optional op = match(Token_Kind::tk_pipe)) {
                     return ANTON_MOV(op);
                 }
-                if(Optional op = match(Token_Type::tk_asterisk)) {
+                if(Optional op = match(Token_Kind::tk_langle)) {
                     return ANTON_MOV(op);
                 }
-                if(Optional op = match(Token_Type::tk_slash)) {
+                if(Optional op = match(Token_Kind::tk_rangle)) {
                     return ANTON_MOV(op);
                 }
-                if(Optional op = match(Token_Type::tk_percent)) {
+                if(Optional op = match(Token_Kind::tk_plus)) {
+                    return ANTON_MOV(op);
+                }
+                if(Optional op = match(Token_Kind::tk_minus)) {
+                    return ANTON_MOV(op);
+                }
+                if(Optional op = match(Token_Kind::tk_asterisk)) {
+                    return ANTON_MOV(op);
+                }
+                if(Optional op = match(Token_Kind::tk_slash)) {
+                    return ANTON_MOV(op);
+                }
+                if(Optional op = match(Token_Kind::tk_percent)) {
                     return ANTON_MOV(op);
                 }
 
@@ -2161,17 +2161,17 @@ namespace vush {
         Optional<Syntax_Node> try_expr_prefix() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional plus2 = match(Syntax_Node_Kind::tk_plus2, Token_Type::tk_plus, Token_Type::tk_plus)) {
+            if(Optional plus2 = match(Syntax_Node_Kind::tk_plus2, Token_Kind::tk_plus, Token_Kind::tk_plus)) {
                 snots.push_back(ANTON_MOV(*plus2));
-            } else if(Optional minus2 = match(Syntax_Node_Kind::tk_minus2, Token_Type::tk_minus, Token_Type::tk_minus)) {
+            } else if(Optional minus2 = match(Syntax_Node_Kind::tk_minus2, Token_Kind::tk_minus, Token_Kind::tk_minus)) {
                 snots.push_back(ANTON_MOV(*minus2));
-            } else if(Optional plus = match(Token_Type::tk_plus)) {
+            } else if(Optional plus = match(Token_Kind::tk_plus)) {
                 snots.push_back(ANTON_MOV(*plus));
-            } else if(Optional minus = match(Token_Type::tk_minus)) {
+            } else if(Optional minus = match(Token_Kind::tk_minus)) {
                 snots.push_back(ANTON_MOV(*minus));
-            } else if(Optional bang = match(Token_Type::tk_bang)) {
+            } else if(Optional bang = match(Token_Kind::tk_bang)) {
                 snots.push_back(ANTON_MOV(*bang));
-            } else if(Optional tilde = match(Token_Type::tk_tilde)) {
+            } else if(Optional tilde = match(Token_Kind::tk_tilde)) {
                 snots.push_back(ANTON_MOV(*tilde));
             } else {
                 return try_expr_postfix();
@@ -2198,8 +2198,8 @@ namespace vush {
             }
 
             while(true) {
-                if(Optional tk_dot = skipmatch(Token_Type::tk_dot)) {
-                    Optional identifier = skipmatch(Token_Type::identifier);
+                if(Optional tk_dot = skipmatch(Token_Kind::tk_dot)) {
+                    Optional identifier = skipmatch(Token_Kind::identifier);
                     if(!identifier) {
                         set_error(u8"expected identifier");
                         _lexer.restore_state(begin_state);
@@ -2213,14 +2213,14 @@ namespace vush {
                     Lexer_State const end_state = _lexer.get_current_state_noskip();
                     Source_Info const source = src_info(begin_state, end_state);
                     expr = Syntax_Node(Syntax_Node_Kind::expr_member_access, ANTON_MOV(snots), source);
-                } else if(Optional tk_lbracket = skipmatch(Token_Type::tk_lbracket)) {
+                } else if(Optional tk_lbracket = skipmatch(Token_Kind::tk_lbracket)) {
                     Optional index = try_expression();
                     if(!index) {
                         _lexer.restore_state(begin_state);
                         return anton::null_optional;
                     }
 
-                    Optional tk_rbracket = skipmatch(Token_Type::tk_rbracket);
+                    Optional tk_rbracket = skipmatch(Token_Kind::tk_rbracket);
                     if(!tk_rbracket) {
                         set_error(u8"expected ']'");
                         _lexer.restore_state(begin_state);
@@ -2234,14 +2234,14 @@ namespace vush {
                     Lexer_State const end_state = _lexer.get_current_state_noskip();
                     Source_Info const source = src_info(begin_state, end_state);
                     expr = Syntax_Node(Syntax_Node_Kind::expr_array_access, ANTON_MOV(snots), source);
-                } else if(Optional plus2 = skipmatch(Syntax_Node_Kind::tk_plus2, Token_Type::tk_plus, Token_Type::tk_plus)) {
+                } else if(Optional plus2 = skipmatch(Syntax_Node_Kind::tk_plus2, Token_Kind::tk_plus, Token_Kind::tk_plus)) {
                     Array<SNOT> snots{_allocator};
                     snots.push_back(ANTON_MOV(*expr));
                     snots.push_back(ANTON_MOV(*plus2));
                     Lexer_State const end_state = _lexer.get_current_state_noskip();
                     Source_Info const source = src_info(begin_state, end_state);
                     expr = Syntax_Node(Syntax_Node_Kind::expr_postfix, ANTON_MOV(snots), source);
-                } else if(Optional minus2 = skipmatch(Syntax_Node_Kind::tk_minus2, Token_Type::tk_minus, Token_Type::tk_minus)) {
+                } else if(Optional minus2 = skipmatch(Syntax_Node_Kind::tk_minus2, Token_Kind::tk_minus, Token_Kind::tk_minus)) {
                     Array<SNOT> snots{_allocator};
                     snots.push_back(ANTON_MOV(*expr));
                     snots.push_back(ANTON_MOV(*minus2));
@@ -2295,7 +2295,7 @@ namespace vush {
         Optional<Syntax_Node> try_expr_parentheses() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional tk_rparen = match(Token_Type::tk_lparen)) {
+            if(Optional tk_rparen = match(Token_Kind::tk_lparen)) {
                 snots.push_back(ANTON_MOV(*tk_rparen));
             } else {
                 set_error(u8"expected '('");
@@ -2310,7 +2310,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional tk_rparen = skipmatch(Token_Type::tk_rparen)) {
+            if(Optional tk_rparen = skipmatch(Token_Kind::tk_rparen)) {
                 snots.push_back(ANTON_MOV(*tk_rparen));
             } else {
                 set_error(u8"expected ')'");
@@ -2326,7 +2326,7 @@ namespace vush {
         Optional<Syntax_Node> try_expr_reinterpret() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional kw_reinterpret = match(Token_Type::kw_reinterpret)) {
+            if(Optional kw_reinterpret = match(Token_Kind::kw_reinterpret)) {
                 snots.push_back(ANTON_MOV(*kw_reinterpret));
             } else {
                 set_error(u8"expected 'reinterpret'");
@@ -2334,7 +2334,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional tk_langle = skipmatch(Token_Type::tk_langle)) {
+            if(Optional tk_langle = skipmatch(Token_Kind::tk_langle)) {
                 snots.push_back(ANTON_MOV(*tk_langle));
             } else {
                 set_error(u8"expected '<'");
@@ -2349,7 +2349,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional tk_rangle = skipmatch(Token_Type::tk_rangle)) {
+            if(Optional tk_rangle = skipmatch(Token_Kind::tk_rangle)) {
                 snots.push_back(ANTON_MOV(*tk_rangle));
             } else {
                 set_error(u8"expected '>'");
@@ -2357,7 +2357,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional tk_lparen = skipmatch(Token_Type::tk_lparen)) {
+            if(Optional tk_lparen = skipmatch(Token_Kind::tk_lparen)) {
                 snots.push_back(ANTON_MOV(*tk_lparen));
             } else {
                 set_error(u8"expected '('");
@@ -2372,7 +2372,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional tk_comma = skipmatch(Token_Type::tk_comma)) {
+            if(Optional tk_comma = skipmatch(Token_Kind::tk_comma)) {
                 snots.push_back(ANTON_MOV(*tk_comma));
             } else {
                 set_error(u8"expected ','");
@@ -2387,7 +2387,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional tk_rparen = skipmatch(Token_Type::tk_rparen)) {
+            if(Optional tk_rparen = skipmatch(Token_Kind::tk_rparen)) {
                 snots.push_back(ANTON_MOV(*tk_rparen));
             } else {
                 set_error(u8"expected ')'");
@@ -2403,7 +2403,7 @@ namespace vush {
         Optional<Syntax_Node> try_expr_block() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional tk_brace_open = match(Token_Type::tk_brace_open)) {
+            if(Optional tk_brace_open = match(Token_Kind::tk_brace_open)) {
                 snots.push_back(ANTON_MOV(*tk_brace_open));
             } else {
                 set_error(u8"expected '{'");
@@ -2418,7 +2418,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional tk_brace_close = skipmatch(Token_Type::tk_brace_close)) {
+            if(Optional tk_brace_close = skipmatch(Token_Kind::tk_brace_close)) {
                 snots.push_back(ANTON_MOV(*tk_brace_close));
             } else {
                 set_error(u8"expected '}'");
@@ -2434,7 +2434,7 @@ namespace vush {
         Optional<Syntax_Node> try_expr_if() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional kw_if = match(Token_Type::kw_if)) {
+            if(Optional kw_if = match(Token_Kind::kw_if)) {
                 snots.push_back(ANTON_MOV(*kw_if));
             } else {
                 set_error(u8"expected 'if'");
@@ -2456,7 +2456,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional kw_else = skipmatch(Token_Type::kw_else)) {
+            if(Optional kw_else = skipmatch(Token_Kind::kw_else)) {
                 snots.push_back(ANTON_MOV(*kw_else));
             } else {
                 set_error(u8"expected 'else");
@@ -2481,7 +2481,7 @@ namespace vush {
         Optional<Syntax_Node> try_call_arg_list() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional tk_lparen = match(Token_Type::tk_lparen)) {
+            if(Optional tk_lparen = match(Token_Kind::tk_lparen)) {
                 snots.push_back(ANTON_MOV(*tk_lparen));
             } else {
                 set_error(u8"expected '('");
@@ -2490,7 +2490,7 @@ namespace vush {
             }
 
             // Match closing paren to allow empty parameter lists.
-            if(Optional tk_rparen = skipmatch(Token_Type::tk_rparen)) {
+            if(Optional tk_rparen = skipmatch(Token_Kind::tk_rparen)) {
                 snots.push_back(ANTON_MOV(*tk_rparen));
                 Lexer_State const end_state = _lexer.get_current_state_noskip();
                 Source_Info const source = src_info(begin_state, end_state);
@@ -2505,14 +2505,14 @@ namespace vush {
                     return anton::null_optional;
                 }
 
-                if(Optional tk_comma = skipmatch(Token_Type::tk_comma)) {
+                if(Optional tk_comma = skipmatch(Token_Kind::tk_comma)) {
                     snots.push_back(ANTON_MOV(*tk_comma));
                 } else {
                     break;
                 }
             }
 
-            if(Optional tk_rparen = skipmatch(Token_Type::tk_rparen)) {
+            if(Optional tk_rparen = skipmatch(Token_Kind::tk_rparen)) {
                 snots.push_back(ANTON_MOV(*tk_rparen));
             } else {
                 set_error(u8"expected ')'");
@@ -2528,7 +2528,7 @@ namespace vush {
         Optional<Syntax_Node> try_expr_call() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional identifier = skipmatch(Token_Type::identifier)) {
+            if(Optional identifier = skipmatch(Token_Kind::identifier)) {
                 snots.push_back(ANTON_MOV(*identifier));
             } else {
                 set_error(u8"expected identifier");
@@ -2551,7 +2551,7 @@ namespace vush {
         Optional<Syntax_Node> try_expr_identifier() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional identifier = match(Token_Type::identifier)) {
+            if(Optional identifier = match(Token_Kind::identifier)) {
                 snots.push_back(ANTON_MOV(*identifier));
             } else {
                 set_error("expected identifier"_sv);
@@ -2565,7 +2565,7 @@ namespace vush {
         Optional<Syntax_Node> try_expr_lt_float() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional lt_float = match(Token_Type::lt_float)) {
+            if(Optional lt_float = match(Token_Kind::lt_float)) {
                 snots.push_back(ANTON_MOV(*lt_float));
             } else {
                 set_error("expected float literal"_sv);
@@ -2573,7 +2573,7 @@ namespace vush {
             }
 
             // We validate suffix on the literals in later stages.
-            if(Optional suffix = match(Token_Type::identifier)) {
+            if(Optional suffix = match(Token_Kind::identifier)) {
                 snots.push_back(ANTON_MOV(*suffix));
             }
 
@@ -2585,11 +2585,11 @@ namespace vush {
         Optional<Syntax_Node> try_expr_lt_integer() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional lt_bin_integer = match(Token_Type::lt_bin_integer)) {
+            if(Optional lt_bin_integer = match(Token_Kind::lt_bin_integer)) {
                 snots.push_back(ANTON_MOV(*lt_bin_integer));
-            } else if(Optional lt_dec_integer = match(Token_Type::lt_dec_integer)) {
+            } else if(Optional lt_dec_integer = match(Token_Kind::lt_dec_integer)) {
                 snots.push_back(ANTON_MOV(*lt_dec_integer));
-            } else if(Optional lt_hex_integer = match(Token_Type::lt_hex_integer)) {
+            } else if(Optional lt_hex_integer = match(Token_Kind::lt_hex_integer)) {
                 snots.push_back(ANTON_MOV(*lt_hex_integer));
             } else {
                 set_error("expected integer literal"_sv);
@@ -2597,7 +2597,7 @@ namespace vush {
             }
 
             // We validate suffix on the literals in later stages.
-            if(Optional suffix = match(Token_Type::identifier)) {
+            if(Optional suffix = match(Token_Kind::identifier)) {
                 snots.push_back(ANTON_MOV(*suffix));
             }
 
@@ -2609,7 +2609,7 @@ namespace vush {
         Optional<Syntax_Node> try_expr_lt_bool() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional lt_token = match(Token_Type::lt_bool)) {
+            if(Optional lt_token = match(Token_Kind::lt_bool)) {
                 snots.push_back(ANTON_MOV(*lt_token));
             } else {
                 set_error("expected bool literal"_sv);
@@ -2624,7 +2624,7 @@ namespace vush {
         Optional<Syntax_Node> try_expr_lt_string() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional lt_token = match(Token_Type::lt_string)) {
+            if(Optional lt_token = match(Token_Kind::lt_string)) {
                 snots.push_back(ANTON_MOV(*lt_token));
             } else {
                 set_error("expected string literal"_sv);
@@ -2640,7 +2640,7 @@ namespace vush {
             auto match_base_type = [this]() -> Optional<Syntax_Node> {
                 Lexer_State const begin_state = _lexer.get_current_state();
                 Array<SNOT> snots{_allocator};
-                if(Optional type = match(Token_Type::identifier)) {
+                if(Optional type = match(Token_Kind::identifier)) {
                     Lexer_State const end_state = _lexer.get_current_state_noskip();
                     anton::String_View const type_name = type->value;
                     snots.push_back(ANTON_MOV(*type));
@@ -2665,7 +2665,7 @@ namespace vush {
             }
 
             // We have to explicitly ignore whitespaces between the base type and the bracket.
-            Optional tk_lbracket = skipmatch(Token_Type::tk_lbracket);
+            Optional tk_lbracket = skipmatch(Token_Kind::tk_lbracket);
             if(!tk_lbracket) {
                 return base;
             }
@@ -2677,7 +2677,7 @@ namespace vush {
                 snots.push_back(ANTON_MOV(*array_size));
             }
 
-            if(Optional tk_rbracket = skipmatch(Token_Type::tk_rbracket)) {
+            if(Optional tk_rbracket = skipmatch(Token_Kind::tk_rbracket)) {
                 snots.push_back(ANTON_MOV(*tk_rbracket));
             } else {
                 set_error(u8"expected ']'");
@@ -2739,7 +2739,7 @@ namespace vush {
     //
     static void insert_comments_and_whitespace(Insert_Comments_And_Whitespace_Parameters const& p) {
         for(auto [token, source]: anton::Range(p.begin, p.end)) {
-            if(token.type == Token_Type::comment || token.type == Token_Type::whitespace) {
+            if(token.type == Token_Kind::comment || token.type == Token_Kind::whitespace) {
                 Source_Info source_info{
                     .source_path = p.source_path,
                     .line = source.line,

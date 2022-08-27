@@ -22,7 +22,7 @@ namespace vush {
     };
 
     // Syntax_Node_Kind
-    // Overlaps with lexer's Token_Type.
+    // Overlaps with lexer's Token_Kind.
     //
     enum struct Syntax_Node_Kind {
         identifier,
