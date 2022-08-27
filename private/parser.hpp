@@ -3,7 +3,7 @@
 #include <anton/expected.hpp>
 #include <anton/string_view.hpp>
 
-#include <ast.hpp>
+#include <ast2.hpp>
 #include <owning_ptr.hpp>
 
 namespace vush {

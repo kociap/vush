@@ -26,52 +26,6 @@
 namespace vush {
     using namespace anton::literals;
 
-    // import_source_code
-    // Imports source code.
-    //
-    // Parameters:
-    //         ctx -
-    // source_name -
-    // source_info -
-    //
-    // Returns:
-    // Declaration_List containing AST_Node's of the source (the Array will be
-    // empty if the source has already been imported before) or Error.
-    //
-    [[nodiscard]] static anton::Expected<Declaration_List, Error> import_source_code(Context& ctx, anton::String_View const source_name,
-                                                                                     anton::Optional<Source_Info> source_info = anton::null_optional) {
-        anton::Expected<Source_Request_Result, anton::String> source_request_res = ctx.source_request_cb(source_name, ctx.source_request_user_data);
-        if(!source_request_res) {
-            if(source_info) {
-                return {anton::expected_error, format_import_source_failed(ctx, *source_info, source_request_res.error())};
-            } else {
-                return {anton::expected_error, format_import_source_failed_no_location(ctx, source_request_res.error())};
-            }
-        }
-
-        Source_Request_Result& request_res = source_request_res.value();
-        // Ensure we're not importing the same source multiple times
-        auto iter = ctx.source_registry.find(request_res.source_name);
-        if(iter == ctx.source_registry.end()) {
-            Source_Data source{ANTON_MOV(request_res.source_name), ANTON_MOV(request_res.data)};
-            Parse_Syntax_Options options{.include_whitespace_and_comments = false};
-            anton::Expected<Array<SNOT>, Error> parse_result = parse_source_to_syntax_tree(ctx.allocator, source.name, source.data, options);
-            if(!parse_result) {
-                return {anton::expected_error, ANTON_MOV(parse_result.error())};
-            }
-
-            anton::Expected<Declaration_List, Error> transform_result = transform_syntax_tree_to_ast(ctx, parse_result.value());
-            if(!transform_result) {
-                return {anton::expected_error, ANTON_MOV(transform_result.error())};
-            }
-
-            ctx.source_registry.emplace(source.name, ANTON_MOV(source));
-            return {anton::expected_value, ANTON_MOV(transform_result.value())};
-        } else {
-            return {anton::expected_value, Declaration_List(ctx.allocator)};
-        }
-    }
-
     // check_and_add_symbol
     // Checks whether a symbol already exists and if not, adds it to the symbol table.
     // Otherwise returns an error diagnostic.
@@ -976,54 +930,6 @@ namespace vush {
         return {anton::expected_value};
     }
 
-    // resolve_imports_and_declaration_ifs
-    // Processes top-level ast to resolve import declarations and declaration ifs. Modifies ast.
-    //
-    static anton::Expected<void, anton::String> resolve_imports_and_declaration_ifs(Context& ctx, Declaration_List& ast) {
-        // TODO: Currently constants cannot be used in declaration ifs because they are not added to the symbol table as
-        //       we process the ast. Should we allow constants in declaration ifs?
-        for(i64 i = 0; i < ast.size();) {
-            bool const should_advance = ast[i]->node_type != AST_Node_Type::import_declaration && ast[i]->node_type != AST_Node_Type::declaration_if;
-            if(ast[i]->node_type == AST_Node_Type::import_declaration) {
-                Owning_Ptr<Import_Declaration> node{downcast, ANTON_MOV(ast[i])};
-                ast.erase(ast.begin() + i, ast.begin() + i + 1);
-                anton::Expected<Declaration_List, Error> import_result = import_source_code(ctx, node->path->value, node->source_info);
-                if(!import_result) {
-                    return {anton::expected_error, import_result.error().format(ctx.allocator, ctx.diagnostics.extended)};
-                }
-
-                // Insert the result of parsing into the ast.
-                Declaration_List& decls = import_result.value();
-                anton::Move_Iterator begin(decls.begin());
-                anton::Move_Iterator end(decls.end());
-                ast.insert(i, begin, end);
-            } else if(ast[i]->node_type == AST_Node_Type::declaration_if) {
-                Owning_Ptr<Declaration_If> node{downcast, ANTON_MOV(ast[i])};
-                ast.erase(ast.begin() + i, ast.begin() + i + 1);
-
-                anton::Expected<Expr_Value, anton::String> result = evaluate_const_expr(ctx, *node->condition);
-                if(!result) {
-                    return {anton::expected_error, ANTON_MOV(result.error())};
-                }
-
-                if(!is_implicitly_convertible_to_boolean(result.value().type)) {
-                    Source_Info const& src = node->condition->source_info;
-                    return {anton::expected_error, format_expression_not_implicitly_convertible_to_bool(ctx, src)};
-                }
-
-                // Insert one of the branches into the ast
-                Declaration_List& decls = (result.value().as_boolean() ? node->true_declarations : node->false_declarations);
-                anton::Move_Iterator begin(decls.begin());
-                anton::Move_Iterator end(decls.end());
-                ast.insert(i, begin, end);
-            }
-
-            i += should_advance;
-        }
-
-        return {anton::expected_value};
-    }
-
     struct Function_Call_Aggregator: public Recursive_AST_Matcher, public AST_Action {
         Array<Function_Call_Expression*> function_calls;
 
@@ -1311,100 +1217,6 @@ namespace vush {
         AST_Build_Result(Allocator* allocator): settings(allocator), stages(allocator), functions(allocator), structs_and_constants(allocator) {}
     };
 
-    // build_ast_from_sources
-    // Parse sources, process imports and declaration ifs, validate functions, fold constants, extract settings.
-    // Builds top-level symbol table.
-    //
-    [[nodiscard]] static anton::Expected<AST_Build_Result, anton::String> build_ast_from_sources(Context& ctx, anton::String_View const source_name) {
-        // Parse the entry source.
-        anton::Expected<Declaration_List, Error> import_result = import_source_code(ctx, source_name);
-        if(!import_result) {
-            return {anton::expected_error, import_result.error().format(ctx.allocator, ctx.diagnostics.extended)};
-        }
-
-        Declaration_List ast = ANTON_MOV(import_result.value());
-        if(anton::Expected<void, anton::String> res = resolve_imports_and_declaration_ifs(ctx, ast); !res) {
-            return {anton::expected_error, ANTON_MOV(res.error())};
-        }
-
-        // Check whether no declarations disallowed in the top-level AST are present.
-        for(auto& ast_node: ast) {
-            switch(ast_node->node_type) {
-                case AST_Node_Type::variable_declaration: {
-                    Variable_Declaration& node = static_cast<Variable_Declaration&>(*ast_node);
-                    return {anton::expected_error, format_variable_declaration_in_global_scope(ctx, node.source_info)};
-                } break;
-
-                default:
-                    break;
-            }
-        }
-
-        AST_Build_Result result{ctx.allocator};
-        Array<Owning_Ptr<Settings_Declaration>> settings{ctx.allocator};
-        Array<Owning_Ptr<Function_Declaration>> functions{ctx.allocator};
-        partition_ast(ast, result.stages, functions, result.structs_and_constants, settings);
-        gather_settings(ctx.allocator, result.settings, settings);
-        gather_overloads(ctx, result.functions, functions);
-        // Populate the symbol table and perform basic validation in the meantime.
-        for(auto& ast_node: result.structs_and_constants) {
-            switch(ast_node->node_type) {
-                case AST_Node_Type::struct_declaration: {
-                    Struct_Declaration& node = static_cast<Struct_Declaration&>(*ast_node);
-                    if(node.members.size() == 0) {
-                        return {anton::expected_error, format_empty_struct(ctx, node.identifier->source_info)};
-                    }
-
-                    add_symbol(ctx, node.identifier->value, &node);
-                } break;
-
-                case AST_Node_Type::constant_declaration: {
-                    Constant_Declaration& node = static_cast<Constant_Declaration&>(*ast_node);
-                    if(!node.initializer) {
-                        return {anton::expected_error, format_constant_missing_initializer(ctx, node.source_info)};
-                    }
-
-                    if(anton::Expected<void, anton::String> res = process_expression(ctx, node.initializer); !res) {
-                        return {anton::expected_error, ANTON_MOV(res.error())};
-                    }
-
-                    add_symbol(ctx, node.identifier->value, &node);
-                } break;
-
-                default:
-                    ANTON_UNREACHABLE();
-                    break;
-            }
-        }
-
-        for(auto& overloaded_fn: result.functions) {
-            add_symbol(ctx, overloaded_fn->identifier->value, overloaded_fn.get());
-        }
-
-        for(auto& overloaded_fn: result.functions) {
-            anton::Expected<void, anton::String> res = process_overloads(ctx, *overloaded_fn);
-            if(!res) {
-                return {anton::expected_error, ANTON_MOV(res.error())};
-            }
-
-            for(auto& fn: overloaded_fn->overloads) {
-                anton::Expected<void, anton::String> fn_res = process_function(ctx, *fn);
-                if(!fn_res) {
-                    return {anton::expected_error, ANTON_MOV(fn_res.error())};
-                }
-            }
-        }
-
-        for(auto& fn: result.stages) {
-            anton::Expected<void, anton::String> res = process_function(ctx, *fn);
-            if(!res) {
-                return {anton::expected_error, ANTON_MOV(res.error())};
-            }
-        }
-
-        return {anton::expected_value, ANTON_MOV(result)};
-    }
-
     [[nodiscard]] static anton::Expected<Array<Pass_Context>, anton::String>
     build_pass_contexts(Context const& ctx, anton::Slice<Owning_Ptr<Pass_Stage_Declaration> const> const stage_declarations) {
         Array<Pass_Context> passes{ctx.allocator};
@@ -1538,75 +1350,145 @@ namespace vush {
             constant_defines.push_back(ANTON_MOV(decl));
         }
 
-        Builtin_Declarations builtins = get_builtin_declarations(ctx);
-        for(auto& fn: builtins.functions) {
-            anton::Expected<void, anton::String> result = check_and_add_symbol(ctx, fn->identifier->value, fn.get());
-            if(!result) {
-                return {anton::expected_error, ANTON_MOV(result.error())};
-            }
+        anton::Slice<ast::Decl_Overloaded_Function const* const> builtin_functions = get_builtin_functions_declarations();
+        for(auto const fn: builtin_functions) {
+            // anton::Expected<void, anton::String> result = check_and_add_symbol(ctx, fn->identifier->value, fn);
+            // if(!result) {
+            //     return {anton::expected_error, ANTON_MOV(result.error())};
+            // }
         }
 
-        for(auto& var: builtins.variables) {
-            anton::Expected<void, anton::String> result = check_and_add_symbol(ctx, var->identifier->value, var.get());
-            if(!result) {
-                return {anton::expected_error, ANTON_MOV(result.error())};
-            }
+        anton::Expected<ast::Decl_List, Error> import_result = import_source_code(ctx, config.source_name);
+        if(!import_result) {
+            return {anton::expected_error, import_result.error().format(ctx.allocator, ctx.diagnostics.extended)};
         }
 
-        anton::Expected<AST_Build_Result, anton::String> build_res = build_ast_from_sources(ctx, config.source_name);
-        if(!build_res) {
-            return {anton::expected_error, ANTON_MOV(build_res.error())};
-        }
+        return {anton::expected_error, anton::String{"unimplemented", ctx.allocator}};
 
-        AST_Build_Result& ast = build_res.value();
-        anton::Expected<Array<Pass_Context>, anton::String> pass_build_res = build_pass_contexts(ctx, ast.stages);
-        if(!pass_build_res) {
-            return {anton::expected_error, ANTON_MOV(pass_build_res.error())};
-        }
+        // // Check whether no declarations disallowed in the top-level AST are present.
+        // for(auto& ast_node: ast) {
+        //     switch(ast_node->node_type) {
+        //         case AST_Node_Type::variable_declaration: {
+        //             Variable_Declaration& node = static_cast<Variable_Declaration&>(*ast_node);
+        //             return {anton::expected_error, format_variable_declaration_in_global_scope(ctx, node.source_info)};
+        //         } break;
 
-        anton::Slice<Pass_Context> const passes = pass_build_res.value();
-        anton::Expected<void, anton::String> pass_validation_res = validate_passes(ctx, passes);
-        if(!pass_validation_res) {
-            return {anton::expected_error, ANTON_MOV(pass_validation_res.error())};
-        }
+        //         default:
+        //             break;
+        //     }
+        // }
 
-        anton::Slice<Pass_Settings const> const settings = ast.settings;
-        // Request source definitions for implicit sources.
-        for(Pass_Context& pass: passes) {
-            Pass_Settings const* const this_pass_settings =
-                anton::find_if(settings.begin(), settings.end(), [&name = pass.name](Pass_Settings const& settings) { return settings.pass_name == name; });
-            anton::Slice<Setting_Key_Value const> skv;
-            if(this_pass_settings != settings.end()) {
-                skv = this_pass_settings->settings;
-            }
+        // AST_Build_Result result{ctx.allocator};
+        // Array<Owning_Ptr<Settings_Declaration>> settings{ctx.allocator};
+        // Array<Owning_Ptr<Function_Declaration>> functions{ctx.allocator};
+        // partition_ast(ast, result.stages, functions, result.structs_and_constants, settings);
+        // gather_settings(ctx.allocator, result.settings, settings);
+        // gather_overloads(ctx, result.functions, functions);
+        // // Populate the symbol table and perform basic validation in the meantime.
+        // for(auto& ast_node: result.structs_and_constants) {
+        //     switch(ast_node->node_type) {
+        //         case AST_Node_Type::struct_declaration: {
+        //             Struct_Declaration& node = static_cast<Struct_Declaration&>(*ast_node);
+        //             if(node.members.size() == 0) {
+        //                 return {anton::expected_error, format_empty_struct(ctx, node.identifier->source_info)};
+        //             }
 
-            anton::Expected<void, anton::String> result = request_source_definitions(ctx, pass, skv);
-            if(!result) {
-                return {anton::expected_error, ANTON_MOV(result.error())};
-            }
-        }
+        //             add_symbol(ctx, node.identifier->value, &node);
+        //         } break;
 
-        // TODO: Temporary
-        // Copy structs and constants over to each pass regardless of whether they are used or not.
-        for(Pass_Context& pass: passes) {
-            for(auto& node: ast.structs_and_constants) {
-                pass.structs_and_constants.emplace_back(node.get());
-            }
-        }
+        //         case AST_Node_Type::constant_declaration: {
+        //             Constant_Declaration& node = static_cast<Constant_Declaration&>(*ast_node);
+        //             if(!node.initializer) {
+        //                 return {anton::expected_error, format_constant_missing_initializer(ctx, node.source_info)};
+        //             }
 
-        // We persist the instantiated functions until the code generation is complete.
-        Array<Owning_Ptr<Function_Declaration>> instantiated_functions{ctx.allocator};
-        // BREAKS THE SYMBOL TABLE!
-        // Make sure everything that requires the symbol table is done at this point.
-        perform_function_instantiations(ctx, passes, instantiated_functions);
+        //             if(anton::Expected<void, anton::String> res = process_expression(ctx, node.initializer); !res) {
+        //                 return {anton::expected_error, ANTON_MOV(res.error())};
+        //             }
 
-        Codegen_Data codegen_data{config.extensions, passes};
-        anton::Expected<Array<Pass_Data>, anton::String> codegen_res = generate_glsl(ctx, codegen_data);
-        if(!codegen_res) {
-            return {anton::expected_error, ANTON_MOV(codegen_res.error())};
-        }
+        //             add_symbol(ctx, node.identifier->value, &node);
+        //         } break;
 
-        return {anton::expected_value, Build_Result{ANTON_MOV(ast.settings), ANTON_MOV(codegen_res.value())}};
+        //         default:
+        //             ANTON_UNREACHABLE();
+        //             break;
+        //     }
+        // }
+
+        // for(auto& overloaded_fn: result.functions) {
+        //     add_symbol(ctx, overloaded_fn->identifier->value, overloaded_fn.get());
+        // }
+
+        // for(auto& overloaded_fn: result.functions) {
+        //     anton::Expected<void, anton::String> res = process_overloads(ctx, *overloaded_fn);
+        //     if(!res) {
+        //         return {anton::expected_error, ANTON_MOV(res.error())};
+        //     }
+
+        //     for(auto& fn: overloaded_fn->overloads) {
+        //         anton::Expected<void, anton::String> fn_res = process_function(ctx, *fn);
+        //         if(!fn_res) {
+        //             return {anton::expected_error, ANTON_MOV(fn_res.error())};
+        //         }
+        //     }
+        // }
+
+        // for(auto& fn: result.stages) {
+        //     anton::Expected<void, anton::String> res = process_function(ctx, *fn);
+        //     if(!res) {
+        //         return {anton::expected_error, ANTON_MOV(res.error())};
+        //     }
+        // }
+
+        // AST_Build_Result& ast = build_res.value();
+        // anton::Expected<Array<Pass_Context>, anton::String> pass_build_res = build_pass_contexts(ctx, ast.stages);
+        // if(!pass_build_res) {
+        //     return {anton::expected_error, ANTON_MOV(pass_build_res.error())};
+        // }
+
+        // anton::Slice<Pass_Context> const passes = pass_build_res.value();
+        // anton::Expected<void, anton::String> pass_validation_res = validate_passes(ctx, passes);
+        // if(!pass_validation_res) {
+        //     return {anton::expected_error, ANTON_MOV(pass_validation_res.error())};
+        // }
+
+        // anton::Slice<Pass_Settings const> const settings = ast.settings;
+        // // Request source definitions for implicit sources.
+        // for(Pass_Context& pass: passes) {
+        //     Pass_Settings const* const this_pass_settings =
+        //         anton::find_if(settings.begin(), settings.end(), [&name = pass.name](Pass_Settings const& settings) { return settings.pass_name == name; });
+        //     anton::Slice<Setting_Key_Value const> skv;
+        //     if(this_pass_settings != settings.end()) {
+        //         skv = this_pass_settings->settings;
+        //     }
+
+        //     anton::Expected<void, anton::String> result = request_source_definitions(ctx, pass, skv);
+        //     if(!result) {
+        //         return {anton::expected_error, ANTON_MOV(result.error())};
+        //     }
+        // }
+
+        // // TODO: Temporary
+        // // Copy structs and constants over to each pass regardless of whether they are used or not.
+        // for(Pass_Context& pass: passes) {
+        //     for(auto& node: ast.structs_and_constants) {
+        //         pass.structs_and_constants.emplace_back(node.get());
+        //     }
+        // }
+
+        // // We persist the instantiated functions until the code generation is complete.
+        // Array<Owning_Ptr<Function_Declaration>> instantiated_functions{ctx.allocator};
+        // // BREAKS THE SYMBOL TABLE!
+        // // Make sure everything that requires the symbol table is done at this point.
+        // perform_function_instantiations(ctx, passes, instantiated_functions);
+
+        // Codegen_Data codegen_data{config.extensions, passes};
+        // anton::Expected<Array<Pass_Data>, anton::String> codegen_res = generate_glsl(ctx, codegen_data);
+        // if(!codegen_res) {
+        //     return {anton::expected_error, ANTON_MOV(codegen_res.error())};
+        // }
+
+        // return {anton::expected_value, Build_Result{ANTON_MOV(ast.settings), ANTON_MOV(codegen_res.value())}};
     }
 
     [[nodiscard]] static anton::Expected<anton::String, anton::String> resolve_import_path(anton::String_View const source_name,

@@ -1,9 +1,4 @@
-
 #include <parser.hpp>
-
-#include <ast.hpp>
-#include <lexer.hpp>
-#include <memory.hpp>
 
 #include <anton/assert.hpp>
 #include <anton/intrinsics.hpp>
@@ -14,6 +9,9 @@
 #include <anton/string7_view.hpp>
 #include <anton/type_traits/utility.hpp>
 
+#include <lexer.hpp>
+#include <memory.hpp>
+
 // TODO: Figure out a way to match operators that use overlapping symbols (+ and +=) in a clean way.
 // TODO: const types.
 // TODO: add constructors (currently function call which will break if we use an array type).
@@ -23,7 +21,11 @@ namespace vush {
     using namespace anton::literals;
 
     // attributes
-    static constexpr anton::String_View attrib_workgroup = u8"workgroup";
+    static constexpr anton::String_View attr_workgroup = "workgroup";
+    static constexpr anton::String_View attr_invariant = "invariant";
+    static constexpr anton::String_View attr_flat = "flat";
+    static constexpr anton::String_View attr_smooth = "smooth";
+    static constexpr anton::String_View attr_noperspective = "noperspective";
 
     // stages
 
@@ -456,8 +458,8 @@ namespace vush {
                 return ANTON_MOV(*decl_struct);
             }
 
-            if(Optional decl_pass_stage = try_decl_pass_stage()) {
-                return ANTON_MOV(*decl_pass_stage);
+            if(Optional decl_stage_function = try_decl_stage_function()) {
+                return ANTON_MOV(*decl_stage_function);
             }
 
             if(Optional decl_function = try_decl_function()) {
@@ -521,7 +523,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional string = try_string_literal()) {
+            if(Optional string = try_expr_lt_string()) {
                 snots.push_back(ANTON_MOV(*string));
             } else {
                 _lexer.restore_state(begin_state);
@@ -624,34 +626,19 @@ namespace vush {
             return Syntax_Node(Syntax_Node_Type::decl_constant, ANTON_MOV(snots), source);
         }
 
-        Optional<Syntax_Node> try_decl_struct_member() {
+        Optional<Syntax_Node> try_struct_member() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
+            // We allow many attribute lists to be present.
             // TODO: We've removed qualifier validation from the parser
             //       in order to postpone it to a later stage where we will be
             //       able to output more meaningful error diagnostics.
             while(true) {
-                if(Optional kw_invariant = skipmatch(Token_Type::kw_invariant)) {
-                    snots.push_back(ANTON_MOV(*kw_invariant));
-                    continue;
+                if(Optional attribute_list = try_attribute_list()) {
+                    snots.push_back(ANTON_MOV(*attribute_list));
+                } else {
+                    break;
                 }
-
-                if(Optional kw_smooth = skipmatch(Token_Type::kw_smooth)) {
-                    snots.push_back(ANTON_MOV(*kw_smooth));
-                    continue;
-                }
-
-                if(Optional kw_flat = skipmatch(Token_Type::kw_flat)) {
-                    snots.push_back(ANTON_MOV(*kw_flat));
-                    continue;
-                }
-
-                if(Optional kw_noperspective = skipmatch(Token_Type::kw_noperspective)) {
-                    snots.push_back(ANTON_MOV(*kw_noperspective));
-                    continue;
-                }
-
-                break;
             }
 
             if(Optional type = try_type()) {
@@ -689,10 +676,10 @@ namespace vush {
 
             Lexer_State const end_state = _lexer.get_current_state_noskip();
             Source_Info const source = src_info(begin_state, end_state);
-            return Syntax_Node(Syntax_Node_Type::decl_struct_member, ANTON_MOV(snots), source);
+            return Syntax_Node(Syntax_Node_Type::struct_member, ANTON_MOV(snots), source);
         }
 
-        Optional<Syntax_Node> try_decl_struct_member_block() {
+        Optional<Syntax_Node> try_struct_member_block() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
             if(Optional tk_brace_open = match(Token_Type::tk_brace_open)) {
@@ -711,10 +698,10 @@ namespace vush {
 
                 // TODO: Unsure whether we should match eof here to end the loop
                 //       once we reach the end of the token stream.
-                //       try_decl_struct_member in theory should error once it runs
+                //       try_struct_member in theory should error once it runs
                 //       out of tokens to match ending the loop.
 
-                if(Optional declaration = try_decl_struct_member()) {
+                if(Optional declaration = try_struct_member()) {
                     snots.push_back(ANTON_MOV(*declaration));
                 } else {
                     return anton::null_optional;
@@ -723,7 +710,7 @@ namespace vush {
 
             Lexer_State const end_state = _lexer.get_current_state_noskip();
             Source_Info const source = src_info(begin_state, end_state);
-            return Syntax_Node{Syntax_Node_Type::decl_struct_member_block, ANTON_MOV(snots), source};
+            return Syntax_Node{Syntax_Node_Type::struct_member_block, ANTON_MOV(snots), source};
         }
 
         Optional<Syntax_Node> try_decl_struct() {
@@ -745,8 +732,8 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional decl_struct_member_block = try_decl_struct_member_block()) {
-                snots.push_back(ANTON_MOV(*decl_struct_member_block));
+            if(Optional struct_member_block = try_struct_member_block()) {
+                snots.push_back(ANTON_MOV(*struct_member_block));
             } else {
                 _lexer.restore_state(begin_state);
                 return anton::null_optional;
@@ -862,7 +849,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(identifier->value == attrib_workgroup) {
+            if(identifier->value == attr_workgroup) {
                 Array<SNOT> snots{_allocator};
                 snots.push_back(ANTON_MOV(*identifier));
                 if(Optional tk_lparen = skipmatch(Token_Type::tk_lparen)) {
@@ -873,7 +860,7 @@ namespace vush {
                     return anton::null_optional;
                 }
 
-                if(Optional x = try_integer_literal()) {
+                if(Optional x = try_expr_lt_integer()) {
                     snots.push_back(ANTON_MOV(*x));
                 } else {
                     _lexer.restore_state(begin_state);
@@ -882,7 +869,7 @@ namespace vush {
 
                 if(Optional y_comma = skipmatch(Token_Type::tk_comma)) {
                     snots.push_back(ANTON_MOV(*y_comma));
-                    if(Optional y = try_integer_literal()) {
+                    if(Optional y = try_expr_lt_integer()) {
                         snots.push_back(ANTON_MOV(*y));
                     } else {
                         _lexer.restore_state(begin_state);
@@ -891,7 +878,7 @@ namespace vush {
 
                     if(Optional z_comma = skipmatch(Token_Type::tk_comma)) {
                         snots.push_back(ANTON_MOV(*z_comma));
-                        if(Optional z = try_integer_literal()) {
+                        if(Optional z = try_expr_lt_integer()) {
                             snots.push_back(ANTON_MOV(*z));
                         } else {
                             _lexer.restore_state(begin_state);
@@ -913,10 +900,42 @@ namespace vush {
                 return Syntax_Node(Syntax_Node_Type::attr_workgroup, ANTON_MOV(snots), source);
             }
 
+            if(identifier->value == attr_invariant) {
+                Array<SNOT> snots{_allocator};
+                snots.push_back(ANTON_MOV(*identifier));
+                Lexer_State const end_state = _lexer.get_current_state_noskip();
+                Source_Info const source = src_info(begin_state, end_state);
+                return Syntax_Node(Syntax_Node_Type::attr_invariant, ANTON_MOV(snots), source);
+            }
+
+            if(identifier->value == attr_flat) {
+                Array<SNOT> snots{_allocator};
+                snots.push_back(ANTON_MOV(*identifier));
+                Lexer_State const end_state = _lexer.get_current_state_noskip();
+                Source_Info const source = src_info(begin_state, end_state);
+                return Syntax_Node(Syntax_Node_Type::attr_flat, ANTON_MOV(snots), source);
+            }
+
+            if(identifier->value == attr_smooth) {
+                Array<SNOT> snots{_allocator};
+                snots.push_back(ANTON_MOV(*identifier));
+                Lexer_State const end_state = _lexer.get_current_state_noskip();
+                Source_Info const source = src_info(begin_state, end_state);
+                return Syntax_Node(Syntax_Node_Type::attr_smooth, ANTON_MOV(snots), source);
+            }
+
+            if(identifier->value == attr_noperspective) {
+                Array<SNOT> snots{_allocator};
+                snots.push_back(ANTON_MOV(*identifier));
+                Lexer_State const end_state = _lexer.get_current_state_noskip();
+                Source_Info const source = src_info(begin_state, end_state);
+                return Syntax_Node(Syntax_Node_Type::attr_noperspective, ANTON_MOV(snots), source);
+            }
+
             // TODO: Correctly parse unrecognized attributes and reject them
             //       in the later stages of compilation to improve the diagnostics.
 
-            set_error(u8"expected identifier");
+            set_error(u8"unrecognised attribute");
             _lexer.restore_state(begin_state);
             return anton::null_optional;
         }
@@ -1122,7 +1141,7 @@ namespace vush {
             return Syntax_Node(Syntax_Node_Type::func_parameter_list, ANTON_MOV(snots), source);
         }
 
-        Optional<Syntax_Node> try_decl_pass_stage() {
+        Optional<Syntax_Node> try_decl_stage_function() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
             // We allow many attribute lists to be present.
@@ -1186,7 +1205,7 @@ namespace vush {
 
             Lexer_State const end_state = _lexer.get_current_state_noskip();
             Source_Info const source = src_info(begin_state, end_state);
-            return Syntax_Node(Syntax_Node_Type::decl_pass_stage, ANTON_MOV(snots), source);
+            return Syntax_Node(Syntax_Node_Type::decl_stage_function, ANTON_MOV(snots), source);
         }
 
         Optional<Syntax_Node> try_decl_function() {
@@ -1431,15 +1450,22 @@ namespace vush {
         }
 
         Optional<Syntax_Node> try_stmt_switch() {
-            auto match_switch_case_list = [this]() -> Optional<Syntax_Node> {
-                auto match_switch_case = [this]() -> Optional<Syntax_Node> {
+            auto match_switch_arm_list = [this]() -> Optional<Syntax_Node> {
+                auto match_switch_arm = [this]() -> Optional<Syntax_Node> {
                     Lexer_State const begin_state = _lexer.get_current_state();
                     Array<SNOT> snots{_allocator};
                     while(true) {
                         if(Optional kw_default = skipmatch(Token_Type::kw_default)) {
-                            snots.push_back(ANTON_MOV(*kw_default));
-                        } else if(Optional literal = try_integer_literal()) {
-                            snots.push_back(ANTON_MOV(*literal));
+                            Source_Info const source_info = kw_default->source_info;
+                            Syntax_Node expr_default(Syntax_Node_Type::expr_default, Array<SNOT>(_allocator, anton::variadic_construct, ANTON_MOV(*kw_default)),
+                                                     source_info);
+                            Syntax_Node label(Syntax_Node_Type::switch_arm_label, Array<SNOT>(_allocator, anton::variadic_construct, ANTON_MOV(expr_default)),
+                                              source_info);
+                            snots.push_back(ANTON_MOV(label));
+                        } else if(Optional literal = try_expr_lt_integer()) {
+                            Source_Info const source_info = literal->source_info;
+                            snots.push_back(Syntax_Node(Syntax_Node_Type::switch_arm_label,
+                                                        Array<SNOT>(_allocator, anton::variadic_construct, ANTON_MOV(*literal)), source_info));
                         } else {
                             _lexer.restore_state(begin_state);
                             return anton::null_optional;
@@ -1469,7 +1495,7 @@ namespace vush {
 
                     Lexer_State const end_state = _lexer.get_current_state_noskip();
                     Source_Info const source = src_info(begin_state, end_state);
-                    return Syntax_Node(Syntax_Node_Type::switch_case, ANTON_MOV(snots), source);
+                    return Syntax_Node(Syntax_Node_Type::switch_arm, ANTON_MOV(snots), source);
                 };
 
                 Lexer_State const begin_state = _lexer.get_current_state();
@@ -1488,8 +1514,8 @@ namespace vush {
                         break;
                     }
 
-                    if(Optional switch_case = match_switch_case()) {
-                        snots.push_back(ANTON_MOV(*switch_case));
+                    if(Optional switch_arm = match_switch_arm()) {
+                        snots.push_back(ANTON_MOV(*switch_arm));
                     } else {
                         _lexer.restore_state(begin_state);
                         return anton::null_optional;
@@ -1498,7 +1524,7 @@ namespace vush {
 
                 Lexer_State const end_state = _lexer.get_current_state_noskip();
                 Source_Info const source = src_info(begin_state, end_state);
-                return Syntax_Node(Syntax_Node_Type::switch_case_list, ANTON_MOV(snots), source);
+                return Syntax_Node(Syntax_Node_Type::switch_arm_list, ANTON_MOV(snots), source);
             };
 
             Lexer_State const begin_state = _lexer.get_current_state();
@@ -1518,8 +1544,8 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional switch_case_list = match_switch_case_list()) {
-                snots.push_back(ANTON_MOV(*switch_case_list));
+            if(Optional switch_arm_list = match_switch_arm_list()) {
+                snots.push_back(ANTON_MOV(*switch_arm_list));
             } else {
                 _lexer.restore_state(begin_state);
                 return anton::null_optional;
@@ -1561,7 +1587,7 @@ namespace vush {
 
                 Lexer_State const end_state = _lexer.get_current_state_noskip();
                 Source_Info const source = src_info(begin_state, end_state);
-                return Syntax_Node(Syntax_Node_Type::stmt_variable, ANTON_MOV(snots), source);
+                return Syntax_Node(Syntax_Node_Type::for_variable, ANTON_MOV(snots), source);
             };
 
             Lexer_State const begin_state = _lexer.get_current_state();
@@ -1593,7 +1619,9 @@ namespace vush {
             }
 
             if(Optional condition = try_expression()) {
-                snots.push_back(ANTON_MOV(*condition));
+                Source_Info const source_info = condition->source_info;
+                snots.push_back(
+                    Syntax_Node(Syntax_Node_Type::for_condition, Array<SNOT>(_allocator, anton::variadic_construct, ANTON_MOV(*condition)), source_info));
             }
 
             if(Optional tk_semicolon = skipmatch(Token_Type::tk_semicolon)) {
@@ -1604,8 +1632,10 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional post_expression = try_expression()) {
-                snots.push_back(ANTON_MOV(*post_expression));
+            if(Optional expression = try_expression()) {
+                Source_Info const source_info = expression->source_info;
+                snots.push_back(
+                    Syntax_Node(Syntax_Node_Type::for_expression, Array<SNOT>(_allocator, anton::variadic_construct, ANTON_MOV(*expression)), source_info));
             }
 
             if(Optional statements = try_stmt_block()) {
@@ -1708,7 +1738,9 @@ namespace vush {
             }
 
             if(Optional return_expression = try_expression()) {
-                snots.push_back(ANTON_MOV(*return_expression));
+                Source_Info const source_info = return_expression->source_info;
+                snots.push_back(Syntax_Node(Syntax_Node_Type::return_expression,
+                                            Array<SNOT>(_allocator, anton::variadic_construct, ANTON_MOV(*return_expression)), source_info));
             }
 
             if(Optional tk_semicolon = skipmatch(Token_Type::tk_semicolon)) {
@@ -2237,15 +2269,15 @@ namespace vush {
                 return ANTON_MOV(expr_if);
             }
 
-            if(Optional lt_float = try_float_literal()) {
+            if(Optional lt_float = try_expr_lt_float()) {
                 return ANTON_MOV(lt_float);
             }
 
-            if(Optional lt_integer = try_integer_literal()) {
+            if(Optional lt_integer = try_expr_lt_integer()) {
                 return ANTON_MOV(lt_integer);
             }
 
-            if(Optional lt_bool = try_bool_literal()) {
+            if(Optional lt_bool = try_expr_lt_bool()) {
                 return ANTON_MOV(lt_bool);
             }
 
@@ -2530,7 +2562,7 @@ namespace vush {
             return Syntax_Node(Syntax_Node_Type::expr_identifier, ANTON_MOV(snots), source);
         }
 
-        Optional<Syntax_Node> try_float_literal() {
+        Optional<Syntax_Node> try_expr_lt_float() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
             if(Optional lt_float = match(Token_Type::lt_float)) {
@@ -2540,18 +2572,17 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            // TODO: Validate suffix on the literals.
-
+            // We validate suffix on the literals in later stages.
             if(Optional suffix = match(Token_Type::identifier)) {
                 snots.push_back(ANTON_MOV(*suffix));
             }
 
             Lexer_State const end_state = _lexer.get_current_state_noskip();
             Source_Info const source = src_info(begin_state, end_state);
-            return Syntax_Node(Syntax_Node_Type::expr_literal, ANTON_MOV(snots), source);
+            return Syntax_Node(Syntax_Node_Type::expr_lt_float, ANTON_MOV(snots), source);
         }
 
-        Optional<Syntax_Node> try_integer_literal() {
+        Optional<Syntax_Node> try_expr_lt_integer() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
             if(Optional lt_bin_integer = match(Token_Type::lt_bin_integer)) {
@@ -2567,18 +2598,17 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            // TODO: Validate suffix on the literals.
-
+            // We validate suffix on the literals in later stages.
             if(Optional suffix = match(Token_Type::identifier)) {
                 snots.push_back(ANTON_MOV(*suffix));
             }
 
             Lexer_State const end_state = _lexer.get_current_state_noskip();
             Source_Info const source = src_info(begin_state, end_state);
-            return Syntax_Node(Syntax_Node_Type::expr_literal, ANTON_MOV(snots), source);
+            return Syntax_Node(Syntax_Node_Type::expr_lt_integer, ANTON_MOV(snots), source);
         }
 
-        Optional<Syntax_Node> try_bool_literal() {
+        Optional<Syntax_Node> try_expr_lt_bool() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
             if(Optional lt_token = match(Token_Type::lt_bool)) {
@@ -2590,10 +2620,10 @@ namespace vush {
             }
             Lexer_State const end_state = _lexer.get_current_state_noskip();
             Source_Info const source = src_info(begin_state, end_state);
-            return Syntax_Node(Syntax_Node_Type::expr_literal, ANTON_MOV(snots), source);
+            return Syntax_Node(Syntax_Node_Type::expr_lt_bool, ANTON_MOV(snots), source);
         }
 
-        Optional<Syntax_Node> try_string_literal() {
+        Optional<Syntax_Node> try_expr_lt_string() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
             if(Optional lt_token = match(Token_Type::lt_string)) {
@@ -2605,7 +2635,7 @@ namespace vush {
             }
             Lexer_State const end_state = _lexer.get_current_state_noskip();
             Source_Info const source = src_info(begin_state, end_state);
-            return Syntax_Node(Syntax_Node_Type::expr_literal, ANTON_MOV(snots), source);
+            return Syntax_Node(Syntax_Node_Type::expr_lt_string, ANTON_MOV(snots), source);
         }
 
         Optional<Syntax_Token> try_identifier() {
@@ -2620,7 +2650,7 @@ namespace vush {
                     Lexer_State const end_state = _lexer.get_current_state_noskip();
                     anton::String_View const type_name = type->value;
                     snots.push_back(ANTON_MOV(*type));
-                    if(anton::Optional<Builtin_GLSL_Type> res = enumify_builtin_glsl_type(type_name); res) {
+                    if(anton::Optional<ast::GLSL_Type> res = ast::enumify_glsl_type(type_name); res) {
                         Source_Info const source = src_info(begin_state, end_state);
                         return Syntax_Node(Syntax_Node_Type::type_builtin, ANTON_MOV(snots), source);
                     } else {
@@ -2649,7 +2679,7 @@ namespace vush {
             snots.push_back(ANTON_MOV(*base));
             snots.push_back(ANTON_MOV(*tk_lbracket));
 
-            if(Optional array_size = try_integer_literal()) {
+            if(Optional array_size = try_expr_lt_integer()) {
                 snots.push_back(ANTON_MOV(*array_size));
             }
 

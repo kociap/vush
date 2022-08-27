@@ -120,6 +120,7 @@ namespace vush {
         Diagnostics_Options diagnostics;
     };
 
+    // TODO: Rename to 'Stage'.
     enum struct Stage_Type {
         vertex,
         fragment,

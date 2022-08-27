@@ -19,7 +19,8 @@ namespace vush {
     [[nodiscard]] anton::String format_called_symbol_does_not_name_function(Context const& ctx, Source_Info const& symbol);
     [[nodiscard]] anton::String format_symbol_redefinition(Context const& ctx, Source_Info const& first, Source_Info const& second);
 
-    [[nodiscard]] Error format_invalid_float_suffix(Context const& ctx, Source_Info const& source);
+    [[nodiscard]] Error err_invalid_integer_suffix(Context const& ctx, Source_Info const& source);
+    [[nodiscard]] Error err_invalid_float_suffix(Context const& ctx, Source_Info const& source);
     [[nodiscard]] anton::String format_integer_literal_overflow(Context const& ctx, Source_Info const& integer);
     [[nodiscard]] anton::String format_integer_literal_leading_zeros(Context const& ctx, Source_Info const& integer);
     [[nodiscard]] anton::String format_overload_identical_parameters_different_return_types(Context const& ctx, Function_Declaration const& overload1,
