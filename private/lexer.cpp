@@ -66,51 +66,51 @@ namespace vush {
         return (c == 'b') | (c == 'B') | (c == 'o') | (c == 'O') | (c == 'x') | (c == 'X');
     }
 
-    [[nodiscard]] static anton::Optional<Token_Type> is_keyword(anton::String7_View string) {
+    [[nodiscard]] static anton::Optional<Token_Kind> is_keyword(anton::String7_View string) {
         u64 const h = anton::hash(string);
         switch(h) {
             case anton::hash("if"_sv7):
-                return Token_Type::kw_if;
+                return Token_Kind::kw_if;
             case anton::hash("else"_sv7):
-                return Token_Type::kw_else;
+                return Token_Kind::kw_else;
             case anton::hash("switch"_sv7):
-                return Token_Type::kw_switch;
+                return Token_Kind::kw_switch;
             case anton::hash("default"_sv7):
-                return Token_Type::kw_default;
+                return Token_Kind::kw_default;
             case anton::hash("for"_sv7):
-                return Token_Type::kw_for;
+                return Token_Kind::kw_for;
             case anton::hash("while"_sv7):
-                return Token_Type::kw_while;
+                return Token_Kind::kw_while;
             case anton::hash("do"_sv7):
-                return Token_Type::kw_do;
+                return Token_Kind::kw_do;
             case anton::hash("return"_sv7):
-                return Token_Type::kw_return;
+                return Token_Kind::kw_return;
             case anton::hash("break"_sv7):
-                return Token_Type::kw_break;
+                return Token_Kind::kw_break;
             case anton::hash("continue"_sv7):
-                return Token_Type::kw_continue;
+                return Token_Kind::kw_continue;
             case anton::hash("discard"_sv7):
-                return Token_Type::kw_discard;
+                return Token_Kind::kw_discard;
             case anton::hash("from"_sv7):
-                return Token_Type::kw_from;
+                return Token_Kind::kw_from;
             case anton::hash("struct"_sv7):
-                return Token_Type::kw_struct;
+                return Token_Kind::kw_struct;
             case anton::hash("import"_sv7):
-                return Token_Type::kw_import;
+                return Token_Kind::kw_import;
             case anton::hash("const"_sv7):
-                return Token_Type::kw_const;
+                return Token_Kind::kw_const;
             case anton::hash("settings"_sv7):
-                return Token_Type::kw_settings;
+                return Token_Kind::kw_settings;
             case anton::hash("invariant"_sv7):
-                return Token_Type::kw_invariant;
+                return Token_Kind::kw_invariant;
             case anton::hash("smooth"_sv7):
-                return Token_Type::kw_smooth;
+                return Token_Kind::kw_smooth;
             case anton::hash("flat"_sv7):
-                return Token_Type::kw_flat;
+                return Token_Kind::kw_flat;
             case anton::hash("noperspective"_sv7):
-                return Token_Type::kw_noperspective;
+                return Token_Kind::kw_noperspective;
             case anton::hash("reinterpret"_sv7):
-                return Token_Type::kw_reinterpret;
+                return Token_Kind::kw_reinterpret;
             default:
                 return anton::null_optional;
         }
@@ -154,7 +154,7 @@ namespace vush {
                     }
                     ++current;
                 } while(current != end && is_whitespace(*current));
-                tokens.push_back(Token{Token_Type::whitespace, anton::String7_View{begin, current}});
+                tokens.push_back(Token{Token_Kind::whitespace, anton::String7_View{begin, current}});
                 token_sources.push_back(Token_Source_Info{state.offset, state.line, state.column, current - source_begin, line, column});
             } else if(c == '/' && (la == '/' || la == '*')) {
                 // Handle line and block comments.
@@ -189,7 +189,7 @@ namespace vush {
                     current += 2;
                 }
 
-                tokens.push_back(Token{Token_Type::comment, anton::String7_View{begin, current}});
+                tokens.push_back(Token{Token_Kind::comment, anton::String7_View{begin, current}});
                 token_sources.push_back(Token_Source_Info{state.offset, state.line, state.column, current - source_begin, line, column});
             } else if(is_first_identifier_character(c)) {
                 // Handle identifier.
@@ -204,13 +204,13 @@ namespace vush {
 
                 // Handle bool literals separately.
                 if(identifier == "true"_sv7 || identifier == "false"_sv7) {
-                    tokens.push_back(Token{Token_Type::lt_bool, identifier});
+                    tokens.push_back(Token{Token_Kind::lt_bool, identifier});
                 } else {
-                    anton::Optional<Token_Type> keyword = is_keyword(identifier);
+                    anton::Optional<Token_Kind> keyword = is_keyword(identifier);
                     if(keyword) {
                         tokens.push_back(Token{keyword.value(), identifier});
                     } else {
-                        tokens.push_back(Token{Token_Type::identifier, identifier});
+                        tokens.push_back(Token{Token_Kind::identifier, identifier});
                     }
                 }
                 token_sources.push_back(Token_Source_Info{state.offset, state.line, state.column, current - source_begin, line, column});
@@ -239,7 +239,7 @@ namespace vush {
                                 return {anton::expected_error, Error{}};
                             }
 
-                            tokens.push_back(Token{Token_Type::lt_bin_integer, anton::String7_View{begin, current}});
+                            tokens.push_back(Token{Token_Kind::lt_bin_integer, anton::String7_View{begin, current}});
                             token_sources.push_back(Token_Source_Info{state.offset, state.line, state.column, current - source_begin, line, column});
                         } break;
 
@@ -258,7 +258,7 @@ namespace vush {
                                 return {anton::expected_error, Error{}};
                             }
 
-                            tokens.push_back(Token{Token_Type::lt_bin_integer, anton::String7_View{begin, current}});
+                            tokens.push_back(Token{Token_Kind::lt_bin_integer, anton::String7_View{begin, current}});
                             token_sources.push_back(Token_Source_Info{state.offset, state.line, state.column, current - source_begin, line, column});
                         } break;
 
@@ -278,7 +278,7 @@ namespace vush {
                     // Otherwise we have encountered a float.
                     bool const end_or_not_float = current == end || (*current != '.' && *current != 'e' && *current != 'E');
                     if(end_or_not_float) {
-                        tokens.push_back(Token{Token_Type::lt_dec_integer, integer});
+                        tokens.push_back(Token{Token_Kind::lt_dec_integer, integer});
                         token_sources.push_back(Token_Source_Info{state.offset, state.line, state.column, current - source_begin, line, column});
                     } else {
                         // Match float literal.
@@ -328,7 +328,7 @@ namespace vush {
                         }
 
                         anton::String7_View const float_literal{float_begin, current};
-                        tokens.push_back(Token{Token_Type::lt_float, float_literal});
+                        tokens.push_back(Token{Token_Kind::lt_float, float_literal});
                         token_sources.push_back(Token_Source_Info{state.offset, state.line, state.column, current - source_begin, line, column});
                     }
                 }
@@ -368,85 +368,85 @@ namespace vush {
                     return {anton::expected_error, Error{}}; // u8"newlines are not allowed in string literals"_sv
                 }
 
-                tokens.push_back(Token{Token_Type::lt_string, anton::String7_View{begin, current}});
+                tokens.push_back(Token{Token_Kind::lt_string, anton::String7_View{begin, current}});
                 token_sources.push_back(Token_Source_Info{state.offset, state.line, state.column, current - source_begin, line, column});
             } else {
                 // Handle tokens.
                 Source_State const state{current - source_begin, line, column};
                 char8 const* const begin = current;
-                Token_Type token_type;
+                Token_Kind token_kind;
                 switch(c) {
                     case '{':
-                        token_type = Token_Type::tk_brace_open;
+                        token_kind = Token_Kind::tk_brace_open;
                         break;
                     case '}':
-                        token_type = Token_Type::tk_brace_close;
+                        token_kind = Token_Kind::tk_brace_close;
                         break;
                     case '[':
-                        token_type = Token_Type::tk_lbracket;
+                        token_kind = Token_Kind::tk_lbracket;
                         break;
                     case ']':
-                        token_type = Token_Type::tk_rbracket;
+                        token_kind = Token_Kind::tk_rbracket;
                         break;
                     case '(':
-                        token_type = Token_Type::tk_lparen;
+                        token_kind = Token_Kind::tk_lparen;
                         break;
                     case ')':
-                        token_type = Token_Type::tk_rparen;
+                        token_kind = Token_Kind::tk_rparen;
                         break;
                     case '<':
-                        token_type = Token_Type::tk_langle;
+                        token_kind = Token_Kind::tk_langle;
                         break;
                     case '>':
-                        token_type = Token_Type::tk_rangle;
+                        token_kind = Token_Kind::tk_rangle;
                         break;
                     case ';':
-                        token_type = Token_Type::tk_semicolon;
+                        token_kind = Token_Kind::tk_semicolon;
                         break;
                     case ':':
-                        token_type = Token_Type::tk_colon;
+                        token_kind = Token_Kind::tk_colon;
                         break;
                     case ',':
-                        token_type = Token_Type::tk_comma;
+                        token_kind = Token_Kind::tk_comma;
                         break;
                     case '.':
-                        token_type = Token_Type::tk_dot;
+                        token_kind = Token_Kind::tk_dot;
                         break;
                     case '\"':
-                        token_type = Token_Type::tk_double_quote;
+                        token_kind = Token_Kind::tk_double_quote;
                         break;
                     case '+':
-                        token_type = Token_Type::tk_plus;
+                        token_kind = Token_Kind::tk_plus;
                         break;
                     case '-':
-                        token_type = Token_Type::tk_minus;
+                        token_kind = Token_Kind::tk_minus;
                         break;
                     case '*':
-                        token_type = Token_Type::tk_asterisk;
+                        token_kind = Token_Kind::tk_asterisk;
                         break;
                     case '/':
-                        token_type = Token_Type::tk_slash;
+                        token_kind = Token_Kind::tk_slash;
                         break;
                     case '%':
-                        token_type = Token_Type::tk_percent;
+                        token_kind = Token_Kind::tk_percent;
                         break;
                     case '&':
-                        token_type = Token_Type::tk_amp;
+                        token_kind = Token_Kind::tk_amp;
                         break;
                     case '|':
-                        token_type = Token_Type::tk_pipe;
+                        token_kind = Token_Kind::tk_pipe;
                         break;
                     case '^':
-                        token_type = Token_Type::tk_hat;
+                        token_kind = Token_Kind::tk_hat;
                         break;
                     case '!':
-                        token_type = Token_Type::tk_bang;
+                        token_kind = Token_Kind::tk_bang;
                         break;
                     case '~':
-                        token_type = Token_Type::tk_tilde;
+                        token_kind = Token_Kind::tk_tilde;
                         break;
                     case '=':
-                        token_type = Token_Type::tk_equals;
+                        token_kind = Token_Kind::tk_equals;
                         break;
                     default:
                         // TODO: Error.
@@ -454,7 +454,7 @@ namespace vush {
                 }
                 ++current;
                 ++column;
-                tokens.push_back(Token{token_type, anton::String7_View{begin, current}});
+                tokens.push_back(Token{token_kind, anton::String7_View{begin, current}});
                 token_sources.push_back(Token_Source_Info{state.offset, state.line, state.column, current - source_begin, line, column});
             }
         }

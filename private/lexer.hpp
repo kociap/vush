@@ -7,7 +7,7 @@
 #include <vush/types.hpp>
 
 namespace vush {
-    enum struct Token_Type {
+    enum struct Token_Kind {
         identifier,
         comment,
         whitespace,
@@ -69,7 +69,7 @@ namespace vush {
     };
 
     struct Token {
-        Token_Type type;
+        Token_Kind type;
         anton::String7_View value;
     };
 
