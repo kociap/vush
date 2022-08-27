@@ -1200,7 +1200,7 @@ namespace vush {
             for(Member_Info const& m: members_info) {
                 anton::String location_str = anton::to_string(location);
                 anton::String_View type_str = stringify(m.type);
-                anton::String_View interpolation_str = stringify(m.interpolation);
+                anton::String_View interpolation_str = stringify_interpolation(m.interpolation);
                 out += anton::format(u8"layout(location = {}) {} in {} _pass_{}_in_{}{};\n"_sv, location_str, interpolation_str, type_str, pass_name,
                                      p.identifier->value, m.name);
                 location += m.location_slots;

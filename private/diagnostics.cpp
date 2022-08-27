@@ -181,6 +181,38 @@ namespace vush {
         return message;
     }
 
+    Error err_invalid_integer_suffix(Context const& ctx, Source_Info const& suffix) {
+        Error error;
+        error.line = suffix.line;
+        error.column = suffix.column;
+        error.end_line = suffix.end_line;
+        error.end_column = suffix.end_column;
+        error.source = anton::String(suffix.source_path, ctx.allocator);
+        anton::String_View const source = ctx.source_registry.find(suffix.source_path)->value.data;
+        error.diagnostic = format_diagnostic_location(ctx.allocator, suffix);
+        error.diagnostic += anton::format(ctx.allocator, "error: invalid integer suffix '{}'\n"_sv, get_source_bit(source, suffix));
+        error.extended_diagnostic = anton::String(ctx.allocator);
+        print_source_snippet(ctx, error.extended_diagnostic, source, suffix);
+        error.extended_diagnostic += "valid suffixes are 'u' and 'U'\n"_sv;
+        return error;
+    }
+
+    Error err_invalid_float_suffix(Context const& ctx, Source_Info const& suffix) {
+        Error error;
+        error.line = suffix.line;
+        error.column = suffix.column;
+        error.end_line = suffix.end_line;
+        error.end_column = suffix.end_column;
+        error.source = anton::String(suffix.source_path, ctx.allocator);
+        anton::String_View const source = ctx.source_registry.find(suffix.source_path)->value.data;
+        error.diagnostic = format_diagnostic_location(ctx.allocator, suffix);
+        error.diagnostic += anton::format(ctx.allocator, "error: invalid float suffix '{}'\n"_sv, get_source_bit(source, suffix));
+        error.extended_diagnostic = anton::String(ctx.allocator);
+        print_source_snippet(ctx, error.extended_diagnostic, source, suffix);
+        error.extended_diagnostic += "valid suffixes are 'd' and 'D'\n"_sv;
+        return error;
+    }
+
     anton::String format_integer_literal_overflow(Context const& ctx, Source_Info const& integer) {
         anton::String message = format_diagnostic_location(ctx.allocator, integer);
         message += u8"error: integer literal requires more than 32 bits\n"_sv;

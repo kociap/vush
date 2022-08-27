@@ -2,67 +2,71 @@ import subprocess
 
 from builtin_functions_definitions import ParamT, Array_Type, Return_Placeholder, return_, Fn, fn_definitions
 
-def indent_multiline(string, level):
-    return "\n".join(("    " * level + s for s in string.splitlines()))
+def generate_functions(fn):
+    def create_function_declaration(identifier, return_type, parameter_generator):
+        def create_static_identifier(name, value):
+            return f"ident_{name}", f"static constexpr ast::Identifier ident_{name}(\"{value}\"_sv, {{}});"
+        def create_static_type_builtin(name):
+            return f"builtin_{name}", f"static constexpr ast::Type_Builtin builtin_{name}(ast::GLSL_Type::glsl_{name}, {{}});"
+        def create_static_literal_integer(value):
+            return f"int_{value}", f"static constexpr ast::Lt_Integer int_{value}(\"{value}\"_sv, ast::Lt_Integer_Kind::i32, ast::Lt_Integer_Base::dec, {{}});"
+        def create_static_type_array(name, base, size):
+            return f"array_{name}", f"static constexpr ast::Type_Array array_{name}(&{base}, &{size}, {{}});"
+        def create_static_parameter(name, ss_identifier, ss_type):  
+            return f"param_{name}", f"static constexpr ast::Func_Parameter param_{name}(&{ss_identifier}, &{ss_type}, nullptr, {{}});"
+        def create_static_parameter_array(name, parameters):
+            return f"paramlist_{name}", f"static constexpr ast::Func_Parameter const* paramlist_{name}[{len(parameters)}] = {{{', '.join(map(lambda v: f'&{v}', parameters))}}};"
+        def create_static_function(name, ss_identifier, ss_return_type, parameter_count, ss_parameters):
+            return f"fn_{name}", f"static constexpr ast::Decl_Function fn_{name}({{}}, &{ss_identifier}, {{{ss_parameters}, {parameter_count}}}, &{ss_return_type}, {{}}, true, {{}});"
 
-def generate_function_constructors(fn):
-    def create_static_string(name, value):
-        return f"str_{name}", f"static constexpr anton::String_View str_{name} = \"{value}\"_sv;"
-    def create_static_identifier(name, ss_identifier):
-        return f"ident_{name}", f"static constexpr Identifier ident_{name} = Identifier({ss_identifier}, Source_Info{{}});"
-    def create_static_builtin(name):
-        return f"builtin_{name}", f"static constexpr Builtin_Type builtin_{name} = Builtin_Type(Builtin_GLSL_Type::glsl_{name}, Source_Info{{}});"
-        
-    def allocate_integer_literal(ss_value):
-        return f"allocate_owning<Integer_Literal>(user_allocator, {ss_value}, Integer_Literal_Type::i32, Integer_Literal_Base::dec, Source_Info{{}})"
-    def allocate_array_type(sb_base, ss_size):
-        return f"allocate_owning<Array_Type>(user_allocator, {create_owning('Builtin_Type', sb_base)}, {allocate_integer_literal(ss_size)}, Source_Info{{}})"
-    def allocate_function_parameter(ss_identifier, ss_type):
-        return f"allocate_owning<Function_Parameter>(user_allocator, {ss_identifier},\n    {ss_type}, nullptr, nullptr, Source_Info{{}})"
-
-    def create_owning(t, value):
-        return f"Owning_Ptr(const_cast<{t}*>(&{value}), &alloc)"
-    def allocate_function_declaration(identifier, return_type, parameter_generator):
-        static_strings = set()
-        static_identifiers = set()
-        static_builtins = set()
-        result = "allocate_owning<Function_Declaration>(user_allocator, Attribute_List(user_allocator),\n"
-        sb_return, sb_return_string = create_static_builtin(return_type)
-        static_builtins.add(sb_return_string)
-        result += "    " # 1 level of indent.
-        result += create_owning("Builtin_Type", sb_return)
-        result += ", "
-        ss_identifier, ss_identifier_string = create_static_string(identifier, identifier)
-        static_strings.add(ss_identifier_string)
-        si_identifier, si_identifier_string = create_static_identifier(identifier, ss_identifier)
-        static_identifiers.add(si_identifier_string)
-        result += create_owning("Identifier", si_identifier)
-        result += ",\n"
-        result += "    " # 1 level of indent.
-        result += "Parameter_List(user_allocator, anton::variadic_construct"
-        # We use 2 levels of indent as base in this loop.
+        static_identifiers = dict()
+        static_integers = dict()
+        static_types = dict()
+        static_parameters = dict()
+        static_arrays = dict()
+        static_functions = dict()
+        # Create function identifier.
+        si_identifier, si_identifier_string = create_static_identifier(identifier, identifier)
+        static_identifiers[si_identifier] = si_identifier_string
+        # Create return type.
+        stb_return, stb_return_string = create_static_type_builtin(return_type)
+        static_types[stb_return] = stb_return_string
+        parameter_types = []
+        parameter_statics = []
         for n, t in parameter_generator:
-            result += ",\n"
-            ss_pidentifier, ss_pidentifier_string = create_static_string(n, n)
-            static_strings.add(ss_pidentifier_string)
-            si_pidentifier, si_pidentifier_string = create_static_identifier(n, ss_pidentifier)
-            static_identifiers.add(si_pidentifier_string)
+            # Create parameter identifier.
+            si_pidentifier, si_pidentifier_string = create_static_identifier(n, n)
+            static_identifiers[si_pidentifier] = si_pidentifier_string
             if isinstance(t, Array_Type):
-                sb_base, sb_base_string = create_static_builtin(t.base)
-                static_builtins.add(sb_base_string)
-                ss_size, ss_size_string = create_static_string(t.size, t.size)
-                static_strings.add(ss_size_string)
-                result += indent_multiline(allocate_function_parameter(create_owning("Identifier", si_pidentifier), 
-                                                                       allocate_array_type(sb_base, ss_size)), 2)
+                stb_base, stb_base_string = create_static_type_builtin(t.base)
+                static_types[stb_base] = stb_base_string
+                sli_size, sli_size_string = create_static_literal_integer(t.size)
+                static_integers[sli_size] = sli_size_string
+                stringified_type = f"{t.base}_{t.size}"
+                sta_ptype, sta_ptype_string = create_static_type_array(stringified_type, stb_base, sli_size)
+                static_types[sta_ptype] = sta_ptype_string
+                sp_param, sp_param_string = create_static_parameter(f"{identifier}_{n}_{stringified_type}", si_pidentifier, sta_ptype)
+                static_parameters[sp_param] = sp_param_string
+                parameter_statics.append(sp_param)
+                parameter_types.append(stringified_type)
             else:
-                sb_t, sb_t_string = create_static_builtin(t)
-                static_builtins.add(sb_t_string)
-                result += indent_multiline(allocate_function_parameter(create_owning("Identifier", si_pidentifier), 
-                                                                       create_owning("Builtin_Type", sb_t)), 2)
-        result += "),\n"
-        result += "    " # 1 level of indent.
-        result += "Statement_List(user_allocator), true, Source_Info{})" 
-        return result, static_strings, static_identifiers, static_builtins
+                stb_ptype, stb_ptype_string = create_static_type_builtin(t)
+                static_types[stb_ptype] = stb_ptype_string
+                sp_param, sp_param_string = create_static_parameter(f"{identifier}_{n}_{t}", si_pidentifier, stb_ptype)
+                static_parameters[sp_param] = sp_param_string
+                parameter_statics.append(sp_param)
+                parameter_types.append(t)
+        if len(parameter_statics) > 0:
+            discriminator = "_".join(parameter_types)
+            spa, spa_string = create_static_parameter_array(identifier + "_" + discriminator, parameter_statics)
+            static_arrays[spa] = spa_string
+            fn, fn_string = create_static_function(identifier + "_" + discriminator, si_identifier, stb_return, len(parameter_statics), spa)
+            static_functions[fn] = fn_string
+        else:
+            fn, fn_string = create_static_function(identifier, si_identifier, stb_return, 0, "nullptr")
+            static_functions[fn] = fn_string
+
+        return fn, static_identifiers, static_integers, static_types, static_parameters, static_arrays, static_functions
 
     def generate_name(signature):
         for v in signature:
@@ -118,51 +122,44 @@ def generate_function_constructors(fn):
         else:
             raise TypeError(f"invalid replacement type {type(replacement)} ({replacement})")
 
-    for replacement in fn.replacements:
-        for type_gen in generate_type_generator(fn.signature, replacement):
-            yield allocate_function_declaration(fn.name, next(type_gen), zip(generate_name(fn.signature), type_gen))
+    # Handle case where a function has no replacements, 
+    # i.e. all parameters are provided in the signature.
+    if len(fn.replacements) > 0:
+        for replacement in fn.replacements:
+            for type_gen in generate_type_generator(fn.signature, replacement):
+                yield create_function_declaration(fn.name, next(type_gen), zip(generate_name(fn.signature), type_gen))
+    else:
+        for type_gen in generate_type_generator(fn.signature, ()):
+            yield create_function_declaration(fn.name, next(type_gen), zip(generate_name(fn.signature), type_gen))
+
 
 def write_get_builtin_functions_declarations(file, functions):
-    file.write(f"""\
-    Array<Owning_Ptr<Function_Declaration>> get_builtin_functions_declarations(Allocator* const user_allocator) {{
-        Array<Owning_Ptr<Function_Declaration>> result{{anton::reserve, {len(functions)}, user_allocator}};
-        Dummy_Allocator alloc;
-""")
-
+    file.write(f"    static constexpr ast::Decl_Overloaded_Function const* builtin_functions_declarations[{len(functions)}] = {{\n")
     for f in functions:
-        string = "    " * 2 + "result.push_back("
-        # We may indent by 2 levels only since the inner part of allocate_owning is
-        # already indented and we want an indentation level of 3. We lstrip whitespace
-        # in order to remove indentation from the first line, so that it follows the
-        # opening lparen immediately.
-        string += indent_multiline(f, 2).lstrip()
-        string += ");\n"
+        string = "    " * 2 + f"&{f},\n"
         file.write(string)
+    file.write("    };\n\n")
 
-    file.write("""\
-        return result;
-    }
+    file.write(f"""\
+    anton::Slice<ast::Decl_Overloaded_Function const* const> get_builtin_functions_declarations() {{
+        return anton::Slice<ast::Decl_Overloaded_Function const* const>{{builtin_functions_declarations, {len(functions)}}};
+    }}
 """)
 
 def write_statics(file, statics):
-    for ss in statics:
+    for name, string in statics.items():
         file.write("    ")
-        file.write(ss)
+        file.write(string)
         file.write("\n")
 
 def write_preamble(file):
     file.write("""\
-#include <ast.hpp>
-#include <memory.hpp>
+#include <builtin_symbols.hpp>
+
+#include <ast2.hpp>
 
 namespace vush {
     using namespace anton::literals;
-
-    struct Dummy_Allocator: public Allocator {
-        void* allocate([[maybe_unused]] i64 size, [[maybe_unused]] i64 alignment) override { return nullptr; }
-        virtual void deallocate([[maybe_unused]] void* memory, [[maybe_unused]] i64 size, [[maybe_unused]] i64 alignment) override {}
-        bool is_equal([[maybe_unused]] Memory_Allocator const& allocator) const override { return true; }
-    };
 
 """)
 
@@ -175,32 +172,53 @@ def main():
     # TODO: --directory,-d option with default ./private/
     # TODO: --filename,-f option with default builtin_symbols_autogen.cpp
 
-    static_strings = set()
-    static_identifiers = set()
-    static_builtins = set()
-    functions = []
+    statics = {
+        "identifiers": {},
+        "integers": {},
+        "types": {},
+        "parameters": {},
+        "parameter_arrays": {},
+        "functions": {},
+        "ofn_arrays": {},
+        "ofns": {},
+    }
+
+    def create_overloaded_function(name, functions):
+        ofn_fnlist = f"ofn_fnlist_{name}"
+        ofn_fnlist_string = f"static constexpr ast::Decl_Function const* {ofn_fnlist}[{len(functions)}] = {{{', '.join(map(lambda v: f'&{v}', functions))}}};"
+        ofn = f"ofn_{name}"
+        ofn_string = f"static constexpr ast::Decl_Overloaded_Function {ofn}(&ident_{name}, {{{ofn_fnlist}, {len(functions)}}});"
+        return ofn, ofn_string, ofn_fnlist, ofn_fnlist_string
+
+    functions = {}
     for fn in fn_definitions:
-        for f, ss, si, sb in generate_function_constructors(fn):
-            functions.append(f)
-            static_strings.update(ss)
-            static_identifiers.update(si)
-            static_builtins.update(sb)
+        if fn.name not in functions:
+            functions[fn.name] = []
+        for f, sidentifier, sinteger, stype, sparameter, sparameterarray, sfunction in generate_functions(fn):
+            functions[fn.name].append(f)
+            statics["identifiers"].update(sidentifier)
+            statics["integers"].update(sinteger)
+            statics["types"].update(stype)
+            statics["parameters"].update(sparameter)
+            statics["parameter_arrays"].update(sparameterarray)
+            statics["functions"].update(sfunction)
+    
+    ofns = []
+    for name, fns in functions.items():
+        ofn, ofn_string, ofn_fnlist, ofn_fnlist_string = create_overloaded_function(name, fns)
+        statics["ofn_arrays"][ofn_fnlist] = ofn_fnlist_string
+        statics["ofns"][ofn] = ofn_string
+        ofns.append(ofn)
 
     file = open("./private/builtin_symbols_autogen.cpp", "w")
     write_preamble(file)
-    write_statics(file, static_strings)
-    if len(static_strings) > 0:
-        file.write("\n")
-    write_statics(file, static_identifiers)
-    if len(static_identifiers) > 0:
-        file.write("\n")
-    write_statics(file, static_builtins)
-    if len(static_builtins) > 0:
-        file.write("\n")
-    write_get_builtin_functions_declarations(file, functions)
+    for k, v in statics.items():
+        write_statics(file, v)
+        if len(v) > 0:
+            file.write("\n")
+    write_get_builtin_functions_declarations(file, ofns)
     file.write("\n")
     write_epilogue(file)
     file.close()
 
 main()
-

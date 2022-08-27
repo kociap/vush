@@ -58,8 +58,6 @@ target_sources(vush
     "${CMAKE_CURRENT_SOURCE_DIR}/private/ast.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/ast.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/builtin_symbols_autogen.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/private/builtin_symbols_autogen.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/private/builtin_symbols.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/builtin_symbols.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/codegen_glsl.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/codegen.hpp"

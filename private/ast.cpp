@@ -12,6 +12,19 @@ namespace vush {
     Syntax_Node::Syntax_Node(Syntax_Node_Type type, Array<SNOT> array, Source_Info const& source_info)
         : children(ANTON_MOV(array)), source_info(source_info), type(type) {}
 
+    anton::String_View stringify_interpolation(Interpolation const interpolation) {
+        switch(interpolation) {
+            case Interpolation::none:
+                return u8"";
+            case Interpolation::smooth:
+                return u8"smooth";
+            case Interpolation::flat:
+                return u8"flat";
+            case Interpolation::noperspective:
+                return u8"noperspective";
+        }
+    }
+
     bool is_opaque_type(Builtin_GLSL_Type const type) {
         return static_cast<i32>(type) >= static_cast<i32>(Builtin_GLSL_Type::glsl_sampler1D);
     }
