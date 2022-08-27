@@ -46,10 +46,6 @@ namespace vush {
         return (c >= 48 && c <= 57) | (c >= 65 && c <= 70) | (c >= 97 && c <= 102);
     }
 
-    [[nodiscard]] static bool is_octal_digit(char32 c) {
-        return (c >= 48) & (c <= 55);
-    }
-
     [[nodiscard]] static bool is_digit(char32 c) {
         return (c >= 48) & (c <= 57);
     }
@@ -244,25 +240,6 @@ namespace vush {
                             }
 
                             tokens.push_back(Token{Token_Type::lt_bin_integer, anton::String7_View{begin, current}});
-                            token_sources.push_back(Token_Source_Info{state.offset, state.line, state.column, current - source_begin, line, column});
-                        } break;
-
-                        case 'o':
-                        case 'O': {
-                            char8 const* const begin = ++current;
-                            while(current != end && is_octal_digit(*current)) {
-                                ++current;
-                                ++column;
-                            }
-
-                            if(is_digit(*current)) {
-                                // TODO: Error.
-                                // TODO: Provide an overload with allocator parameter for String::from_utf32
-                                // anton::concat(_allocator, u8"invalid digit '"_sv, anton::String::from_utf32(&next, 4), u8"' in octal integer literal"_sv);
-                                return {anton::expected_error, Error{}};
-                            }
-
-                            tokens.push_back(Token{Token_Type::lt_oct_integer, anton::String7_View{begin, current}});
                             token_sources.push_back(Token_Source_Info{state.offset, state.line, state.column, current - source_begin, line, column});
                         } break;
 
