@@ -1,21 +1,41 @@
 #include <diagnostics.hpp>
 
 #include <anton/format.hpp>
-#include <ast.hpp>
+
+#include <ast2.hpp>
 
 namespace vush {
     using namespace anton::literals;
+
+    [[nodiscard]] static anton::String format_diagnostic_location(Allocator* const allocator, anton::String_View const source, i64 const line,
+                                                                  i64 const column) {
+        return anton::concat(allocator, source, u8":"_sv, anton::to_string(allocator, line), u8":"_sv, anton::to_string(allocator, column), u8": "_sv);
+    }
+
+    [[nodiscard]] static anton::String format_diagnostic_location(Allocator* const allocator, Source_Info const& info) {
+        return format_diagnostic_location(allocator, info.source_path, info.line, info.column);
+    }
 
     anton::String Error::format(Allocator* const allocator, bool const include_extended_diagnostic) const {
         // Add 32 bytes for line and column numbers, colons, spaces and newlines.
         i64 const size = source.size_bytes() + diagnostic.size_bytes() + extended_diagnostic.size_bytes() + 32;
         anton::String error_message{anton::reserve, size, allocator};
-        error_message += source + u8":" + anton::to_string(line) + u8":" + anton::to_string(column) + u8": ";
+        error_message += format_diagnostic_location(allocator, source, line, column);
         error_message += diagnostic;
         if(include_extended_diagnostic && extended_diagnostic.size_bytes() > 0) {
             error_message += extended_diagnostic;
         }
         return error_message;
+    }
+
+    [[nodiscard]] static Error error_from_source(Allocator* const allocator, Source_Info const& source) {
+        return Error{.line = source.line,
+                     .column = source.column,
+                     .end_line = source.end_line,
+                     .end_column = source.end_column,
+                     .source = anton::String(source.source_path, allocator),
+                     .diagnostic = anton::String(allocator),
+                     .extended_diagnostic = anton::String(allocator)};
     }
 
     static void print_underline(anton::String& out, i64 const padding, i64 const underline_length) {
@@ -114,30 +134,8 @@ namespace vush {
         return source_bit;
     }
 
-    [[nodiscard]] static anton::String format_diagnostic_location(Allocator* const allocator, Source_Info const& info) {
-        return anton::concat(allocator, anton::String{info.source_path, allocator}, u8":"_sv, anton::to_string(allocator, info.line), u8":"_sv,
-                             anton::to_string(allocator, info.column), u8": "_sv);
-    }
-
-    [[nodiscard]] static anton::String_View readable_type_node_type(AST_Node_Type const type) {
-        ANTON_ASSERT(type == AST_Node_Type::builtin_type || type == AST_Node_Type::builtin_type || type == AST_Node_Type::array_type, "invalid AST_Node_Type");
-        switch(type) {
-            case AST_Node_Type::builtin_type:
-                return "builtin"_sv;
-
-            case AST_Node_Type::user_defined_type:
-                return "user defined"_sv;
-
-            case AST_Node_Type::array_type:
-                return "array"_sv;
-
-            default:
-                ANTON_UNREACHABLE();
-        }
-    }
-
     anton::String format_undefined_symbol(Context const& ctx, Source_Info const& symbol) {
-        anton::String_View const source = ctx.source_registry.find(symbol.source_path)->value.data;
+        anton::String_View const source = ctx.find_source(symbol.source_path)->data;
         anton::String message = format_diagnostic_location(ctx.allocator, symbol);
         message += u8"error: undefined symbol '"_sv;
         message += get_source_bit(source, symbol);
@@ -149,67 +147,61 @@ namespace vush {
         return message;
     }
 
-    anton::String format_called_symbol_does_not_name_function(Context const& ctx, Source_Info const& symbol) {
-        anton::String_View const source = ctx.source_registry.find(symbol.source_path)->value.data;
-        anton::String message = format_diagnostic_location(ctx.allocator, symbol);
-        message += u8"error: called symbol '"_sv;
-        message += get_source_bit(source, symbol);
-        message += u8"' does not name a function\n"_sv;
-        if(ctx.diagnostics.extended) {
-            print_source_snippet(ctx, message, source, symbol);
-            message += '\n';
-        }
-        return message;
+    Error err_undefined_symbol(Context const& ctx, Source_Info const& symbol) {
+        Error error = error_from_source(ctx.allocator, symbol);
+        anton::String_View const source = ctx.find_source(symbol.source_path)->data;
+        anton::String_View const name = get_source_bit(source, symbol);
+        error.diagnostic = anton::format(ctx.allocator, u8"error: undefined symbol '{}'"_sv, name);
+        print_source_snippet(ctx, error.extended_diagnostic, source, symbol);
+        error.extended_diagnostic += anton::format(ctx.allocator, u8" '{}' used, but not defined"_sv, name);
+        return error;
     }
 
-    anton::String format_symbol_redefinition(Context const& ctx, Source_Info const& first, Source_Info const& second) {
-        anton::String message = format_diagnostic_location(ctx.allocator, second);
-        anton::String_View const first_source = ctx.source_registry.find(first.source_path)->value.data;
-        anton::String_View const name = get_source_bit(first_source, first);
-        message += anton::format(ctx.allocator, u8"error: redefinition of the symbol '{}'\n"_sv, name);
-        if(ctx.diagnostics.extended) {
-            message += format_diagnostic_location(ctx.allocator, first);
-            message += anton::format(ctx.allocator, u8"definition of the symbol '{}' found here\n"_sv, name);
-            print_source_snippet(ctx, message, first_source, first);
-            message += '\n';
-            message += format_diagnostic_location(ctx.allocator, second);
-            message += u8"redefined here\n"_sv;
-            anton::String_View const second_source = ctx.source_registry.find(second.source_path)->value.data;
-            print_source_snippet(ctx, message, second_source, second);
-            message += '\n';
-        }
-        return message;
+    Error err_symbol_redefinition(Context const& ctx, Source_Info const& old_symbol, Source_Info const& new_symbol) {
+        Error error = error_from_source(ctx.allocator, new_symbol);
+        anton::String_View const new_source = ctx.find_source(new_symbol.source_path)->data;
+        anton::String_View const old_source = ctx.find_source(old_symbol.source_path)->data;
+        anton::String_View const name = get_source_bit(new_source, new_symbol);
+        error.diagnostic = anton::format(ctx.allocator, u8"error: symbol '{}' is defined multiple times"_sv, name);
+        error.extended_diagnostic = format_diagnostic_location(ctx.allocator, old_symbol);
+        error.extended_diagnostic += '\n';
+        print_source_snippet(ctx, error.extended_diagnostic, old_source, old_symbol);
+        error.extended_diagnostic += anton::format(ctx.allocator, u8" definition of '{}' here\n"_sv, name);
+        error.extended_diagnostic += format_diagnostic_location(ctx.allocator, new_symbol);
+        error.extended_diagnostic += '\n';
+        print_source_snippet(ctx, error.extended_diagnostic, new_source, new_symbol);
+        error.extended_diagnostic += u8" redefined here"_sv;
+        return error;
     }
+
+    // anton::String format_called_symbol_does_not_name_function(Context const& ctx, Source_Info const& symbol) {
+    //     anton::String_View const source = ctx.find_source(symbol.source_path)->data;
+    //     anton::String message = format_diagnostic_location(ctx.allocator, symbol);
+    //     message += u8"error: called symbol '"_sv;
+    //     message += get_source_bit(source, symbol);
+    //     message += u8"' does not name a function\n"_sv;
+    //     if(ctx.diagnostics.extended) {
+    //         print_source_snippet(ctx, message, source, symbol);
+    //         message += '\n';
+    //     }
+    //     return message;
+    // }
 
     Error err_invalid_integer_suffix(Context const& ctx, Source_Info const& suffix) {
-        Error error;
-        error.line = suffix.line;
-        error.column = suffix.column;
-        error.end_line = suffix.end_line;
-        error.end_column = suffix.end_column;
-        error.source = anton::String(suffix.source_path, ctx.allocator);
-        anton::String_View const source = ctx.source_registry.find(suffix.source_path)->value.data;
-        error.diagnostic = format_diagnostic_location(ctx.allocator, suffix);
-        error.diagnostic += anton::format(ctx.allocator, "error: invalid integer suffix '{}'\n"_sv, get_source_bit(source, suffix));
-        error.extended_diagnostic = anton::String(ctx.allocator);
+        Error error = error_from_source(ctx.allocator, suffix);
+        anton::String_View const source = ctx.find_source(suffix.source_path)->data;
+        error.diagnostic = anton::format(ctx.allocator, "error: invalid integer suffix '{}'"_sv, get_source_bit(source, suffix));
         print_source_snippet(ctx, error.extended_diagnostic, source, suffix);
-        error.extended_diagnostic += "valid suffixes are 'u' and 'U'\n"_sv;
+        error.extended_diagnostic += " valid suffixes are 'u' and 'U'"_sv;
         return error;
     }
 
     Error err_invalid_float_suffix(Context const& ctx, Source_Info const& suffix) {
-        Error error;
-        error.line = suffix.line;
-        error.column = suffix.column;
-        error.end_line = suffix.end_line;
-        error.end_column = suffix.end_column;
-        error.source = anton::String(suffix.source_path, ctx.allocator);
-        anton::String_View const source = ctx.source_registry.find(suffix.source_path)->value.data;
-        error.diagnostic = format_diagnostic_location(ctx.allocator, suffix);
-        error.diagnostic += anton::format(ctx.allocator, "error: invalid float suffix '{}'\n"_sv, get_source_bit(source, suffix));
-        error.extended_diagnostic = anton::String(ctx.allocator);
+        Error error = error_from_source(ctx.allocator, suffix);
+        anton::String_View const source = ctx.find_source(suffix.source_path)->data;
+        error.diagnostic = anton::format(ctx.allocator, "error: invalid float suffix '{}'"_sv, get_source_bit(source, suffix));
         print_source_snippet(ctx, error.extended_diagnostic, source, suffix);
-        error.extended_diagnostic += "valid suffixes are 'd' and 'D'\n"_sv;
+        error.extended_diagnostic += " valid suffixes are 'd' and 'D'"_sv;
         return error;
     }
 
@@ -217,7 +209,7 @@ namespace vush {
         anton::String message = format_diagnostic_location(ctx.allocator, integer);
         message += u8"error: integer literal requires more than 32 bits\n"_sv;
         if(ctx.diagnostics.extended) {
-            anton::String_View const source = ctx.source_registry.find(integer.source_path)->value.data;
+            anton::String_View const source = ctx.find_source(integer.source_path)->data;
             print_source_snippet(ctx, message, source, integer);
             message += '\n';
         }
@@ -228,106 +220,60 @@ namespace vush {
         anton::String message = format_diagnostic_location(ctx.allocator, integer);
         message += u8"error: leading zeros in decimal integer literals are not allowed\n"_sv;
         if(ctx.diagnostics.extended) {
-            anton::String_View const source = ctx.source_registry.find(integer.source_path)->value.data;
+            anton::String_View const source = ctx.find_source(integer.source_path)->data;
             print_source_snippet(ctx, message, source, integer);
             message += '\n';
         }
         return message;
     }
 
-    anton::String format_overload_identical_parameters_different_return_types(Context const& ctx, Function_Declaration const& overload1,
-                                                                              Function_Declaration const& overload2) {
-        anton::String message = format_diagnostic_location(ctx.allocator, overload2.source_info);
-        message += u8"error: functions may not be overloaded on their return type alone\n"_sv;
-        if(ctx.diagnostics.extended) {
-            anton::String_View const first_source = ctx.source_registry.find(overload1.source_info.source_path)->value.data;
-            message += format_diagnostic_location(ctx.allocator, overload1.source_info);
-            message +=
-                anton::format(ctx.allocator, u8"overload with return type '{}' defined here\n"_sv, stringify_type(ctx.allocator, *overload1.return_type));
-            print_source_snippet(ctx, message, first_source, overload1.return_type->source_info);
-            message += '\n';
-            anton::String_View const second_source = ctx.source_registry.find(overload2.source_info.source_path)->value.data;
-            message += format_diagnostic_location(ctx.allocator, overload2.source_info);
-            message += anton::format(ctx.allocator, u8"overload with a different return type '{}', but identical parameters defined here\n"_sv,
-                                     stringify_type(ctx.allocator, *overload2.return_type));
-            print_source_snippet(ctx, message, second_source, overload2.return_type->source_info);
-            message += '\n';
-        }
-        return message;
-    }
-
-    anton::String format_overload_identical_parameters(Context const& ctx, Function_Declaration const& overload1, Function_Declaration const& overload2) {
-        anton::String message = format_diagnostic_location(ctx.allocator, overload2.source_info);
-        message += anton::format(ctx.allocator, u8"error: redefinition of function '{}'\n"_sv, overload1.identifier->value);
-        if(ctx.diagnostics.extended) {
-            anton::String_View const first_source = ctx.source_registry.find(overload1.source_info.source_path)->value.data;
-            message += format_diagnostic_location(ctx.allocator, overload1.source_info);
-            message += u8"first definition found here\n"_sv;
-            print_source_snippet(ctx, message, first_source, overload1.source_info);
-            message += '\n';
-            anton::String_View const second_source = ctx.source_registry.find(overload2.source_info.source_path)->value.data;
-            message += format_diagnostic_location(ctx.allocator, overload2.source_info);
-            message += u8"second definition found here\n"_sv;
-            print_source_snippet(ctx, message, second_source, overload2.source_info);
-            message += '\n';
-        }
-        return message;
+    Error err_overload_on_return_type(Context const& ctx, Source_Info const& identifier1, Source_Info const& return1, Source_Info const& identifier2,
+                                      Source_Info const& return2) {
+        // TODO: Separate error function for user-builtin functions.
+        Error error = error_from_source(ctx.allocator, identifier2);
+        anton::String_View const source1 = ctx.find_source(identifier1.source_path)->data;
+        error.diagnostic = anton::String("error: functions may not be overloaded on their return type alone"_sv, ctx.allocator);
+        error.extended_diagnostic = format_diagnostic_location(ctx.allocator, identifier1);
+        error.extended_diagnostic += '\n';
+        print_source_snippet(ctx, error.extended_diagnostic, source1, identifier1);
+        error.extended_diagnostic += anton::format(ctx.allocator, u8"overload with return type '{}' defined here\n"_sv, get_source_bit(source1, return1));
+        anton::String_View const source2 = ctx.find_source(identifier2.source_path)->data;
+        error.extended_diagnostic += format_diagnostic_location(ctx.allocator, identifier2);
+        error.extended_diagnostic += '\n';
+        print_source_snippet(ctx, error.extended_diagnostic, source2, identifier2);
+        error.extended_diagnostic += anton::format(ctx.allocator, u8"overload with a different return type '{}', but identical parameters defined here\n"_sv,
+                                                   get_source_bit(source2, return2));
+        return error;
     }
 
     anton::String format_variable_declaration_in_global_scope(Context const& ctx, Source_Info const& declaration) {
         anton::String message = format_diagnostic_location(ctx.allocator, declaration);
         message += u8"error: illegal declaration of a variable in global scope\n"_sv;
         if(ctx.diagnostics.extended) {
-            anton::String_View const& source = ctx.source_registry.find(declaration.source_path)->value.data;
+            anton::String_View const& source = ctx.find_source(declaration.source_path)->data;
             print_source_snippet(ctx, message, source, declaration);
             message += '\n';
         }
         return message;
     }
 
-    anton::String format_constant_missing_initializer(Context const& ctx, Source_Info const& constant) {
-        anton::String message = format_diagnostic_location(ctx.allocator, constant);
-        message += u8"error: missing constant initializer\n"_sv;
-        if(ctx.diagnostics.extended) {
-            anton::String_View const source = ctx.source_registry.find(constant.source_path)->value.data;
-            print_source_snippet(ctx, message, source, constant);
-            message += '\n';
-        }
-        return message;
-    }
+    // Error err_immutable_variable_missing_initializer(Context const& ctx, Source_Info const& constant) {
+    //     anton::String message = format_diagnostic_location(ctx.allocator, constant);
+    //     message += u8"error: missing constant initializer\n"_sv;
+    //     if(ctx.diagnostics.extended) {
+    //         anton::String_View const source = ctx.find_source(constant.source_path)->data;
+    //         print_source_snippet(ctx, message, source, constant);
+    //         message += '\n';
+    //     }
+    //     return message;
+    // }
 
     anton::String format_expression_not_implicitly_convertible_to_bool(Context const& ctx, Source_Info const& expression) {
         anton::String message = format_diagnostic_location(ctx.allocator, expression);
         message += u8"error: expression is not implicitly convertible to bool\n"_sv;
         if(ctx.diagnostics.extended) {
-            anton::String_View const source = ctx.source_registry.find(expression.source_path)->value.data;
+            anton::String_View const source = ctx.find_source(expression.source_path)->data;
             print_source_snippet(ctx, message, source, expression);
-            message += '\n';
-        }
-        return message;
-    }
-
-    anton::String format_ordinary_parameter_not_allowed_on_stage(Context const& ctx, Source_Info const& src, Stage_Kind const stage) {
-        anton::String message = format_diagnostic_location(ctx.allocator, src);
-        message += u8"ordinary parameters are not allowed on "_sv;
-        message += stringify(stage);
-        message += u8" stage\n"_sv;
-        if(ctx.diagnostics.extended) {
-            anton::String_View const source = ctx.source_registry.find(src.source_path)->value.data;
-            print_source_snippet(ctx, message, source, src);
-            message += '\n';
-        }
-        return message;
-    }
-
-    anton::String format_vertex_input_not_allowed_on_stage(Context const& ctx, Source_Info const& src, Stage_Kind const stage) {
-        anton::String message = format_diagnostic_location(ctx.allocator, src);
-        message += u8"vertex input parameters are not allowed on "_sv;
-        message += stringify(stage);
-        message += u8" stage\n"_sv;
-        if(ctx.diagnostics.extended) {
-            anton::String_View const source = ctx.source_registry.find(src.source_path)->value.data;
-            print_source_snippet(ctx, message, source, src);
             message += '\n';
         }
         return message;
@@ -336,7 +282,7 @@ namespace vush {
     anton::String format_illegal_image_layout_qualifier_on_non_sourced_parameter(Context const& ctx, Source_Info const& qualifier,
                                                                                  Source_Info const& parameter_identifier) {
         anton::String message = format_diagnostic_location(ctx.allocator, qualifier);
-        anton::String_View const source = ctx.source_registry.find(qualifier.source_path)->value.data;
+        anton::String_View const source = ctx.find_source(qualifier.source_path)->data;
         message += u8"illegal image layout qualifier '"_sv;
         message += get_source_bit(source, qualifier);
         message += u8"' on non-sourced parameter '"_sv;
@@ -352,7 +298,7 @@ namespace vush {
 
     anton::String format_illegal_image_layout_qualifier_on_non_image_type(Context const& ctx, Source_Info const& qualifier, Source_Info const& type) {
         anton::String message = format_diagnostic_location(ctx.allocator, qualifier);
-        anton::String_View const source = ctx.source_registry.find(qualifier.source_path)->value.data;
+        anton::String_View const source = ctx.find_source(qualifier.source_path)->data;
         message += u8"illegal image layout qualifier '"_sv;
         message += get_source_bit(source, qualifier);
         message += u8"' on non-image type '"_sv;
@@ -366,19 +312,6 @@ namespace vush {
         return message;
     }
 
-    anton::String format_duplicate_pass_stage_error(Context const& ctx, Source_Info const& first, Source_Info const& second, anton::String const& pass_name,
-                                                    Stage_Kind const& stage) {
-        anton::String message = format_diagnostic_location(ctx.allocator, second);
-        message += anton::format(ctx.allocator, u8"error: duplicate {} stage in pass '{}'\n"_sv, stringify(stage), pass_name);
-        if(ctx.diagnostics.extended) {
-            message += format_diagnostic_location(ctx.allocator, first);
-            message += u8"first definition found here:\n"_sv;
-            message += format_diagnostic_location(ctx.allocator, second);
-            message += u8"second definition found here:\n"_sv;
-        }
-        return message;
-    }
-
     anton::String format_missing_vertex_stage_error([[maybe_unused]] Context const& ctx, anton::String const& pass_name) {
         return anton::format(ctx.allocator, u8"error: missing vertex stage in pass '{}'\n"_sv, pass_name);
     }
@@ -387,86 +320,99 @@ namespace vush {
         return anton::format(ctx.allocator, u8"error: pass must have either compute or graphics (vertex, fragment) stages. '{}' has both\n"_sv, pass_name);
     }
 
-    anton::String format_stage_return_type_must_be_void_or_udt(Context const& ctx, anton::String_View const pass_name, Stage_Kind const stage,
-                                                               Type const& return_type) {
-        anton::String_View const source = ctx.source_registry.find(return_type.source_info.source_path)->value.data;
-        anton::String_View const stage_string = stringify(stage);
-        anton::String_View const type = get_source_bit(source, return_type.source_info);
-        anton::String_View const readable_type = readable_type_node_type(return_type.node_type);
-        anton::String message = format_diagnostic_location(ctx.allocator, return_type.source_info);
-        message += anton::format(
-            ctx.allocator,
-            "error: the {} return type '{}' of the {} stage in the pass {} is not allowed. the return type of a {} stage must be 'void' or a user defined type\n"_sv,
-            readable_type, type, stage_string, pass_name, stage_string);
-        if(ctx.diagnostics.extended) {
-            print_source_snippet(ctx, message, source, return_type.source_info);
-            message += "\n"_sv;
-        }
-        return message;
+    Error err_stage_return_must_be_builtin_or_udt(Context const& ctx, anton::String_View const pass_name, Source_Info const& stage,
+                                                  Source_Info const& return_type) {
+        Error error = error_from_source(ctx.allocator, return_type);
+        anton::String_View const source = ctx.find_source(return_type.source_path)->data;
+        anton::String_View const stage_str = get_source_bit(source, stage);
+        error.diagnostic =
+            anton::format(ctx.allocator, "error: the return type of the {} stage of '{}' is not a builtin or user defined type"_sv, stage_str, pass_name);
+        print_source_snippet(ctx, error.extended_diagnostic, source, return_type);
+        error.extended_diagnostic += " return type must be a builtin or user defined type"_sv;
+        return error;
     }
 
-    anton::String format_stage_input_parameter_must_be_udt(Context const& ctx, anton::String_View const pass_name, Stage_Kind const stage,
-                                                           Function_Parameter const& parameter) {
-        anton::String_View const source = ctx.source_registry.find(parameter.source_info.source_path)->value.data;
-        anton::String_View const stage_string = stringify(stage);
-        anton::String_View const parameter_name = parameter.identifier->value;
-        anton::String const type = stringify_type(ctx.allocator, *parameter.type);
-        anton::String_View const readable_type = readable_type_node_type(parameter.type->node_type);
-        anton::String message = format_diagnostic_location(ctx.allocator, parameter.type->source_info);
-        message += anton::format(ctx.allocator, "error: the stage input parameter '{}' in the {} stage in the pass {} has illegal {} type '{}'."_sv,
-                                 parameter_name, stage_string, pass_name, readable_type, type);
-        message += "the stage input parameter must be a user defined type\n"_sv;
-        if(ctx.diagnostics.extended) {
-            print_source_snippet(ctx, message, source, parameter.type->source_info);
-            message += '\n';
-        }
-        return message;
+    Error err_compute_return_must_be_void(Context const& ctx, anton::String_View const pass_name, Source_Info const& return_type) {
+        Error error = error_from_source(ctx.allocator, return_type);
+        error.diagnostic += anton::format(ctx.allocator, "error: the return type of the compute stage of '{}' must be void\n"_sv, pass_name);
+        anton::String_View const source = ctx.find_source(return_type.source_path)->data;
+        print_source_snippet(ctx, error.extended_diagnostic, source, return_type);
+        error.extended_diagnostic += " return type must be void"_sv;
+        return error;
     }
 
-    anton::String format_empty_struct([[maybe_unused]] Context const& ctx, Source_Info const& struct_name) {
-        anton::String_View const source = ctx.source_registry.find(struct_name.source_path)->value.data;
-        anton::String message = format_diagnostic_location(ctx.allocator, struct_name);
+    Error err_duplicate_attribute(Context const& ctx, Source_Info const& old_attr, Source_Info const& new_attr) {
+        Error error = error_from_source(ctx.allocator, new_attr);
+        anton::String_View const source = ctx.find_source(new_attr.source_path)->data;
+        error.diagnostic = anton::format(ctx.allocator, "error: duplicate attribute '{}'"_sv, get_source_bit(source, new_attr));
+        print_source_snippet(ctx, error.extended_diagnostic, source, old_attr);
+        error.extended_diagnostic += " attribute first appeared here\n"_sv;
+        print_source_snippet(ctx, error.extended_diagnostic, source, new_attr);
+        error.extended_diagnostic += " duplicated here"_sv;
+        return error;
+    }
+
+    Error err_illegal_attribute(Context const& ctx, Source_Info const& attr) {
+        Error error = error_from_source(ctx.allocator, attr);
+        anton::String_View const source = ctx.find_source(attr.source_path)->data;
+        error.diagnostic = anton::format(ctx.allocator, "error: illegal attribute '{}'"_sv, get_source_bit(source, attr));
+        print_source_snippet(ctx, error.extended_diagnostic, source, attr);
+        error.extended_diagnostic += " attribute not allowed"_sv;
+        return error;
+    }
+
+    Error err_empty_struct(Context const& ctx, Source_Info const& struct_name) {
+        Error error = error_from_source(ctx.allocator, struct_name);
+        anton::String_View const source = ctx.find_source(struct_name.source_path)->data;
         anton::String_View const name = get_source_bit(source, struct_name);
-        message += anton::format(ctx.allocator,
-                                 u8"error: structs must not be empty, i.e. they must contain at least one member, but '{}' is an empty struct\n"_sv, name);
-        if(ctx.diagnostics.extended) {
-            message += format_diagnostic_location(ctx.allocator, struct_name);
-            message += anton::format(u8"'{}' is defined here with an empty body\n"_sv, name);
-            print_source_snippet(ctx, message, source, struct_name);
-            message += '\n';
-        }
-        return message;
+        error.diagnostic = anton::format(ctx.allocator, "error: structs must have at least one member, but '{}' is empty"_sv, name);
+        print_source_snippet(ctx, error.extended_diagnostic, source, struct_name);
+        error.extended_diagnostic += " defined here with an empty body"_sv;
+        return error;
     }
 
-    anton::String format_compute_return_type_must_be_void(Context const& ctx, Source_Info const& return_type) {
-        anton::String message = format_diagnostic_location(ctx.allocator, return_type);
-        message += u8"error: the return type of the compute stage must be void\n"_sv;
-        if(ctx.diagnostics.extended) {
-            anton::String_View const source = ctx.source_registry.find(return_type.source_path)->value.data;
-            print_source_snippet(ctx, message, source, return_type);
-            message += '\n';
-        }
-        return message;
+    Error err_duplicate_struct_member(Context const& ctx, Source_Info const& first_member_name, Source_Info const& second_member_name) {
+        Error error = error_from_source(ctx.allocator, second_member_name);
+        anton::String_View const source = ctx.find_source(second_member_name.source_path)->data;
+        anton::String_View const name = get_source_bit(source, second_member_name);
+        error.diagnostic = anton::format(ctx.allocator, "error: duplicate member '{}'"_sv, name);
+        print_source_snippet(ctx, error.extended_diagnostic, source, first_member_name);
+        error.extended_diagnostic += " defined here\n"_sv;
+        print_source_snippet(ctx, error.extended_diagnostic, source, second_member_name);
+        error.extended_diagnostic += " duplicated here"_sv;
+        return error;
     }
 
-    Error format_import_source_failed(Context const& ctx, Source_Info const& import_info, anton::String_View const source_callback_message) {
-        Error error;
-        error.line = import_info.line;
-        error.column = import_info.column;
-        error.end_line = import_info.end_line;
-        error.end_column = import_info.end_column;
-        error.source = anton::String(import_info.source_path, ctx.allocator);
-        error.diagnostic = format_diagnostic_location(ctx.allocator, import_info);
-        error.diagnostic += "error: source import failed with the following error: "_sv;
+    Error err_opaque_type_in_struct(Context const& ctx, Source_Info const& type) {
+        Error error = error_from_source(ctx.allocator, type);
+        anton::String_View const source = ctx.find_source(type.source_path)->data;
+        anton::String_View const name = get_source_bit(source, type);
+        error.diagnostic = anton::format(ctx.allocator, "error: opaque type '{}' may not be used inside struct"_sv, name);
+        print_source_snippet(ctx, error.extended_diagnostic, source, type);
+        error.extended_diagnostic += " opaque type used\n"_sv;
+        return error;
+    }
+
+    Error err_recursive_type_definition(Context const& ctx, Source_Info const& struct_name, Source_Info const& type) {
+        Error error = error_from_source(ctx.allocator, type);
+        anton::String_View const source = ctx.find_source(struct_name.source_path)->data;
+        anton::String_View const name = get_source_bit(source, struct_name);
+        error.diagnostic = anton::format(ctx.allocator, "error: recursively defined type '{}'"_sv, name);
+        print_source_snippet(ctx, error.extended_diagnostic, source, type);
+        error.extended_diagnostic += anton::format(ctx.allocator, " '{}' used within its own definition\n"_sv, name);
+        return error;
+    }
+
+    Error err_source_import_failed(Context const& ctx, Source_Info const& import_info, anton::String_View const source_callback_message) {
+        Error error = error_from_source(ctx.allocator, import_info);
+        error.diagnostic = anton::String("error: source import failed with the following error: "_sv, ctx.allocator);
         error.diagnostic += source_callback_message;
-        error.diagnostic += '\n';
-        error.extended_diagnostic = anton::String(ctx.allocator);
-        anton::String_View const source = ctx.source_registry.find(import_info.source_path)->value.data;
+        anton::String_View const source = ctx.find_source(import_info.source_path)->data;
         print_source_snippet(ctx, error.extended_diagnostic, source, import_info);
         return error;
     }
 
-    Error format_import_source_failed_no_location(Context const& ctx, anton::String_View const source_callback_message) {
+    Error err_source_import_failed_no_location(Context const& ctx, anton::String_View const source_callback_message) {
         Error error;
         error.line = 1;
         error.column = 1;
@@ -475,7 +421,6 @@ namespace vush {
         error.source = anton::String("<vush>"_sv, ctx.allocator);
         error.diagnostic = anton::String("error: source import failed with the following error: "_sv, ctx.allocator);
         error.diagnostic += source_callback_message;
-        error.diagnostic += '\n';
         error.extended_diagnostic = anton::String(ctx.allocator);
         return error;
     }
@@ -485,14 +430,14 @@ namespace vush {
         anton::String message = format_diagnostic_location(ctx.allocator, second);
         message += u8"error: duplicate sourced parameter name with a different type\n"_sv;
         if(ctx.diagnostics.extended) {
-            anton::String_View const first_source = ctx.source_registry.find(first.source_path)->value.data;
+            anton::String_View const first_source = ctx.find_source(first.source_path)->data;
             message += format_diagnostic_location(ctx.allocator, first);
             message += u8"first definition with type '"_sv;
             message += get_source_bit(first_source, first_type);
             message += u8"' found here\n"_sv;
             print_source_snippet(ctx, message, first_source, first);
             message += '\n';
-            anton::String_View const second_source = ctx.source_registry.find(second.source_path)->value.data;
+            anton::String_View const second_source = ctx.find_source(second.source_path)->data;
             message += format_diagnostic_location(ctx.allocator, second);
             message += u8"second definition with type '"_sv;
             message += get_source_bit(second_source, second_type);
@@ -503,79 +448,66 @@ namespace vush {
         return message;
     }
 
-    anton::String format_duplicate_default_label(Context const& ctx, Source_Info const& first, Source_Info const& second) {
-        anton::String message = format_diagnostic_location(ctx.allocator, second);
-        message += u8"error: duplicate 'default' label in switch statement\n"_sv;
-        if(ctx.diagnostics.extended) {
-            anton::String_View const first_source = ctx.source_registry.find(first.source_path)->value.data;
-            message += format_diagnostic_location(ctx.allocator, first);
-            message += u8"first occurence of 'default' found here\n"_sv;
-            print_source_snippet(ctx, message, first_source, first);
-            message += '\n';
-            anton::String_View const second_source = ctx.source_registry.find(second.source_path)->value.data;
-            message += format_diagnostic_location(ctx.allocator, second);
-            message += u8"second occurence of 'default' found here\n"_sv;
-            print_source_snippet(ctx, message, second_source, second);
-            message += '\n';
-        }
-        return message;
-    }
+    // Error err_duplicate_default_label(Context const& ctx, Source_Info const& first, Source_Info const& second) {
+    //     anton::String message = format_diagnostic_location(ctx.allocator, second);
+    //     message += u8"error: duplicate 'default' label in switch statement\n"_sv;
+    //     if(ctx.diagnostics.extended) {
+    //         anton::String_View const first_source = ctx.find_source(first.source_path)->data;
+    //         message += format_diagnostic_location(ctx.allocator, first);
+    //         message += u8"first occurence of 'default' found here\n"_sv;
+    //         print_source_snippet(ctx, message, first_source, first);
+    //         message += '\n';
+    //         anton::String_View const second_source = ctx.find_source(second.source_path)->data;
+    //         message += format_diagnostic_location(ctx.allocator, second);
+    //         message += u8"second occurence of 'default' found here\n"_sv;
+    //         print_source_snippet(ctx, message, second_source, second);
+    //         message += '\n';
+    //     }
+    //     return message;
+    // }
 
-    anton::String format_duplicate_label(Context const& ctx, Source_Info const& first, Source_Info const& second) {
-        anton::String_View const second_source = ctx.source_registry.find(second.source_path)->value.data;
-        anton::String message = format_diagnostic_location(ctx.allocator, second);
-        message += u8"error: duplicate '"_sv;
-        message += get_source_bit(second_source, second);
-        message += u8"' label in switch statement\n"_sv;
-        if(ctx.diagnostics.extended) {
-            anton::String_View const first_source = ctx.source_registry.find(first.source_path)->value.data;
-            message += format_diagnostic_location(ctx.allocator, first);
-            message += u8"first occurence of '"_sv;
-            message += get_source_bit(first_source, first);
-            message += u8"' found here\n"_sv;
-            print_source_snippet(ctx, message, first_source, first);
-            message += '\n';
-            message += format_diagnostic_location(ctx.allocator, second);
-            message += u8"second occurence of '"_sv;
-            message += get_source_bit(second_source, second);
-            message += u8"' found here\n"_sv;
-            print_source_snippet(ctx, message, second_source, second);
-            message += '\n';
-        }
-        return message;
-    }
+    // Error err_duplicate_label(Context const& ctx, Source_Info const& first, Source_Info const& second) {
+    //     anton::String_View const second_source = ctx.find_source(second.source_path)->data;
+    //     anton::String message = format_diagnostic_location(ctx.allocator, second);
+    //     message += u8"error: duplicate '"_sv;
+    //     message += get_source_bit(second_source, second);
+    //     message += u8"' label in switch statement\n"_sv;
+    //     if(ctx.diagnostics.extended) {
+    //         anton::String_View const first_source = ctx.find_source(first.source_path)->data;
+    //         message += format_diagnostic_location(ctx.allocator, first);
+    //         message += u8"first occurence of '"_sv;
+    //         message += get_source_bit(first_source, first);
+    //         message += u8"' found here\n"_sv;
+    //         print_source_snippet(ctx, message, first_source, first);
+    //         message += '\n';
+    //         message += format_diagnostic_location(ctx.allocator, second);
+    //         message += u8"second occurence of '"_sv;
+    //         message += get_source_bit(second_source, second);
+    //         message += u8"' found here\n"_sv;
+    //         print_source_snippet(ctx, message, second_source, second);
+    //         message += '\n';
+    //     }
+    //     return message;
+    // }
 
-    Error err_identifier_does_not_name_constant(Context const& ctx, Source_Info const& identifier) {
-        Error error;
-        error.line = identifier.line;
-        error.column = identifier.column;
-        error.end_line = identifier.end_line;
-        error.end_column = identifier.end_column;
-        error.source = anton::String(identifier.source_path, ctx.allocator);
-        anton::String_View const source = ctx.source_registry.find(identifier.source_path)->value.data;
-        error.diagnostic = format_diagnostic_location(ctx.allocator, identifier);
-        error.diagnostic += "error: identifier '"_sv;
-        error.diagnostic += get_source_bit(source, identifier);
-        error.diagnostic += "' does not name a constant\n"_sv;
-        error.extended_diagnostic = anton::String(ctx.allocator);
+    // Error err_invalid_switch_arm_expression(Context const& ctx, Source_Info const& expression) {}
+
+    Error err_identifier_is_not_a_constant(Context const& ctx, Source_Info const& identifier) {
+        Error error = error_from_source(ctx.allocator, identifier);
+        anton::String_View const source = ctx.find_source(identifier.source_path)->data;
+        anton::String_View const name = get_source_bit(source, identifier);
+        error.diagnostic = anton::format(ctx.allocator, "error: '{}' is not a constant"_sv, name);
         print_source_snippet(ctx, error.extended_diagnostic, source, identifier);
+        error.extended_diagnostic += anton::format(ctx.allocator, " '{}' is not a constant"_sv, name);
         return error;
     }
 
     Error err_expression_is_not_constant_evaluable(Context const& ctx, Source_Info const& expression) {
-        Error error;
-        error.line = expression.line;
-        error.column = expression.column;
-        error.end_line = expression.end_line;
-        error.end_column = expression.end_column;
-        error.source = anton::String(expression.source_path, ctx.allocator);
-        anton::String_View const source = ctx.source_registry.find(expression.source_path)->value.data;
-        error.diagnostic = format_diagnostic_location(ctx.allocator, expression);
-        error.diagnostic += "error: expression '"_sv;
-        error.diagnostic += get_source_bit(source, expression);
-        error.diagnostic += "' is not constant evaluable\n"_sv;
-        error.extended_diagnostic = anton::String(ctx.allocator);
+        Error error = error_from_source(ctx.allocator, expression);
+        anton::String_View const source = ctx.find_source(expression.source_path)->data;
+        error.diagnostic = "error: expression is not constant evaluable'"_sv;
         print_source_snippet(ctx, error.extended_diagnostic, source, expression);
+        error.extended_diagnostic += " not constant evaluable"_sv;
         return error;
     }
 } // namespace vush

@@ -12,20 +12,11 @@
 #include <lexer.hpp>
 #include <memory.hpp>
 
-// TODO: Figure out a way to match operators that use overlapping symbols (+ and +=) in a clean way.
-// TODO: const types.
 // TODO: add constructors (currently function call which will break if we use an array type).
 
 namespace vush {
     using anton::Optional;
     using namespace anton::literals;
-
-    // attributes
-    static constexpr anton::String_View attr_workgroup = "workgroup";
-    static constexpr anton::String_View attr_invariant = "invariant";
-    static constexpr anton::String_View attr_flat = "flat";
-    static constexpr anton::String_View attr_smooth = "smooth";
-    static constexpr anton::String_View attr_noperspective = "noperspective";
 
     // stages
 
@@ -115,6 +106,8 @@ namespace vush {
         Lexed_Source::const_token_iterator end;
         Lexed_Source::const_token_iterator begin;
     };
+
+#define WRAP_NODE(allocator, kind, node, source_info) Syntax_Node(kind, Array<SNOT>(allocator, anton::variadic_construct, ANTON_MOV(node)), source_info)
 
     class Parser {
     public:
@@ -441,6 +434,85 @@ namespace vush {
             return Syntax_Token(Syntax_Node_Kind::tk_setting_string, ANTON_MOV(value), source);
         }
 
+        // TODO: Error inside try_attribute does not bubble upward.
+        Optional<Syntax_Node> try_attribute() {
+            Lexer_State const begin_state = _lexer.get_current_state();
+            Array<SNOT> snots{_allocator};
+            if(Optional tk_at = match(Token_Kind::tk_at)) {
+                snots.push_back(ANTON_MOV(*tk_at));
+            } else {
+                set_error("expected '@'"_sv);
+                _lexer.restore_state(begin_state);
+                return anton::null_optional;
+            }
+
+            // No whitespace between '@' and identifier are allowed.
+            if(Optional identifier = match(Token_Kind::identifier)) {
+                snots.push_back(ANTON_MOV(*identifier));
+            } else {
+                set_error("expected identifier"_sv);
+                _lexer.restore_state(begin_state);
+                return anton::null_optional;
+            }
+
+            Lexer_State const parameter_list_begin_state = _lexer.get_current_state();
+            Array<SNOT> parameter_list_snots{_allocator};
+            if(Optional tk_lparen = skipmatch(Token_Kind::tk_lparen)) {
+                parameter_list_snots.push_back(ANTON_MOV(*tk_lparen));
+
+                while(true) {
+                    if(Optional tk_rparen = skipmatch(Token_Kind::tk_rparen)) {
+                        parameter_list_snots.push_back(ANTON_MOV(*tk_rparen));
+                        break;
+                    }
+
+                    Lexer_State const parameter_begin_state = _lexer.get_current_state();
+                    Array<SNOT> parameter_snots{_allocator};
+                    if(Optional key = match(Token_Kind::identifier)) {
+                        parameter_snots.push_back(ANTON_MOV(*key));
+                        if(Optional tk_equals = skipmatch(Token_Kind::tk_equals)) {
+                            parameter_snots.push_back(ANTON_MOV(*tk_equals));
+                        } else {
+                            set_error("expected '='"_sv);
+                            _lexer.restore_state(begin_state);
+                            return anton::null_optional;
+                        }
+                    }
+
+                    if(Optional value = try_expr_lt_integer()) {
+                        parameter_snots.push_back(ANTON_MOV(*value));
+                    } else {
+                        _lexer.restore_state(begin_state);
+                        return anton::null_optional;
+                    }
+
+                    Lexer_State const parameter_end_state = _lexer.get_current_state_noskip();
+                    Source_Info const source = src_info(parameter_begin_state, parameter_end_state);
+                    parameter_list_snots.push_back(Syntax_Node(Syntax_Node_Kind::attribute_parameter, ANTON_MOV(parameter_snots), source));
+                }
+
+                Lexer_State const parameter_list_end_state = _lexer.get_current_state_noskip();
+                Source_Info const parameter_list_source = src_info(parameter_list_begin_state, parameter_list_end_state);
+                snots.push_back(Syntax_Node(Syntax_Node_Kind::attribute_parameter_list, ANTON_MOV(parameter_list_snots), parameter_list_source));
+            }
+
+            Lexer_State const end_state = _lexer.get_current_state_noskip();
+            Source_Info const source = src_info(begin_state, end_state);
+            return Syntax_Node(Syntax_Node_Kind::attribute, ANTON_MOV(snots), source);
+        }
+
+        Syntax_Node try_attribute_list() {
+            Lexer_State const begin_state = _lexer.get_current_state();
+            Array<SNOT> snots{_allocator};
+            while(Optional attribute = try_attribute()) {
+                snots.push_back(ANTON_MOV(*attribute));
+            }
+
+            Lexer_State const end_state = _lexer.get_current_state_noskip();
+            Source_Info const source = src_info(begin_state, end_state);
+            return Syntax_Node(Syntax_Node_Kind::attribute_list, ANTON_MOV(snots), source);
+        }
+
         Optional<Syntax_Node> try_declaration() {
             if(Optional decl_if = try_decl_if()) {
                 return ANTON_MOV(*decl_if);
@@ -466,7 +538,7 @@ namespace vush {
                 return ANTON_MOV(*decl_function);
             }
 
-            if(Optional decl_constant = try_decl_constant()) {
+            if(Optional decl_constant = try_variable()) {
                 return ANTON_MOV(*decl_constant);
             }
 
@@ -577,20 +649,13 @@ namespace vush {
             return Syntax_Node(Syntax_Node_Kind::decl_if, ANTON_MOV(snots), source);
         }
 
-        Optional<Syntax_Node> try_decl_constant() {
+        Optional<Syntax_Node> try_variable() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional kw_const = match(Token_Kind::kw_const)) {
-                snots.push_back(ANTON_MOV(*kw_const));
+            if(Optional kw_var = match(Token_Kind::kw_var)) {
+                snots.push_back(ANTON_MOV(*kw_var));
             } else {
-                set_error(u8"expected 'const'");
-                _lexer.restore_state(begin_state);
-                return anton::null_optional;
-            }
-
-            if(Optional type = try_type()) {
-                snots.push_back(ANTON_MOV(*type));
-            } else {
+                set_error(u8"expected 'var'");
                 _lexer.restore_state(begin_state);
                 return anton::null_optional;
             }
@@ -598,7 +663,22 @@ namespace vush {
             if(Optional identifier = skipmatch(Token_Kind::identifier)) {
                 snots.push_back(ANTON_MOV(*identifier));
             } else {
-                set_error(u8"expected variable identifier");
+                set_error(u8"expected identifier");
+                _lexer.restore_state(begin_state);
+                return anton::null_optional;
+            }
+
+            if(Optional tk_colon = skipmatch(Token_Kind::tk_colon)) {
+                snots.push_back(ANTON_MOV(*tk_colon));
+            } else {
+                set_error("expected ':'"_sv);
+                _lexer.restore_state(begin_state);
+                return anton::null_optional;
+            }
+
+            if(Optional type = try_type()) {
+                snots.push_back(ANTON_MOV(*type));
+            } else {
                 _lexer.restore_state(begin_state);
                 return anton::null_optional;
             }
@@ -616,29 +696,25 @@ namespace vush {
             if(Optional tk_semicolon = skipmatch(Token_Kind::tk_semicolon)) {
                 snots.push_back(ANTON_MOV(*tk_semicolon));
             } else {
-                set_error(u8"expected ';' after constant declaration");
+                set_error(u8"expected ';'");
                 _lexer.restore_state(begin_state);
                 return anton::null_optional;
             }
 
             Lexer_State const end_state = _lexer.get_current_state_noskip();
             Source_Info const source = src_info(begin_state, end_state);
-            return Syntax_Node(Syntax_Node_Kind::decl_constant, ANTON_MOV(snots), source);
+            return Syntax_Node(Syntax_Node_Kind::variable, ANTON_MOV(snots), source);
         }
 
         Optional<Syntax_Node> try_struct_member() {
-            Lexer_State const begin_state = _lexer.get_current_state();
-            Array<SNOT> snots{_allocator};
-            // We allow many attribute lists to be present.
             // TODO: We've removed qualifier validation from the parser
             //       in order to postpone it to a later stage where we will be
             //       able to output more meaningful error diagnostics.
-            while(true) {
-                if(Optional attribute_list = try_attribute_list()) {
-                    snots.push_back(ANTON_MOV(*attribute_list));
-                } else {
-                    break;
-                }
+            Lexer_State const begin_state = _lexer.get_current_state();
+            Array<SNOT> snots{_allocator};
+            {
+                Syntax_Node attribute_list = try_attribute_list();
+                snots.push_back(ANTON_MOV(attribute_list));
             }
 
             if(Optional type = try_type()) {
@@ -839,146 +915,6 @@ namespace vush {
             return Syntax_Node(Syntax_Node_Kind::decl_settings, ANTON_MOV(snots), source);
         }
 
-        Optional<Syntax_Node> try_attribute() {
-            Lexer_State const begin_state = _lexer.get_current_state();
-            Array<SNOT> snots{_allocator};
-            Optional identifier = match(Token_Kind::identifier);
-            if(!identifier) {
-                set_error("expected identifier"_sv);
-                _lexer.restore_state(begin_state);
-                return anton::null_optional;
-            }
-
-            if(identifier->value == attr_workgroup) {
-                Array<SNOT> snots{_allocator};
-                snots.push_back(ANTON_MOV(*identifier));
-                if(Optional tk_lparen = skipmatch(Token_Kind::tk_lparen)) {
-                    snots.push_back(ANTON_MOV(*tk_lparen));
-                } else {
-                    set_error(u8"expected '('");
-                    _lexer.restore_state(begin_state);
-                    return anton::null_optional;
-                }
-
-                if(Optional x = try_expr_lt_integer()) {
-                    snots.push_back(ANTON_MOV(*x));
-                } else {
-                    _lexer.restore_state(begin_state);
-                    return anton::null_optional;
-                }
-
-                if(Optional y_comma = skipmatch(Token_Kind::tk_comma)) {
-                    snots.push_back(ANTON_MOV(*y_comma));
-                    if(Optional y = try_expr_lt_integer()) {
-                        snots.push_back(ANTON_MOV(*y));
-                    } else {
-                        _lexer.restore_state(begin_state);
-                        return anton::null_optional;
-                    }
-
-                    if(Optional z_comma = skipmatch(Token_Kind::tk_comma)) {
-                        snots.push_back(ANTON_MOV(*z_comma));
-                        if(Optional z = try_expr_lt_integer()) {
-                            snots.push_back(ANTON_MOV(*z));
-                        } else {
-                            _lexer.restore_state(begin_state);
-                            return anton::null_optional;
-                        }
-                    }
-                }
-
-                if(Optional tk_rparen = skipmatch(Token_Kind::tk_rparen)) {
-                    snots.push_back(ANTON_MOV(*tk_rparen));
-                } else {
-                    set_error(u8"expected ')'");
-                    _lexer.restore_state(begin_state);
-                    return anton::null_optional;
-                }
-
-                Lexer_State const end_state = _lexer.get_current_state_noskip();
-                Source_Info const source = src_info(begin_state, end_state);
-                return Syntax_Node(Syntax_Node_Kind::attr_workgroup, ANTON_MOV(snots), source);
-            }
-
-            if(identifier->value == attr_invariant) {
-                Array<SNOT> snots{_allocator};
-                snots.push_back(ANTON_MOV(*identifier));
-                Lexer_State const end_state = _lexer.get_current_state_noskip();
-                Source_Info const source = src_info(begin_state, end_state);
-                return Syntax_Node(Syntax_Node_Kind::attr_invariant, ANTON_MOV(snots), source);
-            }
-
-            if(identifier->value == attr_flat) {
-                Array<SNOT> snots{_allocator};
-                snots.push_back(ANTON_MOV(*identifier));
-                Lexer_State const end_state = _lexer.get_current_state_noskip();
-                Source_Info const source = src_info(begin_state, end_state);
-                return Syntax_Node(Syntax_Node_Kind::attr_flat, ANTON_MOV(snots), source);
-            }
-
-            if(identifier->value == attr_smooth) {
-                Array<SNOT> snots{_allocator};
-                snots.push_back(ANTON_MOV(*identifier));
-                Lexer_State const end_state = _lexer.get_current_state_noskip();
-                Source_Info const source = src_info(begin_state, end_state);
-                return Syntax_Node(Syntax_Node_Kind::attr_smooth, ANTON_MOV(snots), source);
-            }
-
-            if(identifier->value == attr_noperspective) {
-                Array<SNOT> snots{_allocator};
-                snots.push_back(ANTON_MOV(*identifier));
-                Lexer_State const end_state = _lexer.get_current_state_noskip();
-                Source_Info const source = src_info(begin_state, end_state);
-                return Syntax_Node(Syntax_Node_Kind::attr_noperspective, ANTON_MOV(snots), source);
-            }
-
-            // TODO: Correctly parse unrecognized attributes and reject them
-            //       in the later stages of compilation to improve the diagnostics.
-
-            set_error(u8"unrecognised attribute");
-            _lexer.restore_state(begin_state);
-            return anton::null_optional;
-        }
-
-        Optional<Syntax_Node> try_attribute_list() {
-            Lexer_State const begin_state = _lexer.get_current_state();
-            Array<SNOT> snots{_allocator};
-            if(Optional tk_lbracket = match(Token_Kind::tk_lbracket)) {
-                snots.push_back(ANTON_MOV(*tk_lbracket));
-            } else {
-                set_error(u8"expected '['");
-                _lexer.restore_state(begin_state);
-                return anton::null_optional;
-            }
-
-            // TODO: Validate empty attribute lists (allow or emit diagnostic).
-
-            while(true) {
-                if(Optional attribute = try_attribute()) {
-                    snots.push_back(ANTON_MOV(*attribute));
-                } else {
-                    break;
-                }
-
-                if(Optional tk_comma = skipmatch(Token_Kind::tk_comma)) {
-                    snots.push_back(ANTON_MOV(*tk_comma));
-                } else {
-                    break;
-                }
-            }
-
-            if(Optional tk_rbracket = skipmatch(Token_Kind::tk_rbracket)) {
-                snots.push_back(ANTON_MOV(*tk_rbracket));
-            } else {
-                _lexer.restore_state(begin_state);
-                return anton::null_optional;
-            }
-
-            Lexer_State const end_state = _lexer.get_current_state_noskip();
-            Source_Info const source = src_info(begin_state, end_state);
-            return Syntax_Node(Syntax_Node_Kind::attribute_list, ANTON_MOV(snots), source);
-        }
-
         Optional<Syntax_Node> try_func_parameter() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
@@ -1144,13 +1080,9 @@ namespace vush {
         Optional<Syntax_Node> try_decl_stage_function() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            // We allow many attribute lists to be present.
-            while(true) {
-                if(Optional attribute_list = try_attribute_list()) {
-                    snots.push_back(ANTON_MOV(*attribute_list));
-                } else {
-                    break;
-                }
+            {
+                Syntax_Node attribute_list = try_attribute_list();
+                snots.push_back(ANTON_MOV(attribute_list));
             }
 
             if(Optional return_type = try_type()) {
@@ -1211,13 +1143,9 @@ namespace vush {
         Optional<Syntax_Node> try_decl_function() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            // We allow many attribute lists to be present.
-            while(true) {
-                if(Optional attribute_list = try_attribute_list()) {
-                    snots.push_back(ANTON_MOV(*attribute_list));
-                } else {
-                    break;
-                }
+            {
+                Syntax_Node attribute_list = try_attribute_list();
+                snots.push_back(ANTON_MOV(attribute_list));
             }
 
             if(Optional return_type = try_type()) {
@@ -1369,7 +1297,7 @@ namespace vush {
 
             Lexer_State const end_state = _lexer.get_current_state_noskip();
             Source_Info const source = src_info(begin_state, end_state);
-            return Syntax_Node(Syntax_Node_Kind::stmt_variable, ANTON_MOV(snots), source);
+            return Syntax_Node(Syntax_Node_Kind::variable, ANTON_MOV(snots), source);
         }
 
         // try_stmt_block
@@ -1457,15 +1385,12 @@ namespace vush {
                     while(true) {
                         if(Optional kw_default = skipmatch(Token_Kind::kw_default)) {
                             Source_Info const source_info = kw_default->source_info;
-                            Syntax_Node expr_default(Syntax_Node_Kind::expr_default, Array<SNOT>(_allocator, anton::variadic_construct, ANTON_MOV(*kw_default)),
-                                                     source_info);
-                            Syntax_Node label(Syntax_Node_Kind::switch_arm_label, Array<SNOT>(_allocator, anton::variadic_construct, ANTON_MOV(expr_default)),
-                                              source_info);
+                            Syntax_Node expr_default = WRAP_NODE(_allocator, Syntax_Node_Kind::expr_default, *kw_default, source_info);
+                            Syntax_Node label = WRAP_NODE(_allocator, Syntax_Node_Kind::switch_arm_label, expr_default, source_info);
                             snots.push_back(ANTON_MOV(label));
                         } else if(Optional literal = try_expr_lt_integer()) {
                             Source_Info const source_info = literal->source_info;
-                            snots.push_back(Syntax_Node(Syntax_Node_Kind::switch_arm_label,
-                                                        Array<SNOT>(_allocator, anton::variadic_construct, ANTON_MOV(*literal)), source_info));
+                            snots.push_back(WRAP_NODE(_allocator, Syntax_Node_Kind::switch_arm_label, *literal, source_info));
                         } else {
                             _lexer.restore_state(begin_state);
                             return anton::null_optional;
@@ -1620,8 +1545,7 @@ namespace vush {
 
             if(Optional condition = try_expression()) {
                 Source_Info const source_info = condition->source_info;
-                snots.push_back(
-                    Syntax_Node(Syntax_Node_Kind::for_condition, Array<SNOT>(_allocator, anton::variadic_construct, ANTON_MOV(*condition)), source_info));
+                snots.push_back(WRAP_NODE(_allocator, Syntax_Node_Kind::for_condition, *condition, source_info));
             }
 
             if(Optional tk_semicolon = skipmatch(Token_Kind::tk_semicolon)) {
@@ -1634,8 +1558,7 @@ namespace vush {
 
             if(Optional expression = try_expression()) {
                 Source_Info const source_info = expression->source_info;
-                snots.push_back(
-                    Syntax_Node(Syntax_Node_Kind::for_expression, Array<SNOT>(_allocator, anton::variadic_construct, ANTON_MOV(*expression)), source_info));
+                snots.push_back(WRAP_NODE(_allocator, Syntax_Node_Kind::for_expression, *expression, source_info));
             }
 
             if(Optional statements = try_stmt_block()) {
@@ -1739,8 +1662,7 @@ namespace vush {
 
             if(Optional return_expression = try_expression()) {
                 Source_Info const source_info = return_expression->source_info;
-                snots.push_back(Syntax_Node(Syntax_Node_Kind::return_expression,
-                                            Array<SNOT>(_allocator, anton::variadic_construct, ANTON_MOV(*return_expression)), source_info));
+                snots.push_back(WRAP_NODE(_allocator, Syntax_Node_Kind::return_expression, *return_expression, source_info));
             }
 
             if(Optional tk_semicolon = skipmatch(Token_Kind::tk_semicolon)) {
@@ -2637,58 +2559,81 @@ namespace vush {
         }
 
         Optional<Syntax_Node> try_type() {
-            auto match_base_type = [this]() -> Optional<Syntax_Node> {
+            auto try_type_array = [this]() -> Optional<Syntax_Node> {
                 Lexer_State const begin_state = _lexer.get_current_state();
                 Array<SNOT> snots{_allocator};
-                if(Optional type = match(Token_Kind::identifier)) {
-                    Lexer_State const end_state = _lexer.get_current_state_noskip();
-                    anton::String_View const type_name = type->value;
-                    snots.push_back(ANTON_MOV(*type));
-                    if(anton::Optional<ast::GLSL_Type> res = ast::enumify_glsl_type(type_name); res) {
-                        Source_Info const source = src_info(begin_state, end_state);
-                        return Syntax_Node(Syntax_Node_Kind::type_builtin, ANTON_MOV(snots), source);
-                    } else {
-                        Source_Info const source = src_info(begin_state, end_state);
-                        return Syntax_Node(Syntax_Node_Kind::type_user_defined, ANTON_MOV(snots), source);
-                    }
+                if(Optional kw_mut = match(Token_Kind::kw_mut)) {
+                    snots.push_back(ANTON_MOV(*kw_mut));
+                }
+
+                if(Optional tk_lbracket = skipmatch(Token_Kind::tk_lbracket)) {
+                    snots.push_back(ANTON_MOV(*tk_lbracket));
                 } else {
-                    set_error(u8"expected type identifier");
+                    set_error("expected '['");
+                    _lexer.restore_state(begin_state);
                     return anton::null_optional;
                 }
+
+                if(Optional type = try_type()) {
+                    Source_Info const source_info = type->source_info;
+                    snots.push_back(WRAP_NODE(_allocator, Syntax_Node_Kind::type_array_base, *type, source_info));
+                } else {
+                    _lexer.restore_state(begin_state);
+                    return anton::null_optional;
+                }
+
+                if(Optional tk_semicolon = skipmatch(Token_Kind::tk_semicolon)) {
+                    snots.push_back(ANTON_MOV(*tk_semicolon));
+                } else {
+                    set_error("expected ';'");
+                    _lexer.restore_state(begin_state);
+                    return anton::null_optional;
+                }
+
+                if(Optional size = try_expr_lt_integer()) {
+                    Source_Info const source_info = size->source_info;
+                    snots.push_back(WRAP_NODE(_allocator, Syntax_Node_Kind::type_array_size, *size, source_info));
+                }
+
+                if(Optional tk_rbracket = skipmatch(Token_Kind::tk_rbracket)) {
+                    snots.push_back(ANTON_MOV(*tk_rbracket));
+                } else {
+                    set_error(u8"expected ']'");
+                    _lexer.restore_state(begin_state);
+                    return anton::null_optional;
+                }
+
+                Lexer_State const end_state = _lexer.get_current_state_noskip();
+                Source_Info const source = src_info(begin_state, end_state);
+                return Syntax_Node(Syntax_Node_Kind::type_array, ANTON_MOV(snots), source);
             };
 
+            if(Optional type_array = try_type_array()) {
+                return ANTON_MOV(type_array);
+            }
+
+            // Match builtin or UDT.
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            Optional base = match_base_type();
-            if(!base) {
-                return anton::null_optional;
+            if(Optional kw_mut = match(Token_Kind::kw_mut)) {
+                snots.push_back(ANTON_MOV(*kw_mut));
             }
 
-            // We have to explicitly ignore whitespaces between the base type and the bracket.
-            Optional tk_lbracket = skipmatch(Token_Kind::tk_lbracket);
-            if(!tk_lbracket) {
-                return base;
-            }
-
-            snots.push_back(ANTON_MOV(*base));
-            snots.push_back(ANTON_MOV(*tk_lbracket));
-
-            if(Optional array_size = try_expr_lt_integer()) {
-                snots.push_back(ANTON_MOV(*array_size));
-            }
-
-            if(Optional tk_rbracket = skipmatch(Token_Kind::tk_rbracket)) {
-                snots.push_back(ANTON_MOV(*tk_rbracket));
+            if(Optional type = match(Token_Kind::identifier)) {
+                Lexer_State const end_state = _lexer.get_current_state_noskip();
+                anton::String_View const type_name = type->value;
+                snots.push_back(ANTON_MOV(*type));
+                if(anton::Optional<ast::GLSL_Type> res = ast::enumify_glsl_type(type_name)) {
+                    Source_Info const source = src_info(begin_state, end_state);
+                    return Syntax_Node(Syntax_Node_Kind::type_builtin, ANTON_MOV(snots), source);
+                } else {
+                    Source_Info const source = src_info(begin_state, end_state);
+                    return Syntax_Node(Syntax_Node_Kind::type_user_defined, ANTON_MOV(snots), source);
+                }
             } else {
-                set_error(u8"expected ']'");
-                _lexer.restore_state(begin_state);
+                set_error(u8"expected identifier");
                 return anton::null_optional;
             }
-
-            // We don't support nested array types (yet), so we don't continue checking for brackets.
-            Lexer_State const end_state = _lexer.get_current_state_noskip();
-            Source_Info const source = src_info(begin_state, end_state);
-            return Syntax_Node(Syntax_Node_Kind::type_array, ANTON_MOV(snots), source);
         }
     };
 

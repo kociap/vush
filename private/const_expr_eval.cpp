@@ -1,4 +1,3 @@
-#include "anton/expected.hpp"
 #include <const_expr_eval.hpp>
 
 #include <diagnostics.hpp>
@@ -9,7 +8,7 @@ namespace vush {
         return true;
     }
 
-    anton::Expected<bool, anton::String> is_compiletime_evaluable(Context& ctx, Expression& expression) {
+    anton::Expected<bool, anton::String> is_compiletime_evaluable(Context& ctx, ast::Expr const& expression) {
         // Postfix expressions, assignment binary expressions, prefix increment and decrement are not compiletime expressions.
         // Function calls are not compiletime because functions are not compiletime (with the exception of constructor calls which are TODO).
         switch(expression.node_type) {
@@ -69,7 +68,7 @@ namespace vush {
         }
     }
 
-    anton::Expected<Expr_Value, anton::String> evaluate_const_expr(Context& ctx, Expression& expression) {
+    anton::Expected<Expr_Value, anton::String> evaluate_const_expr(Context& ctx, ast::Expr const& expression) {
         switch(expression.node_type) {
             // We currently do not handle floats, member access
             // or array access and reject them as non-constant expressions.
@@ -114,8 +113,7 @@ namespace vush {
                 }
 
                 if(symbol->node_type != Symbol_Type::constant_declaration) {
-                    return {anton::expected_error,
-                            err_identifier_does_not_name_constant(ctx, expr.source_info).format(ctx.allocator, ctx.diagnostics.extended)};
+                    return {anton::expected_error, err_identifier_is_not_a_constant(ctx, expr.source_info).format(ctx.allocator, ctx.diagnostics.extended)};
                 }
 
                 Constant_Declaration* decl = (Constant_Declaration*)symbol;

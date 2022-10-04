@@ -2,7 +2,6 @@
 
 #include <anton/array.hpp>
 #include <anton/fixed_array.hpp>
-#include <ast.hpp>
 
 namespace vush {
     struct Stage_Sourced_Data_Internal {

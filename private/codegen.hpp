@@ -12,7 +12,8 @@ namespace vush {
         // Maps source name to source definitions
         anton::Flat_Hash_Map<anton::String, Source_Definition> source_definitions;
         // If the declaration is nullptr, the stage is not present in the pass
-        Pass_Stage_Declaration* declaration = nullptr;
+        // Pass_Stage_Declaration* declaration = nullptr;
+        void* declaration = nullptr;
 
         // operator bool
         // Checks whether the stage is defined within a pass.
@@ -37,9 +38,11 @@ namespace vush {
         //       once we implement symbol referencing.
 
         // Functions used by the pass
-        Array<Function_Declaration const*> functions;
+        // Array<Function_Declaration const*> functions;
+        Array<void*> functions;
         // Structs and constants used by the pass
-        Array<Declaration const*> structs_and_constants;
+        // Array<Declaration const*> structs_and_constants;
+        Array<void*> structs_and_constants;
 
         Pass_Context(Allocator* allocator, anton::String_View const name): name(name, allocator), functions(allocator), structs_and_constants(allocator) {}
     };
@@ -49,5 +52,4 @@ namespace vush {
         anton::Slice<Pass_Context const> passes;
     };
 
-    anton::Expected<Array<Pass_Data>, anton::String> generate_glsl(Context const& ctx, Codegen_Data const& data);
 } // namespace vush

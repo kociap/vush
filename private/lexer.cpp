@@ -63,7 +63,7 @@ namespace vush {
     }
 
     [[nodiscard]] static bool is_integer_prefix_character(char32 c) {
-        return (c == 'b') | (c == 'B') | (c == 'o') | (c == 'O') | (c == 'x') | (c == 'X');
+        return (c == 'b') | (c == 'B') | (c == 'x') | (c == 'X');
     }
 
     [[nodiscard]] static anton::Optional<Token_Kind> is_keyword(anton::String7_View string) {
@@ -97,18 +97,12 @@ namespace vush {
                 return Token_Kind::kw_struct;
             case anton::hash("import"_sv7):
                 return Token_Kind::kw_import;
-            case anton::hash("const"_sv7):
-                return Token_Kind::kw_const;
+            case anton::hash("var"_sv7):
+                return Token_Kind::kw_var;
+            case anton::hash("mut"_sv7):
+                return Token_Kind::kw_mut;
             case anton::hash("settings"_sv7):
                 return Token_Kind::kw_settings;
-            case anton::hash("invariant"_sv7):
-                return Token_Kind::kw_invariant;
-            case anton::hash("smooth"_sv7):
-                return Token_Kind::kw_smooth;
-            case anton::hash("flat"_sv7):
-                return Token_Kind::kw_flat;
-            case anton::hash("noperspective"_sv7):
-                return Token_Kind::kw_noperspective;
             case anton::hash("reinterpret"_sv7):
                 return Token_Kind::kw_reinterpret;
             default:
@@ -414,6 +408,9 @@ namespace vush {
                         break;
                     case '\"':
                         token_kind = Token_Kind::tk_double_quote;
+                        break;
+                    case '@':
+                        token_kind = Token_Kind::tk_at;
                         break;
                     case '+':
                         token_kind = Token_Kind::tk_plus;
