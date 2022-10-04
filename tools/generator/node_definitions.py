@@ -22,25 +22,46 @@ class Syntax_Member:
 syntax_nodes = [
     {
         "syntax_name": "type_builtin",
-        "members": [Syntax_Member(Node_Kind.token, "value", Lookup_Kind.index, 0)]
+        "members": [
+            Syntax_Member(Node_Kind.token, "mut", Lookup_Kind.search, "kw_mut", optional = True),
+            Syntax_Member(Node_Kind.token, "value", Lookup_Kind.search, "identifier")
+        ]
     },
     {
         "syntax_name": "type_user_defined", 
-        "members": [Syntax_Member(Node_Kind.token, "value", Lookup_Kind.index, 0)]
+        "members": [
+            Syntax_Member(Node_Kind.token, "mut", Lookup_Kind.search, "kw_mut", optional = True),
+            Syntax_Member(Node_Kind.token, "value", Lookup_Kind.search, "identifier")
+        ]
     },
     {
         "syntax_name": "type_array",
         "members": [
-            Syntax_Member(Node_Kind.node, "base", Lookup_Kind.index, 0),
-            Syntax_Member(Node_Kind.node, "size", Lookup_Kind.index, 2)
+            Syntax_Member(Node_Kind.token, "mut", Lookup_Kind.search, "kw_mut", optional = True),
+            Syntax_Member(Node_Kind.node, "base", Lookup_Kind.search, "type_array_base", unwrap = True),
+            Syntax_Member(Node_Kind.node, "size", Lookup_Kind.search, "type_array_size", optional = True, unwrap = True)
         ]
     },
     {
-        "syntax_name": "attr_workgroup",
+        "syntax_name": "attribute",
         "members": [
-            Syntax_Member(Node_Kind.node, "x", Lookup_Kind.index, 2),
-            Syntax_Member(Node_Kind.node, "y", Lookup_Kind.index, 4, optional = True),
-            Syntax_Member(Node_Kind.node, "z", Lookup_Kind.index, 6, optional = True)
+            Syntax_Member(Node_Kind.token, "identifier", Lookup_Kind.index, 0),
+            Syntax_Member(Node_Kind.node, "parameter_list", Lookup_Kind.index, 1, optional = True)
+        ]
+    },
+    {
+        "syntax_name": "attribute_parameter",
+        "members": [
+            Syntax_Member(Node_Kind.token, "key", Lookup_Kind.search, "identifier", optional = True),
+            Syntax_Member(Node_Kind.node, "value", Lookup_Kind.search, "expr_lt_integer")
+        ]
+    },
+    {
+        "syntax_name": "variable",
+        "members": [
+            Syntax_Member(Node_Kind.node, "type", Lookup_Kind.index, 0),
+            Syntax_Member(Node_Kind.token, "identifier", Lookup_Kind.index, 1),
+            Syntax_Member(Node_Kind.node, "initializer", Lookup_Kind.index, 3, optional = True)
         ]
     },
     {
@@ -56,14 +77,6 @@ syntax_nodes = [
         "members": [Syntax_Member(Node_Kind.node, "path", Lookup_Kind.index, 1)]
     },
     {
-        "syntax_name": "decl_constant",
-        "members": [
-            Syntax_Member(Node_Kind.node, "type", Lookup_Kind.index, 1),
-            Syntax_Member(Node_Kind.token, "identifier", Lookup_Kind.index, 2),
-            Syntax_Member(Node_Kind.node, "initializer", Lookup_Kind.index, 4)
-        ]
-    },
-    {
         "syntax_name": "decl_struct",
         "members": [
             Syntax_Member(Node_Kind.token, "identifier", Lookup_Kind.index, 1),
@@ -73,20 +86,22 @@ syntax_nodes = [
     {
         "syntax_name": "decl_function",
         "members": [
-            Syntax_Member(Node_Kind.node, "return_type", Lookup_Kind.index, 0, offset = True),
-            Syntax_Member(Node_Kind.token, "identifier", Lookup_Kind.index, 1, offset = True),
-            Syntax_Member(Node_Kind.node, "parameter_list", Lookup_Kind.index, 2, offset = True),
-            Syntax_Member(Node_Kind.node, "body", Lookup_Kind.index, 3, offset = True)
+            Syntax_Member(Node_Kind.node, "attribute_list", Lookup_Kind.index, 0),
+            Syntax_Member(Node_Kind.node, "return_type", Lookup_Kind.index, 1),
+            Syntax_Member(Node_Kind.token, "identifier", Lookup_Kind.index, 2),
+            Syntax_Member(Node_Kind.node, "parameter_list", Lookup_Kind.index, 3),
+            Syntax_Member(Node_Kind.node, "body", Lookup_Kind.index, 4)
         ]
     },
     {
         "syntax_name": "decl_stage_function",
         "members": [
-            Syntax_Member(Node_Kind.node, "return_type", Lookup_Kind.index, 0, offset = True),
-            Syntax_Member(Node_Kind.token, "pass", Lookup_Kind.index, 1, offset = True),
-            Syntax_Member(Node_Kind.token, "stage", Lookup_Kind.index, 2, offset = True),
-            Syntax_Member(Node_Kind.node, "parameter_list", Lookup_Kind.index, 3, offset = True),
-            Syntax_Member(Node_Kind.node, "body", Lookup_Kind.index, 4, offset = True)
+            Syntax_Member(Node_Kind.node, "attribute_list", Lookup_Kind.index, 0),
+            Syntax_Member(Node_Kind.node, "return_type", Lookup_Kind.index, 1),
+            Syntax_Member(Node_Kind.token, "pass", Lookup_Kind.index, 2),
+            Syntax_Member(Node_Kind.token, "stage", Lookup_Kind.index, 3),
+            Syntax_Member(Node_Kind.node, "parameter_list", Lookup_Kind.index, 4),
+            Syntax_Member(Node_Kind.node, "body", Lookup_Kind.index, 5)
         ]
     },
     {
@@ -108,9 +123,10 @@ syntax_nodes = [
     {
         "syntax_name": "struct_member",
         "members": [
-            Syntax_Member(Node_Kind.node, "type", Lookup_Kind.index, 0, offset = True),
-            Syntax_Member(Node_Kind.token, "identifier", Lookup_Kind.index, 1, offset = True),
-            Syntax_Member(Node_Kind.node, "initializer", Lookup_Kind.index, 3, optional = True, offset = True)
+            Syntax_Member(Node_Kind.node, "attribute_list", Lookup_Kind.index, 0),
+            Syntax_Member(Node_Kind.node, "type", Lookup_Kind.index, 1),
+            Syntax_Member(Node_Kind.token, "identifier", Lookup_Kind.index, 2),
+            Syntax_Member(Node_Kind.node, "initializer", Lookup_Kind.index, 4, optional = True)
         ]
     },
     {
@@ -248,14 +264,6 @@ syntax_nodes = [
             Syntax_Member(Node_Kind.node, "expression", Lookup_Kind.search, "return_expression", optional = True, unwrap = True)
         ]
     },
-    {
-        "syntax_name": "stmt_variable",
-        "members": [
-            Syntax_Member(Node_Kind.node, "type", Lookup_Kind.index, 0),
-            Syntax_Member(Node_Kind.token, "identifier", Lookup_Kind.index, 1),
-            Syntax_Member(Node_Kind.node, "initializer", Lookup_Kind.index, 3, optional = True)
-        ]
-    },    
     {
         "syntax_name": "stmt_expression",
         "members": [Syntax_Member(Node_Kind.node, "expression", Lookup_Kind.index, 0)]

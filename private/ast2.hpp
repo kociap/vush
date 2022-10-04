@@ -32,7 +32,6 @@ namespace vush {
         kw_if,
         kw_else,
         kw_switch,
-        kw_case,
         kw_default,
         kw_for,
         kw_while,
@@ -44,13 +43,10 @@ namespace vush {
         kw_from,
         kw_struct,
         kw_import,
-        kw_const,
+        kw_var,
+        kw_mut,
         kw_settings,
         kw_reinterpret,
-        kw_invariant,
-        kw_smooth,
-        kw_flat,
-        kw_noperspective,
         // separators
         tk_brace_open,
         tk_brace_close,
@@ -65,6 +61,7 @@ namespace vush {
         tk_comma,
         tk_dot,
         tk_double_quote,
+        tk_at,
         tk_plus,
         tk_minus,
         tk_asterisk,
@@ -121,14 +118,11 @@ namespace vush {
         type_user_defined,
         type_array,
 
-        decl_block,
-        decl_if,
-        decl_import,
-        decl_constant,
-        decl_struct,
-        decl_settings,
-        decl_function,
-        decl_stage_function,
+        // The base type of array.
+        type_array_base,
+        type_array_size,
+
+        variable,
 
         struct_member,
         struct_member_block,
@@ -137,15 +131,18 @@ namespace vush {
         func_parameter,
         func_parameter_list,
 
-        attr_workgroup,
-        attr_invariant,
-        attr_flat,
-        attr_smooth,
-        attr_noperspective,
-        // attribute_list
-        // List of attributes.
-        //
+        attribute,
         attribute_list,
+        attribute_parameter,
+        attribute_parameter_list,
+
+        decl_block,
+        decl_if,
+        decl_import,
+        decl_struct,
+        decl_settings,
+        decl_function,
+        decl_stage_function,
 
         setting_block,
         setting_keyval,
@@ -182,7 +179,6 @@ namespace vush {
         stmt_break,
         stmt_continue,
         stmt_discard,
-        stmt_variable,
         stmt_expression,
         stmt_empty,
 
@@ -222,7 +218,7 @@ namespace vush {
 
     // transform_syntax_tree_to_ast
     //
-    [[nodiscard]] anton::Expected<ast::Decl_List, Error> transform_syntax_tree_to_ast(Context& ctx, Array<SNOT> const& syntax);
+    [[nodiscard]] anton::Expected<ast::Node_List, Error> transform_syntax_tree_to_ast(Context& ctx, Array<SNOT> const& syntax);
 
     // import_source_code
     // Imports, parses and transforms source code into abstract syntax tree (AST).
@@ -235,20 +231,11 @@ namespace vush {
     // source_info - source information of the import declaration.
     //
     // Returns:
-    // ast::Decl_List containing ast::Node's of the source or Error.
+    // ast::Node_List containing ast::Node's of the source or Error.
     // The list will be empty if the source has already been imported before.
     //
-    [[nodiscard]] anton::Expected<ast::Decl_List, Error> import_source_code(Context& ctx, anton::String_View const source_name,
+    [[nodiscard]] anton::Expected<ast::Node_List, Error> import_source_code(Context& ctx, anton::String_View const source_name,
                                                                             anton::Optional<Source_Info> source_info = anton::null_optional);
-
-    enum struct Interpolation {
-        none,
-        smooth,
-        flat,
-        noperspective,
-    };
-
-    [[nodiscard]] anton::String_View stringify_interpolation(Interpolation interpolation);
 
     namespace ast {
         template<typename T>
@@ -257,27 +244,23 @@ namespace vush {
             Source_Info source_info;
         };
 
-        enum struct Node_Kind {
+        enum struct Node_Kind : u8 {
             identifier,
 
             type_builtin,
             type_user_defined,
             type_array,
 
+            attribute,
+            variable,
+
             func_parameter,
             struct_member,
 
-            decl_constant,
             decl_struct,
             decl_function,
             decl_overloaded_function,
             decl_stage_function,
-
-            attr_workgroup,
-            attr_invariant,
-            attr_flat,
-            attr_smooth,
-            attr_noperspective,
 
             expr_if,
             expr_identifier,
@@ -304,7 +287,6 @@ namespace vush {
             stmt_break,
             stmt_continue,
             stmt_discard,
-            stmt_variable,
             stmt_expression,
         };
 
@@ -324,12 +306,18 @@ namespace vush {
             constexpr Identifier(anton::String_View value, Source_Info const& source_info): Node(source_info, Node_Kind::identifier), value(value) {}
         };
 
-        struct Type: public Node {
-            using Node::Node;
+        struct Qualifiers {
+            bool mut = false;
         };
 
-        [[nodiscard]] bool operator==(Type const& lhs, Type const& rhs);
-        [[nodiscard]] bool operator!=(Type const& lhs, Type const& rhs);
+        struct Type: public Node {
+            Qualifiers qualifiers;
+
+            constexpr Type(Source_Info const& source_info, Node_Kind node_kind): Node(source_info, node_kind) {}
+            constexpr Type(Qualifiers qualifiers, Source_Info const& source_info, Node_Kind node_kind): Node(source_info, node_kind), qualifiers(qualifiers) {}
+        };
+
+        [[nodiscard]] bool compare_types_equal(Type const& lhs, Type const& rhs);
         [[nodiscard]] bool is_void(Type const& type);
         [[nodiscard]] bool is_opaque_type(Type const& type);
         [[nodiscard]] bool is_unsized_array(Type const& type);
@@ -502,6 +490,8 @@ namespace vush {
             GLSL_Type value;
 
             constexpr Type_Builtin(GLSL_Type value, Source_Info const& source_info): Type(source_info, Node_Kind::type_builtin), value(value) {}
+            constexpr Type_Builtin(Qualifiers qualifiers, GLSL_Type value, Source_Info const& source_info)
+                : Type(qualifiers, source_info, Node_Kind::type_builtin), value(value) {}
         };
 
         struct Type_User_Defined: public Type {
@@ -509,6 +499,8 @@ namespace vush {
 
             constexpr Type_User_Defined(anton::String_View value, Source_Info const& source_info)
                 : Type(source_info, Node_Kind::type_user_defined), value(value) {}
+            constexpr Type_User_Defined(Qualifiers qualifiers, anton::String_View value, Source_Info const& source_info)
+                : Type(qualifiers, source_info, Node_Kind::type_user_defined), value(value) {}
         };
 
         struct Type_Array: public Type {
@@ -518,52 +510,31 @@ namespace vush {
 
             constexpr Type_Array(Type const* base, Lt_Integer const* size, Source_Info const& source_info)
                 : Type(source_info, Node_Kind::type_array), base(base), size(size) {}
+            constexpr Type_Array(Qualifiers qualifiers, Type const* base, Lt_Integer const* size, Source_Info const& source_info)
+                : Type(qualifiers, source_info, Node_Kind::type_array), base(base), size(size) {}
         };
 
-        struct Attr: public Node {
-            using Node::Node;
+        struct Attribute_Parameter {
+            Identifier const* key;
+            Expr const* value;
         };
 
-        struct Attr_Workgroup: public Attr {
-            // Never nullptr.
-            Lt_Integer const* x;
-            // May be nullptr.
-            Lt_Integer const* y;
-            // May be nullptr.
-            Lt_Integer const* z;
-
-            constexpr Attr_Workgroup(Lt_Integer const* x, Lt_Integer const* y, Lt_Integer const* z, Source_Info const& source_info)
-                : Attr(source_info, Node_Kind::attr_workgroup), x(x), y(y), z(z) {}
-        };
-
-        struct Attr_Invariant: public Attr {
-            constexpr Attr_Invariant(Source_Info const& source_info): Attr(source_info, Node_Kind::attr_invariant) {}
-        };
-
-        struct Attr_Flat: public Attr {
-            constexpr Attr_Flat(Source_Info const& source_info): Attr(source_info, Node_Kind::attr_flat) {}
-        };
-
-        struct Attr_Smooth: public Attr {
-            constexpr Attr_Smooth(Source_Info const& source_info): Attr(source_info, Node_Kind::attr_smooth) {}
-        };
-
-        struct Attr_Noperspective: public Attr {
-            constexpr Attr_Noperspective(Source_Info const& source_info): Attr(source_info, Node_Kind::attr_noperspective) {}
-        };
-
-        struct Decl: public Node {
-            using Node::Node;
-        };
-
-        struct Decl_Constant: public Decl {
+        struct Attribute: public Node {
             Identifier const* identifier;
+            anton::Slice<Attribute_Parameter const> parameters;
+
+            constexpr Attribute(Identifier const* identifier, anton::Slice<Attribute_Parameter const> parameters, Source_Info const& source_info)
+                : Node(source_info, Node_Kind::attribute), identifier(identifier), parameters(parameters) {}
+        };
+
+        struct Variable: public Node {
             Type const* type;
-            // Constant declarations always have an initializer.
+            Identifier const* identifier;
+            // nullptr when Variable does not have an initializer.
             Expr const* initializer;
 
-            constexpr Decl_Constant(Identifier const* identifier, Type const* type, Expr const* initializer, Source_Info const& source_info)
-                : Decl(source_info, Node_Kind::decl_constant), identifier(identifier), type(type), initializer(initializer) {}
+            constexpr Variable(Type const* type, Identifier const* identifier, Expr const* initializer, Source_Info const& source_info)
+                : Node(source_info, Node_Kind::variable), type(type), identifier(identifier), initializer(initializer) {}
         };
 
         struct Struct_Member: public Node {
@@ -578,12 +549,12 @@ namespace vush {
                 : Node(source_info, Node_Kind::struct_member), attributes(attributes), identifier(identifier), type(type), initializer(initializer) {}
         };
 
-        struct Decl_Struct: public Decl {
+        struct Decl_Struct: public Node {
             Identifier const* identifier;
             anton::Slice<Struct_Member const* const> members;
 
             constexpr Decl_Struct(Identifier const* identifier, anton::Slice<Struct_Member const* const> members, Source_Info const& source_info)
-                : Decl(source_info, Node_Kind::decl_struct), identifier(identifier), members(members) {}
+                : Node(source_info, Node_Kind::decl_struct), identifier(identifier), members(members) {}
         };
 
         struct Func_Parameter: public Node {
@@ -597,18 +568,21 @@ namespace vush {
                 : Node(source_info, Node_Kind::func_parameter), identifier(identifier), type(type), source(source) {}
         };
 
-        struct Decl_Function: public Decl {
+        [[nodiscard]] bool is_sourced_parameter(Func_Parameter const& parameter);
+        [[nodiscard]] bool is_vertex_input_parameter(Func_Parameter const& parameter);
+
+        struct Decl_Function: public Node {
             Attr_List attributes;
             Identifier const* identifier;
             Func_Parameter_List parameters;
             Type const* return_type;
-            Stmt_List body;
+            Node_List body;
             // Whether the function is a builtin function.
             bool builtin;
 
-            constexpr Decl_Function(Attr_List attributes, Identifier const* identifier, Func_Parameter_List parameters, Type const* return_type, Stmt_List body,
+            constexpr Decl_Function(Attr_List attributes, Identifier const* identifier, Func_Parameter_List parameters, Type const* return_type, Node_List body,
                                     bool builtin, Source_Info const& source_info)
-                : Decl(source_info, Node_Kind::decl_function), attributes(attributes), identifier(identifier), parameters(parameters), return_type(return_type),
+                : Node(source_info, Node_Kind::decl_function), attributes(attributes), identifier(identifier), parameters(parameters), return_type(return_type),
                   body(body), builtin(builtin) {}
         };
 
@@ -618,25 +592,25 @@ namespace vush {
         // Due to being a collection of references to other nodes rather than a standalone
         // semantic node, this node does not have source information.
         //
-        struct Decl_Overloaded_Function: public Decl {
-            Identifier const* identifier;
+        struct Decl_Overloaded_Function: public Node {
+            anton::String_View identifier;
             anton::Slice<Decl_Function const* const> overloads;
 
-            constexpr Decl_Overloaded_Function(Identifier const* identifier, anton::Slice<Decl_Function const* const> overloads)
-                : Decl(Source_Info{}, Node_Kind::decl_overloaded_function), identifier(identifier), overloads(overloads) {}
+            constexpr Decl_Overloaded_Function(anton::String_View identifier, anton::Slice<Decl_Function const* const> overloads)
+                : Node(Source_Info{}, Node_Kind::decl_overloaded_function), identifier(identifier), overloads(overloads) {}
         };
 
-        struct Decl_Stage_Function: public Decl {
+        struct Decl_Stage_Function: public Node {
             Attr_List attributes;
             Identifier const* pass;
             With_Source<Stage_Kind> stage;
             Func_Parameter_List parameters;
             Type const* return_type;
-            Stmt_List body;
+            Node_List body;
 
             constexpr Decl_Stage_Function(Attr_List attributes, Identifier const* pass, With_Source<Stage_Kind> stage, Func_Parameter_List parameters,
-                                          Type const* return_type, Stmt_List body, Source_Info const& source_info)
-                : Decl(source_info, Node_Kind::decl_stage_function), attributes(attributes), pass(pass), stage(stage), parameters(parameters),
+                                          Type const* return_type, Node_List body, Source_Info const& source_info)
+                : Node(source_info, Node_Kind::decl_stage_function), attributes(attributes), pass(pass), stage(stage), parameters(parameters),
                   return_type(return_type), body(body) {}
         };
 
@@ -805,84 +779,70 @@ namespace vush {
 
         struct Switch_Arm: public Node {
             Expr_List labels;
-            Stmt_List statements;
+            Node_List statements;
 
-            constexpr Switch_Arm(Expr_List labels, Stmt_List statements, Source_Info const& source_info)
+            constexpr Switch_Arm(Expr_List labels, Node_List statements, Source_Info const& source_info)
                 : Node(source_info, Node_Kind::switch_arm), labels(labels), statements(statements) {}
         };
 
-        struct Stmt: public Node {
-            using Node::Node;
+        struct Stmt_Block: public Node {
+            Node_List statements;
+
+            constexpr Stmt_Block(Node_List statements, Source_Info const& source_info): Node(source_info, Node_Kind::stmt_block), statements(statements) {}
         };
 
-        struct Stmt_Block: public Stmt {
-            Stmt_List statements;
-
-            constexpr Stmt_Block(Stmt_List statements, Source_Info const& source_info): Stmt(source_info, Node_Kind::stmt_block), statements(statements) {}
-        };
-
-        struct Stmt_If: public Stmt {
+        struct Stmt_If: public Node {
             Expr const* condition;
-            Stmt_List then_branch;
-            Stmt_List else_branch;
+            Node_List then_branch;
+            Node_List else_branch;
 
-            constexpr Stmt_If(Expr const* condition, Stmt_List then_branch, Stmt_List else_branch, Source_Info const& source_info)
-                : Stmt(source_info, Node_Kind::stmt_if), condition(condition), then_branch(then_branch), else_branch(else_branch) {}
+            constexpr Stmt_If(Expr const* condition, Node_List then_branch, Node_List else_branch, Source_Info const& source_info)
+                : Node(source_info, Node_Kind::stmt_if), condition(condition), then_branch(then_branch), else_branch(else_branch) {}
         };
 
-        struct Stmt_Switch: public Stmt {
+        struct Stmt_Switch: public Node {
             Expr const* expression;
             anton::Slice<Switch_Arm const* const> arms;
 
             constexpr Stmt_Switch(Expr const* const expression, anton::Slice<Switch_Arm const* const> arms, Source_Info const& source_info)
-                : Stmt(source_info, Node_Kind::stmt_switch), expression(expression), arms(arms) {}
+                : Node(source_info, Node_Kind::stmt_switch), expression(expression), arms(arms) {}
         };
 
-        struct Stmt_Loop: public Stmt {
+        struct Stmt_Loop: public Node {
             // nullptr if the loop does not have a condition.
             Expr const* condition;
             // continue statements are not allowed within the continuation block.
-            Stmt_List continuation;
-            Stmt_List statements;
+            Node_List continuation;
+            Node_List statements;
 
-            constexpr Stmt_Loop(Expr const* condition, Stmt_List continuation, Stmt_List statements, Source_Info const& source_info)
-                : Stmt(source_info, Node_Kind::stmt_loop), condition(condition), continuation(continuation), statements(statements) {}
+            constexpr Stmt_Loop(Expr const* condition, Node_List continuation, Node_List statements, Source_Info const& source_info)
+                : Node(source_info, Node_Kind::stmt_loop), condition(condition), continuation(continuation), statements(statements) {}
         };
 
-        struct Stmt_Return: public Stmt {
+        struct Stmt_Return: public Node {
             // nullptr if expression not present.
             Expr const* expression;
 
-            constexpr Stmt_Return(Expr const* expression, Source_Info const& source_info): Stmt(source_info, Node_Kind::stmt_return), expression(expression) {}
+            constexpr Stmt_Return(Expr const* expression, Source_Info const& source_info): Node(source_info, Node_Kind::stmt_return), expression(expression) {}
         };
 
-        struct Stmt_Break: public Stmt {
-            constexpr Stmt_Break(Source_Info const& source_info): Stmt(source_info, Node_Kind::stmt_break) {}
+        struct Stmt_Break: public Node {
+            constexpr Stmt_Break(Source_Info const& source_info): Node(source_info, Node_Kind::stmt_break) {}
         };
 
-        struct Stmt_Continue: public Stmt {
-            constexpr Stmt_Continue(Source_Info const& source_info): Stmt(source_info, Node_Kind::stmt_continue) {}
+        struct Stmt_Continue: public Node {
+            constexpr Stmt_Continue(Source_Info const& source_info): Node(source_info, Node_Kind::stmt_continue) {}
         };
 
-        struct Stmt_Discard: public Stmt {
-            constexpr Stmt_Discard(Source_Info const& source_info): Stmt(source_info, Node_Kind::stmt_discard) {}
+        struct Stmt_Discard: public Node {
+            constexpr Stmt_Discard(Source_Info const& source_info): Node(source_info, Node_Kind::stmt_discard) {}
         };
 
-        struct Stmt_Variable: public Stmt {
-            // With_Source<bool> mut;
-            Type const* type;
-            Identifier const* identifier;
-            Expr const* initializer;
-
-            constexpr Stmt_Variable(Type const* type, Identifier const* identifier, Expr const* initializer, Source_Info const& source_info)
-                : Stmt(source_info, Node_Kind::stmt_variable), type(type), identifier(identifier), initializer(initializer) {}
-        };
-
-        struct Stmt_Expression: public Stmt {
+        struct Stmt_Expression: public Node {
             Expr const* expression;
 
             constexpr Stmt_Expression(Expr const* expression, Source_Info const& source_info)
-                : Stmt(source_info, Node_Kind::stmt_expression), expression(expression) {}
+                : Node(source_info, Node_Kind::stmt_expression), expression(expression) {}
         };
     } // namespace ast
 } // namespace vush

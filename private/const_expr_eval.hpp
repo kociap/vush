@@ -1,7 +1,8 @@
 #pragma once
 
 #include <anton/expected.hpp>
-#include <ast.hpp>
+
+#include <ast2.hpp>
 #include <context.hpp>
 #include <owning_ptr.hpp>
 
@@ -66,6 +67,6 @@ namespace vush {
     };
 
     [[nodiscard]] bool is_implicitly_convertible_to_boolean(Expr_Value_Type type);
-    anton::Expected<bool, anton::String> is_compiletime_evaluable(Context& ctx, Expression& expression);
-    anton::Expected<Expr_Value, anton::String> evaluate_const_expr(Context& ctx, Expression& expression);
+    anton::Expected<bool, anton::String> is_compiletime_evaluable(Context& ctx, ast::Expr const& expression);
+    anton::Expected<Expr_Value, anton::String> evaluate_const_expr(Context& ctx, ast::Expr const& expression);
 } // namespace vush

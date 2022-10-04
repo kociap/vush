@@ -1,56 +1,136 @@
 #include <ast2.hpp>
 
 namespace vush {
+    [[nodiscard]] static anton::Optional<Syntax_Token const&> get_type_builtin_mut(Syntax_Node const& node) {
+        ANTON_ASSERT(node.type == Syntax_Node_Kind::type_builtin, "node is not type_builtin");
+        for(SNOT const& snot: node.children) {
+            if(snot.is_right() && snot.right().type == Syntax_Node_Kind::kw_mut) {
+                return snot.right();
+            }
+        }
+        return anton::null_optional;
+    };
+
     [[nodiscard]] static Syntax_Token const& get_type_builtin_value(Syntax_Node const& node) {
         ANTON_ASSERT(node.type == Syntax_Node_Kind::type_builtin, "node is not type_builtin");
-        ANTON_ASSERT(node.children.size() > (0), "type_builtin has too few children");
-        ANTON_ASSERT(node.children[0].is_right(), "value in type_builtin is not Syntax_Token");
-        return node.children[0].right();
-    }
+        for(SNOT const& snot: node.children) {
+            if(snot.is_right() && snot.right().type == Syntax_Node_Kind::identifier) {
+                return snot.right();
+            }
+        }
+        ANTON_ASSERT(false, "identifier not present in type_builtin");
+        ANTON_UNREACHABLE();
+    };
+
+    [[nodiscard]] static anton::Optional<Syntax_Token const&> get_type_user_defined_mut(Syntax_Node const& node) {
+        ANTON_ASSERT(node.type == Syntax_Node_Kind::type_user_defined, "node is not type_user_defined");
+        for(SNOT const& snot: node.children) {
+            if(snot.is_right() && snot.right().type == Syntax_Node_Kind::kw_mut) {
+                return snot.right();
+            }
+        }
+        return anton::null_optional;
+    };
 
     [[nodiscard]] static Syntax_Token const& get_type_user_defined_value(Syntax_Node const& node) {
         ANTON_ASSERT(node.type == Syntax_Node_Kind::type_user_defined, "node is not type_user_defined");
-        ANTON_ASSERT(node.children.size() > (0), "type_user_defined has too few children");
-        ANTON_ASSERT(node.children[0].is_right(), "value in type_user_defined is not Syntax_Token");
-        return node.children[0].right();
-    }
+        for(SNOT const& snot: node.children) {
+            if(snot.is_right() && snot.right().type == Syntax_Node_Kind::identifier) {
+                return snot.right();
+            }
+        }
+        ANTON_ASSERT(false, "identifier not present in type_user_defined");
+        ANTON_UNREACHABLE();
+    };
+
+    [[nodiscard]] static anton::Optional<Syntax_Token const&> get_type_array_mut(Syntax_Node const& node) {
+        ANTON_ASSERT(node.type == Syntax_Node_Kind::type_array, "node is not type_array");
+        for(SNOT const& snot: node.children) {
+            if(snot.is_right() && snot.right().type == Syntax_Node_Kind::kw_mut) {
+                return snot.right();
+            }
+        }
+        return anton::null_optional;
+    };
 
     [[nodiscard]] static Syntax_Node const& get_type_array_base(Syntax_Node const& node) {
         ANTON_ASSERT(node.type == Syntax_Node_Kind::type_array, "node is not type_array");
-        ANTON_ASSERT(node.children.size() > (0), "type_array has too few children");
-        ANTON_ASSERT(node.children[0].is_left(), "base in type_array is not Syntax_Node");
-        return node.children[0].left();
-    }
+        for(SNOT const& snot: node.children) {
+            if(snot.is_left() && snot.left().type == Syntax_Node_Kind::type_array_base) {
+                return snot.left().children[0].left();
+            }
+        }
+        ANTON_ASSERT(false, "type_array_base not present in type_array");
+        ANTON_UNREACHABLE();
+    };
 
-    [[nodiscard]] static Syntax_Node const& get_type_array_size(Syntax_Node const& node) {
+    [[nodiscard]] static anton::Optional<Syntax_Node const&> get_type_array_size(Syntax_Node const& node) {
         ANTON_ASSERT(node.type == Syntax_Node_Kind::type_array, "node is not type_array");
-        ANTON_ASSERT(node.children.size() > (2), "type_array has too few children");
-        ANTON_ASSERT(node.children[2].is_left(), "size in type_array is not Syntax_Node");
-        return node.children[2].left();
+        for(SNOT const& snot: node.children) {
+            if(snot.is_left() && snot.left().type == Syntax_Node_Kind::type_array_size) {
+                return snot.left().children[0].left();
+            }
+        }
+        return anton::null_optional;
+    };
+
+    [[nodiscard]] static Syntax_Token const& get_attribute_identifier(Syntax_Node const& node) {
+        ANTON_ASSERT(node.type == Syntax_Node_Kind::attribute, "node is not attribute");
+        ANTON_ASSERT(node.children.size() > (0), "attribute has too few children");
+        ANTON_ASSERT(node.children[0].is_right(), "identifier in attribute is not Syntax_Token");
+        return node.children[0].right();
     }
 
-    [[nodiscard]] static Syntax_Node const& get_attr_workgroup_x(Syntax_Node const& node) {
-        ANTON_ASSERT(node.type == Syntax_Node_Kind::attr_workgroup, "node is not attr_workgroup");
-        ANTON_ASSERT(node.children.size() > (2), "attr_workgroup has too few children");
-        ANTON_ASSERT(node.children[2].is_left(), "x in attr_workgroup is not Syntax_Node");
-        return node.children[2].left();
-    }
-
-    [[nodiscard]] static anton::Optional<Syntax_Node const&> get_attr_workgroup_y(Syntax_Node const& node) {
-        ANTON_ASSERT(node.type == Syntax_Node_Kind::attr_workgroup, "node is not attr_workgroup");
-        if(node.children.size() > (4)) {
-            ANTON_ASSERT(node.children[4].is_left(), "y in attr_workgroup is not Syntax_Node");
-            return node.children[4].left();
+    [[nodiscard]] static anton::Optional<Syntax_Node const&> get_attribute_parameter_list(Syntax_Node const& node) {
+        ANTON_ASSERT(node.type == Syntax_Node_Kind::attribute, "node is not attribute");
+        if(node.children.size() > (1)) {
+            ANTON_ASSERT(node.children[1].is_left(), "parameter_list in attribute is not Syntax_Node");
+            return node.children[1].left();
         } else {
             return anton::null_optional;
         }
     }
 
-    [[nodiscard]] static anton::Optional<Syntax_Node const&> get_attr_workgroup_z(Syntax_Node const& node) {
-        ANTON_ASSERT(node.type == Syntax_Node_Kind::attr_workgroup, "node is not attr_workgroup");
-        if(node.children.size() > (6)) {
-            ANTON_ASSERT(node.children[6].is_left(), "z in attr_workgroup is not Syntax_Node");
-            return node.children[6].left();
+    [[nodiscard]] static anton::Optional<Syntax_Token const&> get_attribute_parameter_key(Syntax_Node const& node) {
+        ANTON_ASSERT(node.type == Syntax_Node_Kind::attribute_parameter, "node is not attribute_parameter");
+        for(SNOT const& snot: node.children) {
+            if(snot.is_right() && snot.right().type == Syntax_Node_Kind::identifier) {
+                return snot.right();
+            }
+        }
+        return anton::null_optional;
+    };
+
+    [[nodiscard]] static Syntax_Node const& get_attribute_parameter_value(Syntax_Node const& node) {
+        ANTON_ASSERT(node.type == Syntax_Node_Kind::attribute_parameter, "node is not attribute_parameter");
+        for(SNOT const& snot: node.children) {
+            if(snot.is_left() && snot.left().type == Syntax_Node_Kind::expr_lt_integer) {
+                return snot.left();
+            }
+        }
+        ANTON_ASSERT(false, "expr_lt_integer not present in attribute_parameter");
+        ANTON_UNREACHABLE();
+    };
+
+    [[nodiscard]] static Syntax_Node const& get_variable_type(Syntax_Node const& node) {
+        ANTON_ASSERT(node.type == Syntax_Node_Kind::variable, "node is not variable");
+        ANTON_ASSERT(node.children.size() > (0), "variable has too few children");
+        ANTON_ASSERT(node.children[0].is_left(), "type in variable is not Syntax_Node");
+        return node.children[0].left();
+    }
+
+    [[nodiscard]] static Syntax_Token const& get_variable_identifier(Syntax_Node const& node) {
+        ANTON_ASSERT(node.type == Syntax_Node_Kind::variable, "node is not variable");
+        ANTON_ASSERT(node.children.size() > (1), "variable has too few children");
+        ANTON_ASSERT(node.children[1].is_right(), "identifier in variable is not Syntax_Token");
+        return node.children[1].right();
+    }
+
+    [[nodiscard]] static anton::Optional<Syntax_Node const&> get_variable_initializer(Syntax_Node const& node) {
+        ANTON_ASSERT(node.type == Syntax_Node_Kind::variable, "node is not variable");
+        if(node.children.size() > (3)) {
+            ANTON_ASSERT(node.children[3].is_left(), "initializer in variable is not Syntax_Node");
+            return node.children[3].left();
         } else {
             return anton::null_optional;
         }
@@ -87,27 +167,6 @@ namespace vush {
         return node.children[1].left();
     }
 
-    [[nodiscard]] static Syntax_Node const& get_decl_constant_type(Syntax_Node const& node) {
-        ANTON_ASSERT(node.type == Syntax_Node_Kind::decl_constant, "node is not decl_constant");
-        ANTON_ASSERT(node.children.size() > (1), "decl_constant has too few children");
-        ANTON_ASSERT(node.children[1].is_left(), "type in decl_constant is not Syntax_Node");
-        return node.children[1].left();
-    }
-
-    [[nodiscard]] static Syntax_Token const& get_decl_constant_identifier(Syntax_Node const& node) {
-        ANTON_ASSERT(node.type == Syntax_Node_Kind::decl_constant, "node is not decl_constant");
-        ANTON_ASSERT(node.children.size() > (2), "decl_constant has too few children");
-        ANTON_ASSERT(node.children[2].is_right(), "identifier in decl_constant is not Syntax_Token");
-        return node.children[2].right();
-    }
-
-    [[nodiscard]] static Syntax_Node const& get_decl_constant_initializer(Syntax_Node const& node) {
-        ANTON_ASSERT(node.type == Syntax_Node_Kind::decl_constant, "node is not decl_constant");
-        ANTON_ASSERT(node.children.size() > (4), "decl_constant has too few children");
-        ANTON_ASSERT(node.children[4].is_left(), "initializer in decl_constant is not Syntax_Node");
-        return node.children[4].left();
-    }
-
     [[nodiscard]] static Syntax_Token const& get_decl_struct_identifier(Syntax_Node const& node) {
         ANTON_ASSERT(node.type == Syntax_Node_Kind::decl_struct, "node is not decl_struct");
         ANTON_ASSERT(node.children.size() > (1), "decl_struct has too few children");
@@ -122,67 +181,81 @@ namespace vush {
         return node.children[2].left();
     }
 
-    [[nodiscard]] static Syntax_Node const& get_decl_function_return_type(Syntax_Node const& node, i64 const offset) {
+    [[nodiscard]] static Syntax_Node const& get_decl_function_attribute_list(Syntax_Node const& node) {
         ANTON_ASSERT(node.type == Syntax_Node_Kind::decl_function, "node is not decl_function");
-        ANTON_ASSERT(node.children.size() > (offset + 0), "decl_function has too few children");
-        ANTON_ASSERT(node.children[offset + 0].is_left(), "return_type in decl_function is not Syntax_Node");
-        return node.children[offset + 0].left();
+        ANTON_ASSERT(node.children.size() > (0), "decl_function has too few children");
+        ANTON_ASSERT(node.children[0].is_left(), "attribute_list in decl_function is not Syntax_Node");
+        return node.children[0].left();
     }
 
-    [[nodiscard]] static Syntax_Token const& get_decl_function_identifier(Syntax_Node const& node, i64 const offset) {
+    [[nodiscard]] static Syntax_Node const& get_decl_function_return_type(Syntax_Node const& node) {
         ANTON_ASSERT(node.type == Syntax_Node_Kind::decl_function, "node is not decl_function");
-        ANTON_ASSERT(node.children.size() > (offset + 1), "decl_function has too few children");
-        ANTON_ASSERT(node.children[offset + 1].is_right(), "identifier in decl_function is not Syntax_Token");
-        return node.children[offset + 1].right();
+        ANTON_ASSERT(node.children.size() > (1), "decl_function has too few children");
+        ANTON_ASSERT(node.children[1].is_left(), "return_type in decl_function is not Syntax_Node");
+        return node.children[1].left();
     }
 
-    [[nodiscard]] static Syntax_Node const& get_decl_function_parameter_list(Syntax_Node const& node, i64 const offset) {
+    [[nodiscard]] static Syntax_Token const& get_decl_function_identifier(Syntax_Node const& node) {
         ANTON_ASSERT(node.type == Syntax_Node_Kind::decl_function, "node is not decl_function");
-        ANTON_ASSERT(node.children.size() > (offset + 2), "decl_function has too few children");
-        ANTON_ASSERT(node.children[offset + 2].is_left(), "parameter_list in decl_function is not Syntax_Node");
-        return node.children[offset + 2].left();
+        ANTON_ASSERT(node.children.size() > (2), "decl_function has too few children");
+        ANTON_ASSERT(node.children[2].is_right(), "identifier in decl_function is not Syntax_Token");
+        return node.children[2].right();
     }
 
-    [[nodiscard]] static Syntax_Node const& get_decl_function_body(Syntax_Node const& node, i64 const offset) {
+    [[nodiscard]] static Syntax_Node const& get_decl_function_parameter_list(Syntax_Node const& node) {
         ANTON_ASSERT(node.type == Syntax_Node_Kind::decl_function, "node is not decl_function");
-        ANTON_ASSERT(node.children.size() > (offset + 3), "decl_function has too few children");
-        ANTON_ASSERT(node.children[offset + 3].is_left(), "body in decl_function is not Syntax_Node");
-        return node.children[offset + 3].left();
+        ANTON_ASSERT(node.children.size() > (3), "decl_function has too few children");
+        ANTON_ASSERT(node.children[3].is_left(), "parameter_list in decl_function is not Syntax_Node");
+        return node.children[3].left();
     }
 
-    [[nodiscard]] static Syntax_Node const& get_decl_stage_function_return_type(Syntax_Node const& node, i64 const offset) {
-        ANTON_ASSERT(node.type == Syntax_Node_Kind::decl_stage_function, "node is not decl_stage_function");
-        ANTON_ASSERT(node.children.size() > (offset + 0), "decl_stage_function has too few children");
-        ANTON_ASSERT(node.children[offset + 0].is_left(), "return_type in decl_stage_function is not Syntax_Node");
-        return node.children[offset + 0].left();
+    [[nodiscard]] static Syntax_Node const& get_decl_function_body(Syntax_Node const& node) {
+        ANTON_ASSERT(node.type == Syntax_Node_Kind::decl_function, "node is not decl_function");
+        ANTON_ASSERT(node.children.size() > (4), "decl_function has too few children");
+        ANTON_ASSERT(node.children[4].is_left(), "body in decl_function is not Syntax_Node");
+        return node.children[4].left();
     }
 
-    [[nodiscard]] static Syntax_Token const& get_decl_stage_function_pass(Syntax_Node const& node, i64 const offset) {
+    [[nodiscard]] static Syntax_Node const& get_decl_stage_function_attribute_list(Syntax_Node const& node) {
         ANTON_ASSERT(node.type == Syntax_Node_Kind::decl_stage_function, "node is not decl_stage_function");
-        ANTON_ASSERT(node.children.size() > (offset + 1), "decl_stage_function has too few children");
-        ANTON_ASSERT(node.children[offset + 1].is_right(), "pass in decl_stage_function is not Syntax_Token");
-        return node.children[offset + 1].right();
+        ANTON_ASSERT(node.children.size() > (0), "decl_stage_function has too few children");
+        ANTON_ASSERT(node.children[0].is_left(), "attribute_list in decl_stage_function is not Syntax_Node");
+        return node.children[0].left();
     }
 
-    [[nodiscard]] static Syntax_Token const& get_decl_stage_function_stage(Syntax_Node const& node, i64 const offset) {
+    [[nodiscard]] static Syntax_Node const& get_decl_stage_function_return_type(Syntax_Node const& node) {
         ANTON_ASSERT(node.type == Syntax_Node_Kind::decl_stage_function, "node is not decl_stage_function");
-        ANTON_ASSERT(node.children.size() > (offset + 2), "decl_stage_function has too few children");
-        ANTON_ASSERT(node.children[offset + 2].is_right(), "stage in decl_stage_function is not Syntax_Token");
-        return node.children[offset + 2].right();
+        ANTON_ASSERT(node.children.size() > (1), "decl_stage_function has too few children");
+        ANTON_ASSERT(node.children[1].is_left(), "return_type in decl_stage_function is not Syntax_Node");
+        return node.children[1].left();
     }
 
-    [[nodiscard]] static Syntax_Node const& get_decl_stage_function_parameter_list(Syntax_Node const& node, i64 const offset) {
+    [[nodiscard]] static Syntax_Token const& get_decl_stage_function_pass(Syntax_Node const& node) {
         ANTON_ASSERT(node.type == Syntax_Node_Kind::decl_stage_function, "node is not decl_stage_function");
-        ANTON_ASSERT(node.children.size() > (offset + 3), "decl_stage_function has too few children");
-        ANTON_ASSERT(node.children[offset + 3].is_left(), "parameter_list in decl_stage_function is not Syntax_Node");
-        return node.children[offset + 3].left();
+        ANTON_ASSERT(node.children.size() > (2), "decl_stage_function has too few children");
+        ANTON_ASSERT(node.children[2].is_right(), "pass in decl_stage_function is not Syntax_Token");
+        return node.children[2].right();
     }
 
-    [[nodiscard]] static Syntax_Node const& get_decl_stage_function_body(Syntax_Node const& node, i64 const offset) {
+    [[nodiscard]] static Syntax_Token const& get_decl_stage_function_stage(Syntax_Node const& node) {
         ANTON_ASSERT(node.type == Syntax_Node_Kind::decl_stage_function, "node is not decl_stage_function");
-        ANTON_ASSERT(node.children.size() > (offset + 4), "decl_stage_function has too few children");
-        ANTON_ASSERT(node.children[offset + 4].is_left(), "body in decl_stage_function is not Syntax_Node");
-        return node.children[offset + 4].left();
+        ANTON_ASSERT(node.children.size() > (3), "decl_stage_function has too few children");
+        ANTON_ASSERT(node.children[3].is_right(), "stage in decl_stage_function is not Syntax_Token");
+        return node.children[3].right();
+    }
+
+    [[nodiscard]] static Syntax_Node const& get_decl_stage_function_parameter_list(Syntax_Node const& node) {
+        ANTON_ASSERT(node.type == Syntax_Node_Kind::decl_stage_function, "node is not decl_stage_function");
+        ANTON_ASSERT(node.children.size() > (4), "decl_stage_function has too few children");
+        ANTON_ASSERT(node.children[4].is_left(), "parameter_list in decl_stage_function is not Syntax_Node");
+        return node.children[4].left();
+    }
+
+    [[nodiscard]] static Syntax_Node const& get_decl_stage_function_body(Syntax_Node const& node) {
+        ANTON_ASSERT(node.type == Syntax_Node_Kind::decl_stage_function, "node is not decl_stage_function");
+        ANTON_ASSERT(node.children.size() > (5), "decl_stage_function has too few children");
+        ANTON_ASSERT(node.children[5].is_left(), "body in decl_stage_function is not Syntax_Node");
+        return node.children[5].left();
     }
 
     [[nodiscard]] static Syntax_Node const& get_func_parameter_type(Syntax_Node const& node) {
@@ -230,25 +303,32 @@ namespace vush {
         return node.children[7].left();
     }
 
-    [[nodiscard]] static Syntax_Node const& get_struct_member_type(Syntax_Node const& node, i64 const offset) {
+    [[nodiscard]] static Syntax_Node const& get_struct_member_attribute_list(Syntax_Node const& node) {
         ANTON_ASSERT(node.type == Syntax_Node_Kind::struct_member, "node is not struct_member");
-        ANTON_ASSERT(node.children.size() > (offset + 0), "struct_member has too few children");
-        ANTON_ASSERT(node.children[offset + 0].is_left(), "type in struct_member is not Syntax_Node");
-        return node.children[offset + 0].left();
+        ANTON_ASSERT(node.children.size() > (0), "struct_member has too few children");
+        ANTON_ASSERT(node.children[0].is_left(), "attribute_list in struct_member is not Syntax_Node");
+        return node.children[0].left();
     }
 
-    [[nodiscard]] static Syntax_Token const& get_struct_member_identifier(Syntax_Node const& node, i64 const offset) {
+    [[nodiscard]] static Syntax_Node const& get_struct_member_type(Syntax_Node const& node) {
         ANTON_ASSERT(node.type == Syntax_Node_Kind::struct_member, "node is not struct_member");
-        ANTON_ASSERT(node.children.size() > (offset + 1), "struct_member has too few children");
-        ANTON_ASSERT(node.children[offset + 1].is_right(), "identifier in struct_member is not Syntax_Token");
-        return node.children[offset + 1].right();
+        ANTON_ASSERT(node.children.size() > (1), "struct_member has too few children");
+        ANTON_ASSERT(node.children[1].is_left(), "type in struct_member is not Syntax_Node");
+        return node.children[1].left();
     }
 
-    [[nodiscard]] static anton::Optional<Syntax_Node const&> get_struct_member_initializer(Syntax_Node const& node, i64 const offset) {
+    [[nodiscard]] static Syntax_Token const& get_struct_member_identifier(Syntax_Node const& node) {
         ANTON_ASSERT(node.type == Syntax_Node_Kind::struct_member, "node is not struct_member");
-        if(node.children.size() > (offset + 3)) {
-            ANTON_ASSERT(node.children[offset + 3].is_left(), "initializer in struct_member is not Syntax_Node");
-            return node.children[offset + 3].left();
+        ANTON_ASSERT(node.children.size() > (2), "struct_member has too few children");
+        ANTON_ASSERT(node.children[2].is_right(), "identifier in struct_member is not Syntax_Token");
+        return node.children[2].right();
+    }
+
+    [[nodiscard]] static anton::Optional<Syntax_Node const&> get_struct_member_initializer(Syntax_Node const& node) {
+        ANTON_ASSERT(node.type == Syntax_Node_Kind::struct_member, "node is not struct_member");
+        if(node.children.size() > (4)) {
+            ANTON_ASSERT(node.children[4].is_left(), "initializer in struct_member is not Syntax_Node");
+            return node.children[4].left();
         } else {
             return anton::null_optional;
         }
@@ -562,30 +642,6 @@ namespace vush {
         }
         return anton::null_optional;
     };
-
-    [[nodiscard]] static Syntax_Node const& get_stmt_variable_type(Syntax_Node const& node) {
-        ANTON_ASSERT(node.type == Syntax_Node_Kind::stmt_variable, "node is not stmt_variable");
-        ANTON_ASSERT(node.children.size() > (0), "stmt_variable has too few children");
-        ANTON_ASSERT(node.children[0].is_left(), "type in stmt_variable is not Syntax_Node");
-        return node.children[0].left();
-    }
-
-    [[nodiscard]] static Syntax_Token const& get_stmt_variable_identifier(Syntax_Node const& node) {
-        ANTON_ASSERT(node.type == Syntax_Node_Kind::stmt_variable, "node is not stmt_variable");
-        ANTON_ASSERT(node.children.size() > (1), "stmt_variable has too few children");
-        ANTON_ASSERT(node.children[1].is_right(), "identifier in stmt_variable is not Syntax_Token");
-        return node.children[1].right();
-    }
-
-    [[nodiscard]] static anton::Optional<Syntax_Node const&> get_stmt_variable_initializer(Syntax_Node const& node) {
-        ANTON_ASSERT(node.type == Syntax_Node_Kind::stmt_variable, "node is not stmt_variable");
-        if(node.children.size() > (3)) {
-            ANTON_ASSERT(node.children[3].is_left(), "initializer in stmt_variable is not Syntax_Node");
-            return node.children[3].left();
-        } else {
-            return anton::null_optional;
-        }
-    }
 
     [[nodiscard]] static Syntax_Node const& get_stmt_expression_expression(Syntax_Node const& node) {
         ANTON_ASSERT(node.type == Syntax_Node_Kind::stmt_expression, "node is not stmt_expression");

@@ -60,7 +60,7 @@ def format_token_accessor(syntax_name, member):
     def create_search_accessor(syntax_name, member):
         if member.optional:
             return f'''\
-[[nodiscard]] static anton::Optional<Syntax_Token const&> get_{syntax_name}_{member.name}(Syntax_Token const& node) {{
+[[nodiscard]] static anton::Optional<Syntax_Token const&> get_{syntax_name}_{member.name}(Syntax_Node const& node) {{
     ANTON_ASSERT(node.type == Syntax_Node_Kind::{syntax_name}, "node is not {syntax_name}");
     for(SNOT const& snot: node.children) {{
         if(snot.is_right() && snot.right().type == Syntax_Node_Kind::{member.index}) {{
@@ -71,7 +71,7 @@ def format_token_accessor(syntax_name, member):
 }};'''
         else:
             return f'''\
-[[nodiscard]] static Syntax_Token const& get_{syntax_name}_{member.name}(Syntax_Token const& node) {{
+[[nodiscard]] static Syntax_Token const& get_{syntax_name}_{member.name}(Syntax_Node const& node) {{
     ANTON_ASSERT(node.type == Syntax_Node_Kind::{syntax_name}, "node is not {syntax_name}");
     for(SNOT const& snot: node.children) {{
         if(snot.is_right() && snot.right().type == Syntax_Node_Kind::{member.index}) {{

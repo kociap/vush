@@ -120,7 +120,7 @@ namespace vush {
         Diagnostics_Options diagnostics;
     };
 
-    enum struct Stage_Kind {
+    enum struct Stage_Kind : u8 {
         vertex,
         fragment,
         compute,
@@ -130,44 +130,45 @@ namespace vush {
     // The number of enumerations in Stage_Kind.
     constexpr i64 stage_kind_count = 3;
 
-    struct GLSL_File {
-        anton::String data;
-        Stage_Kind stage_kind;
-    };
-
-    struct Pass_Data {
-        anton::String name;
-        Array<GLSL_File> files;
-    };
-
-    struct Build_Result {
-        Array<Pass_Settings> settings;
-        Array<Pass_Data> passes;
-    };
-
-    struct Source_Request_Result {
+    struct Source_Import_Result {
         anton::String source_name;
         anton::String data;
     };
 
-    using source_request_callback = anton::Expected<Source_Request_Result, anton::String> (*)(anton::String_View path, void* user_data);
+    using source_import_callback = anton::Expected<Source_Import_Result, anton::String> (*)(Allocator& allocator, anton::String_View path, void* user_data);
 
-    // compile_to_glsl
-    // Compiles given vush shader to glsl shader.
-    // Uses the callback to request sources.
-    //
-    // Returns compiled glsl files or error message.
-    //
-    anton::Expected<Build_Result, anton::String> compile_to_glsl(Configuration const& config, Allocator& allocator, source_request_callback callback,
-                                                                 void* user_data);
+    namespace spirv {
+        struct Shader {
+            anton::String data;
+            Stage_Kind stage_kind;
+        };
 
-    // compile_to_glsl
-    // Compiles given vush shader to glsl shader.
-    // Reads the source files from the disk.
-    // Uses the import paths provided in import_directories to resolve import directives.
-    //
-    // Returns compiled glsl files or error message.
-    //
-    anton::Expected<Build_Result, anton::String> compile_to_glsl(Configuration const& config, Allocator& allocator,
-                                                                 anton::Slice<anton::String const> const& import_directories);
+        struct Pass_Data {
+            anton::String name;
+            Array<Shader> shaders;
+        };
+
+        struct Build_Result {
+            Array<Pass_Settings> settings;
+            Array<Pass_Data> passes;
+        };
+
+        // compile
+        // Compiles given vush shader to a spirv shader.
+        // Uses the callback to import sources.
+        //
+        // Returns compiled spirv files or an error.
+        //
+        anton::Expected<Build_Result, Error> compile(Configuration const& config, Allocator& allocator, source_import_callback callback, void* user_data);
+
+        // compile
+        // Compiles given vush shader to a spirv shader.
+        // Reads the source files from the disk.
+        // Uses the import paths provided in import_directories to resolve import directives.
+        //
+        // Returns compiled spirv files or an error.
+        //
+        anton::Expected<Build_Result, Error> compile(Configuration const& config, Allocator& allocator,
+                                                     anton::Slice<anton::String const> const& import_directories);
+    } // namespace spirv
 } // namespace vush

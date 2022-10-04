@@ -187,7 +187,7 @@ def main():
         ofn_fnlist = f"ofn_fnlist_{name}"
         ofn_fnlist_string = f"static constexpr ast::Decl_Function const* {ofn_fnlist}[{len(functions)}] = {{{', '.join(map(lambda v: f'&{v}', functions))}}};"
         ofn = f"ofn_{name}"
-        ofn_string = f"static constexpr ast::Decl_Overloaded_Function {ofn}(&ident_{name}, {{{ofn_fnlist}, {len(functions)}}});"
+        ofn_string = f"static constexpr ast::Decl_Overloaded_Function {ofn}(\"{name}\"_sv, {{{ofn_fnlist}, {len(functions)}}});"
         return ofn, ofn_string, ofn_fnlist, ofn_fnlist_string
 
     functions = {}
