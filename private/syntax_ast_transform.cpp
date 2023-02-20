@@ -28,7 +28,7 @@ namespace vush {
 
         Source_Import_Result& request_res = source_request_res.value();
         // Ensure we're not importing the same source multiple times.
-        if(ctx.find_source(request_res.source_name) != nullptr) {
+        if(ctx.find_source(request_res.source_name) == nullptr) {
             Source_Data source{ANTON_MOV(request_res.source_name), ANTON_MOV(request_res.data)};
             Parse_Syntax_Options options{.include_whitespace_and_comments = false};
             anton::Expected<Array<SNOT>, Error> parse_result = parse_source_to_syntax_tree(ctx.allocator, source.name, source.data, options);
