@@ -5,9 +5,14 @@ build.sh
 buildf.bat
 buildf.sh
 CMakeSettings.json
+TODO
 
+build/
+testbed/
+# IDE files
 .vs/
 .vscode/
-build/
+# python
 __pycache__/
-testbed/
+# clangd
+.cache
