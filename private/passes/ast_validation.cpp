@@ -446,6 +446,46 @@ namespace vush {
         return {anton::expected_value};
     }
 
+    // validate_struct_member_type
+    // Validate that a type is a complete type, i.e. not opaque and is not a recursive definition.
+    //
+    [[nodiscard]] static anton::Expected<void, Error> validate_struct_member_type(Context const& ctx, ast::Type const& type,
+                                                                                  ast::Identifier const& struct_identifier) {
+        switch(type.node_kind) {
+            case ast::Node_Kind::type_builtin: {
+                ast::Type_Builtin const& t = static_cast<ast::Type_Builtin const&>(type);
+                if(ast::is_opaque_glsl_type(t.value)) {
+                    return {anton::expected_error, err_opaque_type_in_struct(ctx, t.source_info)};
+                }
+
+                return {anton::expected_value};
+            } break;
+
+            case ast::Node_Kind::type_user_defined: {
+                ast::Type_User_Defined const& t = static_cast<ast::Type_User_Defined const&>(type);
+                if(t.value == struct_identifier.value) {
+                    return {anton::expected_error, err_recursive_type_definition(ctx, struct_identifier.source_info, t.source_info)};
+                }
+
+                Symbol const* const symbol = ctx.find_symbol(t.value);
+                if(symbol == nullptr) {
+                    return {anton::expected_error, err_undefined_symbol(ctx, t.source_info)};
+                }
+
+                return {anton::expected_value};
+            } break;
+
+            case ast::Node_Kind::type_array: {
+                ast::Type_Array const& t = static_cast<ast::Type_Array const&>(type);
+                return validate_struct_member_type(ctx, *t.base, struct_identifier);
+            } break;
+
+            default:
+                ANTON_ASSERT(false, "unreachable");
+                ANTON_UNREACHABLE();
+        }
+    }
+
     [[nodiscard]] static anton::Expected<void, Error> validate_struct(Context const& ctx, ast::Decl_Struct const* const dstruct) {
         if(dstruct->members.size() == 0) {
             return {anton::expected_error, err_empty_struct(ctx, dstruct->identifier->source_info)};
@@ -458,29 +498,17 @@ namespace vush {
                 auto iter = member_identifiers.find(member->identifier->value);
                 if(iter != member_identifiers.end()) {
                     return {anton::expected_error, err_duplicate_struct_member(ctx, iter->value->source_info, member->source_info)};
+                } else {
+                    member_identifiers.emplace(member->identifier->value, member->identifier);
                 }
             }
         }
 
         // Member types must be complete types and must not be self.
         for(ast::Struct_Member const* const member: dstruct->members) {
-            // TODO: Remaining type kinds. Cannot use check_type_exists because
-            //       we must check for recursive definition.
-            if(member->type->node_kind == ast::Node_Kind::type_builtin) {
-                ast::Type_Builtin const* const type = static_cast<ast::Type_Builtin const*>(member->type);
-                if(ast::is_opaque_glsl_type(type->value)) {
-                    return {anton::expected_error, err_opaque_type_in_struct(ctx, type->source_info)};
-                }
-            } else if(member->type->node_kind == ast::Node_Kind::type_user_defined) {
-                ast::Type_User_Defined const* const type = static_cast<ast::Type_User_Defined const*>(member->type);
-                if(type->value == dstruct->identifier->value) {
-                    return {anton::expected_error, err_recursive_type_definition(ctx, dstruct->identifier->source_info, type->source_info)};
-                }
-
-                Symbol const* const symbol = ctx.find_symbol(type->value);
-                if(symbol == nullptr) {
-                    return {anton::expected_error, err_undefined_symbol(ctx, type->source_info)};
-                }
+            anton::Expected<void, Error> result = validate_struct_member_type(ctx, *member->type, *dstruct->identifier);
+            if(!result) {
+                return result;
             }
         }
 
