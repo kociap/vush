@@ -24,7 +24,7 @@ class ParamT(Enum):
     gsamplerBuffer = ("samplerBuffer", "isamplerBuffer", "usamplerBuffer"),
     gsampler2DMS = ("sampler2DMS", "isampler2DMS", "usampler2DMS"),
     gsampler2DMSArray = ("sampler2DMSArray", "isampler2DMSArray", "usampler2DMSArray"),
-    gsubpassInput = ("subpassInput", "subpassInput", "usubpassInput"),
+    gsubpassInput = ("subpassInput", "isubpassInput", "usubpassInput"),
     gsubpassInputMS = ("subpassInputMS", "isubpassInputMS", "usubpassInputMS"),
     gimage2D = ("image2D", "iimage2D", "uimage2D"),
     gimage3D = ("image3D", "iimage3D", "uimage3D"),
@@ -66,8 +66,8 @@ biivec = (ParamT.bvecType, ParamT.ivecType, ParamT.ivecType)
 buuvec = (ParamT.bvecType, ParamT.uvecType, ParamT.uvecType)
 
 fn_definitions = (
-    Fn(name = "radians", signature = (return_, "degrees"), replacements = (ParamT.genFType, )),
-    Fn(name = "degrees", signature = (return_, "radians"), replacements = (ParamT.genFType, )),
+    Fn(name = "radians", signature = (return_, "pdegrees"), replacements = (ParamT.genFType, )),
+    Fn(name = "degrees", signature = (return_, "pradians"), replacements = (ParamT.genFType, )),
     Fn(name = "sin", signature = (return_, "angle"), replacements = (ParamT.genFType, )),
     Fn(name = "cos", signature = (return_, "angle"), replacements = (ParamT.genFType, )),
     Fn(name = "tan", signature = (return_, "angle"), replacements = (ParamT.genFType, )),
