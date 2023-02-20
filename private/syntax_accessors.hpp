@@ -239,23 +239,23 @@ namespace vush {
 
     [[nodiscard]] static Syntax_Token const& get_decl_stage_function_stage(Syntax_Node const& node) {
         ANTON_ASSERT(node.type == Syntax_Node_Kind::decl_stage_function, "node is not decl_stage_function");
-        ANTON_ASSERT(node.children.size() > (3), "decl_stage_function has too few children");
-        ANTON_ASSERT(node.children[3].is_right(), "stage in decl_stage_function is not Syntax_Token");
-        return node.children[3].right();
+        ANTON_ASSERT(node.children.size() > (4), "decl_stage_function has too few children");
+        ANTON_ASSERT(node.children[4].is_right(), "stage in decl_stage_function is not Syntax_Token");
+        return node.children[4].right();
     }
 
     [[nodiscard]] static Syntax_Node const& get_decl_stage_function_parameter_list(Syntax_Node const& node) {
         ANTON_ASSERT(node.type == Syntax_Node_Kind::decl_stage_function, "node is not decl_stage_function");
-        ANTON_ASSERT(node.children.size() > (4), "decl_stage_function has too few children");
-        ANTON_ASSERT(node.children[4].is_left(), "parameter_list in decl_stage_function is not Syntax_Node");
-        return node.children[4].left();
+        ANTON_ASSERT(node.children.size() > (5), "decl_stage_function has too few children");
+        ANTON_ASSERT(node.children[5].is_left(), "parameter_list in decl_stage_function is not Syntax_Node");
+        return node.children[5].left();
     }
 
     [[nodiscard]] static Syntax_Node const& get_decl_stage_function_body(Syntax_Node const& node) {
         ANTON_ASSERT(node.type == Syntax_Node_Kind::decl_stage_function, "node is not decl_stage_function");
-        ANTON_ASSERT(node.children.size() > (5), "decl_stage_function has too few children");
-        ANTON_ASSERT(node.children[5].is_left(), "body in decl_stage_function is not Syntax_Node");
-        return node.children[5].left();
+        ANTON_ASSERT(node.children.size() > (6), "decl_stage_function has too few children");
+        ANTON_ASSERT(node.children[6].is_left(), "body in decl_stage_function is not Syntax_Node");
+        return node.children[6].left();
     }
 
     [[nodiscard]] static Syntax_Node const& get_func_parameter_type(Syntax_Node const& node) {
