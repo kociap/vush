@@ -6,7 +6,9 @@ namespace vush {
     using namespace anton::literals;
 
     static constexpr ast::Identifier ident_radians("radians"_sv, {});
+    static constexpr ast::Identifier ident_pdegrees("pdegrees"_sv, {});
     static constexpr ast::Identifier ident_degrees("degrees"_sv, {});
+    static constexpr ast::Identifier ident_pradians("pradians"_sv, {});
     static constexpr ast::Identifier ident_sin("sin"_sv, {});
     static constexpr ast::Identifier ident_angle("angle"_sv, {});
     static constexpr ast::Identifier ident_cos("cos"_sv, {});
@@ -294,19 +296,20 @@ namespace vush {
     static constexpr ast::Type_Builtin builtin_iimageBuffer(ast::GLSL_Type::glsl_iimageBuffer, {});
     static constexpr ast::Type_Builtin builtin_uimageBuffer(ast::GLSL_Type::glsl_uimageBuffer, {});
     static constexpr ast::Type_Builtin builtin_subpassInput(ast::GLSL_Type::glsl_subpassInput, {});
+    static constexpr ast::Type_Builtin builtin_isubpassInput(ast::GLSL_Type::glsl_isubpassInput, {});
     static constexpr ast::Type_Builtin builtin_usubpassInput(ast::GLSL_Type::glsl_usubpassInput, {});
     static constexpr ast::Type_Builtin builtin_subpassInputMS(ast::GLSL_Type::glsl_subpassInputMS, {});
     static constexpr ast::Type_Builtin builtin_isubpassInputMS(ast::GLSL_Type::glsl_isubpassInputMS, {});
     static constexpr ast::Type_Builtin builtin_usubpassInputMS(ast::GLSL_Type::glsl_usubpassInputMS, {});
 
-    static constexpr ast::Func_Parameter param_radians_degrees_float(&ident_degrees, &builtin_float, nullptr, {});
-    static constexpr ast::Func_Parameter param_radians_degrees_vec2(&ident_degrees, &builtin_vec2, nullptr, {});
-    static constexpr ast::Func_Parameter param_radians_degrees_vec3(&ident_degrees, &builtin_vec3, nullptr, {});
-    static constexpr ast::Func_Parameter param_radians_degrees_vec4(&ident_degrees, &builtin_vec4, nullptr, {});
-    static constexpr ast::Func_Parameter param_degrees_radians_float(&ident_radians, &builtin_float, nullptr, {});
-    static constexpr ast::Func_Parameter param_degrees_radians_vec2(&ident_radians, &builtin_vec2, nullptr, {});
-    static constexpr ast::Func_Parameter param_degrees_radians_vec3(&ident_radians, &builtin_vec3, nullptr, {});
-    static constexpr ast::Func_Parameter param_degrees_radians_vec4(&ident_radians, &builtin_vec4, nullptr, {});
+    static constexpr ast::Func_Parameter param_radians_pdegrees_float(&ident_pdegrees, &builtin_float, nullptr, {});
+    static constexpr ast::Func_Parameter param_radians_pdegrees_vec2(&ident_pdegrees, &builtin_vec2, nullptr, {});
+    static constexpr ast::Func_Parameter param_radians_pdegrees_vec3(&ident_pdegrees, &builtin_vec3, nullptr, {});
+    static constexpr ast::Func_Parameter param_radians_pdegrees_vec4(&ident_pdegrees, &builtin_vec4, nullptr, {});
+    static constexpr ast::Func_Parameter param_degrees_pradians_float(&ident_pradians, &builtin_float, nullptr, {});
+    static constexpr ast::Func_Parameter param_degrees_pradians_vec2(&ident_pradians, &builtin_vec2, nullptr, {});
+    static constexpr ast::Func_Parameter param_degrees_pradians_vec3(&ident_pradians, &builtin_vec3, nullptr, {});
+    static constexpr ast::Func_Parameter param_degrees_pradians_vec4(&ident_pradians, &builtin_vec4, nullptr, {});
     static constexpr ast::Func_Parameter param_sin_angle_float(&ident_angle, &builtin_float, nullptr, {});
     static constexpr ast::Func_Parameter param_sin_angle_vec2(&ident_angle, &builtin_vec2, nullptr, {});
     static constexpr ast::Func_Parameter param_sin_angle_vec3(&ident_angle, &builtin_vec3, nullptr, {});
@@ -2052,6 +2055,7 @@ namespace vush {
     static constexpr ast::Func_Parameter param_interpolateAtOffset_interpolant_vec3(&ident_interpolant, &builtin_vec3, nullptr, {});
     static constexpr ast::Func_Parameter param_interpolateAtOffset_interpolant_vec4(&ident_interpolant, &builtin_vec4, nullptr, {});
     static constexpr ast::Func_Parameter param_subpassLoad_subpass_subpassInput(&ident_subpass, &builtin_subpassInput, nullptr, {});
+    static constexpr ast::Func_Parameter param_subpassLoad_subpass_isubpassInput(&ident_subpass, &builtin_isubpassInput, nullptr, {});
     static constexpr ast::Func_Parameter param_subpassLoad_subpass_usubpassInput(&ident_subpass, &builtin_usubpassInput, nullptr, {});
     static constexpr ast::Func_Parameter param_subpassLoad_subpass_subpassInputMS(&ident_subpass, &builtin_subpassInputMS, nullptr, {});
     static constexpr ast::Func_Parameter param_subpassLoad_sample_int(&ident_sample, &builtin_int, nullptr, {});
@@ -2061,14 +2065,14 @@ namespace vush {
     static constexpr ast::Func_Parameter param_allInvocations_value_bool(&ident_value, &builtin_bool, nullptr, {});
     static constexpr ast::Func_Parameter param_allInvocationsEqual_value_bool(&ident_value, &builtin_bool, nullptr, {});
 
-    static constexpr ast::Func_Parameter const* paramlist_radians_float[1] = {&param_radians_degrees_float};
-    static constexpr ast::Func_Parameter const* paramlist_radians_vec2[1] = {&param_radians_degrees_vec2};
-    static constexpr ast::Func_Parameter const* paramlist_radians_vec3[1] = {&param_radians_degrees_vec3};
-    static constexpr ast::Func_Parameter const* paramlist_radians_vec4[1] = {&param_radians_degrees_vec4};
-    static constexpr ast::Func_Parameter const* paramlist_degrees_float[1] = {&param_degrees_radians_float};
-    static constexpr ast::Func_Parameter const* paramlist_degrees_vec2[1] = {&param_degrees_radians_vec2};
-    static constexpr ast::Func_Parameter const* paramlist_degrees_vec3[1] = {&param_degrees_radians_vec3};
-    static constexpr ast::Func_Parameter const* paramlist_degrees_vec4[1] = {&param_degrees_radians_vec4};
+    static constexpr ast::Func_Parameter const* paramlist_radians_float[1] = {&param_radians_pdegrees_float};
+    static constexpr ast::Func_Parameter const* paramlist_radians_vec2[1] = {&param_radians_pdegrees_vec2};
+    static constexpr ast::Func_Parameter const* paramlist_radians_vec3[1] = {&param_radians_pdegrees_vec3};
+    static constexpr ast::Func_Parameter const* paramlist_radians_vec4[1] = {&param_radians_pdegrees_vec4};
+    static constexpr ast::Func_Parameter const* paramlist_degrees_float[1] = {&param_degrees_pradians_float};
+    static constexpr ast::Func_Parameter const* paramlist_degrees_vec2[1] = {&param_degrees_pradians_vec2};
+    static constexpr ast::Func_Parameter const* paramlist_degrees_vec3[1] = {&param_degrees_pradians_vec3};
+    static constexpr ast::Func_Parameter const* paramlist_degrees_vec4[1] = {&param_degrees_pradians_vec4};
     static constexpr ast::Func_Parameter const* paramlist_sin_float[1] = {&param_sin_angle_float};
     static constexpr ast::Func_Parameter const* paramlist_sin_vec2[1] = {&param_sin_angle_vec2};
     static constexpr ast::Func_Parameter const* paramlist_sin_vec3[1] = {&param_sin_angle_vec3};
@@ -3820,6 +3824,7 @@ namespace vush {
     static constexpr ast::Func_Parameter const* paramlist_interpolateAtOffset_vec3_vec2[2] = {&param_interpolateAtOffset_interpolant_vec3, &param_interpolateAtOffset_offset_vec2};
     static constexpr ast::Func_Parameter const* paramlist_interpolateAtOffset_vec4_vec2[2] = {&param_interpolateAtOffset_interpolant_vec4, &param_interpolateAtOffset_offset_vec2};
     static constexpr ast::Func_Parameter const* paramlist_subpassLoad_subpassInput[1] = {&param_subpassLoad_subpass_subpassInput};
+    static constexpr ast::Func_Parameter const* paramlist_subpassLoad_isubpassInput[1] = {&param_subpassLoad_subpass_isubpassInput};
     static constexpr ast::Func_Parameter const* paramlist_subpassLoad_usubpassInput[1] = {&param_subpassLoad_subpass_usubpassInput};
     static constexpr ast::Func_Parameter const* paramlist_subpassLoad_subpassInputMS_int[2] = {&param_subpassLoad_subpass_subpassInputMS, &param_subpassLoad_sample_int};
     static constexpr ast::Func_Parameter const* paramlist_subpassLoad_isubpassInputMS_int[2] = {&param_subpassLoad_subpass_isubpassInputMS, &param_subpassLoad_sample_int};
@@ -5593,7 +5598,8 @@ namespace vush {
     static constexpr ast::Decl_Function fn_memoryBarrierShared({}, &ident_memoryBarrierShared, {nullptr, 0}, &builtin_void, {}, true, {});
     static constexpr ast::Decl_Function fn_memoryBarrierImage({}, &ident_memoryBarrierImage, {nullptr, 0}, &builtin_void, {}, true, {});
     static constexpr ast::Decl_Function fn_groupMemoryBarrier({}, &ident_groupMemoryBarrier, {nullptr, 0}, &builtin_void, {}, true, {});
-    static constexpr ast::Decl_Function fn_subpassLoad_subpassInput({}, &ident_subpassLoad, {paramlist_subpassLoad_subpassInput, 1}, &builtin_ivec4, {}, true, {});
+    static constexpr ast::Decl_Function fn_subpassLoad_subpassInput({}, &ident_subpassLoad, {paramlist_subpassLoad_subpassInput, 1}, &builtin_vec4, {}, true, {});
+    static constexpr ast::Decl_Function fn_subpassLoad_isubpassInput({}, &ident_subpassLoad, {paramlist_subpassLoad_isubpassInput, 1}, &builtin_ivec4, {}, true, {});
     static constexpr ast::Decl_Function fn_subpassLoad_usubpassInput({}, &ident_subpassLoad, {paramlist_subpassLoad_usubpassInput, 1}, &builtin_uvec4, {}, true, {});
     static constexpr ast::Decl_Function fn_subpassLoad_subpassInputMS_int({}, &ident_subpassLoad, {paramlist_subpassLoad_subpassInputMS_int, 2}, &builtin_vec4, {}, true, {});
     static constexpr ast::Decl_Function fn_subpassLoad_isubpassInputMS_int({}, &ident_subpassLoad, {paramlist_subpassLoad_isubpassInputMS_int, 2}, &builtin_ivec4, {}, true, {});
@@ -5740,7 +5746,7 @@ namespace vush {
     static constexpr ast::Decl_Function const* ofn_fnlist_memoryBarrierShared[1] = {&fn_memoryBarrierShared};
     static constexpr ast::Decl_Function const* ofn_fnlist_memoryBarrierImage[1] = {&fn_memoryBarrierImage};
     static constexpr ast::Decl_Function const* ofn_fnlist_groupMemoryBarrier[1] = {&fn_groupMemoryBarrier};
-    static constexpr ast::Decl_Function const* ofn_fnlist_subpassLoad[6] = {&fn_subpassLoad_subpassInput, &fn_subpassLoad_subpassInput, &fn_subpassLoad_usubpassInput, &fn_subpassLoad_subpassInputMS_int, &fn_subpassLoad_isubpassInputMS_int, &fn_subpassLoad_usubpassInputMS_int};
+    static constexpr ast::Decl_Function const* ofn_fnlist_subpassLoad[6] = {&fn_subpassLoad_subpassInput, &fn_subpassLoad_isubpassInput, &fn_subpassLoad_usubpassInput, &fn_subpassLoad_subpassInputMS_int, &fn_subpassLoad_isubpassInputMS_int, &fn_subpassLoad_usubpassInputMS_int};
     static constexpr ast::Decl_Function const* ofn_fnlist_anyInvocation[1] = {&fn_anyInvocation_bool};
     static constexpr ast::Decl_Function const* ofn_fnlist_allInvocations[1] = {&fn_allInvocations_bool};
     static constexpr ast::Decl_Function const* ofn_fnlist_allInvocationsEqual[1] = {&fn_allInvocationsEqual_bool};
