@@ -813,7 +813,7 @@ namespace vush {
 
         // Validate functions.
         for(ast::Node const* const decl: ast) {
-            if(decl->node_kind != ast::Node_Kind::decl_stage_function) {
+            if(decl->node_kind != ast::Node_Kind::decl_overloaded_function) {
                 continue;
             }
 
