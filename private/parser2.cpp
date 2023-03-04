@@ -2619,7 +2619,7 @@ namespace vush {
                 snots.push_back(ANTON_MOV(*kw_mut));
             }
 
-            if(Optional type = match(Token_Kind::identifier)) {
+            if(Optional type = skipmatch(Token_Kind::identifier)) {
                 Lexer_State const end_state = _lexer.get_current_state_noskip();
                 anton::String_View const type_name = type->value;
                 snots.push_back(ANTON_MOV(*type));
