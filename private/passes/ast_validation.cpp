@@ -10,74 +10,6 @@
 namespace vush {
     using namespace anton::literals;
 
-    // check_and_add_symbol
-    // Checks whether a symbol already exists and if not, adds it to the symbol table.
-    // Otherwise returns an error diagnostic.
-    //
-    [[nodiscard]] static anton::Expected<void, Error> check_and_add_symbol(Context& ctx, Symbol const& symbol) {
-        Symbol const* const original_symbol = ctx.find_symbol(symbol.get_name());
-        if(original_symbol != nullptr) {
-            auto get_symbol_name = [](Symbol const& symbol) -> Source_Info {
-                switch(symbol.get_kind()) {
-                    case Symbol_Kind::variable: {
-                        auto const v = static_cast<ast::Variable const*>(symbol.get_node());
-                        return v->identifier->source_info;
-                    }
-
-                    case Symbol_Kind::func_parameter: {
-                        auto const v = static_cast<ast::Func_Parameter const*>(symbol.get_node());
-                        return v->identifier->source_info;
-                    }
-
-                    case Symbol_Kind::decl_overloaded_function: {
-                        // TODO: This won't work because overloaded function has
-                        //       no source information for the identifier.
-                        // auto const v = static_cast<ast::Decl_Overloaded_Function const*>(symbol.get_node());
-                        // return v->identifier->source_info;
-                        return Source_Info{};
-                    }
-
-                    default:
-                        ANTON_FAIL(false, "unknown symbol type");
-                }
-            };
-
-            Source_Info const old_name = get_symbol_name(*original_symbol);
-            Source_Info const new_name = get_symbol_name(symbol);
-            return {anton::expected_error, err_symbol_redefinition(ctx, old_name, new_name)};
-        }
-
-        ctx.add_symbol(symbol);
-        return {anton::expected_value};
-    }
-
-    [[nodiscard]] static anton::Expected<void, Error> check_type_exists(Context const& ctx, ast::Type const& type) {
-        switch(type.node_kind) {
-            case ast::Node_Kind::type_array: {
-                ast::Type_Array const& t = static_cast<ast::Type_Array const&>(type);
-                return check_type_exists(ctx, *t.base);
-            }
-
-            case ast::Node_Kind::type_user_defined: {
-                ast::Type_User_Defined const& udt = static_cast<ast::Type_User_Defined const&>(type);
-                if(ctx.find_symbol(udt.value) != nullptr) {
-                    return {anton::expected_value};
-                } else {
-                    return {anton::expected_error, err_undefined_symbol(ctx, type.source_info)};
-                }
-            }
-
-            case ast::Node_Kind::type_builtin: {
-                return {anton::expected_value};
-            }
-
-            default: {
-                ANTON_ASSERT(false, "unhandled ast::Node_Kind");
-                ANTON_UNREACHABLE();
-            }
-        }
-    }
-
     [[nodiscard]] static anton::Expected<void, Error> check_array_is_sized(Context const& ctx, ast::Type const& type) {
         if(ast::is_unsized_array(type)) {
             return {anton::expected_error, err_unsized_array_not_allowed(ctx, type.source_info)};
@@ -759,28 +691,6 @@ namespace vush {
     }
 
     anton::Expected<void, Error> run_ast_validation_pass(Context& ctx, ast::Node_List const ast) {
-        ctx.push_scope();
-
-        // Add global symbols before we do any validation.
-        for(ast::Node const* const decl: ast) {
-            if(decl->node_kind == ast::Node_Kind::variable) {
-                ast::Variable const* const d = static_cast<ast::Variable const*>(decl);
-                if(anton::Expected<void, Error> result = check_and_add_symbol(ctx, Symbol(d->identifier->value, d)); !result) {
-                    return {anton::expected_error, ANTON_MOV(result.error())};
-                }
-            } else if(decl->node_kind == ast::Node_Kind::decl_struct) {
-                ast::Decl_Struct const* const d = static_cast<ast::Decl_Struct const*>(decl);
-                if(anton::Expected<void, Error> result = check_and_add_symbol(ctx, Symbol(d->identifier->value, d)); !result) {
-                    return {anton::expected_error, ANTON_MOV(result.error())};
-                }
-            } else if(decl->node_kind == ast::Node_Kind::decl_overloaded_function) {
-                ast::Decl_Overloaded_Function const* const d = static_cast<ast::Decl_Overloaded_Function const*>(decl);
-                if(anton::Expected<void, Error> result = check_and_add_symbol(ctx, Symbol(d->identifier, d)); !result) {
-                    return {anton::expected_error, ANTON_MOV(result.error())};
-                }
-            }
-        }
-
         // There is yet no support for struct member initializers, however, for
         // future considerations, validating structs and constants separately
         // prevents us from properly validating both. Currently we validate
@@ -841,7 +751,6 @@ namespace vush {
             }
         }
 
-        ctx.pop_scope();
         return {anton::expected_value};
     }
 } // namespace vush

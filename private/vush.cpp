@@ -358,42 +358,48 @@ namespace vush {
 
     namespace spirv {
         anton::Expected<Build_Result, Error> compile(Configuration const& config, Allocator& allocator, source_import_callback callback, void* user_data) {
-            Context ctx;
+            Context ctx(&allocator);
             ctx.source_import_cb = callback;
             ctx.source_import_user_data = user_data;
             ctx.source_definition_cb = config.source_definition_cb;
             ctx.source_definition_user_data = config.source_definition_user_data;
             ctx.diagnostics = config.diagnostics;
-            ctx.allocator = &allocator;
 
+            // TODO: Fix constant defines.
             // Create symbols for the constant defines passed via config.
-            for(Constant_Define const& define: config.defines) {
-                // Source_Info src = {"<defines>", 1, 1, 0};
-                // Owning_Ptr decl = allocate_owning<Constant_Declaration>(
-                //     ctx.allocator, allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_int, src),
-                //     allocate_owning<Identifier>(ctx.allocator, anton::String(define.name), src),
-                //     allocate_owning<Integer_Literal>(ctx.allocator, anton::to_string(define.value), Integer_Literal_Type::i32, Integer_Literal_Base::dec, src),
-                //     src);
-                ast::Variable const* const node = nullptr;
-                ctx.add_symbol(Symbol{define.name, node});
-            }
+            // for(Constant_Define const& define: config.defines) {
+            // Source_Info src = {"<defines>", 1, 1, 0};
+            // Owning_Ptr decl = allocate_owning<Constant_Declaration>(
+            //     ctx.allocator, allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_int, src),
+            //     allocate_owning<Identifier>(ctx.allocator, anton::String(define.name), src),
+            //     allocate_owning<Integer_Literal>(ctx.allocator, anton::to_string(define.value), Integer_Literal_Type::i32, Integer_Literal_Base::dec, src),
+            //     src);
+            // ast::Variable const* const node = nullptr;
+            // ctx.add_symbol(Symbol{define.name, node});
+            // }
 
             anton::Expected<ast::Node_List, Error> import_result = import_source_code(ctx, config.source_name);
             if(!import_result) {
                 return {anton::expected_error, import_result.error()};
             }
 
-            ast::Node_List ast = import_result.value();
+            ast::Node_List ast_nodes = import_result.value();
             {
-                anton::Expected<ast::Node_List, Error> result = run_ast_construction_pass(ctx, ast);
+                anton::Expected<ast::Node_List, Error> result = run_ast_construction_pass(ctx, ast_nodes);
                 if(result) {
-                    ast = result.value();
+                    ast_nodes = result.value();
                 } else {
                     return {anton::expected_error, ANTON_MOV(result.error())};
                 }
             }
             {
-                anton::Expected<void, Error> result = run_ast_validation_pass(ctx, ast);
+                anton::Expected<void, Error> result = run_ast_defcheck_pass(ctx, ast_nodes);
+                if(!result) {
+                    return {anton::expected_error, ANTON_MOV(result.error())};
+                }
+            }
+            {
+                anton::Expected<void, Error> result = run_ast_validation_pass(ctx, ast_nodes);
                 if(!result) {
                     return {anton::expected_error, ANTON_MOV(result.error())};
                 }
