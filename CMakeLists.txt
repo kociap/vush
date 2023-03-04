@@ -49,7 +49,7 @@ set_target_properties(vush PROPERTIES CXX_STANDARD 20 CXX_EXTENSIONS OFF)
 target_compile_options(vush PRIVATE ${VUSH_COMPILE_FLAGS})
 target_link_libraries(vush PUBLIC anton_core)
 target_include_directories(vush PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/public" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/private")
-target_sources(vush 
+target_sources(vush
     PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/private/allocator.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/ast_fwd.hpp"
@@ -81,6 +81,7 @@ target_sources(vush
     "${CMAKE_CURRENT_SOURCE_DIR}/private/vush.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/passes/ast_construction.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/passes/ast_validation.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/private/passes/ast_defcheck.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/public/vush/allocator.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/public/vush/types.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/public/vush/vush.hpp"
