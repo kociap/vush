@@ -669,7 +669,6 @@ namespace vush {
                 bool identical = true;
                 anton::Zip_Iterator begin{overload1->parameters.begin(), overload2->parameters.begin()};
                 anton::Zip_Iterator end{overload1->parameters.end(), overload2->parameters.end()};
-                // TODO: Not using mov on begin and end causes a compilation error. Investigate.
                 for(auto const [p1, p2]: anton::Range(ANTON_MOV(begin), ANTON_MOV(end))) {
                     if(!ast::compare_types_equal(*p1->type, *p2->type)) {
                         identical = false;
