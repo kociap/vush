@@ -1,18 +1,26 @@
 import subprocess
 
-from builtin_functions_definitions import ParamT, Array_Type, Return_Placeholder, return_, Fn, fn_definitions
+from builtin_functions_definitions import Builtin_Type, ParamT, Array_Type, Return_Placeholder, return_, Fn, fn_definitions
+
+def get_static_type_builtin_identifier(name):
+    return f"builtin_{name}"
+
+def get_static_type_builtin_string(name):
+    return f"static constexpr ast::Type_Builtin {get_static_type_builtin_identifier(name)}(ast::GLSL_Type::glsl_{name}, {{}});"
+
+# Legacy API
+def create_static_type_builtin(name):
+    return get_static_type_builtin_identifier(name), get_static_type_builtin_string(name)
 
 def generate_functions(fn):
     def create_function_declaration(identifier, return_type, parameter_generator):
         def create_static_identifier(name, value):
             return f"ident_{name}", f"static constexpr ast::Identifier ident_{name}(\"{value}\"_sv, {{}});"
-        def create_static_type_builtin(name):
-            return f"builtin_{name}", f"static constexpr ast::Type_Builtin builtin_{name}(ast::GLSL_Type::glsl_{name}, {{}});"
         def create_static_literal_integer(value):
             return f"int_{value}", f"static constexpr ast::Lt_Integer int_{value}(\"{value}\"_sv, ast::Lt_Integer_Kind::i32, ast::Lt_Integer_Base::dec, {{}});"
         def create_static_type_array(name, base, size):
             return f"array_{name}", f"static constexpr ast::Type_Array array_{name}(&{base}, &{size}, {{}});"
-        def create_static_parameter(name, ss_identifier, ss_type):  
+        def create_static_parameter(name, ss_identifier, ss_type):
             return f"param_{name}", f"static constexpr ast::Func_Parameter param_{name}(&{ss_identifier}, &{ss_type}, nullptr, {{}});"
         def create_static_parameter_array(name, parameters):
             return f"paramlist_{name}", f"static constexpr ast::Func_Parameter const* paramlist_{name}[{len(parameters)}] = {{{', '.join(map(lambda v: f'&{v}', parameters))}}};"
@@ -102,7 +110,7 @@ def generate_functions(fn):
                     yield p[1]
                 else:
                     yield next(replacement)
-                    
+
         if isinstance(replacement, str) or isinstance(replacement, Array_Type):
             yield sew_signature_replacement(signature, (replacement for _ in range(0, len(signature))))
         elif isinstance(replacement, ParamT):
@@ -122,7 +130,7 @@ def generate_functions(fn):
         else:
             raise TypeError(f"invalid replacement type {type(replacement)} ({replacement})")
 
-    # Handle case where a function has no replacements, 
+    # Handle case where a function has no replacements,
     # i.e. all parameters are provided in the signature.
     if len(fn.replacements) > 0:
         for replacement in fn.replacements:
@@ -144,6 +152,19 @@ def write_get_builtin_functions_declarations(file, functions):
     anton::Slice<ast::Decl_Overloaded_Function const* const> get_builtin_functions_declarations() {{
         return anton::Slice<ast::Decl_Overloaded_Function const* const>{{builtin_functions_declarations, {len(functions)}}};
     }}
+""")
+
+def write_get_builtin_type(file):
+    file.write(f"""    ast::Type_Builtin const* get_builtin_type(ast::GLSL_Type const type) {{
+        switch(type) {{
+""")
+
+    for v in Builtin_Type:
+        name = v.value[0][0]
+        file.write(f"            case ast::GLSL_Type::glsl_{name}: return &{get_static_type_builtin_identifier(name)};\n")
+
+    file.write("""        }
+    }
 """)
 
 def write_statics(file, statics):
@@ -172,6 +193,7 @@ def main():
     # TODO: --directory,-d option with default ./private/
     # TODO: --filename,-f option with default builtin_symbols_autogen.cpp
 
+    # Order is important.
     statics = {
         "identifiers": {},
         "integers": {},
@@ -182,6 +204,13 @@ def main():
         "ofn_arrays": {},
         "ofns": {},
     }
+
+    # Generate all builtin types.
+    for v in Builtin_Type:
+        name = v.value[0][0]
+        identifier = get_static_type_builtin_identifier(name)
+        string = get_static_type_builtin_string(name)
+        statics["types"][identifier] = string
 
     def create_overloaded_function(name, functions):
         ofn_fnlist = f"ofn_fnlist_{name}"
@@ -202,7 +231,7 @@ def main():
             statics["parameters"].update(sparameter)
             statics["parameter_arrays"].update(sparameterarray)
             statics["functions"].update(sfunction)
-    
+
     ofns = []
     for name, fns in functions.items():
         ofn, ofn_string, ofn_fnlist, ofn_fnlist_string = create_overloaded_function(name, fns)
@@ -212,12 +241,15 @@ def main():
 
     file = open("./private/builtin_symbols_autogen.cpp", "w")
     write_preamble(file)
+
     for k, v in statics.items():
         write_statics(file, v)
         if len(v) > 0:
             file.write("\n")
+
     write_get_builtin_functions_declarations(file, ofns)
-    file.write("\n")
+    write_get_builtin_type(file)
+
     write_epilogue(file)
     file.close()
 
