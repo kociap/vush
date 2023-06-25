@@ -159,7 +159,7 @@ def write_get_builtin_type(file):
 """)
 
     for v in Builtin_Type:
-        name = v.value[0][0]
+        name = v.value[0]
         file.write(f"            case ast::GLSL_Type::glsl_{name}: return &{get_static_type_builtin_identifier(name)};\n")
 
     file.write("""        }
@@ -206,7 +206,7 @@ def main():
 
     # Generate all builtin types.
     for v in Builtin_Type:
-        name = v.value[0][0]
+        name = v.value[0]
         identifier = get_static_type_builtin_identifier(name)
         string = get_static_type_builtin_string(name)
         statics["types"][identifier] = string
