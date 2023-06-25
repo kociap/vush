@@ -1,256 +1,350 @@
-import subprocess
+from enum import Enum
 
-from builtin_functions_definitions import Builtin_Type, ParamT, Array_Type, Return_Placeholder, return_, Fn, fn_definitions
+class ParamT(Enum):
+    genFType = ("float", "vec2", "vec3", "vec4"),
+    genDType = ("double", "dvec2", "dvec3", "dvec4"),
+    genIType = ("int", "ivec2", "ivec3", "ivec4"),
+    genUType = ("uint", "uvec2", "uvec3", "uvec4"),
+    genBType = ("bool", "bvec2", "bvec3", "bvec4"),
+    vecType = ("vec2", "vec3", "vec4"),
+    dvecType = ("dvec2", "dvec3", "dvec4"),
+    ivecType = ("ivec2", "ivec3", "ivec4"),
+    uvecType = ("uvec2", "uvec3", "uvec4"),
+    bvecType = ("bvec2", "bvec3", "bvec4"),
+    gvec4Type = ("vec4", "ivec4", "uvec4"),
+    matN = ("mat2", "mat3", "mat4"),
+    gsampler1D = ("sampler1D", "isampler1D", "usampler1D"),
+    gsampler2D = ("sampler2D", "isampler2D", "usampler2D"),
+    gsampler3D = ("sampler3D", "isampler3D", "usampler3D"),
+    gsamplerCube = ("samplerCube", "isamplerCube", "usamplerCube"),
+    gsamplerCubeArray = ("samplerCubeArray", "isamplerCubeArray", "usamplerCubeArray"),
+    gsampler2DRect = ("sampler2DRect", "isampler2DRect", "usampler2DRect"),
+    gsampler1DArray = ("sampler1DArray", "isampler1DArray", "usampler1DArray"),
+    gsampler2DArray = ("sampler2DArray", "isampler2DArray", "usampler2DArray"),
+    gsamplerBuffer = ("samplerBuffer", "isamplerBuffer", "usamplerBuffer"),
+    gsampler2DMS = ("sampler2DMS", "isampler2DMS", "usampler2DMS"),
+    gsampler2DMSArray = ("sampler2DMSArray", "isampler2DMSArray", "usampler2DMSArray"),
+    gsubpassInput = ("subpassInput", "isubpassInput", "usubpassInput"),
+    gsubpassInputMS = ("subpassInputMS", "isubpassInputMS", "usubpassInputMS"),
+    gimage2D = ("image2D", "iimage2D", "uimage2D"),
+    gimage3D = ("image3D", "iimage3D", "uimage3D"),
+    gimageCube = ("imageCube", "iimageCube", "uimageCube"),
+    gimageBuffer = ("imageBuffer", "iimageBuffer", "uimageBuffer"),
+    gimage2DArray = ("image2DArray", "iimage2DArray", "uimage2DArray"),
+    gimageCubeArray = ("imageCubeArray", "iimageCubeArray", "uimageCubeArray"),
+    gimage1D = ("image1D", "iimage1D", "uimage1D"),
+    gimage1DArray = ("image1DArray", "iimage1DArray", "uimage1DArray"),
+    gimage2DMS = ("image2DMS", "iimage2DMS", "uimage2DMS"),
+    gimage2DMSArray = ("image2DMSArray", "iimage2DMSArray", "uimage2DMSArray"),
 
-def get_static_type_builtin_identifier(name):
-    return f"builtin_{name}"
+class Return_Placeholder:
+    pass
 
-def get_static_type_builtin_string(name):
-    return f"static constexpr ast::Type_Builtin {get_static_type_builtin_identifier(name)}(ast::GLSL_Type::glsl_{name}, {{}});"
+return_ = Return_Placeholder()
 
-# Legacy API
-def create_static_type_builtin(name):
-    return get_static_type_builtin_identifier(name), get_static_type_builtin_string(name)
+class Array_Type:
+    # base: str
+    # size: int
 
-def generate_functions(fn):
-    def create_function_declaration(identifier, return_type, parameter_generator):
-        def create_static_identifier(name, value):
-            return f"ident_{name}", f"static constexpr ast::Identifier ident_{name}(\"{value}\"_sv, {{}});"
-        def create_static_literal_integer(value):
-            return f"int_{value}", f"static constexpr ast::Lt_Integer int_{value}(\"{value}\"_sv, ast::Lt_Integer_Kind::i32, ast::Lt_Integer_Base::dec, {{}});"
-        def create_static_type_array(name, base, size):
-            return f"array_{name}", f"static constexpr ast::Type_Array array_{name}(&{base}, &{size}, {{}});"
-        def create_static_parameter(name, ss_identifier, ss_type):
-            return f"param_{name}", f"static constexpr ast::Func_Parameter param_{name}(&{ss_identifier}, &{ss_type}, nullptr, {{}});"
-        def create_static_parameter_array(name, parameters):
-            return f"paramlist_{name}", f"static constexpr ast::Func_Parameter const* paramlist_{name}[{len(parameters)}] = {{{', '.join(map(lambda v: f'&{v}', parameters))}}};"
-        def create_static_function(name, ss_identifier, ss_return_type, parameter_count, ss_parameters):
-            return f"fn_{name}", f"static constexpr ast::Decl_Function fn_{name}({{}}, &{ss_identifier}, {{{ss_parameters}, {parameter_count}}}, &{ss_return_type}, {{}}, true, {{}});"
+    def __init__(self, base, size):
+        self.base = base
+        self.size = size
 
-        static_identifiers = dict()
-        static_integers = dict()
-        static_types = dict()
-        static_parameters = dict()
-        static_arrays = dict()
-        static_functions = dict()
-        # Create function identifier.
-        si_identifier, si_identifier_string = create_static_identifier(identifier, identifier)
-        static_identifiers[si_identifier] = si_identifier_string
-        # Create return type.
-        stb_return, stb_return_string = create_static_type_builtin(return_type)
-        static_types[stb_return] = stb_return_string
-        parameter_types = []
-        parameter_statics = []
-        for n, t in parameter_generator:
-            # Create parameter identifier.
-            si_pidentifier, si_pidentifier_string = create_static_identifier(n, n)
-            static_identifiers[si_pidentifier] = si_pidentifier_string
-            if isinstance(t, Array_Type):
-                stb_base, stb_base_string = create_static_type_builtin(t.base)
-                static_types[stb_base] = stb_base_string
-                sli_size, sli_size_string = create_static_literal_integer(t.size)
-                static_integers[sli_size] = sli_size_string
-                stringified_type = f"{t.base}_{t.size}"
-                sta_ptype, sta_ptype_string = create_static_type_array(stringified_type, stb_base, sli_size)
-                static_types[sta_ptype] = sta_ptype_string
-                sp_param, sp_param_string = create_static_parameter(f"{identifier}_{n}_{stringified_type}", si_pidentifier, sta_ptype)
-                static_parameters[sp_param] = sp_param_string
-                parameter_statics.append(sp_param)
-                parameter_types.append(stringified_type)
-            else:
-                stb_ptype, stb_ptype_string = create_static_type_builtin(t)
-                static_types[stb_ptype] = stb_ptype_string
-                sp_param, sp_param_string = create_static_parameter(f"{identifier}_{n}_{t}", si_pidentifier, stb_ptype)
-                static_parameters[sp_param] = sp_param_string
-                parameter_statics.append(sp_param)
-                parameter_types.append(t)
-        if len(parameter_statics) > 0:
-            discriminator = "_".join(parameter_types)
-            spa, spa_string = create_static_parameter_array(identifier + "_" + discriminator, parameter_statics)
-            static_arrays[spa] = spa_string
-            fn, fn_string = create_static_function(identifier + "_" + discriminator, si_identifier, stb_return, len(parameter_statics), spa)
-            static_functions[fn] = fn_string
-        else:
-            fn, fn_string = create_static_function(identifier, si_identifier, stb_return, 0, "nullptr")
-            static_functions[fn] = fn_string
+class Fn:
+    # name: str
+    # signature: tuple(name:<str|Return_Placeholder>|tuple(name:str|Return_Placeholder, type:str|Array_Type))
+    # replacements: tuple(str|ParamT|Array_Type|tuple(str|ParamT|Array_Type))
 
-        return fn, static_identifiers, static_integers, static_types, static_parameters, static_arrays, static_functions
+    def __init__(self, name, signature, replacements):
+        self.name = name
+        self.signature = signature
+        self.replacements = replacements
 
-    def generate_name(signature):
-        for v in signature:
-            unpack = v
-            if isinstance(v, tuple):
-                unpack = v[0]
-            if isinstance(unpack, str):
-                yield unpack
+bffvec = (ParamT.bvecType, ParamT.vecType, ParamT.vecType)
+bddvec = (ParamT.bvecType, ParamT.dvecType, ParamT.dvecType)
+biivec = (ParamT.bvecType, ParamT.ivecType, ParamT.ivecType)
+buuvec = (ParamT.bvecType, ParamT.uvecType, ParamT.uvecType)
 
-    # generate_type_generator
-    #
-    # Yields:
-    # Generator returning types.
-    #
-    def generate_type_generator(signature, replacement):
-        # For some reason the value of ParamT is a tuple containing one element,
-        # therefore we have to unwrap it everywhere by accessing the first element.
-
-        def calculate_min_length(t):
-            max_length = 1
-            for v in replacement:
-                if isinstance(v, ParamT):
-                    max_length = max(len(v.value[0]), max_length)
-            min_length = max_length
-            for v in replacement:
-                if isinstance(v, ParamT):
-                    min_length = min(len(v.value[0]), min_length)
-            return min_length
-
-        def sew_signature_replacement(signature, replacement):
-            for p in signature:
-                if isinstance(p, tuple):
-                    yield p[1]
-                else:
-                    yield next(replacement)
-
-        if isinstance(replacement, str) or isinstance(replacement, Array_Type):
-            yield sew_signature_replacement(signature, (replacement for _ in range(0, len(signature))))
-        elif isinstance(replacement, ParamT):
-            for t in replacement.value[0]:
-                yield sew_signature_replacement(signature, (t for _ in range(0, len(signature))))
-        elif isinstance(replacement, tuple):
-            min_length = calculate_min_length(replacement)
-            for i in range(0, min_length):
-                def unwrap(replacement, i):
-                    for v in replacement:
-                        if isinstance(v, ParamT):
-                            yield v.value[0][i]
-                        else:
-                            yield v
-
-                yield sew_signature_replacement(signature, unwrap(replacement, i))
-        else:
-            raise TypeError(f"invalid replacement type {type(replacement)} ({replacement})")
-
-    # Handle case where a function has no replacements,
-    # i.e. all parameters are provided in the signature.
-    if len(fn.replacements) > 0:
-        for replacement in fn.replacements:
-            for type_gen in generate_type_generator(fn.signature, replacement):
-                yield create_function_declaration(fn.name, next(type_gen), zip(generate_name(fn.signature), type_gen))
-    else:
-        for type_gen in generate_type_generator(fn.signature, ()):
-            yield create_function_declaration(fn.name, next(type_gen), zip(generate_name(fn.signature), type_gen))
-
-
-def write_get_builtin_functions_declarations(file, functions):
-    file.write(f"    static constexpr ast::Decl_Overloaded_Function const* builtin_functions_declarations[{len(functions)}] = {{\n")
-    for f in functions:
-        string = "    " * 2 + f"&{f},\n"
-        file.write(string)
-    file.write("    };\n\n")
-
-    file.write(f"""\
-    anton::Slice<ast::Decl_Overloaded_Function const* const> get_builtin_functions_declarations() {{
-        return anton::Slice<ast::Decl_Overloaded_Function const* const>{{builtin_functions_declarations, {len(functions)}}};
-    }}
-""")
-
-def write_get_builtin_type(file):
-    file.write(f"""    ast::Type_Builtin const* get_builtin_type(ast::GLSL_Type const type) {{
-        switch(type) {{
-""")
-
-    for v in Builtin_Type:
-        name = v.value[0][0]
-        file.write(f"            case ast::GLSL_Type::glsl_{name}: return &{get_static_type_builtin_identifier(name)};\n")
-
-    file.write("""        }
-    }
-""")
-
-def write_statics(file, statics):
-    for name, string in statics.items():
-        file.write("    ")
-        file.write(string)
-        file.write("\n")
-
-def write_preamble(file):
-    file.write("""\
-#include <builtin_symbols.hpp>
-
-#include <ast2.hpp>
-
-namespace vush {
-    using namespace anton::literals;
-
-""")
-
-def write_epilogue(file):
-    file.write("""\
-}
-""")
-
-def main():
-    # TODO: --directory,-d option with default ./private/
-    # TODO: --filename,-f option with default builtin_symbols_autogen.cpp
-
-    # Order is important.
-    statics = {
-        "identifiers": {},
-        "integers": {},
-        "types": {},
-        "parameters": {},
-        "parameter_arrays": {},
-        "functions": {},
-        "ofn_arrays": {},
-        "ofns": {},
-    }
-
-    # Generate all builtin types.
-    for v in Builtin_Type:
-        name = v.value[0][0]
-        identifier = get_static_type_builtin_identifier(name)
-        string = get_static_type_builtin_string(name)
-        statics["types"][identifier] = string
-
-    def create_overloaded_function(name, functions):
-        ofn_fnlist = f"ofn_fnlist_{name}"
-        ofn_fnlist_string = f"static constexpr ast::Decl_Function const* {ofn_fnlist}[{len(functions)}] = {{{', '.join(map(lambda v: f'&{v}', functions))}}};"
-        ofn = f"ofn_{name}"
-        ofn_string = f"static constexpr ast::Decl_Overloaded_Function {ofn}(\"{name}\"_sv, {{{ofn_fnlist}, {len(functions)}}});"
-        return ofn, ofn_string, ofn_fnlist, ofn_fnlist_string
-
-    functions = {}
-    for fn in fn_definitions:
-        if fn.name not in functions:
-            functions[fn.name] = []
-        for f, sidentifier, sinteger, stype, sparameter, sparameterarray, sfunction in generate_functions(fn):
-            functions[fn.name].append(f)
-            statics["identifiers"].update(sidentifier)
-            statics["integers"].update(sinteger)
-            statics["types"].update(stype)
-            statics["parameters"].update(sparameter)
-            statics["parameter_arrays"].update(sparameterarray)
-            statics["functions"].update(sfunction)
-
-    ofns = []
-    for name, fns in functions.items():
-        ofn, ofn_string, ofn_fnlist, ofn_fnlist_string = create_overloaded_function(name, fns)
-        statics["ofn_arrays"][ofn_fnlist] = ofn_fnlist_string
-        statics["ofns"][ofn] = ofn_string
-        ofns.append(ofn)
-
-    file = open("./private/builtin_symbols_autogen.cpp", "w")
-    write_preamble(file)
-
-    for k, v in statics.items():
-        write_statics(file, v)
-        if len(v) > 0:
-            file.write("\n")
-
-    write_get_builtin_functions_declarations(file, ofns)
-    write_get_builtin_type(file)
-
-    write_epilogue(file)
-    file.close()
-
-main()
+fn_definitions = (
+    Fn(name = "radians", signature = (return_, "pdegrees"), replacements = (ParamT.genFType, )),
+    Fn(name = "degrees", signature = (return_, "pradians"), replacements = (ParamT.genFType, )),
+    Fn(name = "sin", signature = (return_, "angle"), replacements = (ParamT.genFType, )),
+    Fn(name = "cos", signature = (return_, "angle"), replacements = (ParamT.genFType, )),
+    Fn(name = "tan", signature = (return_, "angle"), replacements = (ParamT.genFType, )),
+    Fn(name = "asin", signature = (return_, "x"), replacements = (ParamT.genFType, )),
+    Fn(name = "acos", signature = (return_, "x"), replacements = (ParamT.genFType, )),
+    Fn(name = "atan", signature = (return_, "y",  "x"), replacements = (ParamT.genFType, )),
+    Fn(name = "atan", signature = (return_, "y_over_x"), replacements = (ParamT.genFType, )),
+    Fn(name = "sinh", signature = (return_, "x"), replacements = (ParamT.genFType, )),
+    Fn(name = "cosh", signature = (return_, "x"), replacements = (ParamT.genFType, )),
+    Fn(name = "tanh", signature = (return_, "x"), replacements = (ParamT.genFType, )),
+    Fn(name = "asinh", signature = (return_, "x"), replacements = (ParamT.genFType, )),
+    Fn(name = "acosh", signature = (return_, "x"), replacements = (ParamT.genFType, )),
+    Fn(name = "atanh", signature = (return_, "x"), replacements = (ParamT.genFType, )),
+    Fn(name = "pow", signature = (return_, "x"), replacements = (ParamT.genFType, )),
+    Fn(name = "exp", signature = (return_, "x"), replacements = (ParamT.genFType, )),
+    Fn(name = "log", signature = (return_, "x"), replacements = (ParamT.genFType, )),
+    Fn(name = "exp2", signature = (return_, "x"), replacements = (ParamT.genFType, )),
+    Fn(name = "log2", signature = (return_, "x"), replacements = (ParamT.genFType, )),
+    Fn(name = "sqrt", signature = (return_, "x"), replacements = (ParamT.genFType, ParamT.genDType)),
+    Fn(name = "inversesqrt", signature = (return_, "x"), replacements = (ParamT.genFType, ParamT.genDType)),
+    Fn(name = "abs", signature = (return_, "x"), replacements = (ParamT.genFType, ParamT.genDType, ParamT.genIType)),
+    Fn(name = "sign", signature = (return_, "x"), replacements = (ParamT.genFType, ParamT.genDType, ParamT.genIType)),
+    Fn(name = "floor", signature = (return_, "x"), replacements = (ParamT.genFType, ParamT.genDType)),
+    Fn(name = "trunc", signature = (return_, "x"), replacements = (ParamT.genFType, ParamT.genDType)),
+    Fn(name = "round", signature = (return_, "x"), replacements = (ParamT.genFType, ParamT.genDType)),
+    Fn(name = "roundEven", signature = (return_, "x"), replacements = (ParamT.genFType, ParamT.genDType)),
+    Fn(name = "ceil", signature = (return_, "x"), replacements = (ParamT.genFType, ParamT.genDType)),
+    Fn(name = "fract", signature = (return_, "x"), replacements = (ParamT.genFType, ParamT.genDType)),
+    Fn(name = "mod", signature = (return_, "x", "y"),
+        replacements = ((ParamT.genFType, ParamT.genFType, "float"), (ParamT.genDType, ParamT.genDType, "double"), ParamT.vecType, ParamT.dvecType)),
+    Fn(name = "modf", signature = (return_, "x", "y"), replacements = (ParamT.genFType, ParamT.genDType)),
+    Fn(name = "min", signature = (return_, "x", "y"),
+        replacements = ((ParamT.genFType, ParamT.genFType, "float"), (ParamT.genDType, ParamT.genDType, "double"), (ParamT.genIType, ParamT.genIType, "int"), (ParamT.genUType, ParamT.genUType, "uint"), ParamT.vecType, ParamT.dvecType, ParamT.ivecType, ParamT.uvecType)),
+    Fn(name = "max", signature = (return_, "x", "y"),
+        replacements = ((ParamT.genFType, ParamT.genFType, "float"), (ParamT.genDType, ParamT.genDType, "double"), (ParamT.genIType, ParamT.genIType, "int"), (ParamT.genUType, ParamT.genUType, "uint"), ParamT.vecType, ParamT.dvecType, ParamT.ivecType, ParamT.uvecType)),
+    Fn(name = "clamp", signature = (return_, "x", "min_val", "max_val"),
+        replacements = ((ParamT.genFType, ParamT.genFType, "float", "float"), (ParamT.genDType, ParamT.genDType, "double", "double"), (ParamT.genIType, ParamT.genIType, "int", "int"), (ParamT.genUType, ParamT.genUType, "uint", "uint")),),
+    # Floating-Point Pack and Unpack Functions
+    Fn(name = "packUnorm2x16", signature = ((return_, "uint"), ("v", "vec2")), replacements = ()),
+    Fn(name = "packSnorm2x16", signature = ((return_, "uint"), ("v", "vec2")), replacements = ()),
+    Fn(name = "packUnorm4x8", signature = ((return_, "uint"), ("v", "vec4")), replacements = ()),
+    Fn(name = "packSnorm4x8", signature = ((return_, "uint"), ("v", "vec4")), replacements = ()),
+    Fn(name = "unpackUnorm2x16", signature = ((return_, "vec2"), ("p", "uint")), replacements = ()),
+    Fn(name = "unpackSnorm2x16", signature = ((return_, "vec2"), ("p", "uint")), replacements = ()),
+    Fn(name = "unpackUnorm4x8", signature = ((return_, "vec4"), ("p", "uint")), replacements = ()),
+    Fn(name = "unpackSnorm4x8", signature = ((return_, "vec4"), ("p", "uint")), replacements = ()),
+    Fn(name = "packHalf2x16", signature = ((return_, "uint"), ("v", "vec2")), replacements = ()),
+    Fn(name = "unpackHalf2x16", signature = ((return_, "vec2"), ("v", "uint")), replacements = ()),
+    Fn(name = "packDouble2x32", signature = ((return_, "double"), ("v", "uvec2")), replacements = ()),
+    Fn(name = "unpackDouble2x32", signature = ((return_, "uvec2"), ("v", "double")), replacements = ()),
+    # Geometric Functions
+    Fn(name = "length", signature = (return_, "x", ), replacements = (("float", ParamT.genFType), ("double", ParamT.genDType))),
+    Fn(name = "distance", signature = (return_, "p0", "p1"), replacements = (("float", ParamT.genFType, ParamT.genFType), ("double", ParamT.genDType, ParamT.genDType))),
+    Fn(name = "dot", signature = (return_, "x", "y"), replacements = (("float", ParamT.genFType, ParamT.genFType), ("double", ParamT.genDType, ParamT.genDType))),
+    Fn(name = "cross", signature = (return_, "x", "y"), replacements = ("vec3", "dvec3")),
+    Fn(name = "normalize", signature = (return_, "x",), replacements = (ParamT.genFType, ParamT.genDType)),
+    Fn(name = "faceforward", signature = (return_, "N", "I", "Nref"), replacements = (ParamT.genFType, ParamT.genDType)),
+    Fn(name = "reflect", signature = (return_, "I", "N"), replacements = (ParamT.genFType, ParamT.genDType)),
+    Fn(name = "refract", signature = (return_, "I", "N", "eta"),
+       replacements = ((ParamT.genFType, ParamT.genFType, ParamT.genFType, "float"), (ParamT.genDType, ParamT.genDType, ParamT.genDType, "double"))),
+    # Matrix Functions
+    Fn(name = "matrixCompMult", signature = (return_, "x", "y"), replacements = ("mat2", "mat3", "mat4")),
+    Fn(name = "matrixCompMult", signature = (return_, "x", "y"), replacements = ("mat2x3", "mat2x4", "mat3x2", "mat3x4", "mat4x2", "mat4x3")),
+    Fn(name = "outerProduct", signature = (return_, "c", "r"),
+        replacements = (ParamT.matN, ("mat2x3", "vec3", "vec2"), ("mat3x2", "vec2", "vec3"), ("mat2x4", "vec4", "vec2"), ("mat4x2", "vec2", "vec4"), ("mat3x4", "vec4", "vec3"), ("mat4x3", "vec3", "vec4"))),
+    Fn(name = "transpose", signature = (return_, "m", ),
+        replacements = (ParamT.matN, ("mat2x3", "mat3x2"), ("mat3x2", "mat2x3"), ("mat2x4", "mat4x2"), ("mat4x2", "mat2x4"), ("mat3x4", "mat4x3"), ("mat4x3", "mat3x4"))),
+    Fn(name = "determinant", signature = (return_, "m", ), replacements = (("float", ParamT.matN), )),
+    Fn(name = "inverse", signature = (return_, "m", ), replacements = (ParamT.matN, )),
+    # Vector Relational Functions
+    Fn(name = "lessThan", signature = (return_, "x", "y"), replacements = (bffvec, bddvec, biivec, buuvec)),
+    Fn(name = "lessThanEqual", signature = (return_, "x", "y"), replacements = (bffvec, bddvec, biivec, buuvec)),
+    Fn(name = "greaterThan", signature = (return_, "x", "y"), replacements = (bffvec, bddvec, biivec, buuvec)),
+    Fn(name = "greaterThanEqual", signature = (return_, "x", "y"), replacements = (bffvec, bddvec, biivec, buuvec)),
+    Fn(name = "equal", signature = (return_, "x", "y"), replacements = (bffvec, bddvec, biivec, buuvec)),
+    Fn(name = "notEqual", signature = (return_, "x", "y"), replacements = (bffvec, bddvec, biivec, buuvec)),
+    Fn(name = "any", signature = (return_, "x", ), replacements = (("bool", ParamT.bvecType), )),
+    Fn(name = "all", signature = (return_, "x", ), replacements = (("bool", ParamT.bvecType), )),
+    Fn(name = "not", signature = (return_, "x", ), replacements = (ParamT.bvecType, )),
+    # Integer Functions
+    Fn(name = "uaddCarry", signature = (return_, "x", "y", "carry"), replacements = (ParamT.genUType, )),
+    Fn(name = "usubBorrow", signature = (return_, "x", "y", "borrow"), replacements = (ParamT.genUType, )),
+    Fn(name = "umulExtended", signature = ((return_, "void"), "x", "y", "msb", "lsb"), replacements = (ParamT.genUType, )),
+    Fn(name = "imulExtended", signature = ((return_, "void"), "x", "y", "msb", "lsb"), replacements = (ParamT.genIType, )),
+    Fn(name = "bitfieldExtract", signature = ((return_, "void"), "value", ("offset", "int"), ("bits", "int")), replacements = (ParamT.genIType, ParamT.genUType)),
+    Fn(name = "bitfieldInsert", signature = ((return_, "void"), "base", "insert", ("offset", "int"), ("bits", "int")), replacements = (ParamT.genIType, ParamT.genUType)),
+    Fn(name = "bitfieldReverse", signature = ((return_, "void"), "base"), replacements = (ParamT.genIType, ParamT.genUType)),
+    Fn(name = "bitCount", signature = ((return_, "void"), "base"), replacements = (ParamT.genIType, ParamT.genUType)),
+    Fn(name = "findLSB", signature = ((return_, "void"), "base"), replacements = (ParamT.genIType, ParamT.genUType)),
+    Fn(name = "findMSB", signature = ((return_, "void"), "base"), replacements = (ParamT.genIType, ParamT.genUType)),
+    # Texture Query Functions
+    Fn(name = "textureSize", signature = (return_, "sampler", ("lod", "int")),
+       replacements = (("int", ParamT.gsampler1D), ("ivec2", ParamT.gsampler2D), ("ivec3", ParamT.gsampler3D), ("ivec2", ParamT.gsamplerCube), ("int", "sampler1DShadow"), ("ivec2", "sampler2DShadow"), ("ivec2", "samplerCubeShadow"), ("ivec3", ParamT.gsamplerCubeArray), ("ivec3", "samplerCubeArrayShadow"), ("ivec2", ParamT.gsampler1DArray), ("ivec2", "sampler1DArrayShadow"), ("ivec3", ParamT.gsampler2DArray), ("ivec3", "sampler2DArrayShadow"))),
+    Fn(name = "textureSize", signature = (return_, "sampler"),
+       replacements = (("ivec2", ParamT.gsampler2DRect), ("ivec2", "sampler2DRectShadow"), ("int", ParamT.gsamplerBuffer), ("ivec2", ParamT.gsampler2DMS), ("ivec3", ParamT.gsampler2DMSArray))),
+    Fn(name = "textureQueryLod", signature = ((return_, "vec2"), "sampler", "P"),
+       replacements = ((ParamT.gsampler1D, "float"), (ParamT.gsampler2D, "vec2"), (ParamT.gsampler3D, "vec3"), (ParamT.gsamplerCube, "vec3"), (ParamT.gsampler1DArray, "float"), (ParamT.gsampler2DArray, "vec2"), (ParamT.gsamplerCubeArray, "vec3"), ("sampler1DShadow", "float"), ("sampler2DShadow", "vec2"), ("samplerCubeShadow", "vec3"), ("sampler1DArrayShadow", "float"), ("sampler2DArrayShadow", "vec2"), ("samplerCubeArrayShadow", "vec3"))),
+    Fn(name = "textureQueryLevels", signature = ((return_, "int"), "sampler"),
+       replacements = ((ParamT.gsampler1D, ), (ParamT.gsampler2D, ), (ParamT.gsampler3D, ), (ParamT.gsamplerCube, ), (ParamT.gsampler1DArray, ), (ParamT.gsampler2DArray, ), (ParamT.gsamplerCubeArray, ), ("sampler1DShadow", ), ("sampler2DShadow", ), ("samplerCubeShadow", ), ("sampler1DArrayShadow", ), ("sampler2DArrayShadow", ), ("samplerCubeArrayShadow", ))),
+    Fn(name = "textureSamples", signature = ((return_, "int"), "sampler"), replacements = ((ParamT.gsampler2DMS, ), (ParamT.gsampler2DMSArray, ))),
+    # Texture Lookup Functions
+    Fn(name = "texture", signature = (return_, "sampler", "P"),
+       replacements = ((ParamT.gvec4Type, ParamT.gsampler1D, "float"), (ParamT.gvec4Type, ParamT.gsampler2D, "vec2"), (ParamT.gvec4Type, ParamT.gsampler3D, "vec3"), (ParamT.gvec4Type, ParamT.gsamplerCube, "vec3"), ("float", "sampler1DShadow", "vec3"), ("float", "sampler2DShadow", "vec3"), ("float", "samplerCubeShadow", "vec4"), (ParamT.gvec4Type, ParamT.gsampler2DArray, "vec3"), (ParamT.gvec4Type, ParamT.gsamplerCubeArray, "vec4"), (ParamT.gvec4Type, ParamT.gsampler1DArray, "vec2"), ("float", "sampler1DArrayShadow", "vec3"), ("float", "sampler2DArrayShadow", "vec4"), (ParamT.gvec4Type, ParamT.gsampler2DRect, "vec2"), ("float", "sampler2DRectShadow", "vec3"))),
+    Fn(name = "texture", signature = (return_, "sampler", "P", ("bias", "float")),
+       replacements = ((ParamT.gvec4Type, ParamT.gsampler1D, "float"), (ParamT.gvec4Type, ParamT.gsampler2D, "vec2"), (ParamT.gvec4Type, ParamT.gsampler3D, "vec3"), (ParamT.gvec4Type, ParamT.gsamplerCube, "vec3"), ("float", "sampler1DShadow", "vec3"), ("float", "sampler2DShadow", "vec3"), ("float", "samplerCubeShadow", "vec4"), (ParamT.gvec4Type, ParamT.gsampler2DArray, "vec3"), (ParamT.gvec4Type, ParamT.gsamplerCubeArray, "vec4"), (ParamT.gvec4Type, ParamT.gsampler1DArray, "vec2"), ("float", "sampler1DArrayShadow", "vec3"))),
+    Fn(name = "texture", signature = (("sampler", "samplerCubeArrayShadow"), ("P", "vec4"), ("compare", "float")), replacements = ()),
+    Fn(name = "textureProj", signature = (return_, "sampler", "P"),
+       replacements = ((ParamT.gvec4Type, ParamT.gsampler1D, "vec2"), (ParamT.gvec4Type, ParamT.gsampler1D, "vec4"), (ParamT.gvec4Type, ParamT.gsampler2D, "vec3"), (ParamT.gvec4Type, ParamT.gsampler2D, "vec4"), (ParamT.gvec4Type, ParamT.gsampler3D, "vec4"), ("float", "sampler1DShadow", "vec4"), ("float", "sampler2DShadow", "vec4"), (ParamT.gvec4Type, ParamT.gsampler2DRect, "vec3"), (ParamT.gvec4Type, ParamT.gsampler2DRect, "vec4"), ("float", "sampler2DRectShadow", "vec4"))),
+    Fn(name = "textureProj", signature = (return_, "sampler", "P", ("bias", "float")),
+       replacements = ((ParamT.gvec4Type, ParamT.gsampler1D, "vec2"), (ParamT.gvec4Type, ParamT.gsampler1D, "vec4"), (ParamT.gvec4Type, ParamT.gsampler2D, "vec3"), (ParamT.gvec4Type, ParamT.gsampler2D, "vec4"), (ParamT.gvec4Type, ParamT.gsampler3D, "vec4"), ("float", "sampler1DShadow", "vec4"), ("float", "sampler2DShadow", "vec4"))),
+    Fn(name = "textureLod", signature = (return_, "sampler", "P", ("lod", "float")),
+       replacements = ((ParamT.gvec4Type, ParamT.gsampler1D, "float"), (ParamT.gvec4Type, ParamT.gsampler2D, "vec2"), (ParamT.gvec4Type, ParamT.gsampler3D, "vec3"), (ParamT.gvec4Type, ParamT.gsamplerCube, "vec3"), ("float", "sampler2DShadow", "vec3"), ("float", "sampler1DShadow", "vec3"), (ParamT.gvec4Type, ParamT.gsampler1DArray, "vec2"), ("float", "sampler1DArrayShadow", "vec3"), (ParamT.gvec4Type, ParamT.gsampler2DArray, "vec3"), (ParamT.gvec4Type, ParamT.gsamplerCubeArray, "vec4"))),
+    Fn(name = "textureOffset", signature = (return_, "sampler", "P", "offset"),
+       replacements = ((ParamT.gvec4Type, ParamT.gsampler1D, "float", "int"), (ParamT.gvec4Type, ParamT.gsampler2D, "vec2", "ivec2"), (ParamT.gvec4Type, ParamT.gsampler3D, "vec3", "ivec3"), ("float", "sampler2DShadow", "vec3", "ivec2"), ("float", "sampler1DShadow", "vec3", "int"), (ParamT.gvec4Type, ParamT.gsampler1DArray, "vec2", "int"), (ParamT.gvec4Type, ParamT.gsampler2DArray, "vec3", "ivec2"), ("float", "sampler1DArrayShadow", "vec3", "int"), (ParamT.gvec4Type, ParamT.gsampler2DRect, "vec2", "ivec2"), ("float", "sampler2DRectShadow", "vec3", "ivec2"), ("float", "sampler2DArrayShadow", "vec4", "ivec2"))),
+    Fn(name = "textureOffset", signature = (return_, "sampler", "P", "offset", ("bias", "float")),
+       replacements = ((ParamT.gvec4Type, ParamT.gsampler1D, "float", "int"), (ParamT.gvec4Type, ParamT.gsampler2D, "vec2", "ivec2"), (ParamT.gvec4Type, ParamT.gsampler3D, "vec3", "ivec3"), ("float", "sampler2DShadow", "vec3", "ivec2"), ("float", "sampler1DShadow", "vec3", "int"), (ParamT.gvec4Type, ParamT.gsampler1DArray, "vec2", "int"), (ParamT.gvec4Type, ParamT.gsampler2DArray, "vec3", "ivec2"), ("float", "sampler1DArrayShadow", "vec3", "int"))),
+    Fn(name = "texelFetch", signature = (return_, "sampler", "P"),
+       replacements = ((ParamT.gvec4Type, ParamT.gsampler1D, "int"), (ParamT.gvec4Type, ParamT.gsampler2D, "ivec2"), (ParamT.gvec4Type, ParamT.gsampler3D, "ivec3"), (ParamT.gvec4Type, ParamT.gsampler1DArray, "ivec2"), (ParamT.gvec4Type, ParamT.gsampler2DArray, "ivec3"))),
+    Fn(name = "texelFetch", signature = (return_, "sampler", "P", ("lod", "int")), replacements = ((ParamT.gvec4Type, ParamT.gsampler2DRect, "ivec2"), (ParamT.gvec4Type, ParamT.gsamplerBuffer, "int"))),
+    Fn(name = "texelFetch", signature = (return_, "sampler", "P", ("sample", "int")), replacements = ((ParamT.gvec4Type, ParamT.gsampler2DMS, "ivec2"), (ParamT.gvec4Type, ParamT.gsampler2DMSArray, "ivec3"))),
+    Fn(name = "texelFetchOffset", signature = (return_, "sampler", "P", ("lod", "int"), "offset"),
+       replacements = ((ParamT.gvec4Type, ParamT.gsampler1D, "int", "int"), (ParamT.gvec4Type, ParamT.gsampler2D, "ivec2", "ivec2"), (ParamT.gvec4Type, ParamT.gsampler3D, "ivec3", "ivec3"), (ParamT.gvec4Type, ParamT.gsampler1DArray, "ivec2", "int"), (ParamT.gvec4Type, ParamT.gsampler2DArray, "ivec3", "ivec2"))),
+    Fn(name = "texelFetchOffset", signature = (return_, "sampler", "P", "offset"), replacements = ((ParamT.gvec4Type, ParamT.gsampler2DRect, "ivec2", "ivec2"), )),
+    Fn(name = "textureProjOffset", signature = (return_, "sampler", "P", "offset"),
+       replacements = ((ParamT.gvec4Type, ParamT.gsampler1D, "vec2", "int"), (ParamT.gvec4Type, ParamT.gsampler1D, "vec4", "int"), (ParamT.gvec4Type, ParamT.gsampler2D, "vec3", "ivec2"), (ParamT.gvec4Type, ParamT.gsampler2D, "vec4", "ivec2"), (ParamT.gvec4Type, ParamT.gsampler3D, "vec4", "ivec3"), ("float", "sampler1DShadow", "vec4", "int"), ("float", "sampler2DShadow", "vec4", "ivec2"), (ParamT.gvec4Type, ParamT.gsampler2DRect, "vec3", "ivec2"), (ParamT.gvec4Type, ParamT.gsampler2DRect, "vec4", "ivec2"), ("float", "sampler2DRectShadow", "vec4", "ivec2"))),
+    Fn(name = "textureProjOffset", signature = (return_, "sampler", "P", "offset", ("bias", "float")),
+       replacements = ((ParamT.gvec4Type, ParamT.gsampler1D, "vec2", "int"), (ParamT.gvec4Type, ParamT.gsampler1D, "vec4", "int"), (ParamT.gvec4Type, ParamT.gsampler2D, "vec3", "ivec2"), (ParamT.gvec4Type, ParamT.gsampler2D, "vec4", "ivec2"), (ParamT.gvec4Type, ParamT.gsampler3D, "vec4", "ivec3"), ("float", "sampler1DShadow", "vec4", "int"), ("float", "sampler2DShadow", "vec4", "ivec2"))),
+    Fn(name = "textureLodOffset", signature = (return_, "sampler", "P", ("lod", "float"), "offset"),
+       replacements = ((ParamT.gvec4Type, ParamT.gsampler1D, "float", "int"), (ParamT.gvec4Type, ParamT.gsampler2D, "vec2", "ivec2"), (ParamT.gvec4Type, ParamT.gsampler3D, "vec3", "ivec3"), ("float", "sampler1DShadow", "vec3", "int"), ("float", "sampler2DShadow", "vec3", "ivec2"), (ParamT.gvec4Type, ParamT.gsampler1DArray, "vec2", "int"), (ParamT.gvec4Type, ParamT.gsampler2DArray, "vec3", "ivec2"), ("float", "sampler1DArrayShadow", "vec3", "int"))),
+    Fn(name = "textureProjLod", signature = (return_, "sampler", "P", ("lod", "float")),
+       replacements = ((ParamT.gvec4Type, ParamT.gsampler1D, "vec2"), (ParamT.gvec4Type, ParamT.gsampler1D, "vec4"), (ParamT.gvec4Type, ParamT.gsampler2D, "vec3"), (ParamT.gvec4Type, ParamT.gsampler2D, "vec4"), (ParamT.gvec4Type, ParamT.gsampler3D, "vec4"), ("float", "sampler1DShadow", "vec4"), ("float", "sampler2DShadow", "vec4"))),
+    Fn(name = "textureProjLodOffset", signature = (return_, "sampler", "P", ("lod", "float"), "offset"),
+       replacements = ((ParamT.gvec4Type, ParamT.gsampler1D, "vec2", "int"), (ParamT.gvec4Type, ParamT.gsampler1D, "vec4", "int"), (ParamT.gvec4Type, ParamT.gsampler2D, "vec3", "ivec2"), (ParamT.gvec4Type, ParamT.gsampler2D, "vec4", "ivec2"), (ParamT.gvec4Type, ParamT.gsampler3D, "vec4", "ivec3"), ("float", "sampler1DShadow", "vec4", "int"), ("float", "sampler2DShadow", "vec4", "ivec2"))),
+    Fn(name = "textureGrad", signature = (return_, "sampler", "P", "dPdx", "dPdy"),
+       replacements = ((ParamT.gvec4Type, ParamT.gsampler1D, "float", "float", "float"), (ParamT.gvec4Type, ParamT.gsampler2D, "vec2", "vec2", "vec2"), (ParamT.gvec4Type, ParamT.gsampler3D, "vec3", "vec3", "vec3"), (ParamT.gvec4Type, ParamT.gsamplerCube, "vec3", "vec3", "vec3"), (ParamT.gvec4Type, ParamT.gsampler2DRect, "vec2", "vec2", "vec2"), (ParamT.gvec4Type, ParamT.gsampler1DArray, "vec2", "float", "float"), (ParamT.gvec4Type, ParamT.gsampler2DArray, "vec3", "vec2", "vec2"), (ParamT.gvec4Type, ParamT.gsamplerCubeArray, "vec4", "vec3", "vec3"), ("float", "sampler2DRectShadow", "vec3", "vec2", "vec2"), ("float", "sampler1DShadow", "vec3", "float", "float"), ("float", "sampler1DArrayShadow", "vec3", "float", "float"), ("float", "sampler2DShadow", "vec3", "vec2", "vec2"), ("float", "samplerCubeShadow", "vec4", "vec3", "vec3"), ("float", "sampler2DArrayShadow", "vec4", "vec2", "vec2"))),
+    Fn(name = "textureGradOffset", signature = (return_, "sampler", "P", "dPdx", "dPdy", "offset"),
+       replacements = ((ParamT.gvec4Type, ParamT.gsampler1D, "float", "float", "float", "int"), (ParamT.gvec4Type, ParamT.gsampler2D, "vec2", "vec2", "vec2", "ivec2"), (ParamT.gvec4Type, ParamT.gsampler3D, "vec3", "vec3", "vec3", "ivec3"), (ParamT.gvec4Type, ParamT.gsampler2DRect, "vec2", "vec2", "vec2", "ivec2"), (ParamT.gvec4Type, ParamT.gsampler2DArray, "vec3", "vec2", "vec2", "ivec2"), (ParamT.gvec4Type, ParamT.gsampler1DArray, "vec2", "float", "float", "int"), ("float", "sampler2DRectShadow", "vec3", "vec2", "vec2", "ivec2"), ("float", "sampler1DShadow", "vec3", "float", "float", "int"), ("float", "sampler2DShadow", "vec3", "vec2", "vec2", "ivec2"), ("float", "sampler1DArrayShadow", "vec3", "float", "float", "int"), ("float", "sampler2DArrayShadow", "vec4", "vec2", "vec2", "ivec2"))),
+    Fn(name = "textureProjGrad", signature = (return_, "sampler", "P", "dPdx", "dPdy"),
+       replacements = ((ParamT.gvec4Type, ParamT.gsampler1D, "vec2", "float", "float"), (ParamT.gvec4Type, ParamT.gsampler1D, "vec4", "float", "float"), (ParamT.gvec4Type, ParamT.gsampler2D, "vec3", "vec2", "vec2"), (ParamT.gvec4Type, ParamT.gsampler2D, "vec4", "vec2", "vec2"), (ParamT.gvec4Type, ParamT.gsampler3D, "vec4", "vec3", "vec3"), (ParamT.gvec4Type, ParamT.gsampler2DRect, "vec3", "vec2", "vec2"), (ParamT.gvec4Type, ParamT.gsampler2DRect, "vec4", "vec2", "vec2"), ("float", "sampler2DRectShadow", "vec4", "vec2", "vec2"), ("float", "sampler1DShadow", "vec4", "float", "float"), ("float", "sampler2DShadow", "vec4", "vec2", "vec2"))),
+    Fn(name = "textureProjGradOffset", signature = (return_, "sampler", "P", "dPdx", "dPdy", "offset"),
+       replacements = ((ParamT.gvec4Type, ParamT.gsampler1D, "vec2", "float", "float", "int"), (ParamT.gvec4Type, ParamT.gsampler1D, "vec4", "float", "float", "int"), (ParamT.gvec4Type, ParamT.gsampler2D, "vec3", "vec2", "vec2", "ivec2"), (ParamT.gvec4Type, ParamT.gsampler2D, "vec4", "vec2", "vec2", "ivec2"), (ParamT.gvec4Type, ParamT.gsampler3D, "vec4", "vec3", "vec3", "ivec3"), (ParamT.gvec4Type, ParamT.gsampler2DRect, "vec3", "vec2", "vec2", "ivec2"), (ParamT.gvec4Type, ParamT.gsampler2DRect, "vec4", "vec2", "vec2", "ivec2"), ("float", "sampler2DRectShadow", "vec4", "vec2", "vec2", "ivec2"), ("float", "sampler1DShadow", "vec4", "float", "float", "int"), ("float", "sampler2DShadow", "vec4", "vec2", "vec2", "ivec2"))),
+    # Texture Gather Functions
+    Fn(name = "textureGather", signature = (return_, "sampler", "P"),
+       replacements = ((ParamT.gvec4Type, ParamT.gsampler2D, "vec2"), (ParamT.gvec4Type, ParamT.gsampler2DArray, "vec3"), (ParamT.gvec4Type, ParamT.gsamplerCube, "vec3"), (ParamT.gvec4Type, ParamT.gsamplerCubeArray, "vec4"), (ParamT.gvec4Type, ParamT.gsampler2DRect, "vec2"))),
+    Fn(name = "textureGather", signature = (return_, "sampler", "P", ("comp", "int")),
+       replacements = ((ParamT.gvec4Type, ParamT.gsampler2D, "vec2"), (ParamT.gvec4Type, ParamT.gsampler2DArray, "vec3"), (ParamT.gvec4Type, ParamT.gsamplerCube, "vec3"), (ParamT.gvec4Type, ParamT.gsamplerCubeArray, "vec4"), (ParamT.gvec4Type, ParamT.gsampler2DRect, "vec2"))),
+    Fn(name = "textureGather", signature = (return_, "sampler", "P", ("refZ", "float")),
+       replacements = (("vec4", "sampler2DShadow", "vec2"), ("vec4", "sampler2DArrayShadow", "vec3"), ("vec4", "samplerCubeShadow", "vec3"), ("vec4", "samplerCubeArrayShadow", "vec4"), ("vec4", "sampler2DRectShadow", "vec2"))),
+    Fn(name = "textureGatherOffset", signature = (return_, "sampler", "P", ("offset", "ivec2")),
+       replacements = ((ParamT.gvec4Type, ParamT.gsampler2D, "vec2"), (ParamT.gvec4Type, ParamT.gsampler2DArray, "vec3"), (ParamT.gvec4Type, ParamT.gsampler2DRect, "vec2"))),
+    Fn(name = "textureGatherOffset", signature = (return_, "sampler", "P", ("offset", "ivec2"), ("comp", "int")),
+       replacements = ((ParamT.gvec4Type, ParamT.gsampler2D, "vec2"), (ParamT.gvec4Type, ParamT.gsampler2DArray, "vec3"), (ParamT.gvec4Type, ParamT.gsampler2DRect, "vec2"))),
+    Fn(name = "textureGatherOffset", signature = (return_, "sampler", "P", ("refZ", "float"), ("offset", "ivec2")),
+       replacements = (("vec4", "sampler2DShadow", "vec2"), ("vec4", "sampler2DArrayShadow", "vec3"), ("vec4", "sampler2DRectShadow", "vec2"))),
+    Fn(name = "textureGatherOffsets", signature = (return_, "sampler", "P", ("offsets", Array_Type("ivec2", 4))),
+       replacements = ((ParamT.gvec4Type, ParamT.gsampler2D, "vec2"), (ParamT.gvec4Type, ParamT.gsampler2DArray, "vec3"), (ParamT.gvec4Type, ParamT.gsampler2DRect, "vec2"))),
+    Fn(name = "textureGatherOffsets", signature = (return_, "sampler", "P", ("offsets", Array_Type("ivec2", 4)), ("comp", "int")),
+       replacements = ((ParamT.gvec4Type, ParamT.gsampler2D, "vec2"), (ParamT.gvec4Type, ParamT.gsampler2DArray, "vec3"), (ParamT.gvec4Type, ParamT.gsampler2DRect, "vec2"))),
+    Fn(name = "textureGatherOffsets", signature = (return_, "sampler", "P", ("refZ", "float"), ("offsets", Array_Type("ivec2", 4))),
+       replacements = (("vec4", "sampler2DShadow", "vec2"), ("vec4", "sampler2DArrayShadow", "vec3"), ("vec4", "sampler2DRectShadow", "vec2"))),
+    # Atomic Memory Functions
+    Fn(name = "atomicAdd", signature = (return_, "mem", "data"), replacements = ("int", "uint")),
+    Fn(name = "atomicMin", signature = (return_, "mem", "data"), replacements = ("int", "uint")),
+    Fn(name = "atomicMax", signature = (return_, "mem", "data"), replacements = ("int", "uint")),
+    Fn(name = "atomicAnd", signature = (return_, "mem", "data"), replacements = ("int", "uint")),
+    Fn(name = "atomicOr", signature = (return_, "mem", "data"), replacements = ("int", "uint")),
+    Fn(name = "atomicXor", signature = (return_, "mem", "data"), replacements = ("int", "uint")),
+    Fn(name = "atomicExchange", signature = (return_, "mem", "data"), replacements = ("int", "uint")),
+    Fn(name = "atomicCompSwap", signature = (return_, "mem", "compare", "data"), replacements = ("int", "uint")),
+    # Image Functions
+    Fn(name = "imageSize", signature = (return_, "image"),
+       replacements = (("int", ParamT.gimage1D), ("ivec2", ParamT.gimage2D), ("ivec3", ParamT.gimage3D), ("ivec2", ParamT.gimageCube), ("ivec3", ParamT.gimageCubeArray), ("ivec3", ParamT.gimage2DArray), ("ivec2", ParamT.gimage1DArray), ("ivec2", ParamT.gimage2DMS), ("ivec3", ParamT.gimage2DMSArray), ("int", ParamT.gimageBuffer), )),
+    Fn(name = "imageSamples", signature = ((return_, "int"), "image"), replacements = (ParamT.gimage2DMS, ParamT.gimage2DMSArray)),
+        Fn(name = "imageLoad", signature = (return_, "image", "P"),
+       replacements = ((ParamT.gvec4Type, ParamT.gimage2D, "ivec2"), (ParamT.gvec4Type, ParamT.gimage3D, "ivec3"), (ParamT.gvec4Type, ParamT.gimageCube, "ivec3"), (ParamT.gvec4Type, ParamT.gimageBuffer, "int"), (ParamT.gvec4Type, ParamT.gimage2DArray, "ivec3"), (ParamT.gvec4Type, ParamT.gimageCubeArray, "ivec3"), (ParamT.gvec4Type, ParamT.gimage1D, "int"), (ParamT.gvec4Type, ParamT.gimage1DArray, "ivec2"))),
+    Fn(name = "imageLoad", signature = (return_, "image", "P", ("sample", "int")),
+       replacements = ((ParamT.gvec4Type, ParamT.gimage2DMS, "ivec2"), (ParamT.gvec4Type, ParamT.gimage2DMSArray, "ivec3"))),
+    Fn(name = "imageStore", signature = ((return_, "void"), "image", "P", "data"),
+       replacements = ((ParamT.gvec4Type, ParamT.gimage2D, "ivec2"), (ParamT.gvec4Type, ParamT.gimage3D, "ivec3"), (ParamT.gvec4Type, ParamT.gimageCube, "ivec3"), (ParamT.gvec4Type, ParamT.gimageBuffer, "int"), (ParamT.gvec4Type, ParamT.gimage2DArray, "ivec3"), (ParamT.gvec4Type, ParamT.gimageCubeArray, "ivec3"), (ParamT.gvec4Type, ParamT.gimage1D, "int"), (ParamT.gvec4Type, ParamT.gimage1DArray, "ivec2"))),
+    Fn(name = "imageStore", signature = ((return_, "void"), "image", "P", ("sample", "int"), "data"),
+       replacements = ((ParamT.gvec4Type, ParamT.gimage2DMS, "ivec2"), (ParamT.gvec4Type, ParamT.gimage2DMSArray, "ivec3"))),
+    Fn(name = "imageAtomicAdd", signature = ((return_, "uint"), "image", "P", ("data", "uint")),
+       replacements = ((ParamT.gimage2D, "ivec2"), (ParamT.gimage3D, "ivec3"), (ParamT.gimageCube, "ivec3"), (ParamT.gimageBuffer, "int"), (ParamT.gimage2DArray, "ivec3"),(ParamT.gimageCubeArray, "ivec3"), (ParamT.gimage1D, "int"), (ParamT.gimage1DArray, "ivec2"))),
+    Fn(name = "imageAtomicAdd", signature = ((return_, "uint"), "image", "P", ("sample", "int"), ("data", "uint")),
+       replacements = ((ParamT.gimage2DMS, "ivec2"), (ParamT.gimage2DMSArray, "ivec3"))),
+    Fn(name = "imageAtomicAdd", signature = ((return_, "int"), "image", "P", ("data", "int")),
+       replacements = ((ParamT.gimage2D, "ivec2"), (ParamT.gimage3D, "ivec3"), (ParamT.gimageCube, "ivec3"), (ParamT.gimageBuffer, "int"), (ParamT.gimage2DArray, "ivec3"),(ParamT.gimageCubeArray, "ivec3"), (ParamT.gimage1D, "int"), (ParamT.gimage1DArray, "ivec2"))),
+    Fn(name = "imageAtomicAdd", signature = ((return_, "int"), "image", "P", ("sample", "int"), ("data", "int")),
+       replacements = ((ParamT.gimage2DMS, "ivec2"), (ParamT.gimage2DMSArray, "ivec3"))),
+    Fn(name = "imageAtomicMin", signature = ((return_, "uint"), "image", "P", ("data", "uint")),
+       replacements = ((ParamT.gimage2D, "ivec2"), (ParamT.gimage3D, "ivec3"), (ParamT.gimageCube, "ivec3"), (ParamT.gimageBuffer, "int"), (ParamT.gimage2DArray, "ivec3"),(ParamT.gimageCubeArray, "ivec3"), (ParamT.gimage1D, "int"), (ParamT.gimage1DArray, "ivec2"))),
+    Fn(name = "imageAtomicMin", signature = ((return_, "uint"), "image", "P", ("sample", "int"), ("data", "uint")),
+       replacements = ((ParamT.gimage2DMS, "ivec2"), (ParamT.gimage2DMSArray, "ivec3"))),
+    Fn(name = "imageAtomicMin", signature = ((return_, "int"), "image", "P", ("data", "int")),
+       replacements = ((ParamT.gimage2D, "ivec2"), (ParamT.gimage3D, "ivec3"), (ParamT.gimageCube, "ivec3"), (ParamT.gimageBuffer, "int"), (ParamT.gimage2DArray, "ivec3"),(ParamT.gimageCubeArray, "ivec3"), (ParamT.gimage1D, "int"), (ParamT.gimage1DArray, "ivec2"))),
+    Fn(name = "imageAtomicMin", signature = ((return_, "int"), "image", "P", ("sample", "int"), ("data", "int")),
+       replacements = ((ParamT.gimage2DMS, "ivec2"), (ParamT.gimage2DMSArray, "ivec3"))),
+    Fn(name = "imageAtomicMax", signature = ((return_, "uint"), "image", "P", ("data", "uint")),
+       replacements = ((ParamT.gimage2D, "ivec2"), (ParamT.gimage3D, "ivec3"), (ParamT.gimageCube, "ivec3"), (ParamT.gimageBuffer, "int"), (ParamT.gimage2DArray, "ivec3"),(ParamT.gimageCubeArray, "ivec3"), (ParamT.gimage1D, "int"), (ParamT.gimage1DArray, "ivec2"))),
+    Fn(name = "imageAtomicMax", signature = ((return_, "uint"), "image", "P", ("sample", "int"), ("data", "uint")),
+       replacements = ((ParamT.gimage2DMS, "ivec2"), (ParamT.gimage2DMSArray, "ivec3"))),
+    Fn(name = "imageAtomicMax", signature = ((return_, "int"), "image", "P", ("data", "int")),
+       replacements = ((ParamT.gimage2D, "ivec2"), (ParamT.gimage3D, "ivec3"), (ParamT.gimageCube, "ivec3"), (ParamT.gimageBuffer, "int"), (ParamT.gimage2DArray, "ivec3"),(ParamT.gimageCubeArray, "ivec3"), (ParamT.gimage1D, "int"), (ParamT.gimage1DArray, "ivec2"))),
+    Fn(name = "imageAtomicMax", signature = ((return_, "int"), "image", "P", ("sample", "int"), ("data", "int")),
+       replacements = ((ParamT.gimage2DMS, "ivec2"), (ParamT.gimage2DMSArray, "ivec3"))),
+    Fn(name = "imageAtomicAnd", signature = ((return_, "uint"), "image", "P", ("data", "uint")),
+       replacements = ((ParamT.gimage2D, "ivec2"), (ParamT.gimage3D, "ivec3"), (ParamT.gimageCube, "ivec3"), (ParamT.gimageBuffer, "int"), (ParamT.gimage2DArray, "ivec3"),(ParamT.gimageCubeArray, "ivec3"), (ParamT.gimage1D, "int"), (ParamT.gimage1DArray, "ivec2"))),
+    Fn(name = "imageAtomicAnd", signature = ((return_, "uint"), "image", "P", ("sample", "int"), ("data", "uint")),
+       replacements = ((ParamT.gimage2DMS, "ivec2"), (ParamT.gimage2DMSArray, "ivec3"))),
+    Fn(name = "imageAtomicAnd", signature = ((return_, "int"), "image", "P", ("data", "int")),
+       replacements = ((ParamT.gimage2D, "ivec2"), (ParamT.gimage3D, "ivec3"), (ParamT.gimageCube, "ivec3"), (ParamT.gimageBuffer, "int"), (ParamT.gimage2DArray, "ivec3"),(ParamT.gimageCubeArray, "ivec3"), (ParamT.gimage1D, "int"), (ParamT.gimage1DArray, "ivec2"))),
+    Fn(name = "imageAtomicAnd", signature = ((return_, "int"), "image", "P", ("sample", "int"), ("data", "int")),
+       replacements = ((ParamT.gimage2DMS, "ivec2"), (ParamT.gimage2DMSArray, "ivec3"))),
+    Fn(name = "imageAtomicOr", signature = ((return_, "uint"), "image", "P", ("data", "uint")),
+       replacements = ((ParamT.gimage2D, "ivec2"), (ParamT.gimage3D, "ivec3"), (ParamT.gimageCube, "ivec3"), (ParamT.gimageBuffer, "int"), (ParamT.gimage2DArray, "ivec3"),(ParamT.gimageCubeArray, "ivec3"), (ParamT.gimage1D, "int"), (ParamT.gimage1DArray, "ivec2"))),
+    Fn(name = "imageAtomicOr", signature = ((return_, "uint"), "image", "P", ("sample", "int"), ("data", "uint")),
+       replacements = ((ParamT.gimage2DMS, "ivec2"), (ParamT.gimage2DMSArray, "ivec3"))),
+    Fn(name = "imageAtomicOr", signature = ((return_, "int"), "image", "P", ("data", "int")),
+       replacements = ((ParamT.gimage2D, "ivec2"), (ParamT.gimage3D, "ivec3"), (ParamT.gimageCube, "ivec3"), (ParamT.gimageBuffer, "int"), (ParamT.gimage2DArray, "ivec3"),(ParamT.gimageCubeArray, "ivec3"), (ParamT.gimage1D, "int"), (ParamT.gimage1DArray, "ivec2"))),
+    Fn(name = "imageAtomicOr", signature = ((return_, "int"), "image", "P", ("sample", "int"), ("data", "int")),
+       replacements = ((ParamT.gimage2DMS, "ivec2"), (ParamT.gimage2DMSArray, "ivec3"))),
+    Fn(name = "imageAtomicXor", signature = ((return_, "uint"), "image", "P", ("data", "uint")),
+       replacements = ((ParamT.gimage2D, "ivec2"), (ParamT.gimage3D, "ivec3"), (ParamT.gimageCube, "ivec3"), (ParamT.gimageBuffer, "int"), (ParamT.gimage2DArray, "ivec3"),(ParamT.gimageCubeArray, "ivec3"), (ParamT.gimage1D, "int"), (ParamT.gimage1DArray, "ivec2"))),
+    Fn(name = "imageAtomicXor", signature = ((return_, "uint"), "image", "P", ("sample", "int"), ("data", "uint")),
+       replacements = ((ParamT.gimage2DMS, "ivec2"), (ParamT.gimage2DMSArray, "ivec3"))),
+    Fn(name = "imageAtomicXor", signature = ((return_, "int"), "image", "P", ("data", "int")),
+       replacements = ((ParamT.gimage2D, "ivec2"), (ParamT.gimage3D, "ivec3"), (ParamT.gimageCube, "ivec3"), (ParamT.gimageBuffer, "int"), (ParamT.gimage2DArray, "ivec3"),(ParamT.gimageCubeArray, "ivec3"), (ParamT.gimage1D, "int"), (ParamT.gimage1DArray, "ivec2"))),
+    Fn(name = "imageAtomicXor", signature = ((return_, "int"), "image", "P", ("sample", "int"), ("data", "int")),
+       replacements = ((ParamT.gimage2DMS, "ivec2"), (ParamT.gimage2DMSArray, "ivec3"))),
+    Fn(name = "imageAtomicExchange", signature = ((return_, "uint"), "image", "P", ("data", "uint")),
+       replacements = ((ParamT.gimage2D, "ivec2"), (ParamT.gimage3D, "ivec3"), (ParamT.gimageCube, "ivec3"), (ParamT.gimageBuffer, "int"), (ParamT.gimage2DArray, "ivec3"),(ParamT.gimageCubeArray, "ivec3"), (ParamT.gimage1D, "int"), (ParamT.gimage1DArray, "ivec2"))),
+    Fn(name = "imageAtomicExchange", signature = ((return_, "uint"), "image", "P", ("sample", "int"), ("data", "uint")),
+       replacements = ((ParamT.gimage2DMS, "ivec2"), (ParamT.gimage2DMSArray, "ivec3"))),
+    Fn(name = "imageAtomicExchange", signature = ((return_, "int"), "image", "P", ("data", "int")),
+       replacements = ((ParamT.gimage2D, "ivec2"), (ParamT.gimage3D, "ivec3"), (ParamT.gimageCube, "ivec3"), (ParamT.gimageBuffer, "int"), (ParamT.gimage2DArray, "ivec3"),(ParamT.gimageCubeArray, "ivec3"), (ParamT.gimage1D, "int"), (ParamT.gimage1DArray, "ivec2"))),
+    Fn(name = "imageAtomicExchange", signature = ((return_, "int"), "image", "P", ("sample", "int"), ("data", "int")),
+       replacements = ((ParamT.gimage2DMS, "ivec2"), (ParamT.gimage2DMSArray, "ivec3"))),
+    Fn(name = "imageAtomicExchange", signature = ((return_, "float"), "image", "P", ("data", "float")),
+       replacements = ((ParamT.gimage2D, "ivec2"), (ParamT.gimage3D, "ivec3"), (ParamT.gimageCube, "ivec3"), (ParamT.gimageBuffer, "int"), (ParamT.gimage2DArray, "ivec3"),(ParamT.gimageCubeArray, "ivec3"), (ParamT.gimage1D, "int"), (ParamT.gimage1DArray, "ivec2"))),
+    Fn(name = "imageAtomicExchange", signature = ((return_, "float"), "image", "P", ("sample", "int"), ("data", "float")),
+       replacements = ((ParamT.gimage2DMS, "ivec2"), (ParamT.gimage2DMSArray, "ivec3"))),
+    Fn(name = "imageAtomicCompSwap", signature = ((return_, "uint"), "image", "P", ("compare", "uint"), ("data", "uint")),
+       replacements = ((ParamT.gimage2D, "ivec2"), (ParamT.gimage3D, "ivec3"), (ParamT.gimageCube, "ivec3"), (ParamT.gimageBuffer, "int"), (ParamT.gimage2DArray, "ivec3"),(ParamT.gimageCubeArray, "ivec3"), (ParamT.gimage1D, "int"), (ParamT.gimage1DArray, "ivec2"))),
+    Fn(name = "imageAtomicCompSwap", signature = ((return_, "uint"), "image", "P", ("sample", "int"), ("compare", "uint"), ("data", "uint")),
+       replacements = ((ParamT.gimage2DMS, "ivec2"), (ParamT.gimage2DMSArray, "ivec3"))),
+    Fn(name = "imageAtomicCompSwap", signature = ((return_, "int"), "image", "P", ("compare", "int"), ("data", "int")),
+       replacements = ((ParamT.gimage2D, "ivec2"), (ParamT.gimage3D, "ivec3"), (ParamT.gimageCube, "ivec3"), (ParamT.gimageBuffer, "int"), (ParamT.gimage2DArray, "ivec3"),(ParamT.gimageCubeArray, "ivec3"), (ParamT.gimage1D, "int"), (ParamT.gimage1DArray, "ivec2"))),
+    Fn(name = "imageAtomicCompSwap", signature = ((return_, "int"), "image", "P", ("sample", "int"), ("compare", "int"), ("data", "int")),
+       replacements = ((ParamT.gimage2DMS, "ivec2"), (ParamT.gimage2DMSArray, "ivec3"))),
+    # Fragment Derivative Functions
+    Fn(name = "dFdx", signature = (return_, "p"), replacements = (ParamT.genFType, )),
+    Fn(name = "dFdy", signature = (return_, "p"), replacements = (ParamT.genFType, )),
+    Fn(name = "dFdxFine", signature = (return_, "p"), replacements = (ParamT.genFType, )),
+    Fn(name = "dFdyFine", signature = (return_, "p"), replacements = (ParamT.genFType, )),
+    Fn(name = "dFdxCoarse", signature = (return_, "p"), replacements = (ParamT.genFType, )),
+    Fn(name = "dFdyCoarse", signature = (return_, "p"), replacements = (ParamT.genFType, )),
+    Fn(name = "fwidth", signature = (return_, "p"), replacements = (ParamT.genFType, )),
+    Fn(name = "fwidthFine", signature = (return_, "p"), replacements = (ParamT.genFType, )),
+    Fn(name = "fwidthCoarse", signature = (return_, "p"), replacements = (ParamT.genFType, )),
+    # Fragment Interpolation Functions
+    Fn(name = "interpolateAtCentroid", signature = (return_, "interpolant"), replacements = (ParamT.genFType, )),
+    Fn(name = "interpolateAtSample", signature = (return_, "interpolant", ("sample", "int")), replacements = (ParamT.genFType, )),
+    Fn(name = "interpolateAtOffset", signature = (return_, "interpolant", ("offset", "vec2")), replacements = (ParamT.genFType, )),
+    # Shader Invocation Control Functions
+    Fn(name = "barrier", signature = ((return_, "void"), ), replacements = ()),
+    # Shader Memory Control Functions
+    Fn(name = "memoryBarrier", signature = ((return_, "void"), ), replacements = ()),
+    Fn(name = "memoryBarrierAtomicCounter", signature = ((return_, "void"), ), replacements = ()),
+    Fn(name = "memoryBarrierBuffer", signature = ((return_, "void"), ), replacements = ()),
+    Fn(name = "memoryBarrierShared", signature = ((return_, "void"), ), replacements = ()),
+    Fn(name = "memoryBarrierImage", signature = ((return_, "void"), ), replacements = ()),
+    Fn(name = "groupMemoryBarrier", signature = ((return_, "void"), ), replacements = ()),
+    # Subpass-Input Functions
+    Fn(name = "subpassLoad", signature = (return_, "subpass"), replacements = ((ParamT.gvec4Type, ParamT.gsubpassInput), )),
+    Fn(name = "subpassLoad", signature = (return_, "subpass", ("sample", "int")), replacements = ((ParamT.gvec4Type, ParamT.gsubpassInputMS), )),
+    # Shader Invocation Group Functions
+    Fn(name = "anyInvocation", signature = ((return_, "bool"), ("value", "bool")), replacements = ()),
+    Fn(name = "allInvocations", signature = ((return_, "bool"), ("value", "bool")), replacements = ()),
+    Fn(name = "allInvocationsEqual", signature = ((return_, "bool"), ("value", "bool")), replacements = ()),
+)
