@@ -154,3 +154,6 @@ class Builtin_Type(Enum):
     type_usubpassInputMS = "usubpassInputMS",
     type_sampler = "sampler",
     type_samplerShadow = "samplerShadow",
+
+def stringify_builtin_type(v):
+    return v.value[0]
