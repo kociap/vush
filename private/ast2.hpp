@@ -82,8 +82,6 @@ namespace vush {
         lt_bool,
 
         // compound tokens
-        tk_plus2, // ++
-        tk_minus2, // --
         tk_amp2, // &&
         tk_pipe2, // ||
         tk_hat2, // ^^
@@ -153,7 +151,6 @@ namespace vush {
         expr_identifier,
         expr_binary,
         expr_prefix,
-        expr_postfix,
         expr_member_access,
         expr_array_access,
         expr_parentheses,
@@ -267,7 +264,6 @@ namespace vush {
             expr_identifier,
             expr_binary,
             expr_prefix,
-            expr_postfix,
             expr_call,
             expr_member_access,
             expr_array_access,
@@ -680,8 +676,6 @@ namespace vush {
         };
 
         enum struct Expr_Prefix_Kind {
-            inc,
-            dec,
             plus,
             minus,
             logic_not,
@@ -694,19 +688,6 @@ namespace vush {
 
             constexpr Expr_Prefix(Expr const* expression, With_Source<Expr_Prefix_Kind> kind, Source_Info const& source_info)
                 : Expr(source_info, Node_Kind::expr_prefix), expression(expression), kind(kind) {}
-        };
-
-        enum struct Expr_Postfix_Kind {
-            inc,
-            dec,
-        };
-
-        struct Expr_Postfix: public Expr {
-            Expr const* expression;
-            With_Source<Expr_Postfix_Kind> kind;
-
-            constexpr Expr_Postfix(Expr const* expression, With_Source<Expr_Postfix_Kind> kind, Source_Info const& source_info)
-                : Expr(source_info, Node_Kind::expr_postfix), expression(expression), kind(kind) {}
         };
 
         struct Expr_Call: public Expr {

@@ -2086,11 +2086,7 @@ namespace vush {
         Optional<Syntax_Node> try_expr_prefix() {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
-            if(Optional plus2 = match(Syntax_Node_Kind::tk_plus2, Token_Kind::tk_plus, Token_Kind::tk_plus)) {
-                snots.push_back(ANTON_MOV(*plus2));
-            } else if(Optional minus2 = match(Syntax_Node_Kind::tk_minus2, Token_Kind::tk_minus, Token_Kind::tk_minus)) {
-                snots.push_back(ANTON_MOV(*minus2));
-            } else if(Optional plus = match(Token_Kind::tk_plus)) {
+            if(Optional plus = match(Token_Kind::tk_plus)) {
                 snots.push_back(ANTON_MOV(*plus));
             } else if(Optional minus = match(Token_Kind::tk_minus)) {
                 snots.push_back(ANTON_MOV(*minus));
@@ -2159,20 +2155,6 @@ namespace vush {
                     Lexer_State const end_state = _lexer.get_current_state_noskip();
                     Source_Info const source = src_info(begin_state, end_state);
                     expr = Syntax_Node(Syntax_Node_Kind::expr_array_access, ANTON_MOV(snots), source);
-                } else if(Optional plus2 = skipmatch(Syntax_Node_Kind::tk_plus2, Token_Kind::tk_plus, Token_Kind::tk_plus)) {
-                    Array<SNOT> snots{_allocator};
-                    snots.push_back(ANTON_MOV(*expr));
-                    snots.push_back(ANTON_MOV(*plus2));
-                    Lexer_State const end_state = _lexer.get_current_state_noskip();
-                    Source_Info const source = src_info(begin_state, end_state);
-                    expr = Syntax_Node(Syntax_Node_Kind::expr_postfix, ANTON_MOV(snots), source);
-                } else if(Optional minus2 = skipmatch(Syntax_Node_Kind::tk_minus2, Token_Kind::tk_minus, Token_Kind::tk_minus)) {
-                    Array<SNOT> snots{_allocator};
-                    snots.push_back(ANTON_MOV(*expr));
-                    snots.push_back(ANTON_MOV(*minus2));
-                    Lexer_State const end_state = _lexer.get_current_state_noskip();
-                    Source_Info const source = src_info(begin_state, end_state);
-                    expr = Syntax_Node(Syntax_Node_Kind::expr_postfix, ANTON_MOV(snots), source);
                 } else {
                     break;
                 }
