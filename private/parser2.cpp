@@ -1798,16 +1798,17 @@ namespace vush {
                 auto get_associativity = [](Syntax_Node_Kind type) -> Associativity {
                     switch(type) {
                         case Syntax_Node_Kind::tk_equals:
-                        case Syntax_Node_Kind::tk_pluseq:
-                        case Syntax_Node_Kind::tk_minuseq:
-                        case Syntax_Node_Kind::tk_asteriskeq:
-                        case Syntax_Node_Kind::tk_slasheq:
-                        case Syntax_Node_Kind::tk_percenteq:
-                        case Syntax_Node_Kind::tk_shleq:
-                        case Syntax_Node_Kind::tk_shreq:
-                        case Syntax_Node_Kind::tk_ampeq:
-                        case Syntax_Node_Kind::tk_hateq:
-                        case Syntax_Node_Kind::tk_pipeeq:
+                            // TODO: Reintroduce.
+                            // case Syntax_Node_Kind::tk_pluseq:
+                            // case Syntax_Node_Kind::tk_minuseq:
+                            // case Syntax_Node_Kind::tk_asteriskeq:
+                            // case Syntax_Node_Kind::tk_slasheq:
+                            // case Syntax_Node_Kind::tk_percenteq:
+                            // case Syntax_Node_Kind::tk_shleq:
+                            // case Syntax_Node_Kind::tk_shreq:
+                            // case Syntax_Node_Kind::tk_ampeq:
+                            // case Syntax_Node_Kind::tk_hateq:
+                            // case Syntax_Node_Kind::tk_pipeeq:
                             return ASSOC_RIGHT;
 
                         default:
@@ -1819,16 +1820,17 @@ namespace vush {
                     // Precedence values are exactly the same as in the GLSL Specification.
                     switch(type) {
                         case Syntax_Node_Kind::tk_equals:
-                        case Syntax_Node_Kind::tk_pluseq:
-                        case Syntax_Node_Kind::tk_minuseq:
-                        case Syntax_Node_Kind::tk_asteriskeq:
-                        case Syntax_Node_Kind::tk_slasheq:
-                        case Syntax_Node_Kind::tk_percenteq:
-                        case Syntax_Node_Kind::tk_shleq:
-                        case Syntax_Node_Kind::tk_shreq:
-                        case Syntax_Node_Kind::tk_ampeq:
-                        case Syntax_Node_Kind::tk_hateq:
-                        case Syntax_Node_Kind::tk_pipeeq:
+                            // TODO: Reintroduce.
+                            // case Syntax_Node_Kind::tk_pluseq:
+                            // case Syntax_Node_Kind::tk_minuseq:
+                            // case Syntax_Node_Kind::tk_asteriskeq:
+                            // case Syntax_Node_Kind::tk_slasheq:
+                            // case Syntax_Node_Kind::tk_percenteq:
+                            // case Syntax_Node_Kind::tk_shleq:
+                            // case Syntax_Node_Kind::tk_shreq:
+                            // case Syntax_Node_Kind::tk_ampeq:
+                            // case Syntax_Node_Kind::tk_hateq:
+                            // case Syntax_Node_Kind::tk_pipeeq:
                             return 16;
 
                         case Syntax_Node_Kind::tk_pipe2:
@@ -1931,36 +1933,37 @@ namespace vush {
                 if(Optional op = match(Token_Kind::tk_equals)) {
                     return ANTON_MOV(op);
                 }
-                if(Optional op = match(Syntax_Node_Kind::tk_ampeq, Token_Kind::tk_amp, Token_Kind::tk_equals)) {
-                    return ANTON_MOV(op);
-                }
-                if(Optional op = match(Syntax_Node_Kind::tk_pipeeq, Token_Kind::tk_pipe, Token_Kind::tk_equals)) {
-                    return ANTON_MOV(op);
-                }
-                if(Optional op = match(Syntax_Node_Kind::tk_hateq, Token_Kind::tk_hat, Token_Kind::tk_equals)) {
-                    return ANTON_MOV(op);
-                }
-                if(Optional op = match(Syntax_Node_Kind::tk_shleq, Token_Kind::tk_langle, Token_Kind::tk_langle, Token_Kind::tk_equals)) {
-                    return ANTON_MOV(op);
-                }
-                if(Optional op = match(Syntax_Node_Kind::tk_shreq, Token_Kind::tk_rangle, Token_Kind::tk_rangle, Token_Kind::tk_equals)) {
-                    return ANTON_MOV(op);
-                }
-                if(Optional op = match(Syntax_Node_Kind::tk_percenteq, Token_Kind::tk_percent, Token_Kind::tk_equals)) {
-                    return ANTON_MOV(op);
-                }
-                if(Optional op = match(Syntax_Node_Kind::tk_slasheq, Token_Kind::tk_slash, Token_Kind::tk_equals)) {
-                    return ANTON_MOV(op);
-                }
-                if(Optional op = match(Syntax_Node_Kind::tk_asteriskeq, Token_Kind::tk_asterisk, Token_Kind::tk_equals)) {
-                    return ANTON_MOV(op);
-                }
-                if(Optional op = match(Syntax_Node_Kind::tk_pluseq, Token_Kind::tk_plus, Token_Kind::tk_equals)) {
-                    return ANTON_MOV(op);
-                }
-                if(Optional op = match(Syntax_Node_Kind::tk_minuseq, Token_Kind::tk_minus, Token_Kind::tk_equals)) {
-                    return ANTON_MOV(op);
-                }
+                // TODO: Reintroduce.
+                // if(Optional op = match(Syntax_Node_Kind::tk_ampeq, Token_Kind::tk_amp, Token_Kind::tk_equals)) {
+                //     return ANTON_MOV(op);
+                // }
+                // if(Optional op = match(Syntax_Node_Kind::tk_pipeeq, Token_Kind::tk_pipe, Token_Kind::tk_equals)) {
+                //     return ANTON_MOV(op);
+                // }
+                // if(Optional op = match(Syntax_Node_Kind::tk_hateq, Token_Kind::tk_hat, Token_Kind::tk_equals)) {
+                //     return ANTON_MOV(op);
+                // }
+                // if(Optional op = match(Syntax_Node_Kind::tk_shleq, Token_Kind::tk_langle, Token_Kind::tk_langle, Token_Kind::tk_equals)) {
+                //     return ANTON_MOV(op);
+                // }
+                // if(Optional op = match(Syntax_Node_Kind::tk_shreq, Token_Kind::tk_rangle, Token_Kind::tk_rangle, Token_Kind::tk_equals)) {
+                //     return ANTON_MOV(op);
+                // }
+                // if(Optional op = match(Syntax_Node_Kind::tk_percenteq, Token_Kind::tk_percent, Token_Kind::tk_equals)) {
+                //     return ANTON_MOV(op);
+                // }
+                // if(Optional op = match(Syntax_Node_Kind::tk_slasheq, Token_Kind::tk_slash, Token_Kind::tk_equals)) {
+                //     return ANTON_MOV(op);
+                // }
+                // if(Optional op = match(Syntax_Node_Kind::tk_asteriskeq, Token_Kind::tk_asterisk, Token_Kind::tk_equals)) {
+                //     return ANTON_MOV(op);
+                // }
+                // if(Optional op = match(Syntax_Node_Kind::tk_pluseq, Token_Kind::tk_plus, Token_Kind::tk_equals)) {
+                //     return ANTON_MOV(op);
+                // }
+                // if(Optional op = match(Syntax_Node_Kind::tk_minuseq, Token_Kind::tk_minus, Token_Kind::tk_equals)) {
+                //     return ANTON_MOV(op);
+                // }
 
                 if(Optional op = match(Syntax_Node_Kind::tk_amp2, Token_Kind::tk_amp, Token_Kind::tk_amp)) {
                     return ANTON_MOV(op);

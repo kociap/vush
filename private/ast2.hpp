@@ -93,16 +93,17 @@ namespace vush {
         tk_neq, // !=
         tk_lteq, // <=
         tk_gteq, // >=
-        tk_pluseq, // +=
-        tk_minuseq, // -=
-        tk_asteriskeq, // *=
-        tk_slasheq, // /=
-        tk_percenteq, // %=
-        tk_ampeq, // &=
-        tk_pipeeq, // |=
-        tk_hateq, // ^=
-        tk_shleq, // <<=
-        tk_shreq, // >>=
+        // TODO: Reintroduce.
+        // tk_pluseq, // +=
+        // tk_minuseq, // -=
+        // tk_asteriskeq, // *=
+        // tk_slasheq, // /=
+        // tk_percenteq, // %=
+        // tk_ampeq, // &=
+        // tk_pipeeq, // |=
+        // tk_hateq, // ^=
+        // tk_shleq, // <<=
+        // tk_shreq, // >>=
         tk_thick_arrow, // =>
         tk_thin_arrow, // ->
         tk_colon2, // ::
@@ -325,6 +326,7 @@ namespace vush {
         [[nodiscard]] bool is_image_type(Type const& type);
         [[nodiscard]] anton::String stringify_type(Allocator* const allocator, Type const& type);
 
+        // TODO: Rename to Builtin_Type_Kind.
         enum struct GLSL_Type : i32 {
             glsl_void,
             glsl_bool,
@@ -513,6 +515,8 @@ namespace vush {
             constexpr Type_Array(Qualifiers qualifiers, Type const* base, Lt_Integer const* size, Source_Info const& source_info)
                 : Type(qualifiers, source_info, Node_Kind::type_array), base(base), size(size) {}
         };
+
+        [[nodiscard]] bool is_type(Node const& node);
 
         struct Attribute_Parameter {
             Identifier const* key;
