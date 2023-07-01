@@ -257,26 +257,27 @@ namespace vush {
                             return ast::Expr_Binary_Kind::lteq;
                         case Syntax_Node_Kind::tk_gteq:
                             return ast::Expr_Binary_Kind::gteq;
-                        case Syntax_Node_Kind::tk_pluseq:
-                            return ast::Expr_Binary_Kind::assign_add;
-                        case Syntax_Node_Kind::tk_minuseq:
-                            return ast::Expr_Binary_Kind::assign_sub;
-                        case Syntax_Node_Kind::tk_asteriskeq:
-                            return ast::Expr_Binary_Kind::assign_mul;
-                        case Syntax_Node_Kind::tk_slasheq:
-                            return ast::Expr_Binary_Kind::assign_div;
-                        case Syntax_Node_Kind::tk_percenteq:
-                            return ast::Expr_Binary_Kind::assign_mod;
-                        case Syntax_Node_Kind::tk_ampeq:
-                            return ast::Expr_Binary_Kind::assign_bit_and;
-                        case Syntax_Node_Kind::tk_pipeeq:
-                            return ast::Expr_Binary_Kind::assign_bit_or;
-                        case Syntax_Node_Kind::tk_hateq:
-                            return ast::Expr_Binary_Kind::assign_bit_xor;
-                        case Syntax_Node_Kind::tk_shleq:
-                            return ast::Expr_Binary_Kind::assign_shl;
-                        case Syntax_Node_Kind::tk_shreq:
-                            return ast::Expr_Binary_Kind::assign_shr;
+                        // TODO: Reintroduce.
+                        // case Syntax_Node_Kind::tk_pluseq:
+                        //     return ast::Expr_Binary_Kind::assign_add;
+                        // case Syntax_Node_Kind::tk_minuseq:
+                        //     return ast::Expr_Binary_Kind::assign_sub;
+                        // case Syntax_Node_Kind::tk_asteriskeq:
+                        //     return ast::Expr_Binary_Kind::assign_mul;
+                        // case Syntax_Node_Kind::tk_slasheq:
+                        //     return ast::Expr_Binary_Kind::assign_div;
+                        // case Syntax_Node_Kind::tk_percenteq:
+                        //     return ast::Expr_Binary_Kind::assign_mod;
+                        // case Syntax_Node_Kind::tk_ampeq:
+                        //     return ast::Expr_Binary_Kind::assign_bit_and;
+                        // case Syntax_Node_Kind::tk_pipeeq:
+                        //     return ast::Expr_Binary_Kind::assign_bit_or;
+                        // case Syntax_Node_Kind::tk_hateq:
+                        //     return ast::Expr_Binary_Kind::assign_bit_xor;
+                        // case Syntax_Node_Kind::tk_shleq:
+                        //     return ast::Expr_Binary_Kind::assign_shl;
+                        // case Syntax_Node_Kind::tk_shreq:
+                        //     return ast::Expr_Binary_Kind::assign_shr;
                         default:
                             ANTON_ASSERT(false, ""); // TODO: ERROR
                             ANTON_UNREACHABLE();
