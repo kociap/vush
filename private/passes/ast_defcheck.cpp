@@ -180,11 +180,6 @@ namespace vush {
                 return defcheck_expression(ctx, symtable, node->expression);
             }
 
-            case ast::Node_Kind::expr_postfix: {
-                ast::Expr_Postfix const* const node = static_cast<ast::Expr_Postfix const*>(expression);
-                return defcheck_expression(ctx, symtable, node->expression);
-            }
-
             case ast::Node_Kind::expr_call: {
                 ast::Expr_Call const* const node = static_cast<ast::Expr_Call const*>(expression);
                 Symbol const* const symbol = symtable.find_symbol(node->identifier->value);

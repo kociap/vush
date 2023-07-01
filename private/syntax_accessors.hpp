@@ -404,20 +404,6 @@ namespace vush {
         return node.children[1].left();
     }
 
-    [[nodiscard]] static Syntax_Token const& get_expr_postfix_operator(Syntax_Node const& node) {
-        ANTON_ASSERT(node.type == Syntax_Node_Kind::expr_postfix, "node is not expr_postfix");
-        ANTON_ASSERT(node.children.size() > (0), "expr_postfix has too few children");
-        ANTON_ASSERT(node.children[0].is_right(), "operator in expr_postfix is not Syntax_Token");
-        return node.children[0].right();
-    }
-
-    [[nodiscard]] static Syntax_Node const& get_expr_postfix_expression(Syntax_Node const& node) {
-        ANTON_ASSERT(node.type == Syntax_Node_Kind::expr_postfix, "node is not expr_postfix");
-        ANTON_ASSERT(node.children.size() > (1), "expr_postfix has too few children");
-        ANTON_ASSERT(node.children[1].is_left(), "expression in expr_postfix is not Syntax_Node");
-        return node.children[1].left();
-    }
-
     [[nodiscard]] static Syntax_Node const& get_expr_member_access_expression(Syntax_Node const& node) {
         ANTON_ASSERT(node.type == Syntax_Node_Kind::expr_member_access, "node is not expr_member_access");
         ANTON_ASSERT(node.children.size() > (0), "expr_member_access has too few children");

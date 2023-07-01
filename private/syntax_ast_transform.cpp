@@ -311,10 +311,6 @@ namespace vush {
                             return ast::Expr_Prefix_Kind::plus;
                         case Syntax_Node_Kind::tk_minus:
                             return ast::Expr_Prefix_Kind::minus;
-                        case Syntax_Node_Kind::tk_plus2:
-                            return ast::Expr_Prefix_Kind::inc;
-                        case Syntax_Node_Kind::tk_minus2:
-                            return ast::Expr_Prefix_Kind::dec;
                         case Syntax_Node_Kind::tk_bang:
                             return ast::Expr_Prefix_Kind::logic_not;
                         case Syntax_Node_Kind::tk_tilde:
@@ -337,33 +333,6 @@ namespace vush {
                 return {anton::expected_value,
                         allocate<ast::Expr_Prefix>(ctx.allocator, expression.value(), ast::With_Source<ast::Expr_Prefix_Kind>{kind, operator_token.source_info},
                                                    node.source_info)};
-            } break;
-
-            case Syntax_Node_Kind::expr_postfix: {
-                auto translate_kind = [](Syntax_Node_Kind const kind) -> ast::Expr_Postfix_Kind {
-                    switch(kind) {
-                        case Syntax_Node_Kind::tk_plus2:
-                            return ast::Expr_Postfix_Kind::inc;
-                        case Syntax_Node_Kind::tk_minus2:
-                            return ast::Expr_Postfix_Kind::dec;
-                        default:
-                            ANTON_ASSERT(false, ""); // TODO: ERROR
-                            ANTON_UNREACHABLE();
-                    }
-                };
-
-                Syntax_Token const& operator_token = get_expr_postfix_operator(node);
-                ast::Expr_Postfix_Kind const kind = translate_kind(operator_token.type);
-
-                Syntax_Node const& expression_node = get_expr_postfix_expression(node);
-                anton::Expected<ast::Expr const*, Error> expression = transform_expr(ctx, expression_node);
-                if(!expression) {
-                    return ANTON_MOV(expression);
-                }
-
-                return {anton::expected_value,
-                        allocate<ast::Expr_Postfix>(ctx.allocator, expression.value(),
-                                                    ast::With_Source<ast::Expr_Postfix_Kind>{kind, operator_token.source_info}, node.source_info)};
             } break;
 
             case Syntax_Node_Kind::expr_member_access: {

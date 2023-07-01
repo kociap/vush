@@ -28,7 +28,7 @@ syntax_nodes = [
         ]
     },
     {
-        "syntax_name": "type_user_defined", 
+        "syntax_name": "type_user_defined",
         "members": [
             Syntax_Member(Node_Kind.token, "mut", Lookup_Kind.search, "kw_mut", optional = True),
             Syntax_Member(Node_Kind.token, "value", Lookup_Kind.search, "identifier")
@@ -161,13 +161,6 @@ syntax_nodes = [
         ]
     },
     {
-        "syntax_name": "expr_postfix",
-        "members": [
-            Syntax_Member(Node_Kind.token, "operator", Lookup_Kind.index, 0),
-            Syntax_Member(Node_Kind.node, "expression", Lookup_Kind.index, 1)
-        ]
-    },
-    {
         "syntax_name": "expr_member_access",
         "members": [
             Syntax_Member(Node_Kind.node, "expression", Lookup_Kind.index, 0),
@@ -256,7 +249,7 @@ syntax_nodes = [
         "members": [
             Syntax_Member(Node_Kind.node, "body", Lookup_Kind.index, 1),
             Syntax_Member(Node_Kind.node, "condition", Lookup_Kind.index, 3),
-        ]  
+        ]
     },
     {
         "syntax_name": "stmt_return",

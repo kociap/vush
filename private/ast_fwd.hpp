@@ -37,7 +37,6 @@ namespace vush {
         struct Expr_Identifier;
         struct Expr_Binary;
         struct Expr_Prefix;
-        struct Expr_Postfix;
         struct Expr_Call;
         struct Expr_Member_Access;
         struct Expr_Array_Access;
