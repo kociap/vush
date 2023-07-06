@@ -375,7 +375,79 @@ namespace vush {
 
             case Syntax_Node_Kind::expr_reinterpret: {
                 // TODO: implement.
+                ANTON_ASSERT(false, "unimplemented");
                 ANTON_UNREACHABLE();
+            } break;
+
+            case Syntax_Node_Kind::expr_init: {
+                auto transform_initializer = [](Context const& ctx, Syntax_Node const& node) -> anton::Expected<ast::Initializer const*, Error> {
+                    switch(node.type) {
+                        case Syntax_Node_Kind::named_initializer: {
+                            Syntax_Token const& identifier_token = get_named_initializer_identifier(node);
+                            ast::Identifier const* const identifier = transform_identifier(ctx, identifier_token);
+
+                            Syntax_Node const& expression_node = get_named_initializer_expression(node);
+                            anton::Expected<ast::Expr const*, Error> expression = transform_expr(ctx, expression_node);
+                            if(!expression) {
+                                return {anton::expected_error, ANTON_MOV(expression.error())};
+                            }
+
+                            return {anton::expected_value, allocate<ast::Named_Initializer>(ctx.allocator, identifier, expression.value(), node.source_info)};
+                        } break;
+
+                        case Syntax_Node_Kind::indexed_initializer: {
+                            Syntax_Node const& index_node = get_indexed_initializer_index(node);
+                            anton::Expected<ast::Lt_Integer const*, Error> index = transform_lt_integer(ctx, index_node);
+                            if(!index) {
+                                return {anton::expected_error, ANTON_MOV(index.error())};
+                            }
+
+                            Syntax_Node const& expression_node = get_indexed_initializer_expression(node);
+                            anton::Expected<ast::Expr const*, Error> expression = transform_expr(ctx, expression_node);
+                            if(!expression) {
+                                return {anton::expected_error, ANTON_MOV(expression.error())};
+                            }
+
+                            return {anton::expected_value,
+                                    allocate<ast::Indexed_Initialzier>(ctx.allocator, index.value(), expression.value(), node.source_info)};
+                        } break;
+
+                        case Syntax_Node_Kind::basic_initializer: {
+                            Syntax_Node const& expression_node = get_basic_initializer_expression(node);
+                            anton::Expected<ast::Expr const*, Error> expression = transform_expr(ctx, expression_node);
+                            if(!expression) {
+                                return {anton::expected_error, ANTON_MOV(expression.error())};
+                            }
+
+                            return {anton::expected_value, allocate<ast::Basic_Initializer>(ctx.allocator, expression.value(), node.source_info)};
+                        } break;
+
+                        default:
+                            ANTON_ASSERT(false, "invalid syntax node kind");
+                            ANTON_UNREACHABLE();
+                    }
+                };
+
+                Syntax_Node const& type_node = get_expr_init_type(node);
+                anton::Expected<ast::Type const*, Error> type = transform_type(ctx, type_node);
+                if(!type) {
+                    return {anton::expected_error, ANTON_MOV(type.error())};
+                }
+
+                Syntax_Node const& initializers_node = get_expr_init_initializers(node);
+                Array<ast::Initializer const*>& initializers = *allocate<Array<ast::Initializer const*>>(ctx.allocator, ctx.allocator);
+                for(SNOT const& snot: initializers_node.children) {
+                    if(snot.is_left()) {
+                        anton::Expected<ast::Initializer const*, Error> initializer = transform_initializer(ctx, snot.left());
+                        if(initializer) {
+                            initializers.push_back(initializer.value());
+                        } else {
+                            return {anton::expected_error, ANTON_MOV(initializer.error())};
+                        }
+                    }
+                }
+
+                return {anton::expected_value, allocate<ast::Expr_Init>(ctx.allocator, type.value(), initializers, node.source_info)};
             } break;
 
             case Syntax_Node_Kind::expr_call: {

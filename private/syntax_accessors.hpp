@@ -439,6 +439,55 @@ namespace vush {
         return node.children[1].left();
     }
 
+    [[nodiscard]] static Syntax_Token const& get_named_initializer_identifier(Syntax_Node const& node) {
+        ANTON_ASSERT(node.type == Syntax_Node_Kind::named_initializer, "node is not named_initializer");
+        ANTON_ASSERT(node.children.size() > (1), "named_initializer has too few children");
+        ANTON_ASSERT(node.children[1].is_right(), "identifier in named_initializer is not Syntax_Token");
+        return node.children[1].right();
+    }
+
+    [[nodiscard]] static Syntax_Node const& get_named_initializer_expression(Syntax_Node const& node) {
+        ANTON_ASSERT(node.type == Syntax_Node_Kind::named_initializer, "node is not named_initializer");
+        ANTON_ASSERT(node.children.size() > (4), "named_initializer has too few children");
+        ANTON_ASSERT(node.children[4].is_left(), "expression in named_initializer is not Syntax_Node");
+        return node.children[4].left();
+    }
+
+    [[nodiscard]] static Syntax_Node const& get_indexed_initializer_index(Syntax_Node const& node) {
+        ANTON_ASSERT(node.type == Syntax_Node_Kind::indexed_initializer, "node is not indexed_initializer");
+        ANTON_ASSERT(node.children.size() > (0), "indexed_initializer has too few children");
+        ANTON_ASSERT(node.children[0].is_left(), "index in indexed_initializer is not Syntax_Node");
+        return node.children[0].left();
+    }
+
+    [[nodiscard]] static Syntax_Node const& get_indexed_initializer_expression(Syntax_Node const& node) {
+        ANTON_ASSERT(node.type == Syntax_Node_Kind::indexed_initializer, "node is not indexed_initializer");
+        ANTON_ASSERT(node.children.size() > (2), "indexed_initializer has too few children");
+        ANTON_ASSERT(node.children[2].is_left(), "expression in indexed_initializer is not Syntax_Node");
+        return node.children[2].left();
+    }
+
+    [[nodiscard]] static Syntax_Node const& get_basic_initializer_expression(Syntax_Node const& node) {
+        ANTON_ASSERT(node.type == Syntax_Node_Kind::basic_initializer, "node is not basic_initializer");
+        ANTON_ASSERT(node.children.size() > (0), "basic_initializer has too few children");
+        ANTON_ASSERT(node.children[0].is_left(), "expression in basic_initializer is not Syntax_Node");
+        return node.children[0].left();
+    }
+
+    [[nodiscard]] static Syntax_Node const& get_expr_init_type(Syntax_Node const& node) {
+        ANTON_ASSERT(node.type == Syntax_Node_Kind::expr_init, "node is not expr_init");
+        ANTON_ASSERT(node.children.size() > (0), "expr_init has too few children");
+        ANTON_ASSERT(node.children[0].is_left(), "type in expr_init is not Syntax_Node");
+        return node.children[0].left();
+    }
+
+    [[nodiscard]] static Syntax_Node const& get_expr_init_initializers(Syntax_Node const& node) {
+        ANTON_ASSERT(node.type == Syntax_Node_Kind::expr_init, "node is not expr_init");
+        ANTON_ASSERT(node.children.size() > (1), "expr_init has too few children");
+        ANTON_ASSERT(node.children[1].is_left(), "initializers in expr_init is not Syntax_Node");
+        return node.children[1].left();
+    }
+
     [[nodiscard]] static Syntax_Token const& get_expr_call_identifier(Syntax_Node const& node) {
         ANTON_ASSERT(node.type == Syntax_Node_Kind::expr_call, "node is not expr_call");
         ANTON_ASSERT(node.children.size() > (0), "expr_call has too few children");

@@ -146,6 +146,13 @@ namespace vush {
         setting_block,
         setting_keyval,
 
+        named_initializer,
+        indexed_initializer,
+        basic_initializer,
+
+        init_initializer_list,
+        call_arg_list,
+
         expr_block,
         expr_if,
         expr_identifier,
@@ -155,6 +162,7 @@ namespace vush {
         expr_array_access,
         expr_parentheses,
         expr_reinterpret,
+        expr_init,
         expr_call,
         expr_lt_bool,
         expr_lt_integer,
@@ -164,8 +172,6 @@ namespace vush {
         // The 'default' label in stmt_case.
         //
         expr_default,
-
-        call_arg_list,
 
         stmt_block,
         stmt_if,
@@ -260,10 +266,15 @@ namespace vush {
             decl_overloaded_function,
             decl_stage_function,
 
+            named_initializer,
+            indexed_initializer,
+            basic_initializer,
+
             expr_if,
             expr_identifier,
             expr_binary,
             expr_prefix,
+            expr_init,
             expr_call,
             expr_member_access,
             expr_array_access,
@@ -688,6 +699,41 @@ namespace vush {
 
             constexpr Expr_Prefix(Expr const* expression, With_Source<Expr_Prefix_Kind> kind, Source_Info const& source_info)
                 : Expr(source_info, Node_Kind::expr_prefix), expression(expression), kind(kind) {}
+        };
+
+        struct Initializer: public Node {
+            using Node::Node;
+        };
+
+        struct Named_Initializer: public Initializer {
+            Identifier const* identifier;
+            Expr const* expression;
+
+            constexpr Named_Initializer(Identifier const* identifier, Expr const* expression, Source_Info const& source_info)
+                : Initializer(source_info, Node_Kind::named_initializer), identifier(identifier), expression(expression) {}
+        };
+
+        struct Indexed_Initialzier: public Initializer {
+            Lt_Integer const* index;
+            Expr const* expression;
+
+            constexpr Indexed_Initialzier(Lt_Integer const* index, Expr const* expression, Source_Info const& source_info)
+                : Initializer(source_info, Node_Kind::indexed_initializer), index(index), expression(expression) {}
+        };
+
+        struct Basic_Initializer: public Initializer {
+            Expr const* expression;
+
+            constexpr Basic_Initializer(Expr const* expression, Source_Info const& source_info)
+                : Initializer(source_info, Node_Kind::basic_initializer), expression(expression) {}
+        };
+
+        struct Expr_Init: public Expr {
+            Type const* type;
+            Initializer_List initializers;
+
+            constexpr Expr_Init(Type const* type, Initializer_List initializers, Source_Info const& source_info)
+                : Expr(source_info, Node_Kind::expr_init), type(type), initializers(initializers) {}
         };
 
         struct Expr_Call: public Expr {
