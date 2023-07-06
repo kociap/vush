@@ -179,6 +179,33 @@ syntax_nodes = [
         "members": [Syntax_Member(Node_Kind.node, "expression", Lookup_Kind.index, 1)]
     },
     {
+        "syntax_name": "named_initializer",
+        "members": [
+            Syntax_Member(Node_Kind.token, "identifier", Lookup_Kind.index, 1),
+            Syntax_Member(Node_Kind.node, "expression", Lookup_Kind.index, 4)
+        ]
+    },
+    {
+        "syntax_name": "indexed_initializer",
+        "members": [
+            Syntax_Member(Node_Kind.node, "index", Lookup_Kind.index, 0),
+            Syntax_Member(Node_Kind.node, "expression", Lookup_Kind.index, 2)
+        ]
+    },
+    {
+        "syntax_name": "basic_initializer",
+        "members": [
+            Syntax_Member(Node_Kind.node, "expression", Lookup_Kind.index, 0)
+        ]
+    },
+    {
+        "syntax_name": "expr_init",
+        "members": [
+            Syntax_Member(Node_Kind.node, "type", Lookup_Kind.index, 0),
+            Syntax_Member(Node_Kind.node, "initializers", Lookup_Kind.index, 1)
+        ]
+    },
+    {
         "syntax_name": "expr_call",
         "members": [
             Syntax_Member(Node_Kind.token, "identifier", Lookup_Kind.index, 0),

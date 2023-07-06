@@ -2188,6 +2188,10 @@ namespace vush {
                 return ANTON_MOV(lt_bool);
             }
 
+            if(Optional expr_init = try_expr_init()) {
+                return ANTON_MOV(expr_init);
+            }
+
             if(Optional expr_call = try_expr_call()) {
                 return ANTON_MOV(expr_call);
             }
@@ -2383,6 +2387,172 @@ namespace vush {
             Lexer_State const end_state = _lexer.get_current_state_noskip();
             Source_Info const source = src_info(begin_state, end_state);
             return Syntax_Node(Syntax_Node_Kind::expr_if, ANTON_MOV(snots), source);
+        }
+
+        Optional<Syntax_Node> try_named_initializer() {
+            Lexer_State const begin_state = _lexer.get_current_state();
+            Array<SNOT> snots{_allocator};
+            if(Optional tk_identifier = skipmatch(Token_Kind::identifier)) {
+                snots.push_back(ANTON_MOV(*tk_identifier));
+            } else {
+                set_error("expected identifier"_sv);
+                _lexer.restore_state(begin_state);
+                return anton::null_optional;
+            }
+
+            if(Optional tk_equals = skipmatch(Token_Kind::tk_equals)) {
+                snots.push_back(ANTON_MOV(*tk_equals));
+            } else {
+                set_error("expected '='"_sv);
+                _lexer.restore_state(begin_state);
+                return anton::null_optional;
+            }
+
+            if(Optional expr = try_expression()) {
+                snots.push_back(ANTON_MOV(*expr));
+            } else {
+                _lexer.restore_state(begin_state);
+                return anton::null_optional;
+            }
+
+            Lexer_State const end_state = _lexer.get_current_state_noskip();
+            Source_Info const source = src_info(begin_state, end_state);
+            return Syntax_Node(Syntax_Node_Kind::named_initializer, ANTON_MOV(snots), source);
+        }
+
+        Optional<Syntax_Node> try_indexed_initializer() {
+            Lexer_State const begin_state = _lexer.get_current_state();
+            Array<SNOT> snots{_allocator};
+            if(Optional tk_lbracket = skipmatch(Token_Kind::tk_lbracket)) {
+                snots.push_back(ANTON_MOV(*tk_lbracket));
+            } else {
+                set_error("expected '['"_sv);
+                _lexer.restore_state(begin_state);
+                return anton::null_optional;
+            }
+
+            if(Optional lt_integer = try_expr_lt_integer()) {
+                snots.push_back(ANTON_MOV(*lt_integer));
+            } else {
+                _lexer.restore_state(begin_state);
+                return anton::null_optional;
+            }
+
+            if(Optional tk_rbracket = skipmatch(Token_Kind::tk_rbracket)) {
+                snots.push_back(ANTON_MOV(*tk_rbracket));
+            } else {
+                set_error("expected ']'"_sv);
+                _lexer.restore_state(begin_state);
+                return anton::null_optional;
+            }
+
+            if(Optional tk_equals = skipmatch(Token_Kind::tk_equals)) {
+                snots.push_back(ANTON_MOV(*tk_equals));
+            } else {
+                set_error("expected '='"_sv);
+                _lexer.restore_state(begin_state);
+                return anton::null_optional;
+            }
+
+            if(Optional expr = try_expression()) {
+                snots.push_back(ANTON_MOV(*expr));
+            } else {
+                _lexer.restore_state(begin_state);
+                return anton::null_optional;
+            }
+
+            Lexer_State const end_state = _lexer.get_current_state_noskip();
+            Source_Info const source = src_info(begin_state, end_state);
+            return Syntax_Node(Syntax_Node_Kind::indexed_initializer, ANTON_MOV(snots), source);
+        }
+
+        Optional<Syntax_Node> try_basic_initializer() {
+            Lexer_State const begin_state = _lexer.get_current_state();
+            Array<SNOT> snots{_allocator};
+            if(Optional expr = try_expression()) {
+                snots.push_back(ANTON_MOV(*expr));
+            } else {
+                _lexer.restore_state(begin_state);
+                return anton::null_optional;
+            }
+
+            Lexer_State const end_state = _lexer.get_current_state_noskip();
+            Source_Info const source = src_info(begin_state, end_state);
+            return Syntax_Node(Syntax_Node_Kind::basic_initializer, ANTON_MOV(snots), source);
+        }
+
+        Optional<Syntax_Node> try_init_initializer_list() {
+            Lexer_State const begin_state = _lexer.get_current_state();
+            Array<SNOT> snots{_allocator};
+            if(Optional tk_brace_open = match(Token_Kind::tk_brace_open)) {
+                snots.push_back(ANTON_MOV(*tk_brace_open));
+            } else {
+                set_error(u8"expected '{'"_sv);
+                _lexer.restore_state(begin_state);
+                return anton::null_optional;
+            }
+
+            // Match closing paren to allow empty parameter lists.
+            if(Optional tk_brace_close = skipmatch(Token_Kind::tk_brace_close)) {
+                snots.push_back(ANTON_MOV(*tk_brace_close));
+                Lexer_State const end_state = _lexer.get_current_state_noskip();
+                Source_Info const source = src_info(begin_state, end_state);
+                return Syntax_Node(Syntax_Node_Kind::init_initializer_list, ANTON_MOV(snots), source);
+            }
+
+            while(true) {
+                if(Optional named_initializer = try_named_initializer()) {
+                    snots.push_back(ANTON_MOV(*named_initializer));
+                } else if(Optional indexed_initializer = try_indexed_initializer()) {
+                    snots.push_back(ANTON_MOV(*indexed_initializer));
+                } else if(Optional basic_initializer = try_basic_initializer()) {
+                    snots.push_back(ANTON_MOV(*basic_initializer));
+                } else {
+                    set_error("expected initializer"_sv);
+                    _lexer.restore_state(begin_state);
+                    return anton::null_optional;
+                }
+
+                if(Optional tk_comma = skipmatch(Token_Kind::tk_comma)) {
+                    snots.push_back(ANTON_MOV(*tk_comma));
+                } else {
+                    break;
+                }
+            }
+
+            if(Optional tk_brace_close = skipmatch(Token_Kind::tk_brace_close)) {
+                snots.push_back(ANTON_MOV(*tk_brace_close));
+            } else {
+                set_error(u8"expected '}'"_sv);
+                _lexer.restore_state(begin_state);
+                return anton::null_optional;
+            }
+
+            Lexer_State const end_state = _lexer.get_current_state_noskip();
+            Source_Info const source = src_info(begin_state, end_state);
+            return Syntax_Node(Syntax_Node_Kind::init_initializer_list, ANTON_MOV(snots), source);
+        }
+
+        Optional<Syntax_Node> try_expr_init() {
+            Lexer_State const begin_state = _lexer.get_current_state();
+            Array<SNOT> snots{_allocator};
+            if(Optional type = try_type()) {
+                snots.push_back(ANTON_MOV(*type));
+            } else {
+                _lexer.restore_state(begin_state);
+                return anton::null_optional;
+            }
+
+            if(Optional initializer_list = try_init_initializer_list()) {
+                snots.push_back(ANTON_MOV(*initializer_list));
+            } else {
+                _lexer.restore_state(begin_state);
+                return anton::null_optional;
+            }
+
+            Lexer_State const end_state = _lexer.get_current_state_noskip();
+            Source_Info const source = src_info(begin_state, end_state);
+            return Syntax_Node(Syntax_Node_Kind::expr_init, ANTON_MOV(snots), source);
         }
 
         Optional<Syntax_Node> try_call_arg_list() {

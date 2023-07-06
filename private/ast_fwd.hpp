@@ -32,11 +32,17 @@ namespace vush {
         struct Decl_Overloaded_Function;
         struct Decl_Stage_Function;
 
+        struct Initializer;
+        struct Named_Initializer;
+        struct Indexed_Initialzier;
+        struct Basic_Initializer;
+
         struct Expr;
         struct Expr_If;
         struct Expr_Identifier;
         struct Expr_Binary;
         struct Expr_Prefix;
+        struct Expr_Init;
         struct Expr_Call;
         struct Expr_Member_Access;
         struct Expr_Array_Access;
@@ -63,5 +69,6 @@ namespace vush {
         using Attr_List = anton::Slice<Attribute const* const>;
         using Expr_List = anton::Slice<Expr const* const>;
         using Func_Parameter_List = anton::Slice<Func_Parameter const* const>;
+        using Initializer_List = anton::Slice<Initializer const* const>;
     } // namespace ast
 } // namespace vush
