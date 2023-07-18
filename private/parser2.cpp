@@ -830,7 +830,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional tk_colon = match(Token_Kind::tk_colon)) {
+            if(Optional tk_colon = skipmatch(Token_Kind::tk_colon)) {
                 snots.push_back(ANTON_MOV(*tk_colon));
             } else {
                 set_error(u8"expected ':'"_sv);
