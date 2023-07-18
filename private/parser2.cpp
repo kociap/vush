@@ -155,8 +155,8 @@ namespace vush {
                 _last_error.stream_offset = source.end_offset;
             }
 
-            if(state.offset >= _last_error.stream_offset) {
-                auto const& [token, source] = *state.current;
+            auto const& [token, source] = *state.current;
+            if(source.offset >= _last_error.stream_offset) {
                 _last_error.message = message;
                 _last_error.line = source.line;
                 _last_error.column = source.column;
@@ -174,8 +174,8 @@ namespace vush {
                 _last_error.stream_offset = source.end_offset;
             }
 
-            if(state.offset >= _last_error.stream_offset) {
-                auto const& [token, source] = *state.current;
+            auto const& [token, source] = *state.current;
+            if(source.offset >= _last_error.stream_offset) {
                 _last_error.message = message;
                 _last_error.line = source.line;
                 _last_error.column = source.column;
