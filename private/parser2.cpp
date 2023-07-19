@@ -2149,6 +2149,7 @@ namespace vush {
                     }
 
                     Array<SNOT> snots{_allocator};
+                    snots.push_back(ANTON_MOV(*expr));
                     snots.push_back(ANTON_MOV(*tk_lbracket));
                     snots.push_back(ANTON_MOV(*index));
                     snots.push_back(ANTON_MOV(*tk_rbracket));
