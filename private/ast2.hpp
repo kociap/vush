@@ -562,9 +562,9 @@ namespace vush {
 
         struct Decl_Struct: public Node {
             Identifier const* identifier;
-            anton::Slice<Struct_Member const* const> members;
+            Member_List members;
 
-            constexpr Decl_Struct(Identifier const* identifier, anton::Slice<Struct_Member const* const> members, Source_Info const& source_info)
+            constexpr Decl_Struct(Identifier const* identifier, Member_List members, Source_Info const& source_info)
                 : Node(source_info, Node_Kind::decl_struct), identifier(identifier), members(members) {}
         };
 

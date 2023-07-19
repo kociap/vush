@@ -70,5 +70,6 @@ namespace vush {
         using Expr_List = anton::Slice<Expr const* const>;
         using Func_Parameter_List = anton::Slice<Func_Parameter const* const>;
         using Initializer_List = anton::Slice<Initializer const* const>;
+        using Member_List = anton::Slice<Struct_Member const* const>;
     } // namespace ast
 } // namespace vush
