@@ -859,6 +859,10 @@ namespace vush {
         Array<ast::Struct_Member const*>& members = *allocate<Array<ast::Struct_Member const*>>(ctx.allocator, ctx.allocator);
         Syntax_Node const& members_node = get_decl_struct_members(node);
         for(SNOT const& member_snot: members_node.children) {
+            if(!member_snot.is_left()) {
+                continue;
+            }
+
             Syntax_Node const& member_node = member_snot.left();
             anton::Expected<ast::Attr_List, Error> attribute_list = transform_attribute_list(ctx, get_struct_member_attribute_list(member_node));
             if(!attribute_list) {
