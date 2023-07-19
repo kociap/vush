@@ -30,8 +30,12 @@ namespace vush {
         // Ensure we're not importing the same source multiple times.
         if(ctx.find_source(request_res.source_name) == nullptr) {
             Source_Data source{ANTON_MOV(request_res.source_name), ANTON_MOV(request_res.data)};
+            anton::String_View const source_name = source.name;
+            anton::String_View const source_data = source.data;
+            ctx.add_source(ANTON_MOV(source));
+
             Parse_Syntax_Options options{.include_whitespace_and_comments = false};
-            anton::Expected<Array<SNOT>, Error> parse_result = parse_source_to_syntax_tree(ctx.allocator, source.name, source.data, options);
+            anton::Expected<Array<SNOT>, Error> parse_result = parse_source_to_syntax_tree(ctx.allocator, source_name, source_data, options);
             if(!parse_result) {
                 return {anton::expected_error, ANTON_MOV(parse_result.error())};
             }
@@ -41,7 +45,6 @@ namespace vush {
                 return {anton::expected_error, ANTON_MOV(transform_result.error())};
             }
 
-            ctx.add_source(ANTON_MOV(source));
             return {anton::expected_value, ANTON_MOV(transform_result.value())};
         } else {
             return {anton::expected_value, ast::Node_List{}};
