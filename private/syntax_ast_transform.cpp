@@ -850,7 +850,9 @@ namespace vush {
     [[nodiscard]] static anton::Expected<ast::Node_List, Error> transform_decl_import(Context& ctx, Syntax_Node const& node) {
         Syntax_Node const& path_node = get_decl_import_path(node);
         Syntax_Token const& path_token = get_expr_lt_string_value(path_node);
-        return import_source_code(ctx, path_token.value, node.source_info);
+        // Trim the double quotation marks.
+        anton::String_View const source_name{path_token.value.bytes_begin() + 1, path_token.value.bytes_end() - 1};
+        return import_source_code(ctx, source_name, node.source_info);
     }
 
     [[nodiscard]] static anton::Expected<ast::Decl_Struct const*, Error> transform_decl_struct(Context const& ctx, Syntax_Node const& node) {
