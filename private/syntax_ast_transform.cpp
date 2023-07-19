@@ -1015,7 +1015,7 @@ namespace vush {
         Array<ast::Node const*>& abstract = *allocate<Array<ast::Node const*>>(ctx.allocator, ctx.allocator);
         for(SNOT const& snot: syntax) {
             if(!snot.is_left()) {
-                return {anton::expected_error};
+                continue;
             }
 
             Syntax_Node const& syntax_node = snot.left();
