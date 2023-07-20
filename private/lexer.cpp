@@ -157,8 +157,10 @@ namespace vush {
                 char8 const* const begin = current;
                 if(la == U'/') {
                     for(; current != end && *current != '\n'; ++current) {}
-                    // The loop stops at the newline. Skip the newline.
-                    current += 1;
+                    // The loop stops at the newline or the eof. Skip the newline.
+                    if(current != end) {
+                        current += 1;
+                    }
                     line += 1;
                     column = 1;
                 } else {
