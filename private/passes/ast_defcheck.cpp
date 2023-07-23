@@ -184,7 +184,7 @@ namespace vush {
                 ast::Expr_Call const* const node = static_cast<ast::Expr_Call const*>(expression);
                 Symbol const* const symbol = symtable.find_symbol(node->identifier->value);
                 if(!symbol) {
-                    return {anton::expected_error, err_undefined_symbol(ctx, node->source_info)};
+                    return {anton::expected_error, err_undefined_symbol(ctx, node->identifier->source_info)};
                 }
 
                 ast::Node const* const symbol_node = symbol->get_node();
