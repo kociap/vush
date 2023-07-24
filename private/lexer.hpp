@@ -98,5 +98,5 @@ namespace vush {
         const_token_iterator cend() const;
     };
 
-    [[nodiscard]] anton::Expected<Lexed_Source, Error> lex_source(Allocator* allocator, anton::String7_View source);
+    [[nodiscard]] anton::Expected<Lexed_Source, Error> lex_source(Context const& ctx, anton::String_View source_path, anton::String7_View source);
 } // namespace vush

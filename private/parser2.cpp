@@ -2858,17 +2858,17 @@ namespace vush {
         }
     }
 
-    anton::Expected<Array<SNOT>, Error> parse_source_to_syntax_tree(Allocator* const allocator, anton::String_View const source_path,
+    anton::Expected<Array<SNOT>, Error> parse_source_to_syntax_tree(Context const& ctx, anton::String_View const source_path,
                                                                     anton::String_View const source_code, Parse_Syntax_Options const options) {
-        anton::Expected<Lexed_Source, Error> lex_result = lex_source(allocator, anton::String7_View{source_code.bytes_begin(), source_code.bytes_end()});
+        anton::Expected<Lexed_Source, Error> lex_result = lex_source(ctx, source_path, anton::String7_View{source_code.bytes_begin(), source_code.bytes_end()});
         if(!lex_result) {
             return {anton::expected_error, ANTON_MOV(lex_result.error())};
         }
-        Parser parser(allocator, source_path, Lexer(lex_result->cbegin(), lex_result->cend()));
+        Parser parser(ctx.allocator, source_path, Lexer(lex_result->cbegin(), lex_result->cend()));
         anton::Expected<Array<SNOT>, Error> ast = parser.build_syntax_tree();
         if(ast && options.include_whitespace_and_comments) {
             Insert_Comments_And_Whitespace_Parameters p{
-                .allocator = allocator,
+                .allocator = ctx.allocator,
                 .source_path = source_path,
                 .tl_node = ast.value(),
                 .begin = lex_result->cbegin(),

@@ -4,7 +4,6 @@
 #include <anton/string_view.hpp>
 
 #include <ast2.hpp>
-#include <owning_ptr.hpp>
 
 namespace vush {
     struct Parse_Syntax_Options {
@@ -24,6 +23,6 @@ namespace vush {
     //               persist for at least as long as the syntax tree.
     //     options - additional options to use while generating the syntax tree.
     //
-    anton::Expected<Array<SNOT>, Error> parse_source_to_syntax_tree(Allocator* allocator, anton::String_View source_path, anton::String_View source_code,
+    anton::Expected<Array<SNOT>, Error> parse_source_to_syntax_tree(Context const& ctx, anton::String_View source_path, anton::String_View source_code,
                                                                     Parse_Syntax_Options options);
 } // namespace vush
