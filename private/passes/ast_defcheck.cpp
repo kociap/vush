@@ -335,6 +335,11 @@ namespace vush {
             switch(stmt->node_kind) {
                 case ast::Node_Kind::variable: {
                     ast::Variable const* const node = static_cast<ast::Variable const*>(stmt);
+                    anton::Expected<void, Error> type_res = defcheck_type(ctx, symtable, node->type);
+                    if(!type_res) {
+                        return ANTON_MOV(type_res);
+                    }
+
                     // We first check the initialiser, then add the symbol for
                     // the variable, so that if the initialiser uses the variable,
                     // an error is reported.
