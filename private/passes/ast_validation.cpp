@@ -501,6 +501,14 @@ namespace vush {
             return {anton::expected_error, err_empty_struct(ctx, dstruct->identifier->source_info)};
         }
 
+        // Member types must be complete types and must not be self.
+        for(ast::Struct_Member const* const member: dstruct->members) {
+            anton::Expected<void, Error> result = validate_struct_member_type(ctx, *member->type, *dstruct->identifier);
+            if(!result) {
+                return result;
+            }
+        }
+
         // Member names must be unique.
         {
             anton::Flat_Hash_Map<anton::String_View, ast::Identifier const*> member_identifiers;
@@ -511,14 +519,6 @@ namespace vush {
                 } else {
                     member_identifiers.emplace(member->identifier->value, member->identifier);
                 }
-            }
-        }
-
-        // Member types must be complete types and must not be self.
-        for(ast::Struct_Member const* const member: dstruct->members) {
-            anton::Expected<void, Error> result = validate_struct_member_type(ctx, *member->type, *dstruct->identifier);
-            if(!result) {
-                return result;
             }
         }
 
