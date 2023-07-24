@@ -525,7 +525,7 @@ namespace vush {
         // TODO: Attributes and initializers.
         // noperspective, flat, smooth, invariant
 
-        return {anton::expected_value};
+        return anton::expected_value;
     }
 
     [[nodiscard]] static anton::Expected<void, Error> validate_constant(Context const& ctx, ast::Variable const* const constant) {
