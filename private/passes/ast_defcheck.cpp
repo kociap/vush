@@ -129,13 +129,13 @@ namespace vush {
         }
 
         symtable.add_symbol(symbol);
-        return {anton::expected_value};
+        return anton::expected_value;
     }
 
     [[nodiscard]] static anton::Expected<void, Error> defcheck_type(Context& ctx, Scoped_Symbol_Table& symtable, ast::Type const* const type) {
         switch(type->node_kind) {
             case ast::Node_Kind::type_builtin: {
-                return {anton::expected_value};
+                return anton::expected_value;
             }
 
             case ast::Node_Kind::type_user_defined: {
@@ -243,7 +243,7 @@ namespace vush {
                     }
                 }
 
-                return {anton::expected_value};
+                return anton::expected_value;
             }
 
             case ast::Node_Kind::expr_member_access: {
@@ -263,7 +263,7 @@ namespace vush {
                     return ANTON_MOV(index_result);
                 }
 
-                return {anton::expected_value};
+                return anton::expected_value;
             }
 
             case ast::Node_Kind::expr_parentheses: {
@@ -281,7 +281,7 @@ namespace vush {
                     return ANTON_MOV(rhs);
                 }
 
-                return {anton::expected_value};
+                return anton::expected_value;
             }
 
             case ast::Node_Kind::expr_if: {
@@ -301,7 +301,7 @@ namespace vush {
                     return ANTON_MOV(result_else);
                 }
 
-                return {anton::expected_value};
+                return anton::expected_value;
             }
 
             case ast::Node_Kind::expr_reinterpret: {
@@ -316,12 +316,12 @@ namespace vush {
                 // if(!source_res) {
                 //     return {anton::expected_error, ANTON_MOV(source_res.error())};
                 // }
-                return {anton::expected_value};
+                return anton::expected_value;
             }
 
             default: {
                 // Nothing to do.
-                return {anton::expected_value};
+                return anton::expected_value;
             }
         }
     }
@@ -484,7 +484,7 @@ namespace vush {
         }
 
         symtable.pop_scope();
-        return {anton::expected_value};
+        return anton::expected_value;
     }
 
     [[nodiscard]] static anton::Expected<void, Error> defcheck_stage_function(Context& ctx, Scoped_Symbol_Table& symtable,
@@ -514,7 +514,7 @@ namespace vush {
         }
 
         symtable.pop_scope();
-        return {anton::expected_value};
+        return anton::expected_value;
     }
 
     anton::Expected<void, Error> run_ast_defcheck_pass(Context& ctx, ast::Node_List const ast) {
@@ -583,6 +583,6 @@ namespace vush {
             }
         }
 
-        return {anton::expected_value};
+        return anton::expected_value;
     }
 } // namespace vush
