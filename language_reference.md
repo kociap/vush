@@ -29,6 +29,21 @@ All floating point literals are by default 32bit (`float`). Use the suffix `d` o
 Newlines are not allowed inside string literals.
 
 # Expressions
+```
+expression -> all expressions
+condition -> no expr_init
+```
+
+## Initializer expression
+```
+     initializer -> identifier '=' expression
+                    '[' integer_literal ']' '=' expression
+                    expression
+initializer_list -> initializer ',' initializer_list
+                    initializer
+                    epsilon
+       init_expr -> type '{' initializer_list '}'
+```
 
 # Statements
 ## Switch
@@ -41,12 +56,47 @@ switch expression {
 `case_label` might be an integer literal or `default`.
 Cases within the same comma separated list will execute the same code. Cases do not have fallthrough mechanism.
 
+# Attributes
+```
+@attribute-name
+```
+
+Attributes may take additional parameters in which case they are declared using a function-call-like syntax
+```
+@attribute-name(parameters)
+```
+
+## workgroup
+The workgroup attribute may only be used on compute stages.
+```
+@workgroup(x [, y [, z]])
+```
+
+## builtin
+```
+@builtin(kind)
+```
+
+## Interpolation Attributes
+@noperspective
+@flat
+@smooth
+@invariant
+
+# Builtins
+## Constants
+
+## Variables
+Builtin variables are defined by the user with the attribute `@builtin(X)`.
+
+## Functions
+
+
 # Functions
 
-## Builtin Functions
 
 # Stages
-Stages add more parameter types: 
+Stages add more parameter types:
 sourced parameters
 ```
 type_name parameter_name from source_name
@@ -67,21 +117,5 @@ The return type of a compute stage must always be `void`.
 
 # Passes
 A pass must have either a vertex stage and optionally a fragment stage or only a compute stage.
-
-# Attributes
-```
-[attribute-name]
-```
-
-Attributes may take additional parameters in which case they are passed using a function-call-like syntax
-```
-[attribute-name(parameters)]
-```
-
-## workgroup
-The workgroup attribute may only be used on compute stages.
-```
-workgroup(x [, y [, z]])
-```
 
 # Settings
