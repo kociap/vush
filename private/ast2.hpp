@@ -132,7 +132,8 @@ namespace vush {
 
         attribute,
         attribute_list,
-        attribute_parameter,
+        attribute_parameter_keyed,
+        attribute_parameter_positional,
         attribute_parameter_list,
 
         decl_block,
@@ -526,6 +527,7 @@ namespace vush {
         [[nodiscard]] bool is_type(Node const& node);
 
         struct Attribute_Parameter {
+            // nullptr if the parameters positional.
             Identifier const* key;
             Expr const* value;
         };

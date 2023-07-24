@@ -76,41 +76,41 @@ namespace vush {
 
     [[nodiscard]] static Syntax_Token const& get_attribute_identifier(Syntax_Node const& node) {
         ANTON_ASSERT(node.type == Syntax_Node_Kind::attribute, "node is not attribute");
-        ANTON_ASSERT(node.children.size() > (0), "attribute has too few children");
-        ANTON_ASSERT(node.children[0].is_right(), "identifier in attribute is not Syntax_Token");
-        return node.children[0].right();
+        ANTON_ASSERT(node.children.size() > (1), "attribute has too few children");
+        ANTON_ASSERT(node.children[1].is_right(), "identifier in attribute is not Syntax_Token");
+        return node.children[1].right();
     }
 
     [[nodiscard]] static anton::Optional<Syntax_Node const&> get_attribute_parameter_list(Syntax_Node const& node) {
         ANTON_ASSERT(node.type == Syntax_Node_Kind::attribute, "node is not attribute");
-        if(node.children.size() > (1)) {
-            ANTON_ASSERT(node.children[1].is_left(), "parameter_list in attribute is not Syntax_Node");
-            return node.children[1].left();
+        if(node.children.size() > (2)) {
+            ANTON_ASSERT(node.children[2].is_left(), "parameter_list in attribute is not Syntax_Node");
+            return node.children[2].left();
         } else {
             return anton::null_optional;
         }
     }
 
-    [[nodiscard]] static anton::Optional<Syntax_Token const&> get_attribute_parameter_key(Syntax_Node const& node) {
-        ANTON_ASSERT(node.type == Syntax_Node_Kind::attribute_parameter, "node is not attribute_parameter");
-        for(SNOT const& snot: node.children) {
-            if(snot.is_right() && snot.right().type == Syntax_Node_Kind::identifier) {
-                return snot.right();
-            }
-        }
-        return anton::null_optional;
-    };
+    [[nodiscard]] static Syntax_Token const& get_attribute_parameter_keyed_key(Syntax_Node const& node) {
+        ANTON_ASSERT(node.type == Syntax_Node_Kind::attribute_parameter_keyed, "node is not attribute_parameter_keyed");
+        ANTON_ASSERT(node.children.size() > (0), "attribute_parameter_keyed has too few children");
+        ANTON_ASSERT(node.children[0].is_right(), "key in attribute_parameter_keyed is not Syntax_Token");
+        return node.children[0].right();
+    }
 
-    [[nodiscard]] static Syntax_Node const& get_attribute_parameter_value(Syntax_Node const& node) {
-        ANTON_ASSERT(node.type == Syntax_Node_Kind::attribute_parameter, "node is not attribute_parameter");
-        for(SNOT const& snot: node.children) {
-            if(snot.is_left() && snot.left().type == Syntax_Node_Kind::expr_lt_integer) {
-                return snot.left();
-            }
-        }
-        ANTON_ASSERT(false, "expr_lt_integer not present in attribute_parameter");
-        ANTON_UNREACHABLE();
-    };
+    [[nodiscard]] static Syntax_Node const& get_attribute_parameter_keyed_value(Syntax_Node const& node) {
+        ANTON_ASSERT(node.type == Syntax_Node_Kind::attribute_parameter_keyed, "node is not attribute_parameter_keyed");
+        ANTON_ASSERT(node.children.size() > (2), "attribute_parameter_keyed has too few children");
+        ANTON_ASSERT(node.children[2].is_left(), "value in attribute_parameter_keyed is not Syntax_Node");
+        return node.children[2].left();
+    }
+
+    [[nodiscard]] static Syntax_Node const& get_attribute_parameter_positional_value(Syntax_Node const& node) {
+        ANTON_ASSERT(node.type == Syntax_Node_Kind::attribute_parameter_positional, "node is not attribute_parameter_positional");
+        ANTON_ASSERT(node.children.size() > (0), "attribute_parameter_positional has too few children");
+        ANTON_ASSERT(node.children[0].is_left(), "value in attribute_parameter_positional is not Syntax_Node");
+        return node.children[0].left();
+    }
 
     [[nodiscard]] static Syntax_Node const& get_variable_type(Syntax_Node const& node) {
         ANTON_ASSERT(node.type == Syntax_Node_Kind::variable, "node is not variable");

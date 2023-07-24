@@ -45,15 +45,21 @@ syntax_nodes = [
     {
         "syntax_name": "attribute",
         "members": [
-            Syntax_Member(Node_Kind.token, "identifier", Lookup_Kind.index, 0),
-            Syntax_Member(Node_Kind.node, "parameter_list", Lookup_Kind.index, 1, optional = True)
+            Syntax_Member(Node_Kind.token, "identifier", Lookup_Kind.index, 1),
+            Syntax_Member(Node_Kind.node, "parameter_list", Lookup_Kind.index, 2, optional = True)
         ]
     },
     {
-        "syntax_name": "attribute_parameter",
+        "syntax_name": "attribute_parameter_keyed",
         "members": [
-            Syntax_Member(Node_Kind.token, "key", Lookup_Kind.search, "identifier", optional = True),
-            Syntax_Member(Node_Kind.node, "value", Lookup_Kind.search, "expr_lt_integer")
+            Syntax_Member(Node_Kind.token, "key", Lookup_Kind.index, 0),
+            Syntax_Member(Node_Kind.node, "value", Lookup_Kind.index, 2)
+        ]
+    },
+    {
+        "syntax_name": "attribute_parameter_positional",
+        "members": [
+            Syntax_Member(Node_Kind.node, "value", Lookup_Kind.index, 0),
         ]
     },
     {

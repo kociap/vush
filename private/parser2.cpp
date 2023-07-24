@@ -468,18 +468,18 @@ namespace vush {
 
                     Lexer_State const parameter_begin_state = _lexer.get_current_state();
                     Array<SNOT> parameter_snots{_allocator};
+                    bool keyed = false;
                     if(Optional key = match(Token_Kind::identifier)) {
-                        parameter_snots.push_back(ANTON_MOV(*key));
                         if(Optional tk_equals = skipmatch(Token_Kind::tk_equals)) {
+                            parameter_snots.push_back(ANTON_MOV(*key));
                             parameter_snots.push_back(ANTON_MOV(*tk_equals));
+                            keyed = true;
                         } else {
-                            set_error("expected '='"_sv);
-                            _lexer.restore_state(begin_state);
-                            return anton::null_optional;
+                            _lexer.restore_state(parameter_begin_state);
                         }
                     }
 
-                    if(Optional value = try_expr_lt_integer()) {
+                    if(Optional value = try_expression_without_init()) {
                         parameter_snots.push_back(ANTON_MOV(*value));
                     } else {
                         _lexer.restore_state(begin_state);
@@ -488,7 +488,11 @@ namespace vush {
 
                     Lexer_State const parameter_end_state = _lexer.get_current_state_noskip();
                     Source_Info const source = src_info(parameter_begin_state, parameter_end_state);
-                    parameter_list_snots.push_back(Syntax_Node(Syntax_Node_Kind::attribute_parameter, ANTON_MOV(parameter_snots), source));
+                    if(keyed) {
+                        parameter_list_snots.push_back(Syntax_Node(Syntax_Node_Kind::attribute_parameter_keyed, ANTON_MOV(parameter_snots), source));
+                    } else {
+                        parameter_list_snots.push_back(Syntax_Node(Syntax_Node_Kind::attribute_parameter_positional, ANTON_MOV(parameter_snots), source));
+                    }
                 }
 
                 Lexer_State const parameter_list_end_state = _lexer.get_current_state_noskip();

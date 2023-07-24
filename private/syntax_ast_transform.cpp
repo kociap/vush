@@ -803,16 +803,30 @@ namespace vush {
                         continue;
                     }
 
-                    ANTON_ASSERT(snot.left().type == Syntax_Node_Kind::attribute_parameter, "Syntax_Node is not an attribute_parameter");
+                    Syntax_Node const& parameter = snot.left();
+                    ANTON_ASSERT(parameter.type == Syntax_Node_Kind::attribute_parameter_positional ||
+                                     parameter.type == Syntax_Node_Kind::attribute_parameter_keyed,
+                                 "Syntax_Node is not an attribute_parameter_positional or attribute_parameter_keyed");
                     ast::Identifier const* key = nullptr;
-                    if(anton::Optional const key_node = get_attribute_parameter_key(snot.left())) {
-                        key = transform_identifier(ctx, key_node.value());
+                    ast::Expr const* value = nullptr;
+                    if(parameter.type == Syntax_Node_Kind::attribute_parameter_keyed) {
+                        Syntax_Token const& key_node = get_attribute_parameter_keyed_key(parameter);
+                        key = transform_identifier(ctx, key_node);
+                        Syntax_Node const& value_node = get_attribute_parameter_keyed_value(parameter);
+                        anton::Expected<ast::Expr const*, Error> value_result = transform_expr(ctx, value_node);
+                        if(!value_result) {
+                            return {anton::expected_error, ANTON_MOV(value_result.error())};
+                        }
+                        value = value_result.value();
+                    } else {
+                        Syntax_Node const& value_node = get_attribute_parameter_positional_value(parameter);
+                        anton::Expected<ast::Expr const*, Error> value_result = transform_expr(ctx, value_node);
+                        if(!value_result) {
+                            return {anton::expected_error, ANTON_MOV(value_result.error())};
+                        }
+                        value = value_result.value();
                     }
-                    anton::Expected<ast::Lt_Integer const*, Error> value = transform_lt_integer(ctx, get_attribute_parameter_value(snot.left()));
-                    if(!value) {
-                        return {anton::expected_error, ANTON_MOV(value.error())};
-                    }
-                    parameters_array->push_back(ast::Attribute_Parameter{key, value.value()});
+                    parameters_array->push_back(ast::Attribute_Parameter{key, value});
                 }
                 parameters = *parameters_array;
             }
