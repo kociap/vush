@@ -10,6 +10,31 @@
 namespace vush {
     using namespace anton::literals;
 
+    enum Strong_Ordering {
+        less = -1,
+        equal,
+        greater,
+    };
+
+    // compare_integer_literals
+    // Three-way compare integer literals' value regardless of their base. The
+    // literal values must be trimmed to contain only plus or minus and digits.
+    //
+    // Returns:
+    // Ordering of the numeric values of the literals.
+    //
+    [[nodiscard]] static Strong_Ordering compare_integer_literals(ast::Lt_Integer const* const lhs, ast::Lt_Integer const* const rhs) {
+        i64 const lhs_value = anton::str_to_i64(lhs->value, static_cast<i32>(lhs->base));
+        i64 const rhs_value = anton::str_to_i64(rhs->value, static_cast<i32>(rhs->base));
+        if(lhs_value < rhs_value) {
+            return Strong_Ordering::less;
+        } else if(lhs_value == rhs_value) {
+            return Strong_Ordering::equal;
+        } else {
+            return Strong_Ordering::greater;
+        }
+    }
+
     [[nodiscard]] static anton::Expected<void, Error> check_array_is_sized(Context const& ctx, ast::Type const& type) {
         if(ast::is_unsized_array(type)) {
             return {anton::expected_error, err_unsized_array_not_allowed(ctx, type.source_info)};
@@ -20,18 +45,228 @@ namespace vush {
             return check_array_is_sized(ctx, *t.base);
         }
 
-        return {anton::expected_value};
+        return anton::expected_value;
     }
 
-    [[nodiscard]] static anton::Expected<void, Error> validate_expression(Context& ctx, ast::Expr const* const expression) {
-        switch(expression->node_kind) {
+    [[nodiscard]] static anton::Expected<void, Error> validate_expression(Context const& ctx, ast::Node const* const node) {
+        switch(node->node_kind) {
+            case ast::Node_Kind::expr_init: {
+                // Initialization rules:
+                // - Builtin types: we do not allow initialization of builtin types with the exception of
+                //   vectors which have members x, y, z, w and alternatives.
+                // - Struct types: we allow initialization of struct types using only named initializers.
+                // - Array types: we allow initialization of struct types using only indexed or basic initializers.
+                //   Usage of both kinds of initializers in one initialization is disallowed.
+                // Duplicate initializers are not allowed.
+
+                ast::Expr_Init const* const expr = static_cast<ast::Expr_Init const*>(node);
+                switch(expr->type->node_kind) {
+                    case ast::Node_Kind::type_builtin: {
+                        // TODO: We currently do not make an exception for the vectors.
+                        // return {anton::expected_error, err_init_type_is_builtin(ctx, expr->type)};
+                        return anton::expected_value;
+                    } break;
+
+                    case ast::Node_Kind::type_user_defined: {
+                        Array<ast::Identifier const*> identifiers{ctx.allocator};
+                        for(ast::Initializer const* const generic_initializer: expr->initializers) {
+                            if(generic_initializer->node_kind != ast::Node_Kind::named_initializer) {
+                                return {anton::expected_error, err_init_invalid_struct_initializer_kind(ctx, generic_initializer)};
+                            }
+
+                            ast::Named_Initializer const* const initializer = static_cast<ast::Named_Initializer const*>(generic_initializer);
+                            anton::Expected<void, Error> result = validate_expression(ctx, initializer->expression);
+                            if(!result) {
+                                return ANTON_MOV(result);
+                            }
+
+                            identifiers.push_back(initializer->identifier);
+                        }
+
+                        // Ensure there are no duplicate identifiers.
+                        if(identifiers.size() > 0) {
+                            // We use a stable sort to ensure the duplicates are reported in the correct order.
+                            anton::merge_sort(identifiers.begin(), identifiers.end(), [](ast::Identifier const* const v1, ast::Identifier const* const v2) {
+                                return compare(v1->value, v2->value) == -1;
+                            });
+
+                            for(auto i = identifiers.begin(), j = identifiers.begin() + 1, e = identifiers.end(); j != e; ++i, ++j) {
+                                bool const equal = compare((*i)->value, (*j)->value);
+                                if(equal) {
+                                    Source_Info const& src1 = (*i)->source_info;
+                                    Source_Info const& src2 = (*j)->source_info;
+                                    return {anton::expected_error, err_duplicate_label(ctx, src1, src2)};
+                                }
+                            }
+                        }
+
+                        return anton::expected_value;
+                    } break;
+
+                    case ast::Node_Kind::type_array: {
+                        Array<ast::Lt_Integer const*> indices{ctx.allocator};
+                        ast::Indexed_Initializer const* indexed_initializer = nullptr;
+                        ast::Basic_Initializer const* basic_initializer = nullptr;
+                        for(ast::Initializer const* const generic_initializer: expr->initializers) {
+                            if(generic_initializer->node_kind != ast::Node_Kind::indexed_initializer &&
+                               generic_initializer->node_kind != ast::Node_Kind::basic_initializer) {
+                                return {anton::expected_error, err_init_invalid_array_initializer_kind(ctx, generic_initializer)};
+                            }
+
+                            if(generic_initializer->node_kind == ast::Node_Kind::indexed_initializer) {
+                                ast::Indexed_Initializer const* const initializer = static_cast<ast::Indexed_Initializer const*>(generic_initializer);
+                                if(basic_initializer != nullptr) {
+                                    return {anton::expected_error,
+                                            err_init_array_initialization_must_not_have_both_initializer_kinds(ctx, basic_initializer, initializer)};
+                                }
+
+                                indexed_initializer = initializer;
+
+                                anton::Expected<void, Error> result = validate_expression(ctx, initializer->expression);
+                                if(!result) {
+                                    return ANTON_MOV(result);
+                                }
+
+                                indices.push_back(initializer->index);
+                            } else {
+                                ast::Basic_Initializer const* const initializer = static_cast<ast::Basic_Initializer const*>(generic_initializer);
+                                if(indexed_initializer != nullptr) {
+                                    return {anton::expected_error,
+                                            err_init_array_initialization_must_not_have_both_initializer_kinds(ctx, indexed_initializer, initializer)};
+                                }
+
+                                basic_initializer = initializer;
+
+                                anton::Expected<void, Error> result = validate_expression(ctx, initializer->expression);
+                                if(!result) {
+                                    return ANTON_MOV(result);
+                                }
+                            }
+                        }
+
+                        // TODO: Comparison of literals will not work correctly if they
+                        //       are not trimmed to contain only value. Ensure the
+                        //       value strings are always trimmed.
+                        // Ensure there are no duplicate indices.
+                        if(indices.size() > 0) {
+                            // We use a stable sort to ensure the duplicates are reported in the correct order.
+                            anton::merge_sort(indices.begin(), indices.end(), [](ast::Lt_Integer const* const v1, ast::Lt_Integer const* const v2) {
+                                return compare_integer_literals(v1, v2) == Strong_Ordering::less;
+                            });
+
+                            for(auto i = indices.begin(), j = indices.begin() + 1, e = indices.end(); j != e; ++i, ++j) {
+                                bool const equal = compare_integer_literals(*i, *j);
+                                if(equal) {
+                                    Source_Info const& src1 = (*i)->source_info;
+                                    Source_Info const& src2 = (*j)->source_info;
+                                    return {anton::expected_error, err_duplicate_label(ctx, src1, src2)};
+                                }
+                            }
+                        }
+
+                        return anton::expected_value;
+                    } break;
+
+                    default:
+                        ANTON_ASSERT(false, "invalid initializer type");
+                        ANTON_UNREACHABLE();
+                }
+            } break;
+
+            case ast::Node_Kind::expr_if: {
+                ast::Expr_If const* const expr = static_cast<ast::Expr_If const*>(node);
+                anton::Expected<void, Error> condition_result = validate_expression(ctx, expr->condition);
+                if(!condition_result) {
+                    return ANTON_MOV(condition_result);
+                }
+
+                anton::Expected<void, Error> then_result = validate_expression(ctx, expr->then_branch);
+                if(!then_result) {
+                    return ANTON_MOV(then_result);
+                }
+
+                anton::Expected<void, Error> else_result = validate_expression(ctx, expr->else_branch);
+                if(!else_result) {
+                    return ANTON_MOV(else_result);
+                }
+
+                return anton::expected_value;
+            } break;
+
+            case ast::Node_Kind::expr_assignment: {
+                ast::Expr_Assignment const* const expr = static_cast<ast::Expr_Assignment const*>(node);
+                anton::Expected<void, Error> lhs_result = validate_expression(ctx, expr->lhs);
+                if(!lhs_result) {
+                    return ANTON_MOV(lhs_result);
+                }
+
+                anton::Expected<void, Error> rhs_result = validate_expression(ctx, expr->rhs);
+                if(!rhs_result) {
+                    return ANTON_MOV(rhs_result);
+                }
+
+                return anton::expected_value;
+            } break;
+
+            case ast::Node_Kind::expr_call: {
+                ast::Expr_Call const* const expr = static_cast<ast::Expr_Call const*>(node);
+                for(ast::Expr const* const argument: expr->arguments) {
+                    anton::Expected<void, Error> result = validate_expression(ctx, argument);
+                    if(!result) {
+                        return ANTON_MOV(result);
+                    }
+                }
+
+                return anton::expected_value;
+            } break;
+
+            case ast::Node_Kind::expr_member_access: {
+                ast::Expr_Member_Access const* const expr = static_cast<ast::Expr_Member_Access const*>(node);
+                anton::Expected<void, Error> result = validate_expression(ctx, expr->base);
+                if(!result) {
+                    return ANTON_MOV(result);
+                }
+
+                return anton::expected_value;
+            } break;
+
+            case ast::Node_Kind::expr_array_access: {
+                ast::Expr_Array_Access const* const expr = static_cast<ast::Expr_Array_Access const*>(node);
+                anton::Expected<void, Error> base_result = validate_expression(ctx, expr->base);
+                if(!base_result) {
+                    return ANTON_MOV(base_result);
+                }
+
+                anton::Expected<void, Error> index_result = validate_expression(ctx, expr->index);
+                if(!index_result) {
+                    return ANTON_MOV(index_result);
+                }
+
+                return anton::expected_value;
+            } break;
+
+            case ast::Node_Kind::expr_parentheses: {
+                ast::Expr_Parentheses const* const expr = static_cast<ast::Expr_Parentheses const*>(node);
+                anton::Expected<void, Error> result = validate_expression(ctx, expr->expression);
+                if(!result) {
+                    return ANTON_MOV(result);
+                }
+
+                return anton::expected_value;
+            } break;
+
+            case ast::Node_Kind::expr_reinterpret: {
+                // TODO: Implement.
+                return anton::expected_value;
+            } break;
+
             case ast::Node_Kind::lt_integer: {
-                ast::Lt_Integer const* const node = static_cast<ast::Lt_Integer const*>(expression);
+                ast::Lt_Integer const* const expr = static_cast<ast::Lt_Integer const*>(node);
                 // Integer literals must require at most 32 bits.
                 // TODO: Literals may include leading 0s.
                 // TODO: Validate overflow.
                 // The max allowed value is 4294967295
-                switch(node->base) {
+                switch(expr->base) {
                     case ast::Lt_Integer_Base::dec: {
                     } break;
 
@@ -41,256 +276,88 @@ namespace vush {
                     case ast::Lt_Integer_Base::hex: {
                     } break;
                 }
-                return {anton::expected_value};
-            }
+
+                return anton::expected_value;
+            } break;
 
             case ast::Node_Kind::lt_float: {
                 // TODO: Implement validation.
-                return {anton::expected_value};
-            }
+                return anton::expected_value;
+            } break;
 
-            case ast::Node_Kind::lt_bool: {
-                // No validation to be done.
-                return {anton::expected_value};
-            }
-
-            case ast::Node_Kind::expr_identifier: {
-                ast::Expr_Identifier const* const node = static_cast<ast::Expr_Identifier const*>(expression);
-                Symbol const* const symbol = ctx.find_symbol(node->value);
-                if(!symbol) {
-                    return {anton::expected_error, err_undefined_symbol(ctx, node->source_info)};
-                }
-
-                ctx.add_definition(node, symbol->get_node());
-
-                return {anton::expected_value};
-            }
-
-            case ast::Node_Kind::expr_prefix: {
-                ast::Expr_Prefix const* const node = static_cast<ast::Expr_Prefix const*>(expression);
-                anton::Expected<void, Error> res = validate_expression(ctx, node->expression);
-                if(!res) {
-                    return ANTON_MOV(res);
-                }
-
-                // TODO: Typecheck type of expression and kind of prefix.
-
-                return {anton::expected_value};
-            }
-
-            case ast::Node_Kind::expr_postfix: {
-                ast::Expr_Postfix const* const node = static_cast<ast::Expr_Postfix const*>(expression);
-                anton::Expected<void, Error> res = validate_expression(ctx, node->expression);
-                if(!res) {
-                    return ANTON_MOV(res);
-                }
-
-                // TODO: Typecheck type of expression and kind of postfix.
-
-                return {anton::expected_value};
-            }
-
-            case ast::Node_Kind::expr_call: {
-                ast::Expr_Call const* const node = static_cast<ast::Expr_Call const*>(expression);
-                for(ast::Expr const* const arg: node->arguments) {
-                    anton::Expected<void, Error> res = validate_expression(ctx, arg);
-                    if(!res) {
-                        return ANTON_MOV(res);
-                    }
-                }
-
-                // TODO: Add array constructors
-                // [0, 1, 2, 3] // [int; 4] with elements 0, 1, 2, 3
-                // [vec2(0); 6] // [vec2; 6] with all elements vec2(0)
-
-                // If the identifier is a builtin glsl type, it's a constructor call
-                if(anton::Optional<ast::GLSL_Type> res = ast::enumify_glsl_type(node->identifier->value)) {
-                    return {anton::expected_value};
-                }
-
-                // Otherwise we look up the symbol to verify that it exists
-                Symbol const* const symbol = ctx.find_symbol(node->identifier->value);
-                if(!symbol) {
-                    return {anton::expected_error, err_undefined_symbol(ctx, node->identifier->source_info)};
-                }
-
-                if(symbol->get_kind() != Symbol_Kind::decl_struct && symbol->get_kind() != Symbol_Kind::decl_overloaded_function) {
-                    // Not a user defined type constructor call and not a function call.
-                    return {anton::expected_error, err_called_symbol_does_not_name_function(ctx, node->identifier->source_info)};
-                }
-
-                return {anton::expected_value};
-            }
-
-            case ast::Node_Kind::expr_member_access: {
-                ast::Expr_Member_Access const* const node = static_cast<ast::Expr_Member_Access const*>(expression);
-                anton::Expected<void, Error> res = validate_expression(ctx, node->base);
-                if(!res) {
-                    return ANTON_MOV(res);
-                }
-
-                // TODO: Validate member exists. We need to have the type of the base
-                //       expression in order to look up the symbol and access the memebrs.
-                //       Include special symbols for builtin types (e.g. vecs) and swizzles.
-
-                return {anton::expected_value};
-            }
-
-            case ast::Node_Kind::expr_array_access: {
-                ast::Expr_Array_Access const* const node = static_cast<ast::Expr_Array_Access const*>(expression);
-                anton::Expected<void, Error> base_res = validate_expression(ctx, node->base);
-                if(!base_res) {
-                    return ANTON_MOV(base_res);
-                }
-
-                // TODO: Validate base is an array type.
-
-                anton::Expected<void, Error> index_res = validate_expression(ctx, node->index);
-                if(!index_res) {
-                    return ANTON_MOV(index_res);
-                }
-
-                // TODO: Validate index is an integer.
-
-                return {anton::expected_value};
-            }
-
-            case ast::Node_Kind::expr_parentheses: {
-                ast::Expr_Parentheses const* const node = static_cast<ast::Expr_Parentheses const*>(expression);
-                anton::Expected<void, Error> res = validate_expression(ctx, node->expression);
-                if(!res) {
-                    return ANTON_MOV(res);
-                }
-
-                return {anton::expected_value};
-            }
-
-            case ast::Node_Kind::expr_binary: {
-                ast::Expr_Binary const* const node = static_cast<ast::Expr_Binary const*>(expression);
-                if(anton::Expected<void, Error> lhs = validate_expression(ctx, node->lhs); !lhs) {
-                    return ANTON_MOV(lhs);
-                }
-
-                if(anton::Expected<void, Error> rhs = validate_expression(ctx, node->rhs); !rhs) {
-                    return ANTON_MOV(rhs);
-                }
-
-                // TODO: Typecheck binary. Consider including function definitions
-                //       for 'operatorX' as palceholders for builtin operations.
-                //       May later be used to implement operator overloading.
-
-                return {anton::expected_value};
-            }
-
-            case ast::Node_Kind::expr_if: {
-                ast::Expr_If const* const node = static_cast<ast::Expr_If const*>(expression);
-                anton::Expected<void, Error> expr_res = validate_expression(ctx, node->condition);
-                if(!expr_res) {
-                    return ANTON_MOV(expr_res);
-                }
-
-                return {anton::expected_value};
-            }
-
-            case ast::Node_Kind::expr_reinterpret: {
-                // TODO: Implement once we implement transform for reinterpret.
-                // Owning_Ptr<Reinterpret_Expression>& node = (Owning_Ptr<Reinterpret_Expression>&)expression;
-                // anton::Expected<void, anton::String> index_res = validate_expression(ctx, node->index);
-                // if(!index_res) {
-                //     return {anton::expected_error, ANTON_MOV(index_res.error())};
-                // }
-
-                // anton::Expected<void, anton::String> source_res = validate_expression(ctx, node->source);
-                // if(!source_res) {
-                //     return {anton::expected_error, ANTON_MOV(source_res.error())};
-                // }
-                return {anton::expected_value};
-            }
-
-            case ast::Node_Kind::expr_default: {
-                // TODO: There most likely is no validation to be done here, however, we
-                //       need special handling of this expression in typecheck.
-                return {anton::expected_value};
-            }
+            case ast::Node_Kind::lt_bool:
+            case ast::Node_Kind::expr_identifier:
+            case ast::Node_Kind::expr_default:
+                // No validation.
+                return anton::expected_value;
 
             default:
-                ANTON_ASSERT(false, "unhandled ast::Node_Kind");
+                ANTON_ASSERT(false, "invalid expression type");
                 ANTON_UNREACHABLE();
         }
     }
 
-    // TODO: Add an options struct to disallow continue, break statements in certain contexts (e.g. switch).
+    enum struct Statement_Context {
+        sc_none,
+        sc_loop,
+        sc_switch,
+        sc_continuation,
+    };
 
-    [[nodiscard]] static anton::Expected<void, Error> validate_statements(Context& ctx, ast::Node_List const statements) {
-        // We push new scope and pop it only at the end of the function. We do not pop the scope when we fail
-        // because an error always leads to termination.
-        ctx.push_scope();
-
+    [[nodiscard]] static anton::Expected<void, Error> validate_statements(Context& ctx, ast::Node_List const statements, Statement_Context const sc) {
         for(ast::Node const* const stmt: statements) {
             switch(stmt->node_kind) {
                 case ast::Node_Kind::variable: {
                     ast::Variable const* const node = static_cast<ast::Variable const*>(stmt);
-                    anton::Expected<void, Error> symbol_res = check_and_add_symbol(ctx, Symbol(node->identifier->value, node));
-                    if(!symbol_res) {
-                        return ANTON_MOV(symbol_res);
-                    }
-
-                    bool const immutable = !node->type->qualifiers.mut;
-                    if(immutable && node->initializer == nullptr) {
-                        return {anton::expected_error, err_immutable_variable_missing_initializer(ctx, node->source_info)};
-                    }
-
                     if(node->initializer != nullptr) {
-                        anton::Expected<void, Error> res = validate_expression(ctx, node->initializer);
-                        if(!res) {
-                            return ANTON_MOV(res);
+                        anton::Expected<void, Error> result = validate_expression(ctx, node->initializer);
+                        if(!result) {
+                            return ANTON_MOV(result);
                         }
-
-                        // TODO: Typecheck initializer and variable.
                     }
                 } break;
 
                 case ast::Node_Kind::stmt_block: {
                     ast::Stmt_Block const* const node = static_cast<ast::Stmt_Block const*>(stmt);
-                    anton::Expected<void, Error> res = validate_statements(ctx, node->statements);
-                    if(!res) {
-                        return ANTON_MOV(res);
+                    anton::Expected<void, Error> result = validate_statements(ctx, node->statements, sc);
+                    if(!result) {
+                        return ANTON_MOV(result);
                     }
                 } break;
 
                 case ast::Node_Kind::stmt_if: {
                     ast::Stmt_If const* const node = static_cast<ast::Stmt_If const*>(stmt);
-                    if(anton::Expected<void, Error> res = validate_expression(ctx, node->condition); !res) {
-                        return ANTON_MOV(res);
+                    anton::Expected<void, Error> condition_result = validate_expression(ctx, node->condition);
+                    if(!condition_result) {
+                        return ANTON_MOV(condition_result);
                     }
 
-                    // TODO: Typecheck condition is convertible to bool.
-
-                    if(anton::Expected<void, Error> res = validate_statements(ctx, node->then_branch); !res) {
-                        return ANTON_MOV(res);
+                    anton::Expected<void, Error> then_result = validate_statements(ctx, node->then_branch, sc);
+                    if(!then_result) {
+                        return ANTON_MOV(then_result);
                     }
 
-                    if(anton::Expected<void, Error> res = validate_statements(ctx, node->else_branch); !res) {
-                        return ANTON_MOV(res);
+                    anton::Expected<void, Error> else_result = validate_statements(ctx, node->else_branch, sc);
+                    if(!else_result) {
+                        return ANTON_MOV(else_result);
                     }
                 } break;
 
                 case ast::Node_Kind::stmt_loop: {
                     ast::Stmt_Loop const* const node = static_cast<ast::Stmt_Loop const*>(stmt);
-                    if(node->condition) {
-                        anton::Expected<void, Error> res = validate_expression(ctx, node->condition);
-                        if(!res) {
-                            return ANTON_MOV(res);
+                    if(node->condition != nullptr) {
+                        anton::Expected<void, Error> condition_result = validate_expression(ctx, node->condition);
+                        if(!condition_result) {
+                            return ANTON_MOV(condition_result);
                         }
                     }
 
-                    // TODO: Maybe validate continuation has no continue statements.
-                    anton::Expected<void, Error> continuation_result = validate_statements(ctx, node->continuation);
+                    anton::Expected<void, Error> continuation_result = validate_statements(ctx, node->continuation, Statement_Context::sc_continuation);
                     if(!continuation_result) {
                         return ANTON_MOV(continuation_result);
                     }
 
-                    anton::Expected<void, Error> statements_result = validate_statements(ctx, node->statements);
+                    anton::Expected<void, Error> statements_result = validate_statements(ctx, node->statements, Statement_Context::sc_loop);
                     if(!statements_result) {
                         return ANTON_MOV(statements_result);
                     }
@@ -298,28 +365,27 @@ namespace vush {
 
                 case ast::Node_Kind::stmt_switch: {
                     ast::Stmt_Switch const* const node = static_cast<ast::Stmt_Switch const*>(stmt);
-                    anton::Expected<void, Error> switch_expr_res = validate_expression(ctx, node->expression);
-                    if(!switch_expr_res) {
-                        return ANTON_MOV(switch_expr_res);
+
+                    if(anton::Expected<void, Error> result = validate_expression(ctx, node->expression); !result) {
+                        return ANTON_MOV(result);
                     }
 
                     ast::Expr const* default_label = nullptr;
                     Array<ast::Lt_Integer const*> labels{ctx.allocator};
                     for(ast::Switch_Arm const* const arm: node->arms) {
                         for(ast::Expr const* const label: arm->labels) {
-                            anton::Expected<void, Error> label_res = validate_expression(ctx, label);
-                            if(!label_res) {
-                                return ANTON_MOV(label_res);
+                            anton::Expected<void, Error> result = validate_expression(ctx, label);
+                            if(!result) {
+                                return ANTON_MOV(result);
                             }
 
                             if(label->node_kind == ast::Node_Kind::expr_default) {
-                                // Ensure that the default label is unique
+                                // Ensure the default label is unique.
                                 if(default_label == nullptr) {
                                     default_label = label;
                                 } else {
                                     return {anton::expected_error, err_duplicate_default_label(ctx, default_label->source_info, label->source_info)};
                                 }
-
                             } else if(label->node_kind == ast::Node_Kind::lt_integer) {
                                 labels.push_back(static_cast<ast::Lt_Integer const*>(label));
                             } else {
@@ -328,20 +394,24 @@ namespace vush {
                             }
                         }
 
-                        // TODO: prevent break from being used within switch
-
-                        anton::Expected<void, Error> res = validate_statements(ctx, arm->statements);
-                        if(!res) {
-                            return ANTON_MOV(res);
+                        anton::Expected<void, Error> result = validate_statements(ctx, arm->statements, Statement_Context::sc_switch);
+                        if(!result) {
+                            return ANTON_MOV(result);
                         }
                     }
 
-                    // Ensure there are no duplicate labels
+                    // TODO: Comparison of literals will not work correctly if they
+                    //       are not trimmed to contain only value. Ensure the
+                    //       value strings are always trimmed.
+                    // Ensure there are no duplicate labels.
                     if(labels.size() > 0) {
-                        anton::merge_sort(labels.begin(), labels.end(),
-                                          [](ast::Lt_Integer const* const v1, ast::Lt_Integer const* const v2) { return compare(v1->value, v2->value) == -1; });
+                        // We use a stable sort to ensure the duplicates are reported in the correct order.
+                        anton::merge_sort(labels.begin(), labels.end(), [](ast::Lt_Integer const* const v1, ast::Lt_Integer const* const v2) {
+                            return compare_integer_literals(v1, v2) == Strong_Ordering::less;
+                        });
                         for(auto i = labels.begin(), j = labels.begin() + 1, e = labels.end(); j != e; ++i, ++j) {
-                            if((*i)->value == (*j)->value) {
+                            bool const equal = (*i)->value == (*j)->value;
+                            if(equal) {
                                 Source_Info const& src1 = (*i)->source_info;
                                 Source_Info const& src2 = (*j)->source_info;
                                 return {anton::expected_error, err_duplicate_label(ctx, src1, src2)};
@@ -350,32 +420,45 @@ namespace vush {
                     }
                 } break;
 
+                case ast::Node_Kind::stmt_break: {
+                    if(sc != Statement_Context::sc_loop) {
+                        return {anton::expected_error, err_break_used_outside_loop(ctx, stmt->source_info)};
+                    }
+                } break;
+
+                case ast::Node_Kind::stmt_continue: {
+                    if(sc != Statement_Context::sc_loop) {
+                        return {anton::expected_error, err_continue_used_outside_loop(ctx, stmt->source_info)};
+                    }
+                } break;
+
                 case ast::Node_Kind::stmt_return: {
                     ast::Stmt_Return const* const node = static_cast<ast::Stmt_Return const*>(stmt);
                     if(node->expression) {
-                        anton::Expected<void, Error> res = validate_expression(ctx, node->expression);
-                        if(!res) {
-                            return ANTON_MOV(res);
+                        anton::Expected<void, Error> result = validate_expression(ctx, node->expression);
+                        if(!result) {
+                            return ANTON_MOV(result);
                         }
                     }
                 } break;
 
                 case ast::Node_Kind::stmt_expression: {
                     ast::Stmt_Expression const* const node = static_cast<ast::Stmt_Expression const*>(stmt);
-                    anton::Expected<void, Error> res = validate_expression(ctx, node->expression);
-                    if(!res) {
-                        return ANTON_MOV(res);
+                    if(node->expression) {
+                        anton::Expected<void, Error> result = validate_expression(ctx, node->expression);
+                        if(!result) {
+                            return ANTON_MOV(result);
+                        }
                     }
                 } break;
 
                 default:
-                    // stmt_break, stmt_continue, stmt_discard need no validation.
+                    // TODO: Verify stmt_discard is in a fragment shader.
                     break;
             }
         }
 
-        ctx.pop_scope();
-        return {anton::expected_value};
+        return anton::expected_value;
     }
 
     // validate_struct_member_type
@@ -399,12 +482,7 @@ namespace vush {
                     return {anton::expected_error, err_recursive_type_definition(ctx, struct_identifier.source_info, t.source_info)};
                 }
 
-                Symbol const* const symbol = ctx.find_symbol(t.value);
-                if(symbol == nullptr) {
-                    return {anton::expected_error, err_undefined_symbol(ctx, t.source_info)};
-                }
-
-                return {anton::expected_value};
+                return anton::expected_value;
             } break;
 
             case ast::Node_Kind::type_array: {
@@ -473,39 +551,25 @@ namespace vush {
         // Validate the return type:
         // - if the type is an array, it must be sized.
         {
-            if(anton::Expected<void, Error> result = check_type_exists(ctx, *fn->return_type); !result) {
-                return result;
-            }
-
-            if(anton::Expected<void, Error> result = check_array_is_sized(ctx, *fn->return_type); !result) {
+            anton::Expected<void, Error> result = check_array_is_sized(ctx, *fn->return_type);
+            if(!result) {
                 return result;
             }
         }
-
-        // Push new scope for the function body and parameters.
-        ctx.push_scope();
 
         // Validate parameters:
         // - only ordinary parameters are allowed.
-        {
-            for(ast::Func_Parameter const* const p: fn->parameters) {
-                if(anton::Expected<void, Error> result = check_and_add_symbol(ctx, Symbol(p->identifier->value, p)); !result) {
-                    return result;
-                }
-
-                if(ast::is_sourced_parameter(*p)) {
-                    return {anton::expected_error, err_fn_sourced_parameter_not_allowed(ctx, p->source_info)};
-                }
+        for(ast::Func_Parameter const* const p: fn->parameters) {
+            if(ast::is_sourced_parameter(*p)) {
+                return {anton::expected_error, err_fn_sourced_parameter_not_allowed(ctx, p->source_info)};
             }
         }
 
-        if(anton::Expected<void, Error> result = validate_statements(ctx, fn->body); !result) {
+        if(anton::Expected<void, Error> result = validate_statements(ctx, fn->body, Statement_Context::sc_none); !result) {
             return result;
         }
 
-        ctx.pop_scope();
-
-        return {anton::expected_value};
+        return anton::expected_value;
     }
 
     [[nodiscard]] static anton::Expected<void, Error> validate_stage_function(Context& ctx, ast::Decl_Stage_Function const* const fn) {
@@ -543,10 +607,6 @@ namespace vush {
         // - fragment: must be builtin or UDT.
         // - compute: must be void.
         {
-            if(anton::Expected<void, Error> result = check_type_exists(ctx, *fn->return_type); !result) {
-                return result;
-            }
-
             bool const void_return = ast::is_void(*fn->return_type);
             bool const builtin_return = fn->return_type->node_kind == ast::Node_Kind::type_builtin;
             bool const udt_return = fn->return_type->node_kind == ast::Node_Kind::type_user_defined;
@@ -573,9 +633,6 @@ namespace vush {
             }
         }
 
-        // Push new scope for the function body and parameters.
-        ctx.push_scope();
-
         // Validate parameters:
         // - all parameters must be builtin or UDT. Arrays are not supported yet.
         // - vertex: only vertex input parameters and sourced parameters are allowed.
@@ -587,19 +644,11 @@ namespace vush {
         {
             bool first = true;
             for(ast::Func_Parameter const* const p: fn->parameters) {
-                if(anton::Expected<void, Error> result = check_and_add_symbol(ctx, Symbol(p->identifier->value, p)); !result) {
-                    return result;
-                }
-
                 {
                     bool const builtin_type = fn->return_type->node_kind == ast::Node_Kind::type_builtin;
                     bool const udt_type = fn->return_type->node_kind == ast::Node_Kind::type_user_defined;
                     if(!builtin_type && !udt_type) {
                         return {anton::expected_error, err_stage_parameter_must_be_builtin_or_udt(ctx, p->type->source_info)};
-                    }
-
-                    if(anton::Expected<void, Error> result = check_type_exists(ctx, *fn->return_type); !result) {
-                        return result;
                     }
                 }
 
@@ -646,13 +695,11 @@ namespace vush {
             }
         }
 
-        if(anton::Expected<void, Error> result = validate_statements(ctx, fn->body); !result) {
+        if(anton::Expected<void, Error> result = validate_statements(ctx, fn->body, Statement_Context::sc_none); !result) {
             return result;
         }
 
-        ctx.pop_scope();
-
-        return {anton::expected_value};
+        return anton::expected_value;
     }
 
     [[nodiscard]] static anton::Expected<void, Error> validate_overloaded_function(Context& ctx, ast::Decl_Overloaded_Function const* const fn) {

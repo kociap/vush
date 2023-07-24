@@ -41,13 +41,15 @@ namespace vush {
         //
         void add_source(Source_Data source);
 
-        // find_definition
+        // find_node_definition
+        // Find the definition of a node. The definitions are populated by the
+        // defcheck pass and may be one of the following: variable, parameter,
+        // overloaded function, struct declaration.
         //
-        ast::Node const* find_definition(ast::Node const* node) const;
+        ast::Node const* find_node_definition(ast::Node const* node) const;
 
-        // add_definition
+        // add_node_definition
         //
-        void add_definition(ast::Node const* node, ast::Node const* definition);
-
+        void add_node_definition(ast::Node const* node, ast::Node const* definition);
     };
 } // namespace vush

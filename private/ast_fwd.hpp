@@ -34,14 +34,13 @@ namespace vush {
 
         struct Initializer;
         struct Named_Initializer;
-        struct Indexed_Initialzier;
+        struct Indexed_Initializer;
         struct Basic_Initializer;
 
         struct Expr;
         struct Expr_If;
         struct Expr_Identifier;
-        struct Expr_Binary;
-        struct Expr_Prefix;
+        struct Expr_Assignment;
         struct Expr_Init;
         struct Expr_Call;
         struct Expr_Member_Access;

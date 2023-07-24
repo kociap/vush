@@ -273,8 +273,7 @@ namespace vush {
 
             expr_if,
             expr_identifier,
-            expr_binary,
-            expr_prefix,
+            expr_assignment,
             expr_init,
             expr_call,
             expr_member_access,
@@ -507,6 +506,7 @@ namespace vush {
         };
 
         struct Type_User_Defined: public Type {
+            // The identifier value, that is the name of the type.
             anton::String_View value;
 
             constexpr Type_User_Defined(anton::String_View value, Source_Info const& source_info)
@@ -648,61 +648,12 @@ namespace vush {
             constexpr Expr_Identifier(anton::String_View value, Source_Info const& source_info): Expr(source_info, Node_Kind::expr_identifier), value(value) {}
         };
 
-        enum struct Expr_Binary_Kind {
-            assign,
-            assign_add,
-            assign_sub,
-            assign_mul,
-            assign_div,
-            assign_mod,
-            assign_shl,
-            assign_shr,
-            assign_bit_and,
-            assign_bit_or,
-            assign_bit_xor,
-            logic_or,
-            logic_xor,
-            logic_and,
-            eq,
-            neq,
-            gt,
-            lt,
-            gteq,
-            lteq,
-            bit_or,
-            bit_xor,
-            bit_and,
-            shl,
-            shr,
-            add,
-            sub,
-            mul,
-            div,
-            mod
-        };
-
-        struct Expr_Binary: public Expr {
+        struct Expr_Assignment: public Expr {
             Expr const* lhs;
             Expr const* rhs;
-            With_Source<Expr_Binary_Kind> kind;
 
-            constexpr Expr_Binary(Expr const* lhs, Expr const* rhs, With_Source<Expr_Binary_Kind> kind, Source_Info const& source_info)
-                : Expr(source_info, Node_Kind::expr_binary), lhs(lhs), rhs(rhs), kind(kind) {}
-        };
-
-        enum struct Expr_Prefix_Kind {
-            plus,
-            minus,
-            logic_not,
-            bit_not,
-        };
-
-        struct Expr_Prefix: public Expr {
-            Expr const* expression;
-            With_Source<Expr_Prefix_Kind> kind;
-
-            constexpr Expr_Prefix(Expr const* expression, With_Source<Expr_Prefix_Kind> kind, Source_Info const& source_info)
-                : Expr(source_info, Node_Kind::expr_prefix), expression(expression), kind(kind) {}
+            constexpr Expr_Assignment(Expr const* lhs, Expr const* rhs, Source_Info const& source_info)
+                : Expr(source_info, Node_Kind::expr_assignment), lhs(lhs), rhs(rhs) {}
         };
 
         struct Initializer: public Node {
@@ -717,11 +668,11 @@ namespace vush {
                 : Initializer(source_info, Node_Kind::named_initializer), identifier(identifier), expression(expression) {}
         };
 
-        struct Indexed_Initialzier: public Initializer {
+        struct Indexed_Initializer: public Initializer {
             Lt_Integer const* index;
             Expr const* expression;
 
-            constexpr Indexed_Initialzier(Lt_Integer const* index, Expr const* expression, Source_Info const& source_info)
+            constexpr Indexed_Initializer(Lt_Integer const* index, Expr const* expression, Source_Info const& source_info)
                 : Initializer(source_info, Node_Kind::indexed_initializer), index(index), expression(expression) {}
         };
 
