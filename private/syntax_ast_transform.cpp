@@ -35,7 +35,7 @@ namespace vush {
             ctx.add_source(ANTON_MOV(source));
 
             Parse_Syntax_Options options{.include_whitespace_and_comments = false};
-            anton::Expected<Array<SNOT>, Error> parse_result = parse_source_to_syntax_tree(ctx.allocator, source_name, source_data, options);
+            anton::Expected<Array<SNOT>, Error> parse_result = parse_source_to_syntax_tree(ctx, source_name, source_data, options);
             if(!parse_result) {
                 return {anton::expected_error, ANTON_MOV(parse_result.error())};
             }
