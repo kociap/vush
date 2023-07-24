@@ -404,8 +404,14 @@ namespace vush {
                     return {anton::expected_error, ANTON_MOV(result.error())};
                 }
             }
+            {
+                anton::Expected<void, Error> result = run_ast_typecheck_pass(ctx, ast_nodes);
+                if(!result) {
+                    return {anton::expected_error, ANTON_MOV(result.error())};
+                }
+            }
 
-            return {anton::expected_error, Error{.diagnostic = anton::String("unimplemented", &allocator)}};
+            return {anton::expected_error, Error{.diagnostic = anton::String("end of compiler reached", &allocator)}};
 
             // gather_settings(ctx.allocator, result.settings, settings);
 
