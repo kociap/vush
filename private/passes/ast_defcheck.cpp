@@ -166,11 +166,7 @@ namespace vush {
             case ast::Node_Kind::expr_identifier: {
                 ast::Expr_Identifier const* const node = static_cast<ast::Expr_Identifier const*>(expression);
 
-                // TODO: Add symbols for builtin types.
-                // if(anton::Optional<ast::GLSL_Type> result = ast::enumify_glsl_type(node->identifier->value)) {
-                //     // TODO: Add definition of builtin types.
-                //     return {anton::expected_value};
-                // }
+                // TODO: Add symbols for builtin variables.
 
                 Symbol const* const symbol = symtable.find_symbol(node->value);
                 if(!symbol) {
