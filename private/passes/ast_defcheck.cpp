@@ -454,14 +454,12 @@ namespace vush {
     }
 
     [[nodiscard]] static anton::Expected<void, Error> defcheck_function(Context& ctx, Scoped_Symbol_Table& symtable, ast::Decl_Function const* const fn) {
+        // We do not defcheck the identifier of the function because it has
+        // already been added as an overloaded function.
+
         anton::Expected<void, Error> return_result = defcheck_type(ctx, symtable, fn->return_type);
         if(!return_result) {
             return ANTON_MOV(return_result);
-        }
-
-        anton::Expected<void, Error> symbol_result = check_and_add_symbol(ctx, symtable, Symbol(fn->identifier->value, fn));
-        if(!symbol_result) {
-            return ANTON_MOV(symbol_result);
         }
 
         // Push a new scope for the function body and parameters.
