@@ -87,6 +87,7 @@ target_sources(vush
     "${CMAKE_CURRENT_SOURCE_DIR}/private/passes/ast_construction.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/passes/ast_validation.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/passes/ast_defcheck.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/private/passes/ast_typecheck.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/public/vush/allocator.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/public/vush/types.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/public/vush/vush.hpp"
