@@ -541,11 +541,9 @@ namespace vush {
     }
 
     [[nodiscard]] static anton::Expected<void, Error> validate_function(Context& ctx, ast::Decl_Function const* const fn) {
-        // Validate attributes. Currently attributes are not allowed on ordinary functions.
-        {
-            for(ast::Attribute const* const attribute: fn->attributes) {
-                return {anton::expected_error, err_illegal_attribute(ctx, attribute->identifier->source_info)};
-            }
+        // Validate attributes. Currently there are no attributes that are not allowed on ordinary functions.
+        for(ast::Attribute const* const attribute: fn->attributes) {
+            return {anton::expected_error, err_illegal_attribute(ctx, attribute->identifier->source_info)};
         }
 
         // Validate the return type:
@@ -576,30 +574,28 @@ namespace vush {
         // Validate attributes:
         // - compute stage might have the workgroup attribute (at most 1).
         // - other stages must not have any attributes.
-        {
-            switch(fn->stage.value) {
-                case Stage_Kind::compute: {
-                    ast::Attribute const* workgroup = nullptr;
-                    for(ast::Attribute const* const attribute: fn->attributes) {
-                        if(attribute->identifier->value == "workgroup"_sv) {
-                            if(!workgroup) {
-                                workgroup = attribute;
-                            } else {
-                                return {anton::expected_error,
-                                        err_duplicate_attribute(ctx, workgroup->identifier->source_info, attribute->identifier->source_info)};
-                            }
+        switch(fn->stage.value) {
+            case Stage_Kind::compute: {
+                ast::Attribute const* workgroup = nullptr;
+                for(ast::Attribute const* const attribute: fn->attributes) {
+                    if(attribute->identifier->value == "workgroup"_sv) {
+                        if(!workgroup) {
+                            workgroup = attribute;
                         } else {
-                            return {anton::expected_error, err_illegal_attribute(ctx, attribute->identifier->source_info)};
+                            return {anton::expected_error,
+                                    err_duplicate_attribute(ctx, workgroup->identifier->source_info, attribute->identifier->source_info)};
                         }
+                    } else {
+                        return {anton::expected_error, err_illegal_attribute(ctx, attribute->identifier->source_info)};
                     }
-                } break;
+                }
+            } break;
 
-                default: {
-                    for(ast::Attribute const* const attribute: fn->attributes) {
-                        return {anton::expected_error, err_illegal_attribute(ctx, attribute->source_info)};
-                    }
-                } break;
-            }
+            default: {
+                for(ast::Attribute const* const attribute: fn->attributes) {
+                    return {anton::expected_error, err_illegal_attribute(ctx, attribute->source_info)};
+                }
+            } break;
         }
 
         // Validate the return type:
@@ -742,6 +738,14 @@ namespace vush {
         // prevents us from properly validating both. Currently we validate
         // structs first as that seems to be the best solution giving us the
         // option to conduct the most thorough analysis.
+
+        // TODO: The following code results in out-of-order error reporting, i.e. code appearing
+        //       sooner in the source might be validated after code appearing later in the source.
+        //       The problem stems from the fact that we gather overloads before doing validation
+        //       and validate groups of constructs. We cannot possibly move overload gather to after
+        //       defcheck or validation because of the dependency of their symbols, therefore we
+        //       must come up with a different solution so that we report errors in their order of
+        //       occurence.
 
         // Validate structs.
         for(ast::Node const* const decl: ast) {
