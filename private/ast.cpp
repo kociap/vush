@@ -13,6 +13,10 @@ namespace vush {
         : children(ANTON_MOV(array)), source_info(source_info), type(type) {}
 
     namespace ast {
+        bool is_array(Type const& type) {
+            return type.node_kind == Node_Kind::type_array;
+        }
+
         bool is_sized_array(Type const& type) {
             return type.node_kind == Node_Kind::type_array && static_cast<Type_Array const&>(type).size;
         }
@@ -23,6 +27,11 @@ namespace vush {
 
         bool is_void(Type const& type) {
             return type.node_kind == Node_Kind::type_builtin && static_cast<Type_Builtin const&>(type).value == GLSL_Type::glsl_void;
+        }
+
+        bool is_integer(Type const& type) {
+            Type_Builtin const& builtin = static_cast<Type_Builtin const&>(type);
+            return type.node_kind == Node_Kind::type_builtin && (builtin.value == GLSL_Type::glsl_int || builtin.value == GLSL_Type::glsl_uint);
         }
 
         bool is_opaque_type(Type const& type) {
@@ -94,6 +103,10 @@ namespace vush {
                    type == GLSL_Type::glsl_uimage2D || type == GLSL_Type::glsl_uimage2DArray || type == GLSL_Type::glsl_uimage2DMS ||
                    type == GLSL_Type::glsl_uimage2DMSArray || type == GLSL_Type::glsl_uimage2DRect || type == GLSL_Type::glsl_uimage3D ||
                    type == GLSL_Type::glsl_uimageCube || type == GLSL_Type::glsl_uimageCubeArray || type == GLSL_Type::glsl_uimageBuffer;
+        }
+
+        bool is_type(Node const& node) {
+            return node.node_kind == Node_Kind::type_builtin || node.node_kind == Node_Kind::type_user_defined || node.node_kind == Node_Kind::type_array;
         }
 
         bool is_sourced_parameter(Func_Parameter const& parameter) {
