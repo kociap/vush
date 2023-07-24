@@ -271,7 +271,7 @@ syntax_nodes = [
     {
         "syntax_name": "stmt_for",
         "members": [
-            Syntax_Member(Node_Kind.node, "variable", Lookup_Kind.search, "for_variable", optional = True, unwrap = True),
+            Syntax_Member(Node_Kind.node, "variable", Lookup_Kind.search, "for_variable", optional = True),
             Syntax_Member(Node_Kind.node, "condition", Lookup_Kind.search, "for_condition", optional = True, unwrap = True),
             Syntax_Member(Node_Kind.node, "expression", Lookup_Kind.search, "for_expression", optional = True, unwrap = True),
             Syntax_Member(Node_Kind.node, "body", Lookup_Kind.search, "stmt_block"),
