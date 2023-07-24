@@ -112,6 +112,11 @@ namespace vush {
                         return overload->identifier->source_info;
                     }
 
+                    case Symbol_Kind::decl_struct: {
+                        auto const v = static_cast<ast::Decl_Struct const*>(symbol.get_node());
+                        return v->identifier->source_info;
+                    }
+
                     default:
                         ANTON_FAIL(false, "unknown symbol type");
                         ANTON_UNREACHABLE();
@@ -429,7 +434,18 @@ namespace vush {
         }
 
         symtable.pop_scope();
-        return {anton::expected_value};
+        return anton::expected_value;
+    }
+
+    [[nodiscard]] static anton::Expected<void, Error> defcheck_struct(Context& ctx, Scoped_Symbol_Table& symtable, ast::Decl_Struct const* const d) {
+        for(ast::Struct_Member const* const member: d->members) {
+            anton::Expected<void, Error> result = defcheck_type(ctx, symtable, member->type);
+            if(!result) {
+                return ANTON_MOV(result);
+            }
+        }
+
+        return anton::expected_value;
     }
 
     [[nodiscard]] static anton::Expected<void, Error> defcheck_function(Context& ctx, Scoped_Symbol_Table& symtable, ast::Decl_Function const* const fn) {
@@ -499,39 +515,62 @@ namespace vush {
     anton::Expected<void, Error> run_ast_defcheck_pass(Context& ctx, ast::Node_List const ast) {
         Scoped_Symbol_Table symtable(ctx.allocator);
         symtable.push_scope();
-        // Global symbols.
+        // First add all global symbols to the symtab...
         for(ast::Node const* const decl: ast) {
-            if(decl->node_kind == ast::Node_Kind::variable) {
-                ast::Variable const* const d = static_cast<ast::Variable const*>(decl);
-                if(anton::Expected<void, Error> result = check_and_add_symbol(ctx, symtable, Symbol(d->identifier->value, d)); !result) {
-                    return {anton::expected_error, ANTON_MOV(result.error())};
-                }
-            } else if(decl->node_kind == ast::Node_Kind::decl_struct) {
-                ast::Decl_Struct const* const d = static_cast<ast::Decl_Struct const*>(decl);
-                if(anton::Expected<void, Error> result = check_and_add_symbol(ctx, symtable, Symbol(d->identifier->value, d)); !result) {
-                    return {anton::expected_error, ANTON_MOV(result.error())};
-                }
-            } else if(decl->node_kind == ast::Node_Kind::decl_overloaded_function) {
-                ast::Decl_Overloaded_Function const* const d = static_cast<ast::Decl_Overloaded_Function const*>(decl);
-                if(anton::Expected<void, Error> result = check_and_add_symbol(ctx, symtable, Symbol(d->identifier, d)); !result) {
-                    return {anton::expected_error, ANTON_MOV(result.error())};
-                }
+            switch(decl->node_kind) {
+                case ast::Node_Kind::variable: {
+                    ast::Variable const* const d = static_cast<ast::Variable const*>(decl);
+                    anton::Expected<void, Error> result = check_and_add_symbol(ctx, symtable, Symbol(d->identifier->value, d));
+                    if(!result) {
+                        return ANTON_MOV(result);
+                    }
+                } break;
+
+                case ast::Node_Kind::decl_struct: {
+                    ast::Decl_Struct const* const d = static_cast<ast::Decl_Struct const*>(decl);
+                    anton::Expected<void, Error> result = check_and_add_symbol(ctx, symtable, Symbol(d->identifier->value, d));
+                    if(!result) {
+                        return ANTON_MOV(result);
+                    }
+                } break;
+
+                case ast::Node_Kind::decl_overloaded_function: {
+                    ast::Decl_Overloaded_Function const* const d = static_cast<ast::Decl_Overloaded_Function const*>(decl);
+                    anton::Expected<void, Error> result = check_and_add_symbol(ctx, symtable, Symbol(d->identifier, d));
+                    if(!result) {
+                        return ANTON_MOV(result);
+                    }
+                } break;
+
+                default:
+                    // Nothing.
+                    break;
             }
         }
 
-        // TODO: Constants and structs defcheck.
+        // ...then run all defchecks.
 
-        for(ast::Node const* const decl: ast) {
-            if(decl->node_kind == ast::Node_Kind::decl_overloaded_function) {
-                ast::Decl_Overloaded_Function const* const ofn = static_cast<ast::Decl_Overloaded_Function const*>(decl);
+        // TODO: Constants defcheck.
+
+        for(ast::Node const* const node: ast) {
+            if(node->node_kind == ast::Node_Kind::decl_struct) {
+                ast::Decl_Struct const* const decl = static_cast<ast::Decl_Struct const*>(node);
+                anton::Expected<void, Error> result = defcheck_struct(ctx, symtable, decl);
+                if(!result) {
+                    return ANTON_MOV(result);
+                }
+
+                ctx.add_type_definition(decl->identifier->value, decl);
+            } else if(node->node_kind == ast::Node_Kind::decl_overloaded_function) {
+                ast::Decl_Overloaded_Function const* const ofn = static_cast<ast::Decl_Overloaded_Function const*>(node);
                 for(ast::Decl_Function const* const fn: ofn->overloads) {
                     anton::Expected<void, Error> result = defcheck_function(ctx, symtable, fn);
                     if(!result) {
                         return ANTON_MOV(result);
                     }
                 }
-            } else if(decl->node_kind == ast::Node_Kind::decl_stage_function) {
-                ast::Decl_Stage_Function const* const fn = static_cast<ast::Decl_Stage_Function const* const>(decl);
+            } else if(node->node_kind == ast::Node_Kind::decl_stage_function) {
+                ast::Decl_Stage_Function const* const fn = static_cast<ast::Decl_Stage_Function const* const>(node);
                 anton::Expected<void, Error> result = defcheck_stage_function(ctx, symtable, fn);
                 if(!result) {
                     return ANTON_MOV(result);
