@@ -838,7 +838,7 @@ namespace vush {
     }
 
     [[nodiscard]] static anton::Expected<bool, Error> evaluate_constant_expression(Context const& ctx, Syntax_Node const& node) {
-        // TODO
+        // TODO: Implement.
         return {anton::expected_value, true};
     }
 
