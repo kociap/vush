@@ -378,9 +378,9 @@ namespace vush {
 
     [[nodiscard]] static Syntax_Node const& get_expr_block_expression(Syntax_Node const& node) {
         ANTON_ASSERT(node.type == Syntax_Node_Kind::expr_block, "node is not expr_block");
-        ANTON_ASSERT(node.children.size() > (0), "expr_block has too few children");
-        ANTON_ASSERT(node.children[0].is_left(), "expression in expr_block is not Syntax_Node");
-        return node.children[0].left();
+        ANTON_ASSERT(node.children.size() > (1), "expr_block has too few children");
+        ANTON_ASSERT(node.children[1].is_left(), "expression in expr_block is not Syntax_Node");
+        return node.children[1].left();
     }
 
     [[nodiscard]] static Syntax_Token const& get_expr_identifier_value(Syntax_Node const& node) {
