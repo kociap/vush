@@ -153,7 +153,7 @@ syntax_nodes = [
     },
     {
         "syntax_name": "expr_block",
-        "members": [Syntax_Member(Node_Kind.node, "expression", Lookup_Kind.index, 0)]
+        "members": [Syntax_Member(Node_Kind.node, "expression", Lookup_Kind.index, 1)]
     },
     {
         "syntax_name": "expr_identifier",
