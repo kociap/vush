@@ -138,9 +138,11 @@ namespace vush {
                 Symbol const* const symbol = symtable.find_symbol(udt->value);
                 if(symbol == nullptr) {
                     return {anton::expected_error, err_undefined_symbol(ctx, type->source_info)};
-                } else {
-                    return {anton::expected_value};
                 }
+
+                ast::Node const* const symbol_node = symbol->get_node();
+                ctx.add_node_definition(type, symbol_node);
+                return anton::expected_value;
             }
 
             case ast::Node_Kind::type_array: {
@@ -171,14 +173,53 @@ namespace vush {
                 }
 
                 ast::Node const* const symbol_node = symbol->get_node();
-                ctx.add_definition(node, symbol_node);
-                return {anton::expected_value};
+                ctx.add_node_definition(node, symbol_node);
+                return anton::expected_value;
             }
 
-            case ast::Node_Kind::expr_prefix: {
-                ast::Expr_Prefix const* const node = static_cast<ast::Expr_Prefix const*>(expression);
-                return defcheck_expression(ctx, symtable, node->expression);
-            }
+            case ast::Node_Kind::expr_init: {
+                ast::Expr_Init const* const node = static_cast<ast::Expr_Init const*>(expression);
+                anton::Expected<void, Error> type_result = defcheck_type(ctx, symtable, node->type);
+                if(!type_result) {
+                    return ANTON_MOV(type_result);
+                }
+
+                for(ast::Initializer const* const generic_initializer: node->initializers) {
+                    switch(generic_initializer->node_kind) {
+                        case ast::Node_Kind::named_initializer: {
+                            ast::Named_Initializer const* const initializer = static_cast<ast::Named_Initializer const*>(generic_initializer);
+                            // Checking struct members is done at typecheck stage, hence we do not check the identifier.
+                            anton::Expected<void, Error> result = defcheck_expression(ctx, symtable, initializer->expression);
+                            if(!result) {
+                                return ANTON_MOV(result);
+                            }
+                        } break;
+
+                        case ast::Node_Kind::indexed_initializer: {
+                            ast::Indexed_Initializer const* const initializer = static_cast<ast::Indexed_Initializer const*>(generic_initializer);
+                            // Checking bounds is done at typecheck stage, hence we do not check the index.
+                            anton::Expected<void, Error> result = defcheck_expression(ctx, symtable, initializer->expression);
+                            if(!result) {
+                                return ANTON_MOV(result);
+                            }
+                        } break;
+
+                        case ast::Node_Kind::basic_initializer: {
+                            ast::Basic_Initializer const* const initializer = static_cast<ast::Basic_Initializer const*>(generic_initializer);
+                            anton::Expected<void, Error> result = defcheck_expression(ctx, symtable, initializer->expression);
+                            if(!result) {
+                                return ANTON_MOV(result);
+                            }
+                        } break;
+
+                        default:
+                            ANTON_ASSERT(false, "invalid initializer node kind");
+                            ANTON_UNREACHABLE();
+                    }
+                }
+
+                return anton::expected_value;
+            } break;
 
             case ast::Node_Kind::expr_call: {
                 ast::Expr_Call const* const node = static_cast<ast::Expr_Call const*>(expression);
@@ -188,7 +229,7 @@ namespace vush {
                 }
 
                 ast::Node const* const symbol_node = symbol->get_node();
-                ctx.add_definition(node->identifier, symbol_node);
+                ctx.add_node_definition(node, symbol_node);
 
                 for(ast::Expr const* const argument: node->arguments) {
                     anton::Expected<void, Error> result = defcheck_expression(ctx, symtable, argument);
@@ -225,8 +266,8 @@ namespace vush {
                 return defcheck_expression(ctx, symtable, node->expression);
             }
 
-            case ast::Node_Kind::expr_binary: {
-                ast::Expr_Binary const* const node = static_cast<ast::Expr_Binary const*>(expression);
+            case ast::Node_Kind::expr_assignment: {
+                ast::Expr_Assignment const* const node = static_cast<ast::Expr_Assignment const*>(expression);
                 if(anton::Expected<void, Error> lhs = defcheck_expression(ctx, symtable, node->lhs); !lhs) {
                     return ANTON_MOV(lhs);
                 }
@@ -303,13 +344,14 @@ namespace vush {
                     if(!symbol_res) {
                         return ANTON_MOV(symbol_res);
                     }
-
-                    return {anton::expected_value};
                 } break;
 
                 case ast::Node_Kind::stmt_block: {
                     ast::Stmt_Block const* const node = static_cast<ast::Stmt_Block const*>(stmt);
-                    return defcheck_statements(ctx, symtable, node->statements);
+                    anton::Expected<void, Error> result = defcheck_statements(ctx, symtable, node->statements);
+                    if(!result) {
+                        return ANTON_MOV(result);
+                    }
                 } break;
 
                 case ast::Node_Kind::stmt_if: {
@@ -325,8 +367,6 @@ namespace vush {
                     if(anton::Expected<void, Error> res = defcheck_statements(ctx, symtable, node->else_branch); !res) {
                         return ANTON_MOV(res);
                     }
-
-                    return {anton::expected_value};
                 } break;
 
                 case ast::Node_Kind::stmt_loop: {
@@ -347,8 +387,6 @@ namespace vush {
                     if(!statements_result) {
                         return ANTON_MOV(statements_result);
                     }
-
-                    return {anton::expected_value};
                 } break;
 
                 case ast::Node_Kind::stmt_switch: {
@@ -364,8 +402,6 @@ namespace vush {
                             return ANTON_MOV(result);
                         }
                     }
-
-                    return {anton::expected_value};
                 } break;
 
                 case ast::Node_Kind::stmt_return: {
@@ -376,12 +412,14 @@ namespace vush {
                             return ANTON_MOV(result);
                         }
                     }
-                    return {anton::expected_value};
                 } break;
 
                 case ast::Node_Kind::stmt_expression: {
                     ast::Stmt_Expression const* const node = static_cast<ast::Stmt_Expression const*>(stmt);
-                    return defcheck_expression(ctx, symtable, node->expression);
+                    anton::Expected<void, Error> result = defcheck_expression(ctx, symtable, node->expression);
+                    if(!result) {
+                        return ANTON_MOV(result);
+                    }
                 } break;
 
                 default:
