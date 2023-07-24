@@ -328,7 +328,9 @@ namespace vush {
 
         [[nodiscard]] bool compare_types_equal(Type const& lhs, Type const& rhs);
         [[nodiscard]] bool is_void(Type const& type);
+        [[nodiscard]] bool is_integer(Type const& type);
         [[nodiscard]] bool is_opaque_type(Type const& type);
+        [[nodiscard]] bool is_array(Type const& type);
         [[nodiscard]] bool is_unsized_array(Type const& type);
         [[nodiscard]] bool is_sized_array(Type const& type);
         [[nodiscard]] bool is_image_type(Type const& type);
