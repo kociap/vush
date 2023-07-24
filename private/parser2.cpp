@@ -1113,6 +1113,8 @@ namespace vush {
                 return anton::null_optional;
             }
 
+            // TODO: Match an identifier and validate later on to provide
+            //       better diagnostics.
             if(Optional stg_vertex = skipmatch(stage_vertex)) {
                 snots.push_back(ANTON_MOV(*stg_vertex));
             } else if(Optional stg_fragment = skipmatch(stage_fragment)) {
@@ -1348,7 +1350,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional condition = try_expression()) {
+            if(Optional condition = try_expression_without_init()) {
                 snots.push_back(ANTON_MOV(*condition));
             } else {
                 _lexer.restore_state(begin_state);
@@ -1466,7 +1468,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional expression = try_expression()) {
+            if(Optional expression = try_expression_without_init()) {
                 snots.push_back(ANTON_MOV(*expression));
             } else {
                 _lexer.restore_state(begin_state);
@@ -1560,7 +1562,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional expression = try_expression()) {
+            if(Optional expression = try_expression_without_init()) {
                 Source_Info const source_info = expression->source_info;
                 snots.push_back(WRAP_NODE(_allocator, Syntax_Node_Kind::for_expression, *expression, source_info));
             }
@@ -1588,7 +1590,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional condition = try_expression()) {
+            if(Optional condition = try_expression_without_init()) {
                 snots.push_back(ANTON_MOV(*condition));
             } else {
                 _lexer.restore_state(begin_state);
@@ -1778,10 +1780,20 @@ namespace vush {
         }
 
         Optional<Syntax_Node> try_expression() {
-            return try_expr_binary();
+            return try_expr_binary(false);
         }
 
-        Optional<Syntax_Node> try_expr_binary() {
+        Optional<Syntax_Node> try_expression_without_init() {
+            return try_expr_binary(true);
+        }
+
+        // try_expr_binary
+        //
+        // Parameters:
+        // disable_init - whether we are matching the production for an expression
+        //                without init or a production expression with init (false).
+        //
+        Optional<Syntax_Node> try_expr_binary(bool const disable_init) {
             // Parsing binary expressions consists primarily of repeatedly calling two procedures.
             // to construct the expression trees - insert_operator and insert_expression.
             // insert_expression - inserts an expression into a "free slot" (if a binary expression
@@ -2038,7 +2050,7 @@ namespace vush {
             };
 
             Lexer_State const begin_state = _lexer.get_current_state();
-            Optional root_expr = try_expr_prefix();
+            Optional root_expr = try_expr_prefix(disable_init);
             if(!root_expr) {
                 return anton::null_optional;
             }
@@ -2050,7 +2062,7 @@ namespace vush {
                     break;
                 }
 
-                if(Optional expr = try_expr_prefix()) {
+                if(Optional expr = try_expr_prefix(disable_init)) {
                     insert_expression(&root_expr.value(), ANTON_MOV(*expr));
                 } else {
                     _lexer.restore_state(begin_state);
@@ -2087,7 +2099,7 @@ namespace vush {
             return root_expr;
         }
 
-        Optional<Syntax_Node> try_expr_prefix() {
+        Optional<Syntax_Node> try_expr_prefix(bool const disable_init) {
             Lexer_State const begin_state = _lexer.get_current_state();
             Array<SNOT> snots{_allocator};
             if(Optional plus = match(Token_Kind::tk_plus)) {
@@ -2099,10 +2111,10 @@ namespace vush {
             } else if(Optional tilde = match(Token_Kind::tk_tilde)) {
                 snots.push_back(ANTON_MOV(*tilde));
             } else {
-                return try_expr_postfix();
+                return try_expr_postfix(disable_init);
             }
 
-            if(Optional expr = try_expr_prefix()) {
+            if(Optional expr = try_expr_prefix(disable_init)) {
                 snots.push_back(ANTON_MOV(*expr));
             } else {
                 _lexer.restore_state(begin_state);
@@ -2114,9 +2126,9 @@ namespace vush {
             return Syntax_Node(Syntax_Node_Kind::expr_prefix, ANTON_MOV(snots), source);
         }
 
-        Optional<Syntax_Node> try_expr_postfix() {
+        Optional<Syntax_Node> try_expr_postfix(bool const disable_init) {
             Lexer_State const begin_state = _lexer.get_current_state();
-            Optional expr = try_primary_expression();
+            Optional expr = try_primary_expression(disable_init);
             if(!expr) {
                 _lexer.restore_state(begin_state);
                 return anton::null_optional;
@@ -2168,7 +2180,7 @@ namespace vush {
             return expr;
         }
 
-        Optional<Syntax_Node> try_primary_expression() {
+        Optional<Syntax_Node> try_primary_expression(bool const disable_init) {
             if(Optional expr_parentheses = try_expr_parentheses()) {
                 return ANTON_MOV(expr_parentheses);
             }
@@ -2193,8 +2205,10 @@ namespace vush {
                 return ANTON_MOV(lt_bool);
             }
 
-            if(Optional expr_init = try_expr_init()) {
-                return ANTON_MOV(expr_init);
+            if(!disable_init) {
+                if(Optional expr_init = try_expr_init()) {
+                    return ANTON_MOV(expr_init);
+                }
             }
 
             if(Optional expr_call = try_expr_call()) {
@@ -2358,7 +2372,7 @@ namespace vush {
                 return anton::null_optional;
             }
 
-            if(Optional condition = try_expression()) {
+            if(Optional condition = try_expression_without_init()) {
                 snots.push_back(ANTON_MOV(*condition));
             } else {
                 _lexer.restore_state(begin_state);
