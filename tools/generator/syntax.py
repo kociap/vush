@@ -7,9 +7,9 @@ def format_node_accessor(syntax_name, member):
         if member.optional:
             return f'''\
 [[nodiscard]] static anton::Optional<Syntax_Node const&> get_{syntax_name}_{member.name}(Syntax_Node const& node) {{
-    ANTON_ASSERT(node.type == Syntax_Node_Kind::{syntax_name}, "node is not {syntax_name}");
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::{syntax_name}, "node is not {syntax_name}");
     for(SNOT const& snot: node.children) {{
-        if(snot.is_left() && snot.left().type == Syntax_Node_Kind::{member.index}) {{
+        if(snot.is_left() && snot.left().kind == Syntax_Node_Kind::{member.index}) {{
             return snot.left(){".children[0].left()" if member.unwrap else ""};
         }}
     }}
@@ -18,9 +18,9 @@ def format_node_accessor(syntax_name, member):
         else:
             return f'''\
 [[nodiscard]] static Syntax_Node const& get_{syntax_name}_{member.name}(Syntax_Node const& node) {{
-    ANTON_ASSERT(node.type == Syntax_Node_Kind::{syntax_name}, "node is not {syntax_name}");
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::{syntax_name}, "node is not {syntax_name}");
     for(SNOT const& snot: node.children) {{
-        if(snot.is_left() && snot.left().type == Syntax_Node_Kind::{member.index}) {{
+        if(snot.is_left() && snot.left().kind == Syntax_Node_Kind::{member.index}) {{
             return snot.left(){".children[0].left()" if member.unwrap else ""};
         }}
     }}
@@ -34,7 +34,7 @@ def format_node_accessor(syntax_name, member):
         if member.optional:
             return f'''\
 [[nodiscard]] static anton::Optional<Syntax_Node const&> get_{syntax_name}_{member.name}(Syntax_Node const& node {offset_parameter}) {{
-    ANTON_ASSERT(node.type == Syntax_Node_Kind::{syntax_name}, "node is not {syntax_name}");
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::{syntax_name}, "node is not {syntax_name}");
     if(node.children.size() > ({offset_expression}{member.index})) {{
         ANTON_ASSERT(node.children[{offset_expression}{member.index}].is_left(), "{member.name} in {syntax_name} is not Syntax_Node");
         return node.children[{offset_expression}{member.index}].left();
@@ -45,7 +45,7 @@ def format_node_accessor(syntax_name, member):
         else:
             return f'''\
 [[nodiscard]] static Syntax_Node const& get_{syntax_name}_{member.name}(Syntax_Node const& node {offset_parameter}) {{
-    ANTON_ASSERT(node.type == Syntax_Node_Kind::{syntax_name}, "node is not {syntax_name}");
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::{syntax_name}, "node is not {syntax_name}");
     ANTON_ASSERT(node.children.size() > ({offset_expression}{member.index}), "{syntax_name} has too few children");
     ANTON_ASSERT(node.children[{offset_expression}{member.index}].is_left(), "{member.name} in {syntax_name} is not Syntax_Node");
     return node.children[{offset_expression}{member.index}].left();
@@ -61,9 +61,9 @@ def format_token_accessor(syntax_name, member):
         if member.optional:
             return f'''\
 [[nodiscard]] static anton::Optional<Syntax_Token const&> get_{syntax_name}_{member.name}(Syntax_Node const& node) {{
-    ANTON_ASSERT(node.type == Syntax_Node_Kind::{syntax_name}, "node is not {syntax_name}");
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::{syntax_name}, "node is not {syntax_name}");
     for(SNOT const& snot: node.children) {{
-        if(snot.is_right() && snot.right().type == Syntax_Node_Kind::{member.index}) {{
+        if(snot.is_right() && snot.right().kind == Syntax_Node_Kind::{member.index}) {{
             return snot.right();
         }}
     }}
@@ -72,9 +72,9 @@ def format_token_accessor(syntax_name, member):
         else:
             return f'''\
 [[nodiscard]] static Syntax_Token const& get_{syntax_name}_{member.name}(Syntax_Node const& node) {{
-    ANTON_ASSERT(node.type == Syntax_Node_Kind::{syntax_name}, "node is not {syntax_name}");
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::{syntax_name}, "node is not {syntax_name}");
     for(SNOT const& snot: node.children) {{
-        if(snot.is_right() && snot.right().type == Syntax_Node_Kind::{member.index}) {{
+        if(snot.is_right() && snot.right().kind == Syntax_Node_Kind::{member.index}) {{
             return snot.right();
         }}
     }}
@@ -89,7 +89,7 @@ def format_token_accessor(syntax_name, member):
         if member.optional:
             return f'''\
 [[nodiscard]] static anton::Optional<Syntax_Token const&> get_{syntax_name}_{member.name}(Syntax_Node const& node {offset_parameter}) {{
-    ANTON_ASSERT(node.type == Syntax_Node_Kind::{syntax_name}, "node is not {syntax_name}");
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::{syntax_name}, "node is not {syntax_name}");
     if(node.children.size() > ({offset_expression}{member.index})) {{
         ANTON_ASSERT(node.children[{offset_expression}{member.index}].is_right(), "{member.name} in {syntax_name} is not Syntax_Token");
         return node.children[{offset_expression}{member.index}].right();
@@ -100,7 +100,7 @@ def format_token_accessor(syntax_name, member):
         else:
             return f'''\
 [[nodiscard]] static Syntax_Token const& get_{syntax_name}_{member.name}(Syntax_Node const& node {offset_parameter}) {{
-    ANTON_ASSERT(node.type == Syntax_Node_Kind::{syntax_name}, "node is not {syntax_name}");
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::{syntax_name}, "node is not {syntax_name}");
     ANTON_ASSERT(node.children.size() > ({offset_expression}{member.index}), "{syntax_name} has too few children");
     ANTON_ASSERT(node.children[{offset_expression}{member.index}].is_right(), "{member.name} in {syntax_name} is not Syntax_Token");
     return node.children[{offset_expression}{member.index}].right();
