@@ -174,7 +174,7 @@ syntax_nodes = [
         ]
     },
     {
-        "syntax_name": "expr_array_access",
+        "syntax_name": "expr_index",
         "members": [
             Syntax_Member(Node_Kind.node, "expression", Lookup_Kind.index, 0),
             Syntax_Member(Node_Kind.node, "index", Lookup_Kind.index, 2)

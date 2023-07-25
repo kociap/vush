@@ -506,19 +506,19 @@ namespace vush {
     return node.children[1].right();
   }
 
-  [[nodiscard]] static Syntax_Node const& get_expr_array_access_expression(Syntax_Node const& node)
+  [[nodiscard]] static Syntax_Node const& get_expr_index_expression(Syntax_Node const& node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_array_access, "node is not expr_array_access");
-    ANTON_ASSERT(node.children.size() > (0), "expr_array_access has too few children");
-    ANTON_ASSERT(node.children[0].is_left(), "expression in expr_array_access is not Syntax_Node");
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_index, "node is not expr_index");
+    ANTON_ASSERT(node.children.size() > (0), "expr_index has too few children");
+    ANTON_ASSERT(node.children[0].is_left(), "expression in expr_index is not Syntax_Node");
     return node.children[0].left();
   }
 
-  [[nodiscard]] static Syntax_Node const& get_expr_array_access_index(Syntax_Node const& node)
+  [[nodiscard]] static Syntax_Node const& get_expr_index_index(Syntax_Node const& node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_array_access, "node is not expr_array_access");
-    ANTON_ASSERT(node.children.size() > (2), "expr_array_access has too few children");
-    ANTON_ASSERT(node.children[2].is_left(), "index in expr_array_access is not Syntax_Node");
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_index, "node is not expr_index");
+    ANTON_ASSERT(node.children.size() > (2), "expr_index has too few children");
+    ANTON_ASSERT(node.children[2].is_left(), "index in expr_index is not Syntax_Node");
     return node.children[2].left();
   }
 

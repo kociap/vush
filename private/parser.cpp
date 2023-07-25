@@ -2292,7 +2292,7 @@ namespace vush {
           snots.push_back(ANTON_MOV(*tk_rbracket));
           Lexer_State const end_state = _lexer.get_current_state_noskip();
           Source_Info const source = src_info(begin_state, end_state);
-          expr = Syntax_Node(Syntax_Node_Kind::expr_array_access, ANTON_MOV(snots), source);
+          expr = Syntax_Node(Syntax_Node_Kind::expr_index, ANTON_MOV(snots), source);
         } else {
           break;
         }

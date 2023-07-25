@@ -44,7 +44,7 @@ namespace vush {
     struct Expr_Init;
     struct Expr_Call;
     struct Expr_Member_Access;
-    struct Expr_Array_Access;
+    struct Expr_Index;
     struct Expr_Parentheses;
     struct Expr_Reinterpret;
     struct Expr_Default;

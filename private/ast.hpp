@@ -159,7 +159,7 @@ namespace vush {
     expr_binary,
     expr_prefix,
     expr_member_access,
-    expr_array_access,
+    expr_index,
     expr_parentheses,
     expr_reinterpret,
     expr_init,
@@ -278,7 +278,7 @@ namespace vush {
       expr_init,
       expr_call,
       expr_member_access,
-      expr_array_access,
+      expr_index,
       expr_parentheses,
       expr_reinterpret,
       expr_default,
@@ -795,13 +795,12 @@ namespace vush {
       }
     };
 
-    struct Expr_Array_Access: public Expr {
+    struct Expr_Index: public Expr {
       Expr const* base;
       Expr const* index;
 
-      constexpr Expr_Array_Access(Expr const* base, Expr const* index,
-                                  Source_Info const& source_info)
-        : Expr(source_info, Node_Kind::expr_array_access), base(base), index(index)
+      constexpr Expr_Index(Expr const* base, Expr const* index, Source_Info const& source_info)
+        : Expr(source_info, Node_Kind::expr_index), base(base), index(index)
       {
       }
     };

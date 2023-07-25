@@ -393,22 +393,21 @@ namespace vush {
                                                   node.source_info)};
       } break;
 
-      case Syntax_Node_Kind::expr_array_access: {
-        Syntax_Node const& expression_node = get_expr_array_access_expression(node);
+      case Syntax_Node_Kind::expr_index: {
+        Syntax_Node const& expression_node = get_expr_index_expression(node);
         anton::Expected<ast::Expr const*, Error> expression = transform_expr(ctx, expression_node);
         if(!expression) {
           return ANTON_MOV(expression);
         }
 
-        Syntax_Node const& index_node = get_expr_array_access_index(node);
+        Syntax_Node const& index_node = get_expr_index_index(node);
         anton::Expected<ast::Expr const*, Error> index = transform_expr(ctx, index_node);
         if(!index) {
           return ANTON_MOV(index);
         }
 
-        return {anton::expected_value,
-                allocate<ast::Expr_Array_Access>(ctx.allocator, expression.value(), index.value(),
-                                                 node.source_info)};
+        return {anton::expected_value, allocate<ast::Expr_Index>(ctx.allocator, expression.value(),
+                                                                 index.value(), node.source_info)};
       } break;
 
       case Syntax_Node_Kind::expr_parentheses: {
