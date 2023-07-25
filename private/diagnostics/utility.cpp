@@ -1,6 +1,6 @@
 #include <diagnostics/utility.hpp>
 
-#include <ast2.hpp>
+#include <ast.hpp>
 #include <context.hpp>
 
 namespace vush {

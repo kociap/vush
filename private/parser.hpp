@@ -3,7 +3,7 @@
 #include <anton/expected.hpp>
 #include <anton/string_view.hpp>
 
-#include <ast2.hpp>
+#include <ast.hpp>
 
 namespace vush {
   struct Parse_Syntax_Options {

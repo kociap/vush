@@ -122,7 +122,7 @@ def generate_accessors(parameters):
 
 def write_preamble(file):
     preamble = '''\
-#include <ast2.hpp>
+#include <ast.hpp>
 
 namespace vush {'''
     file.write(preamble)

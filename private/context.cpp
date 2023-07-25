@@ -1,6 +1,6 @@
 #include <context.hpp>
 
-#include <ast2.hpp>
+#include <ast.hpp>
 #include <vush/types.hpp>
 
 namespace vush {

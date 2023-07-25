@@ -57,7 +57,7 @@ target_sources(vush
     # "${CMAKE_CURRENT_SOURCE_DIR}/private/ast_traversal.cpp"
     # "${CMAKE_CURRENT_SOURCE_DIR}/private/ast_traversal.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/ast.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/private/ast2.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/private/ast.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/builtin_symbols_autogen.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/builtin_symbols.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/codegen.hpp"

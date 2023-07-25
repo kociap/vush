@@ -2,7 +2,7 @@
 
 #include <anton/expected.hpp>
 
-#include <ast2.hpp>
+#include <ast.hpp>
 #include <context.hpp>
 #include <owning_ptr.hpp>
 
