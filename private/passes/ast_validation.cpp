@@ -608,7 +608,7 @@ namespace vush {
 
     // Validate parameters:
     // - only ordinary parameters are allowed.
-    for(ast::Func_Parameter const* const p: fn->parameters) {
+    for(ast::Fn_Parameter const* const p: fn->parameters) {
       if(ast::is_sourced_parameter(*p)) {
         return {anton::expected_error, err_fn_sourced_parameter_not_allowed(ctx, p->source_info)};
       }
@@ -698,7 +698,7 @@ namespace vush {
     // - compute: only sourced parameters are allowed.
     {
       bool first = true;
-      for(ast::Func_Parameter const* const p: fn->parameters) {
+      for(ast::Fn_Parameter const* const p: fn->parameters) {
         {
           bool const builtin_type = fn->return_type->node_kind == ast::Node_Kind::type_builtin;
           bool const udt_type = fn->return_type->node_kind == ast::Node_Kind::type_user_defined;

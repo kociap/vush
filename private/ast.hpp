@@ -125,9 +125,9 @@ namespace vush {
     struct_member,
     struct_member_block,
 
-    func_parameter_if,
-    func_parameter,
-    func_parameter_list,
+    fn_parameter_if,
+    fn_parameter,
+    fn_parameter_list,
 
     attribute,
     attribute_list,
@@ -260,7 +260,7 @@ namespace vush {
       attribute,
       variable,
 
-      func_parameter,
+      fn_parameter,
       struct_member,
 
       decl_struct,
@@ -616,36 +616,36 @@ namespace vush {
       }
     };
 
-    struct Func_Parameter: public Node {
+    struct Fn_Parameter: public Node {
       Identifier const* identifier;
       Type const* type;
       // nullptr when the parameter has no source.
       // "in" when the parameter is a vertex input parameter.
       Identifier const* source;
 
-      constexpr Func_Parameter(Identifier const* identifier, Type const* type,
-                               Identifier const* source, Source_Info const& source_info)
-        : Node(source_info, Node_Kind::func_parameter), identifier(identifier), type(type),
+      constexpr Fn_Parameter(Identifier const* identifier, Type const* type,
+                             Identifier const* source, Source_Info const& source_info)
+        : Node(source_info, Node_Kind::fn_parameter), identifier(identifier), type(type),
           source(source)
       {
       }
     };
 
-    [[nodiscard]] bool is_sourced_parameter(Func_Parameter const& parameter);
-    [[nodiscard]] bool is_vertex_input_parameter(Func_Parameter const& parameter);
+    [[nodiscard]] bool is_sourced_parameter(Fn_Parameter const& parameter);
+    [[nodiscard]] bool is_vertex_input_parameter(Fn_Parameter const& parameter);
 
     struct Decl_Function: public Node {
       Attr_List attributes;
       Identifier const* identifier;
-      Func_Parameter_List parameters;
+      Fn_Parameter_List parameters;
       Type const* return_type;
       Node_List body;
       // Whether the function is a builtin function.
       bool builtin;
 
       constexpr Decl_Function(Attr_List attributes, Identifier const* identifier,
-                              Func_Parameter_List parameters, Type const* return_type,
-                              Node_List body, bool builtin, Source_Info const& source_info)
+                              Fn_Parameter_List parameters, Type const* return_type, Node_List body,
+                              bool builtin, Source_Info const& source_info)
         : Node(source_info, Node_Kind::decl_function), attributes(attributes),
           identifier(identifier), parameters(parameters), return_type(return_type), body(body),
           builtin(builtin)
@@ -675,12 +675,12 @@ namespace vush {
       Attr_List attributes;
       Identifier const* pass;
       With_Source<Stage_Kind> stage;
-      Func_Parameter_List parameters;
+      Fn_Parameter_List parameters;
       Type const* return_type;
       Node_List body;
 
       constexpr Decl_Stage_Function(Attr_List attributes, Identifier const* pass,
-                                    With_Source<Stage_Kind> stage, Func_Parameter_List parameters,
+                                    With_Source<Stage_Kind> stage, Fn_Parameter_List parameters,
                                     Type const* return_type, Node_List body,
                                     Source_Info const& source_info)
         : Node(source_info, Node_Kind::decl_stage_function), attributes(attributes), pass(pass),

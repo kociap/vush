@@ -124,9 +124,9 @@ namespace vush {
             return {anton::expected_value, type};
           }
 
-          case ast::Node_Kind::func_parameter: {
-            ast::Func_Parameter const* const parameter =
-              static_cast<ast::Func_Parameter const*>(definition);
+          case ast::Node_Kind::fn_parameter: {
+            ast::Fn_Parameter const* const parameter =
+              static_cast<ast::Fn_Parameter const*>(definition);
             ast::Type const* const type = parameter->type;
             ctx.add_node_type(node, type);
             return {anton::expected_value, type};
