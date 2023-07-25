@@ -256,8 +256,8 @@ namespace vush {
         return anton::expected_value;
       } break;
 
-      case ast::Node_Kind::expr_array_access: {
-        ast::Expr_Array_Access const* const expr = static_cast<ast::Expr_Array_Access const*>(node);
+      case ast::Node_Kind::expr_index: {
+        ast::Expr_Index const* const expr = static_cast<ast::Expr_Index const*>(node);
         anton::Expected<void, Error> base_result = validate_expression(ctx, expr->base);
         if(!base_result) {
           return ANTON_MOV(base_result);

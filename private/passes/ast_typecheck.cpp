@@ -309,8 +309,8 @@ namespace vush {
         return {anton::expected_value, then_type};
       } break;
 
-      case ast::Node_Kind::expr_array_access: {
-        ast::Expr_Array_Access const* const expr = static_cast<ast::Expr_Array_Access const*>(node);
+      case ast::Node_Kind::expr_index: {
+        ast::Expr_Index const* const expr = static_cast<ast::Expr_Index const*>(node);
         anton::Expected<ast::Type const*, Error> base_result =
           evaluate_expression_type(ctx, expr->base);
         if(!base_result) {

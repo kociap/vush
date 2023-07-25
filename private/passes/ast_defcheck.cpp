@@ -271,9 +271,8 @@ namespace vush {
         return defcheck_expression(ctx, symtable, node->base);
       }
 
-      case ast::Node_Kind::expr_array_access: {
-        ast::Expr_Array_Access const* const node =
-          static_cast<ast::Expr_Array_Access const*>(expression);
+      case ast::Node_Kind::expr_index: {
+        ast::Expr_Index const* const node = static_cast<ast::Expr_Index const*>(expression);
         anton::Expected<void, Error> base_result = defcheck_expression(ctx, symtable, node->base);
         if(!base_result) {
           return ANTON_MOV(base_result);
