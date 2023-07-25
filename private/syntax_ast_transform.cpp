@@ -8,7 +8,7 @@
 #include <diagnostics.hpp>
 #include <memory.hpp>
 #include <parser.hpp>
-#include <syntax_accessors.hpp>
+#include <syntax_accessors_autogen.hpp>
 #include <vush/vush.hpp>
 
 namespace vush {

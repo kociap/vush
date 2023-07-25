@@ -77,7 +77,7 @@ target_sources(vush
     "${CMAKE_CURRENT_SOURCE_DIR}/private/parser.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/parser2.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/passes.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/private/syntax_accessors.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/private/syntax_accessors_autogen.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/syntax_ast_transform.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/vush.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/private/diagnostics/lexer.hpp"
