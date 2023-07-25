@@ -2270,7 +2270,7 @@ namespace vush {
           snots.push_back(ANTON_MOV(*identifier));
           Lexer_State const end_state = _lexer.get_current_state_noskip();
           Source_Info const source = src_info(begin_state, end_state);
-          expr = Syntax_Node(Syntax_Node_Kind::expr_member_access, ANTON_MOV(snots), source);
+          expr = Syntax_Node(Syntax_Node_Kind::expr_field, ANTON_MOV(snots), source);
         } else if(Optional tk_lbracket = skipmatch(Token_Kind::tk_lbracket)) {
           Optional index = try_expression();
           if(!index) {

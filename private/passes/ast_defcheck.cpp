@@ -265,9 +265,8 @@ namespace vush {
         return anton::expected_value;
       }
 
-      case ast::Node_Kind::expr_member_access: {
-        ast::Expr_Member_Access const* const node =
-          static_cast<ast::Expr_Member_Access const*>(expression);
+      case ast::Node_Kind::expr_field: {
+        ast::Expr_Field const* const node = static_cast<ast::Expr_Field const*>(expression);
         return defcheck_expression(ctx, symtable, node->base);
       }
 

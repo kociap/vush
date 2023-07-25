@@ -379,18 +379,17 @@ namespace vush {
                 allocate<ast::Expr_Call>(ctx.allocator, identifier, arguments, node.source_info)};
       } break;
 
-      case Syntax_Node_Kind::expr_member_access: {
-        Syntax_Node const& expression_node = get_expr_member_access_expression(node);
+      case Syntax_Node_Kind::expr_field: {
+        Syntax_Node const& expression_node = get_expr_field_expression(node);
         anton::Expected<ast::Expr const*, Error> expression = transform_expr(ctx, expression_node);
         if(!expression) {
           return ANTON_MOV(expression);
         }
 
-        Syntax_Token const& identifier_token = get_expr_member_access_identifier(node);
+        Syntax_Token const& identifier_token = get_expr_field_identifier(node);
         ast::Identifier const* identifier = transform_identifier(ctx, identifier_token);
-        return {anton::expected_value,
-                allocate<ast::Expr_Member_Access>(ctx.allocator, expression.value(), identifier,
-                                                  node.source_info)};
+        return {anton::expected_value, allocate<ast::Expr_Field>(ctx.allocator, expression.value(),
+                                                                 identifier, node.source_info)};
       } break;
 
       case Syntax_Node_Kind::expr_index: {
