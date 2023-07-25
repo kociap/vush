@@ -1,3 +1,4 @@
+// clang-format off
 #include <builtin_symbols.hpp>
 
 #include <ast.hpp>

@@ -280,6 +280,7 @@ def write_statics(file, statics):
 
 def write_preamble(file):
     file.write("""\
+// clang-format off
 #include <builtin_symbols.hpp>
 
 #include <ast.hpp>
