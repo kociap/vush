@@ -486,23 +486,19 @@ namespace vush {
     return node.children[1].left();
   }
 
-  [[nodiscard]] static Syntax_Node const& get_expr_member_access_expression(Syntax_Node const& node)
+  [[nodiscard]] static Syntax_Node const& get_expr_field_expression(Syntax_Node const& node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_member_access,
-                 "node is not expr_member_access");
-    ANTON_ASSERT(node.children.size() > (0), "expr_member_access has too few children");
-    ANTON_ASSERT(node.children[0].is_left(), "expression in expr_member_access is not Syntax_Node");
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_field, "node is not expr_field");
+    ANTON_ASSERT(node.children.size() > (0), "expr_field has too few children");
+    ANTON_ASSERT(node.children[0].is_left(), "expression in expr_field is not Syntax_Node");
     return node.children[0].left();
   }
 
-  [[nodiscard]] static Syntax_Token const&
-  get_expr_member_access_identifier(Syntax_Node const& node)
+  [[nodiscard]] static Syntax_Token const& get_expr_field_identifier(Syntax_Node const& node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_member_access,
-                 "node is not expr_member_access");
-    ANTON_ASSERT(node.children.size() > (1), "expr_member_access has too few children");
-    ANTON_ASSERT(node.children[1].is_right(),
-                 "identifier in expr_member_access is not Syntax_Token");
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_field, "node is not expr_field");
+    ANTON_ASSERT(node.children.size() > (1), "expr_field has too few children");
+    ANTON_ASSERT(node.children[1].is_right(), "identifier in expr_field is not Syntax_Token");
     return node.children[1].right();
   }
 

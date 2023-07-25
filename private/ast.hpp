@@ -158,7 +158,7 @@ namespace vush {
     expr_identifier,
     expr_binary,
     expr_prefix,
-    expr_member_access,
+    expr_field,
     expr_index,
     expr_parentheses,
     expr_reinterpret,
@@ -277,7 +277,7 @@ namespace vush {
       expr_assignment,
       expr_init,
       expr_call,
-      expr_member_access,
+      expr_field,
       expr_index,
       expr_parentheses,
       expr_reinterpret,
@@ -784,13 +784,13 @@ namespace vush {
       }
     };
 
-    struct Expr_Member_Access: public Expr {
+    struct Expr_Field: public Expr {
       Expr const* base;
       Identifier const* member;
 
-      constexpr Expr_Member_Access(Expr const* base, Identifier const* member,
-                                   Source_Info const& source_info)
-        : Expr(source_info, Node_Kind::expr_member_access), base(base), member(member)
+      constexpr Expr_Field(Expr const* base, Identifier const* member,
+                           Source_Info const& source_info)
+        : Expr(source_info, Node_Kind::expr_field), base(base), member(member)
       {
       }
     };

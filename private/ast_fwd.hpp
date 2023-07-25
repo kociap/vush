@@ -43,7 +43,7 @@ namespace vush {
     struct Expr_Assignment;
     struct Expr_Init;
     struct Expr_Call;
-    struct Expr_Member_Access;
+    struct Expr_Field;
     struct Expr_Index;
     struct Expr_Parentheses;
     struct Expr_Reinterpret;
