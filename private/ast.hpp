@@ -48,8 +48,8 @@ namespace vush {
     kw_settings,
     kw_reinterpret,
     // separators
-    tk_brace_open,
-    tk_brace_close,
+    tk_lbrace,
+    tk_rbrace,
     tk_lbracket,
     tk_rbracket,
     tk_lparen,

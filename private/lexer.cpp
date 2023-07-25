@@ -415,10 +415,10 @@ namespace vush {
         Token_Kind token_kind;
         switch(c) {
           case '{':
-            token_kind = Token_Kind::tk_brace_open;
+            token_kind = Token_Kind::tk_lbrace;
             break;
           case '}':
-            token_kind = Token_Kind::tk_brace_close;
+            token_kind = Token_Kind::tk_rbrace;
             break;
           case '[':
             token_kind = Token_Kind::tk_lbracket;

@@ -479,8 +479,8 @@ namespace vush {
 
         Token_Kind const token_kind = token_data->token.type;
         if(token_kind == Token_Kind::whitespace || token_kind == Token_Kind::comment ||
-           token_kind == Token_Kind::tk_colon || token_kind == Token_Kind::tk_brace_close ||
-           token_kind == Token_Kind::tk_brace_open) {
+           token_kind == Token_Kind::tk_colon || token_kind == Token_Kind::tk_rbrace ||
+           token_kind == Token_Kind::tk_lbrace) {
           break;
         }
 
@@ -625,8 +625,8 @@ namespace vush {
     {
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
-      if(Optional tk_brace_open = match(Token_Kind::tk_brace_open)) {
-        snots.push_back(ANTON_MOV(*tk_brace_open));
+      if(Optional tk_lbrace = match(Token_Kind::tk_lbrace)) {
+        snots.push_back(ANTON_MOV(*tk_lbrace));
       } else {
         set_error(u8"expected '{'");
         _lexer.restore_state(begin_state);
@@ -634,8 +634,8 @@ namespace vush {
       }
 
       while(true) {
-        if(Optional tk_brace_close = skipmatch(Token_Kind::tk_brace_close)) {
-          snots.push_back(ANTON_MOV(*tk_brace_close));
+        if(Optional tk_rbrace = skipmatch(Token_Kind::tk_rbrace)) {
+          snots.push_back(ANTON_MOV(*tk_rbrace));
           break;
         }
 
@@ -833,8 +833,8 @@ namespace vush {
     {
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
-      if(Optional tk_brace_open = match(Token_Kind::tk_brace_open)) {
-        snots.push_back(ANTON_MOV(*tk_brace_open));
+      if(Optional tk_lbrace = match(Token_Kind::tk_lbrace)) {
+        snots.push_back(ANTON_MOV(*tk_lbrace));
       } else {
         set_error(u8"expected '{'");
         _lexer.restore_state(begin_state);
@@ -842,8 +842,8 @@ namespace vush {
       }
 
       while(true) {
-        if(Optional tk_brace_close = skipmatch(Token_Kind::tk_brace_close)) {
-          snots.push_back(ANTON_MOV(*tk_brace_close));
+        if(Optional tk_rbrace = skipmatch(Token_Kind::tk_rbrace)) {
+          snots.push_back(ANTON_MOV(*tk_rbrace));
           break;
         }
 
@@ -935,8 +935,8 @@ namespace vush {
     {
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
-      if(Optional tk_brace_open = match(Token_Kind::tk_brace_open)) {
-        snots.push_back(ANTON_MOV(*tk_brace_open));
+      if(Optional tk_lbrace = match(Token_Kind::tk_lbrace)) {
+        snots.push_back(ANTON_MOV(*tk_lbrace));
       } else {
         set_error(u8"expected '{'");
         _lexer.restore_state(begin_state);
@@ -944,8 +944,8 @@ namespace vush {
       }
 
       while(true) {
-        if(Optional tk_brace_close = skipmatch(Token_Kind::tk_brace_close)) {
-          snots.push_back(ANTON_MOV(*tk_brace_close));
+        if(Optional tk_rbrace = skipmatch(Token_Kind::tk_rbrace)) {
+          snots.push_back(ANTON_MOV(*tk_rbrace));
           break;
         }
 
@@ -1052,8 +1052,8 @@ namespace vush {
         return anton::null_optional;
       }
 
-      if(Optional tk_brace_open = skipmatch(Token_Kind::tk_brace_open)) {
-        snots.push_back(ANTON_MOV(*tk_brace_open));
+      if(Optional tk_lbrace = skipmatch(Token_Kind::tk_lbrace)) {
+        snots.push_back(ANTON_MOV(*tk_lbrace));
       } else {
         set_error(u8"expected '{'");
         _lexer.restore_state(begin_state);
@@ -1067,8 +1067,8 @@ namespace vush {
         return anton::null_optional;
       }
 
-      if(Optional tk_brace_close = skipmatch(Token_Kind::tk_brace_close)) {
-        snots.push_back(ANTON_MOV(*tk_brace_close));
+      if(Optional tk_rbrace = skipmatch(Token_Kind::tk_rbrace)) {
+        snots.push_back(ANTON_MOV(*tk_rbrace));
       } else {
         set_error(u8"expected '}'");
         _lexer.restore_state(begin_state);
@@ -1080,8 +1080,8 @@ namespace vush {
         if(Optional param_if = try_func_parameter_if()) {
           snots.push_back(ANTON_MOV(*param_if));
         } else {
-          if(Optional tk_brace_open = skipmatch(Token_Kind::tk_brace_open)) {
-            snots.push_back(ANTON_MOV(*tk_brace_open));
+          if(Optional tk_lbrace = skipmatch(Token_Kind::tk_lbrace)) {
+            snots.push_back(ANTON_MOV(*tk_lbrace));
           } else {
             set_error(u8"expected '{'");
             _lexer.restore_state(begin_state);
@@ -1095,8 +1095,8 @@ namespace vush {
             return anton::null_optional;
           }
 
-          if(Optional tk_brace_close = skipmatch(Token_Kind::tk_brace_close)) {
-            snots.push_back(ANTON_MOV(*tk_brace_close));
+          if(Optional tk_rbrace = skipmatch(Token_Kind::tk_rbrace)) {
+            snots.push_back(ANTON_MOV(*tk_rbrace));
           } else {
             set_error(u8"expected '}'");
             _lexer.restore_state(begin_state);
@@ -1395,8 +1395,8 @@ namespace vush {
     {
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
-      if(Optional tk_brace_open = match(Token_Kind::tk_brace_open)) {
-        snots.push_back(ANTON_MOV(*tk_brace_open));
+      if(Optional tk_lbrace = match(Token_Kind::tk_lbrace)) {
+        snots.push_back(ANTON_MOV(*tk_lbrace));
       } else {
         set_error(u8"expected '{'");
         _lexer.restore_state(begin_state);
@@ -1404,8 +1404,8 @@ namespace vush {
       }
 
       while(true) {
-        if(Optional tk_brace_close = skipmatch(Token_Kind::tk_brace_close)) {
-          snots.push_back(ANTON_MOV(*tk_brace_close));
+        if(Optional tk_rbrace = skipmatch(Token_Kind::tk_rbrace)) {
+          snots.push_back(ANTON_MOV(*tk_rbrace));
           break;
         }
 
@@ -1520,8 +1520,8 @@ namespace vush {
 
         Lexer_State const begin_state = _lexer.get_current_state();
         Array<SNOT> snots{_allocator};
-        if(Optional tk_brace_close = match(Token_Kind::tk_brace_open)) {
-          snots.push_back(ANTON_MOV(*tk_brace_close));
+        if(Optional tk_rbrace = match(Token_Kind::tk_lbrace)) {
+          snots.push_back(ANTON_MOV(*tk_rbrace));
         } else {
           set_error(u8"expected '{'");
           _lexer.restore_state(begin_state);
@@ -1529,8 +1529,8 @@ namespace vush {
         }
 
         while(true) {
-          if(Optional tk_brace_close = skipmatch(Token_Kind::tk_brace_close)) {
-            snots.push_back(ANTON_MOV(*tk_brace_close));
+          if(Optional tk_rbrace = skipmatch(Token_Kind::tk_rbrace)) {
+            snots.push_back(ANTON_MOV(*tk_rbrace));
             break;
           }
 
@@ -2458,8 +2458,8 @@ namespace vush {
     {
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
-      if(Optional tk_brace_open = match(Token_Kind::tk_brace_open)) {
-        snots.push_back(ANTON_MOV(*tk_brace_open));
+      if(Optional tk_lbrace = match(Token_Kind::tk_lbrace)) {
+        snots.push_back(ANTON_MOV(*tk_lbrace));
       } else {
         set_error(u8"expected '{'");
         _lexer.restore_state(begin_state);
@@ -2473,8 +2473,8 @@ namespace vush {
         return anton::null_optional;
       }
 
-      if(Optional tk_brace_close = skipmatch(Token_Kind::tk_brace_close)) {
-        snots.push_back(ANTON_MOV(*tk_brace_close));
+      if(Optional tk_rbrace = skipmatch(Token_Kind::tk_rbrace)) {
+        snots.push_back(ANTON_MOV(*tk_rbrace));
       } else {
         set_error(u8"expected '}'");
         _lexer.restore_state(begin_state);
@@ -2633,8 +2633,8 @@ namespace vush {
     {
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
-      if(Optional tk_brace_open = match(Token_Kind::tk_brace_open)) {
-        snots.push_back(ANTON_MOV(*tk_brace_open));
+      if(Optional tk_lbrace = match(Token_Kind::tk_lbrace)) {
+        snots.push_back(ANTON_MOV(*tk_lbrace));
       } else {
         set_error(u8"expected '{'"_sv);
         _lexer.restore_state(begin_state);
@@ -2642,8 +2642,8 @@ namespace vush {
       }
 
       // Match closing paren to allow empty parameter lists.
-      if(Optional tk_brace_close = skipmatch(Token_Kind::tk_brace_close)) {
-        snots.push_back(ANTON_MOV(*tk_brace_close));
+      if(Optional tk_rbrace = skipmatch(Token_Kind::tk_rbrace)) {
+        snots.push_back(ANTON_MOV(*tk_rbrace));
         Lexer_State const end_state = _lexer.get_current_state_noskip();
         Source_Info const source = src_info(begin_state, end_state);
         return Syntax_Node(Syntax_Node_Kind::init_initializer_list, ANTON_MOV(snots), source);
@@ -2669,8 +2669,8 @@ namespace vush {
         }
       }
 
-      if(Optional tk_brace_close = skipmatch(Token_Kind::tk_brace_close)) {
-        snots.push_back(ANTON_MOV(*tk_brace_close));
+      if(Optional tk_rbrace = skipmatch(Token_Kind::tk_rbrace)) {
+        snots.push_back(ANTON_MOV(*tk_rbrace));
       } else {
         set_error(u8"expected '}'"_sv);
         _lexer.restore_state(begin_state);
