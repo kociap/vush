@@ -204,9 +204,9 @@ namespace vush {
   struct Syntax_Token {
     anton::String value;
     Source_Info source_info;
-    Syntax_Node_Kind type;
+    Syntax_Node_Kind kind;
 
-    Syntax_Token(Syntax_Node_Kind type, anton::String value, Source_Info const& source_info);
+    Syntax_Token(Syntax_Node_Kind kind, anton::String value, Source_Info const& source_info);
   };
 
   // Syntax_Node
@@ -215,9 +215,9 @@ namespace vush {
   struct Syntax_Node {
     Array<SNOT> children;
     Source_Info source_info;
-    Syntax_Node_Kind type;
+    Syntax_Node_Kind kind;
 
-    Syntax_Node(Syntax_Node_Kind type, Array<SNOT> array, Source_Info const& source_info);
+    Syntax_Node(Syntax_Node_Kind kind, Array<SNOT> array, Source_Info const& source_info);
   };
 
   // transform_syntax_tree_to_ast

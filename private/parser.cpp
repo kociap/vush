@@ -1997,12 +1997,12 @@ namespace vush {
           }
         };
 
-        i32 const op_prec = get_precedence(op.type);
-        i32 const op_assoc = get_associativity(op.type);
+        i32 const op_prec = get_precedence(op.kind);
+        i32 const op_assoc = get_associativity(op.kind);
         Syntax_Node* dest_node = &root;
         while(true) {
           // We will replace the node if it is not a binary expression.
-          if(dest_node->type != Syntax_Node_Kind::expr_binary) {
+          if(dest_node->kind != Syntax_Node_Kind::expr_binary) {
             break;
           }
 
@@ -2011,7 +2011,7 @@ namespace vush {
           ANTON_ASSERT(dest_node->children[1].is_right(),
                        "second SNOT of expr_binary is not a Syntax_Token");
           Syntax_Token const& dest_op = dest_node->children[1].right();
-          i32 const dest_prec = get_precedence(dest_op.type);
+          i32 const dest_prec = get_precedence(dest_op.kind);
           if(op_assoc == ASSOC_LEFT) {
             if(op_prec <= dest_prec) {
               dest_node = &dest_node->children[2].left();
@@ -2188,7 +2188,7 @@ namespace vush {
       }
 
       auto recalculate_source_info = [](auto& recalculate_source_info, Syntax_Node& node) -> void {
-        if(node.type != Syntax_Node_Kind::expr_binary) {
+        if(node.kind != Syntax_Node_Kind::expr_binary) {
           return;
         }
 
