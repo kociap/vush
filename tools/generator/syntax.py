@@ -131,7 +131,7 @@ def write_epilogue(file):
     file.write("}\n")
 
 def main():
-    file = open("./private/syntax_accessors.hpp", "w")
+    file = open("./private/syntax_accessors_autogen.hpp", "w")
 
     write_preamble(file)
     for parameters in syntax_nodes:
@@ -143,7 +143,7 @@ def main():
 
     file.close()
 
-    process = subprocess.run(["clang-format", "-i", "./private/syntax_accessors.hpp"])
+    process = subprocess.run(["clang-format", "-i", "./private/syntax_accessors_autogen.hpp"])
     process.check_returncode()
 
 main()
