@@ -18,13 +18,13 @@ def get_static_parameter_id(name):
     return f"param_{name}"
 
 def get_static_parameter_string(name, identifier_id, type_id):
-    return f"static constexpr ast::Func_Parameter {get_static_parameter_id(name)}(&{identifier_id}, &{type_id}, nullptr, {{}});"
+    return f"static constexpr ast::Fn_Parameter {get_static_parameter_id(name)}(&{identifier_id}, &{type_id}, nullptr, {{}});"
 
 def get_static_parameter_list_id(name):
     return f"paramlist_{name}"
 
 def get_static_parameter_list_string(name, parameters):
-    return f"static constexpr ast::Func_Parameter const* {get_static_parameter_list_id(name)}[{len(parameters)}] = {{{', '.join(map(lambda v: f'&{v}', parameters))}}};"
+    return f"static constexpr ast::Fn_Parameter const* {get_static_parameter_list_id(name)}[{len(parameters)}] = {{{', '.join(map(lambda v: f'&{v}', parameters))}}};"
 
 def get_function_discriminator(parameter_types):
     def stringify_type(t):
@@ -126,9 +126,9 @@ def generate_functions(fn):
         def create_static_type_array(name, base, size):
             return f"array_{name}", f"static constexpr ast::Type_Array array_{name}(&{base}, &{size}, {{}});"
         def create_static_parameter(name, ss_identifier, ss_type):
-            return f"param_{name}", f"static constexpr ast::Func_Parameter param_{name}(&{ss_identifier}, &{ss_type}, nullptr, {{}});"
+            return f"param_{name}", f"static constexpr ast::Fn_Parameter param_{name}(&{ss_identifier}, &{ss_type}, nullptr, {{}});"
         def create_static_parameter_array(name, parameters):
-            return f"paramlist_{name}", f"static constexpr ast::Func_Parameter const* paramlist_{name}[{len(parameters)}] = {{{', '.join(map(lambda v: f'&{v}', parameters))}}};"
+            return f"paramlist_{name}", f"static constexpr ast::Fn_Parameter const* paramlist_{name}[{len(parameters)}] = {{{', '.join(map(lambda v: f'&{v}', parameters))}}};"
         def create_static_function(name, ss_identifier, ss_return_type, parameter_count, ss_parameters):
             return f"fn_{name}", f"static constexpr ast::Decl_Function fn_{name}({{}}, &{ss_identifier}, {{{ss_parameters}, {parameter_count}}}, &{ss_return_type}, {{}}, true, {{}});"
 

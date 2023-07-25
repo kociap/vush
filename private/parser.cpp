@@ -993,11 +993,11 @@ namespace vush {
       return Syntax_Node(Syntax_Node_Kind::decl_settings, ANTON_MOV(snots), source);
     }
 
-    Optional<Syntax_Node> try_func_parameter()
+    Optional<Syntax_Node> try_fn_parameter()
     {
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
-      if(Optional param_if = try_func_parameter_if()) {
+      if(Optional param_if = try_fn_parameter_if()) {
         return param_if;
       }
 
@@ -1030,10 +1030,10 @@ namespace vush {
 
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return Syntax_Node(Syntax_Node_Kind::func_parameter, ANTON_MOV(snots), source);
+      return Syntax_Node(Syntax_Node_Kind::fn_parameter, ANTON_MOV(snots), source);
     }
 
-    Optional<Syntax_Node> try_func_parameter_if()
+    Optional<Syntax_Node> try_fn_parameter_if()
     {
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
@@ -1060,7 +1060,7 @@ namespace vush {
         return anton::null_optional;
       }
 
-      if(Optional true_param = try_func_parameter()) {
+      if(Optional true_param = try_fn_parameter()) {
         snots.push_back(ANTON_MOV(*true_param));
       } else {
         _lexer.restore_state(begin_state);
@@ -1077,7 +1077,7 @@ namespace vush {
 
       if(Optional kw_else = skipmatch(Token_Kind::kw_else)) {
         snots.push_back(ANTON_MOV(*kw_else));
-        if(Optional param_if = try_func_parameter_if()) {
+        if(Optional param_if = try_fn_parameter_if()) {
           snots.push_back(ANTON_MOV(*param_if));
         } else {
           if(Optional tk_lbrace = skipmatch(Token_Kind::tk_lbrace)) {
@@ -1088,7 +1088,7 @@ namespace vush {
             return anton::null_optional;
           }
 
-          if(Optional false_param = try_func_parameter()) {
+          if(Optional false_param = try_fn_parameter()) {
             snots.push_back(ANTON_MOV(*false_param));
           } else {
             _lexer.restore_state(begin_state);
@@ -1107,10 +1107,10 @@ namespace vush {
 
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return Syntax_Node(Syntax_Node_Kind::func_parameter_if, ANTON_MOV(snots), source);
+      return Syntax_Node(Syntax_Node_Kind::fn_parameter_if, ANTON_MOV(snots), source);
     }
 
-    Optional<Syntax_Node> try_func_parameter_list()
+    Optional<Syntax_Node> try_fn_parameter_list()
     {
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
@@ -1127,11 +1127,11 @@ namespace vush {
         snots.push_back(ANTON_MOV(*tk_rparen));
         Lexer_State const end_state = _lexer.get_current_state_noskip();
         Source_Info const source = src_info(begin_state, end_state);
-        return Syntax_Node(Syntax_Node_Kind::func_parameter_list, ANTON_MOV(snots), source);
+        return Syntax_Node(Syntax_Node_Kind::fn_parameter_list, ANTON_MOV(snots), source);
       }
 
       while(true) {
-        if(Optional param = try_func_parameter()) {
+        if(Optional param = try_fn_parameter()) {
           snots.push_back(ANTON_MOV(*param));
         } else {
           _lexer.restore_state(begin_state);
@@ -1155,7 +1155,7 @@ namespace vush {
 
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return Syntax_Node(Syntax_Node_Kind::func_parameter_list, ANTON_MOV(snots), source);
+      return Syntax_Node(Syntax_Node_Kind::fn_parameter_list, ANTON_MOV(snots), source);
     }
 
     Optional<Syntax_Node> try_decl_stage_function()
@@ -1205,7 +1205,7 @@ namespace vush {
         return anton::null_optional;
       }
 
-      if(Optional parameter_list = try_func_parameter_list()) {
+      if(Optional parameter_list = try_fn_parameter_list()) {
         snots.push_back(ANTON_MOV(*parameter_list));
       } else {
         _lexer.restore_state(begin_state);
@@ -1249,7 +1249,7 @@ namespace vush {
         return anton::null_optional;
       }
 
-      if(Optional parameter_list = try_func_parameter_list()) {
+      if(Optional parameter_list = try_fn_parameter_list()) {
         snots.push_back(ANTON_MOV(*parameter_list));
       } else {
         _lexer.restore_state(begin_state);

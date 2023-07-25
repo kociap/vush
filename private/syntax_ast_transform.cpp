@@ -1047,38 +1047,38 @@ namespace vush {
             allocate<ast::Decl_Struct>(ctx.allocator, identifier, members, node.source_info)};
   }
 
-  [[nodiscard]] static anton::Expected<ast::Func_Parameter const*, Error>
+  [[nodiscard]] static anton::Expected<ast::Fn_Parameter const*, Error>
   transform_parameter(Context const& ctx, Syntax_Node const& node)
   {
-    if(node.kind == Syntax_Node_Kind::func_parameter) {
+    if(node.kind == Syntax_Node_Kind::fn_parameter) {
       ast::Identifier const* const identifier =
-        transform_identifier(ctx, get_func_parameter_identifier(node));
+        transform_identifier(ctx, get_fn_parameter_identifier(node));
       anton::Expected<ast::Type const*, Error> type =
-        transform_type(ctx, get_func_parameter_type(node));
+        transform_type(ctx, get_fn_parameter_type(node));
       if(!type) {
         return {anton::expected_error, ANTON_MOV(type.error())};
       }
 
       ast::Identifier const* source = nullptr;
-      if(anton::Optional result = get_func_parameter_source(node)) {
+      if(anton::Optional result = get_fn_parameter_source(node)) {
         source = transform_identifier(ctx, result.value());
       }
 
       return {anton::expected_value,
-              allocate<ast::Func_Parameter>(ctx.allocator, identifier, type.value(), source,
-                                            node.source_info)};
-    } else if(node.kind == Syntax_Node_Kind::func_parameter_if) {
+              allocate<ast::Fn_Parameter>(ctx.allocator, identifier, type.value(), source,
+                                          node.source_info)};
+    } else if(node.kind == Syntax_Node_Kind::fn_parameter_if) {
       anton::Expected<bool, Error> condition =
-        evaluate_constant_expression(ctx, get_func_parameter_if_condition(node));
+        evaluate_constant_expression(ctx, get_fn_parameter_if_condition(node));
       if(!condition) {
         return {anton::expected_error, ANTON_MOV(condition.error())};
       }
 
       if(condition.value()) {
-        Syntax_Node const& then_node = get_func_parameter_if_then_branch(node);
+        Syntax_Node const& then_node = get_fn_parameter_if_then_branch(node);
         return transform_parameter(ctx, then_node);
       } else {
-        Syntax_Node const& else_node = get_func_parameter_if_else_branch(node);
+        Syntax_Node const& else_node = get_fn_parameter_if_else_branch(node);
         return transform_parameter(ctx, else_node);
       }
     } else {
@@ -1088,18 +1088,18 @@ namespace vush {
     }
   }
 
-  [[nodiscard]] static anton::Expected<ast::Func_Parameter_List, Error>
+  [[nodiscard]] static anton::Expected<ast::Fn_Parameter_List, Error>
   transform_parameter_list(Context const& ctx, Syntax_Node const& node)
   {
-    Array<ast::Func_Parameter const*>& parameters =
-      *allocate<Array<ast::Func_Parameter const*>>(ctx.allocator, ctx.allocator);
+    Array<ast::Fn_Parameter const*>& parameters =
+      *allocate<Array<ast::Fn_Parameter const*>>(ctx.allocator, ctx.allocator);
     for(SNOT const& snot: node.children) {
       if(!snot.is_left()) {
         continue;
       }
 
       Syntax_Node const& parameter_node = snot.left();
-      anton::Expected<ast::Func_Parameter const*, Error> parameter =
+      anton::Expected<ast::Fn_Parameter const*, Error> parameter =
         transform_parameter(ctx, parameter_node);
       if(parameter) {
         parameters.push_back(parameter.value());
@@ -1121,7 +1121,7 @@ namespace vush {
 
     ast::Identifier const* const identifier =
       transform_identifier(ctx, get_decl_function_identifier(node));
-    anton::Expected<ast::Func_Parameter_List, Error> parameters =
+    anton::Expected<ast::Fn_Parameter_List, Error> parameters =
       transform_parameter_list(ctx, get_decl_function_parameter_list(node));
     if(!parameters) {
       return {anton::expected_error, ANTON_MOV(parameters.error())};
@@ -1172,7 +1172,7 @@ namespace vush {
       transform_identifier(ctx, get_decl_stage_function_pass(node));
     ast::With_Source<Stage_Kind> const stage =
       transform_stage_kind(get_decl_stage_function_stage(node));
-    anton::Expected<ast::Func_Parameter_List, Error> parameters =
+    anton::Expected<ast::Fn_Parameter_List, Error> parameters =
       transform_parameter_list(ctx, get_decl_stage_function_parameter_list(node));
     if(!parameters) {
       return {anton::expected_error, ANTON_MOV(parameters.error())};

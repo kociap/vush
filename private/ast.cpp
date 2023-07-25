@@ -172,12 +172,12 @@ namespace vush {
              node.node_kind == Node_Kind::type_array;
     }
 
-    bool is_sourced_parameter(Func_Parameter const& parameter)
+    bool is_sourced_parameter(Fn_Parameter const& parameter)
     {
       return parameter.source;
     }
 
-    bool is_vertex_input_parameter(Func_Parameter const& parameter)
+    bool is_vertex_input_parameter(Fn_Parameter const& parameter)
     {
       return parameter.source && parameter.source->value == u8"in";
     }

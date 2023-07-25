@@ -110,8 +110,8 @@ namespace vush {
             return v->identifier->source_info;
           }
 
-          case Symbol_Kind::func_parameter: {
-            auto const v = static_cast<ast::Func_Parameter const*>(symbol.get_node());
+          case Symbol_Kind::fn_parameter: {
+            auto const v = static_cast<ast::Fn_Parameter const*>(symbol.get_node());
             return v->identifier->source_info;
           }
 
@@ -510,7 +510,7 @@ namespace vush {
 
     // Push a new scope for the function body and parameters.
     symtable.push_scope();
-    for(ast::Func_Parameter const* const parameter: fn->parameters) {
+    for(ast::Fn_Parameter const* const parameter: fn->parameters) {
       anton::Expected<void, Error> type_result = defcheck_type(ctx, symtable, parameter->type);
       if(!type_result) {
         return ANTON_MOV(type_result);
@@ -543,7 +543,7 @@ namespace vush {
 
     // Push a new scope for the function body and parameters.
     symtable.push_scope();
-    for(ast::Func_Parameter const* const parameter: fn->parameters) {
+    for(ast::Fn_Parameter const* const parameter: fn->parameters) {
       anton::Expected<void, Error> type_result = defcheck_type(ctx, symtable, parameter->type);
       if(!type_result) {
         return ANTON_MOV(type_result);

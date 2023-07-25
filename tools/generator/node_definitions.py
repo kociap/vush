@@ -111,7 +111,7 @@ syntax_nodes = [
         ]
     },
     {
-        "syntax_name": "func_parameter",
+        "syntax_name": "fn_parameter",
         "members": [
             Syntax_Member(Node_Kind.node, "type", Lookup_Kind.index, 0),
             Syntax_Member(Node_Kind.token, "identifier", Lookup_Kind.index, 1),
@@ -119,7 +119,7 @@ syntax_nodes = [
         ]
     },
     {
-        "syntax_name": "func_parameter_if",
+        "syntax_name": "fn_parameter_if",
         "members": [
             Syntax_Member(Node_Kind.node, "condition", Lookup_Kind.index, 1),
             Syntax_Member(Node_Kind.node, "then_branch", Lookup_Kind.index, 3),

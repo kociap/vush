@@ -318,55 +318,55 @@ namespace vush {
     return node.children[6].left();
   }
 
-  [[nodiscard]] static Syntax_Node const& get_func_parameter_type(Syntax_Node const& node)
+  [[nodiscard]] static Syntax_Node const& get_fn_parameter_type(Syntax_Node const& node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::func_parameter, "node is not func_parameter");
-    ANTON_ASSERT(node.children.size() > (0), "func_parameter has too few children");
-    ANTON_ASSERT(node.children[0].is_left(), "type in func_parameter is not Syntax_Node");
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::fn_parameter, "node is not fn_parameter");
+    ANTON_ASSERT(node.children.size() > (0), "fn_parameter has too few children");
+    ANTON_ASSERT(node.children[0].is_left(), "type in fn_parameter is not Syntax_Node");
     return node.children[0].left();
   }
 
-  [[nodiscard]] static Syntax_Token const& get_func_parameter_identifier(Syntax_Node const& node)
+  [[nodiscard]] static Syntax_Token const& get_fn_parameter_identifier(Syntax_Node const& node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::func_parameter, "node is not func_parameter");
-    ANTON_ASSERT(node.children.size() > (1), "func_parameter has too few children");
-    ANTON_ASSERT(node.children[1].is_right(), "identifier in func_parameter is not Syntax_Token");
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::fn_parameter, "node is not fn_parameter");
+    ANTON_ASSERT(node.children.size() > (1), "fn_parameter has too few children");
+    ANTON_ASSERT(node.children[1].is_right(), "identifier in fn_parameter is not Syntax_Token");
     return node.children[1].right();
   }
 
   [[nodiscard]] static anton::Optional<Syntax_Token const&>
-  get_func_parameter_source(Syntax_Node const& node)
+  get_fn_parameter_source(Syntax_Node const& node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::func_parameter, "node is not func_parameter");
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::fn_parameter, "node is not fn_parameter");
     if(node.children.size() > (3)) {
-      ANTON_ASSERT(node.children[3].is_right(), "source in func_parameter is not Syntax_Token");
+      ANTON_ASSERT(node.children[3].is_right(), "source in fn_parameter is not Syntax_Token");
       return node.children[3].right();
     } else {
       return anton::null_optional;
     }
   }
 
-  [[nodiscard]] static Syntax_Node const& get_func_parameter_if_condition(Syntax_Node const& node)
+  [[nodiscard]] static Syntax_Node const& get_fn_parameter_if_condition(Syntax_Node const& node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::func_parameter_if, "node is not func_parameter_if");
-    ANTON_ASSERT(node.children.size() > (1), "func_parameter_if has too few children");
-    ANTON_ASSERT(node.children[1].is_left(), "condition in func_parameter_if is not Syntax_Node");
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::fn_parameter_if, "node is not fn_parameter_if");
+    ANTON_ASSERT(node.children.size() > (1), "fn_parameter_if has too few children");
+    ANTON_ASSERT(node.children[1].is_left(), "condition in fn_parameter_if is not Syntax_Node");
     return node.children[1].left();
   }
 
-  [[nodiscard]] static Syntax_Node const& get_func_parameter_if_then_branch(Syntax_Node const& node)
+  [[nodiscard]] static Syntax_Node const& get_fn_parameter_if_then_branch(Syntax_Node const& node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::func_parameter_if, "node is not func_parameter_if");
-    ANTON_ASSERT(node.children.size() > (3), "func_parameter_if has too few children");
-    ANTON_ASSERT(node.children[3].is_left(), "then_branch in func_parameter_if is not Syntax_Node");
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::fn_parameter_if, "node is not fn_parameter_if");
+    ANTON_ASSERT(node.children.size() > (3), "fn_parameter_if has too few children");
+    ANTON_ASSERT(node.children[3].is_left(), "then_branch in fn_parameter_if is not Syntax_Node");
     return node.children[3].left();
   }
 
-  [[nodiscard]] static Syntax_Node const& get_func_parameter_if_else_branch(Syntax_Node const& node)
+  [[nodiscard]] static Syntax_Node const& get_fn_parameter_if_else_branch(Syntax_Node const& node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::func_parameter_if, "node is not func_parameter_if");
-    ANTON_ASSERT(node.children.size() > (7), "func_parameter_if has too few children");
-    ANTON_ASSERT(node.children[7].is_left(), "else_branch in func_parameter_if is not Syntax_Node");
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::fn_parameter_if, "node is not fn_parameter_if");
+    ANTON_ASSERT(node.children.size() > (7), "fn_parameter_if has too few children");
+    ANTON_ASSERT(node.children[7].is_left(), "else_branch in fn_parameter_if is not Syntax_Node");
     return node.children[7].left();
   }
 

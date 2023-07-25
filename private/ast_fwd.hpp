@@ -24,7 +24,7 @@ namespace vush {
     struct Attribute;
     struct Variable;
 
-    struct Func_Parameter;
+    struct Fn_Parameter;
     struct Struct_Member;
 
     struct Decl_Struct;
@@ -67,7 +67,7 @@ namespace vush {
     using Node_List = anton::Slice<Node const* const>;
     using Attr_List = anton::Slice<Attribute const* const>;
     using Expr_List = anton::Slice<Expr const* const>;
-    using Func_Parameter_List = anton::Slice<Func_Parameter const* const>;
+    using Fn_Parameter_List = anton::Slice<Fn_Parameter const* const>;
     using Initializer_List = anton::Slice<Initializer const* const>;
     using Member_List = anton::Slice<Struct_Member const* const>;
   } // namespace ast
