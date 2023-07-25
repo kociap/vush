@@ -13,25 +13,38 @@ namespace vush {
         : children(ANTON_MOV(array)), source_info(source_info), type(type) {}
 
     namespace ast {
-        bool is_array(Type const& type) {
-            return type.node_kind == Node_Kind::type_array;
-        }
-
-        bool is_sized_array(Type const& type) {
-            return type.node_kind == Node_Kind::type_array && static_cast<Type_Array const&>(type).size;
-        }
-
-        bool is_unsized_array(Type const& type) {
-            return type.node_kind == Node_Kind::type_array && !static_cast<Type_Array const&>(type).size;
+        bool is_integer(Type const& type) {
+            Type_Builtin const& builtin = static_cast<Type_Builtin const&>(type);
+            return type.node_kind == Node_Kind::type_builtin && (builtin.value == GLSL_Type::glsl_int || builtin.value == GLSL_Type::glsl_uint);
         }
 
         bool is_void(Type const& type) {
             return type.node_kind == Node_Kind::type_builtin && static_cast<Type_Builtin const&>(type).value == GLSL_Type::glsl_void;
         }
 
-        bool is_integer(Type const& type) {
-            Type_Builtin const& builtin = static_cast<Type_Builtin const&>(type);
-            return type.node_kind == Node_Kind::type_builtin && (builtin.value == GLSL_Type::glsl_int || builtin.value == GLSL_Type::glsl_uint);
+        bool is_vector(Type const& type) {
+            if(type.node_kind != Node_Kind::type_builtin) {
+                return false;
+            }
+
+            GLSL_Type const v = static_cast<Type_Builtin const&>(type).value;
+            return v == GLSL_Type::glsl_vec2 || v == GLSL_Type::glsl_vec3 || v == GLSL_Type::glsl_vec4 || v == GLSL_Type::glsl_dvec2 ||
+                   v == GLSL_Type::glsl_dvec3 || v == GLSL_Type::glsl_dvec4 || v == GLSL_Type::glsl_bvec2 || v == GLSL_Type::glsl_bvec3 ||
+                   v == GLSL_Type::glsl_bvec4 || v == GLSL_Type::glsl_ivec2 || v == GLSL_Type::glsl_ivec3 || v == GLSL_Type::glsl_ivec4 ||
+                   v == GLSL_Type::glsl_uvec2 || v == GLSL_Type::glsl_uvec3 || v == GLSL_Type::glsl_uvec4;
+        }
+
+        bool is_matrix(Type const& type) {
+            if(type.node_kind != Node_Kind::type_builtin) {
+                return false;
+            }
+
+            GLSL_Type const v = static_cast<Type_Builtin const&>(type).value;
+            return v == GLSL_Type::glsl_mat2 || v == GLSL_Type::glsl_mat3 || v == GLSL_Type::glsl_mat4 || v == GLSL_Type::glsl_mat2x3 ||
+                   v == GLSL_Type::glsl_mat2x4 || v == GLSL_Type::glsl_mat3x2 || v == GLSL_Type::glsl_mat3x4 || v == GLSL_Type::glsl_mat4x2 ||
+                   v == GLSL_Type::glsl_mat4x3 || v == GLSL_Type::glsl_dmat2 || v == GLSL_Type::glsl_dmat3 || v == GLSL_Type::glsl_dmat4 ||
+                   v == GLSL_Type::glsl_dmat2x3 || v == GLSL_Type::glsl_dmat2x4 || v == GLSL_Type::glsl_dmat3x2 || v == GLSL_Type::glsl_dmat3x4 ||
+                   v == GLSL_Type::glsl_dmat4x2 || v == GLSL_Type::glsl_dmat4x3;
         }
 
         bool is_opaque_type(Type const& type) {
@@ -46,6 +59,18 @@ namespace vush {
                 Type_Array const& t = static_cast<Type_Array const&>(type);
                 return is_opaque_type(*t.base);
             }
+        }
+
+        bool is_array(Type const& type) {
+            return type.node_kind == Node_Kind::type_array;
+        }
+
+        bool is_sized_array(Type const& type) {
+            return type.node_kind == Node_Kind::type_array && static_cast<Type_Array const&>(type).size;
+        }
+
+        bool is_unsized_array(Type const& type) {
+            return type.node_kind == Node_Kind::type_array && !static_cast<Type_Array const&>(type).size;
         }
 
         bool is_image_type(Type const& type) {

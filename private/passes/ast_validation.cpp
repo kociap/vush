@@ -53,7 +53,7 @@ namespace vush {
             case ast::Node_Kind::expr_init: {
                 // Initialization rules:
                 // - Builtin types: we do not allow initialization of builtin types with the exception of
-                //   vectors which have members x, y, z, w and alternatives.
+                //   vectors which have members x, y, z, w and alternatives, and matrices.
                 // - Struct types: we allow initialization of struct types using only named initializers.
                 // - Array types: we allow initialization of struct types using only indexed or basic initializers.
                 //   Usage of both kinds of initializers in one initialization is disallowed.
@@ -62,8 +62,10 @@ namespace vush {
                 ast::Expr_Init const* const expr = static_cast<ast::Expr_Init const*>(node);
                 switch(expr->type->node_kind) {
                     case ast::Node_Kind::type_builtin: {
-                        // TODO: We currently do not make an exception for the vectors.
-                        // return {anton::expected_error, err_init_type_is_builtin(ctx, expr->type)};
+                        if(!is_vector(*expr->type) && !is_matrix(*expr->type)) {
+                            return {anton::expected_error, err_init_type_is_builtin(ctx, expr->type)};
+                        }
+
                         return anton::expected_value;
                     } break;
 
@@ -159,6 +161,7 @@ namespace vush {
                                 if(equal) {
                                     Source_Info const& src1 = (*i)->source_info;
                                     Source_Info const& src2 = (*j)->source_info;
+                                    // TODO: Change diagnostic.
                                     return {anton::expected_error, err_duplicate_label(ctx, src1, src2)};
                                 }
                             }
