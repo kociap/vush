@@ -1,4 +1,4 @@
-#include <ast2.hpp>
+#include <ast.hpp>
 
 #include <anton/expected.hpp>
 #include <anton/intrinsics.hpp>

@@ -2,7 +2,7 @@
 
 #include <anton/format.hpp>
 
-#include <ast2.hpp>
+#include <ast.hpp>
 #include <diagnostics/utility.hpp>
 
 namespace vush {

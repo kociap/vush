@@ -2,7 +2,7 @@
 
 #include <anton/flat_hash_map.hpp>
 
-#include <ast2.hpp>
+#include <ast.hpp>
 #include <builtin_symbols.hpp>
 #include <context.hpp>
 #include <memory.hpp>

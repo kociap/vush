@@ -3,7 +3,7 @@
 #include <passes.hpp>
 
 #include <anton/algorithm.hpp>
-#include <ast2.hpp>
+#include <ast.hpp>
 #include <context.hpp>
 #include <diagnostics.hpp>
 

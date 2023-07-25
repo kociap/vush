@@ -282,7 +282,7 @@ def write_preamble(file):
     file.write("""\
 #include <builtin_symbols.hpp>
 
-#include <ast2.hpp>
+#include <ast.hpp>
 
 namespace vush {
     using namespace anton::literals;

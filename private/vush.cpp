@@ -11,7 +11,7 @@
 #include <anton/optional.hpp>
 #include <anton/string_stream.hpp>
 
-#include <ast2.hpp>
+#include <ast.hpp>
 #include <codegen.hpp>
 #include <const_expr_eval.hpp>
 #include <context.hpp>

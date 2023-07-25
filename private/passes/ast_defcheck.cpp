@@ -3,7 +3,7 @@
 #include <anton/assert.hpp>
 #include <anton/flat_hash_map.hpp>
 
-#include <ast2.hpp>
+#include <ast.hpp>
 #include <context.hpp>
 #include <diagnostics.hpp>
 
