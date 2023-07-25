@@ -162,7 +162,8 @@ namespace vush {
         }
 
         Syntax_Token const& value_token = get_type_builtin_value(node);
-        anton::Optional<ast::GLSL_Type> result = ast::enumify_glsl_type(value_token.value);
+        anton::Optional<ast::Type_Builtin_Kind> result =
+          ast::enumify_builtin_type_kind(value_token.value);
         ANTON_ASSERT(result, "invalid builtin type");
         return {
           anton::expected_value,

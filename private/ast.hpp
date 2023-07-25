@@ -350,8 +350,7 @@ namespace vush {
     [[nodiscard]] bool is_image_type(Type const& type);
     [[nodiscard]] anton::String stringify_type(Allocator* const allocator, Type const& type);
 
-    // TODO: Rename to Builtin_Type_Kind.
-    enum struct GLSL_Type : i32 {
+    enum struct Type_Builtin_Kind : i32 {
       glsl_void,
       glsl_bool,
       glsl_int,
@@ -507,19 +506,21 @@ namespace vush {
       glsl_samplerShadow,
     };
 
-    [[nodiscard]] bool is_opaque_glsl_type(GLSL_Type type);
-    [[nodiscard]] bool is_image_glsl_type(GLSL_Type type);
-    [[nodiscard]] anton::Optional<GLSL_Type> enumify_glsl_type(anton::String_View type);
-    [[nodiscard]] anton::String_View stringify_glsl_type(GLSL_Type type);
+    [[nodiscard]] bool is_opaque_builtin_type_kind(Type_Builtin_Kind type);
+    [[nodiscard]] bool is_image_builtin_type_kind(Type_Builtin_Kind type);
+    [[nodiscard]] anton::Optional<Type_Builtin_Kind>
+    enumify_builtin_type_kind(anton::String_View type);
+    [[nodiscard]] anton::String_View stringify_builtin_type_kind(Type_Builtin_Kind type);
 
     struct Type_Builtin: public Type {
-      GLSL_Type value;
+      Type_Builtin_Kind value;
 
-      constexpr Type_Builtin(GLSL_Type value, Source_Info const& source_info)
+      constexpr Type_Builtin(Type_Builtin_Kind value, Source_Info const& source_info)
         : Type(source_info, Node_Kind::type_builtin), value(value)
       {
       }
-      constexpr Type_Builtin(Qualifiers qualifiers, GLSL_Type value, Source_Info const& source_info)
+      constexpr Type_Builtin(Qualifiers qualifiers, Type_Builtin_Kind value,
+                             Source_Info const& source_info)
         : Type(qualifiers, source_info, Node_Kind::type_builtin), value(value)
       {
       }
