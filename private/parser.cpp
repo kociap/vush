@@ -2938,7 +2938,8 @@ namespace vush {
         Lexer_State const end_state = _lexer.get_current_state_noskip();
         anton::String_View const type_name = type->value;
         snots.push_back(ANTON_MOV(*type));
-        if(anton::Optional<ast::GLSL_Type> res = ast::enumify_glsl_type(type_name)) {
+        if(anton::Optional<ast::Type_Builtin_Kind> res =
+             ast::enumify_builtin_type_kind(type_name)) {
           Source_Info const source = src_info(begin_state, end_state);
           return Syntax_Node(Syntax_Node_Kind::type_builtin, ANTON_MOV(snots), source);
         } else {

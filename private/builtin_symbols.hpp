@@ -11,5 +11,5 @@ namespace vush {
   // get_builtin_type
   // Get an immutable builtin type.
   //
-  [[nodiscard]] ast::Type_Builtin const* get_builtin_type(ast::GLSL_Type type);
+  [[nodiscard]] ast::Type_Builtin const* get_builtin_type(ast::Type_Builtin_Kind type);
 } // namespace vush

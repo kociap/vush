@@ -372,7 +372,7 @@ namespace vush {
       // for(Constant_Define const& define: config.defines) {
       // Source_Info src = {"<defines>", 1, 1, 0};
       // Owning_Ptr decl = allocate_owning<Constant_Declaration>(
-      //     ctx.allocator, allocate_owning<Builtin_Type>(ctx.allocator, Builtin_GLSL_Type::glsl_int, src),
+      //     ctx.allocator, allocate_owning<Builtin_Type>(ctx.allocator, Builtin_Type_Builtin_Kind::glsl_int, src),
       //     allocate_owning<Identifier>(ctx.allocator, anton::String(define.name), src),
       //     allocate_owning<Integer_Literal>(ctx.allocator, anton::to_string(define.value), Integer_Literal_Type::i32, Integer_Literal_Base::dec, src),
       //     src);
