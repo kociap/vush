@@ -6,7 +6,7 @@ def get_static_type_builtin_id(name):
     return f"builtin_{name}"
 
 def get_static_type_builtin_string(name):
-    return f"static constexpr ast::Type_Builtin {get_static_type_builtin_id(name)}(ast::Type_Builtin_Kind::glsl_{name}, {{}});"
+    return f"static constexpr ast::Type_Builtin {get_static_type_builtin_id(name)}(ast::Type_Builtin_Kind::e_{name}, {{}});"
 
 def get_static_identifier_id(name):
     return f"ident_{name}"
@@ -120,7 +120,7 @@ def generate_functions(fn):
         def create_static_identifier(name, value):
             return f"ident_{name}", f"static constexpr ast::Identifier ident_{name}(\"{value}\"_sv, {{}});"
         def create_static_type_builtin(name):
-            return f"builtin_{name}", f"static constexpr ast::Type_Builtin builtin_{name}(ast::Type_Builtin_Kind::glsl_{name}, {{}});"
+            return f"builtin_{name}", f"static constexpr ast::Type_Builtin builtin_{name}(ast::Type_Builtin_Kind::e_{name}, {{}});"
         def create_static_literal_integer(value):
             return f"int_{value}", f"static constexpr ast::Lt_Integer int_{value}(\"{value}\"_sv, ast::Lt_Integer_Kind::i32, ast::Lt_Integer_Base::dec, {{}});"
         def create_static_type_array(name, base, size):
@@ -266,7 +266,7 @@ def write_get_builtin_type(file):
 
     for v in Builtin_Type:
         name = v.value[0]
-        file.write(f"            case ast::Type_Builtin_Kind::glsl_{name}: return &{get_static_type_builtin_id(name)};\n")
+        file.write(f"            case ast::Type_Builtin_Kind::e_{name}: return &{get_static_type_builtin_id(name)};\n")
 
     file.write("""        }
     }
