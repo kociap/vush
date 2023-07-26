@@ -507,9 +507,8 @@ namespace vush {
   {
     switch(type.node_kind) {
       case ast::Node_Kind::type_builtin: {
-        ast::Type_Builtin const& t = static_cast<ast::Type_Builtin const&>(type);
-        if(ast::is_opaque_builtin_type_kind(t.value)) {
-          return {anton::expected_error, err_opaque_type_in_struct(ctx, t.source_info)};
+        if(ast::is_opaque_type(type)) {
+          return {anton::expected_error, err_opaque_type_in_struct(ctx, type.source_info)};
         }
 
         return {anton::expected_value};

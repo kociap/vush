@@ -506,11 +506,8 @@ namespace vush {
       e_samplerShadow,
     };
 
-    [[nodiscard]] bool is_opaque_builtin_type_kind(Type_Builtin_Kind type);
-    [[nodiscard]] bool is_image_builtin_type_kind(Type_Builtin_Kind type);
     [[nodiscard]] anton::Optional<Type_Builtin_Kind>
     enumify_builtin_type_kind(anton::String_View type);
-    [[nodiscard]] anton::String_View stringify_builtin_type_kind(Type_Builtin_Kind type);
 
     struct Type_Builtin: public Type {
       Type_Builtin_Kind value;
