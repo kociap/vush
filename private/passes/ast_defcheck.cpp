@@ -150,9 +150,9 @@ namespace vush {
         return anton::expected_value;
       }
 
-      case ast::Node_Kind::type_user_defined: {
-        ast::Type_User_Defined const* const udt = static_cast<ast::Type_User_Defined const*>(type);
-        Symbol const* const symbol = symtable.find_symbol(udt->value);
+      case ast::Node_Kind::type_struct: {
+        ast::Type_Struct const* const type_struct = static_cast<ast::Type_Struct const*>(type);
+        Symbol const* const symbol = symtable.find_symbol(type_struct->value);
         if(symbol == nullptr) {
           return {anton::expected_error, err_undefined_symbol(ctx, type->source_info)};
         }

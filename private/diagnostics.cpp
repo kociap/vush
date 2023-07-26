@@ -245,20 +245,19 @@ namespace vush {
       pass_name);
   }
 
-  Error err_stage_return_must_be_builtin_or_udt(Context const& ctx,
-                                                anton::String_View const pass_name,
-                                                Source_Info const& stage,
-                                                Source_Info const& return_type)
+  Error err_stage_return_must_be_builtin_or_struct(Context const& ctx,
+                                                   anton::String_View const pass_name,
+                                                   Source_Info const& stage,
+                                                   Source_Info const& return_type)
   {
     Error error = error_from_source(ctx.allocator, return_type);
     anton::String_View const source = ctx.find_source(return_type.source_path)->data;
     anton::String_View const stage_str = get_source_bit(source, stage);
     error.diagnostic = anton::format(
-      ctx.allocator,
-      "error: the return type of the {} stage of '{}' is not a builtin or user defined type"_sv,
+      ctx.allocator, "error: the return type of the {} stage of '{}' is not a builtin or struct"_sv,
       stage_str, pass_name);
     print_source_snippet(ctx, error.extended_diagnostic, source, return_type);
-    error.extended_diagnostic += " return type must be a builtin or user defined type"_sv;
+    error.extended_diagnostic += " return type must be a builtin or struct"_sv;
     return error;
   }
 

@@ -297,8 +297,8 @@ namespace vush {
 
   // // validate_passes
   // // Checks whether a pass has either a compute stage or a vertex stage and optionally a fragment stage.
-  // // Checks whether vertex/fragment have matching return/parameter. Checks whether the type is UDT or void.
-  // // Checks whether the return type of the fragment stage is void or UDT.
+  // // Checks whether vertex/fragment have matching return/parameter. Checks whether the type is struct or void.
+  // // Checks whether the return type of the fragment stage is void or struct.
   // //
   // [[nodiscard]] static anton::Expected<void, anton::String> validate_passes(Context const& ctx, anton::Slice<Pass_Context const> const passes) {
   //     for(Pass_Context const& pass: passes) {

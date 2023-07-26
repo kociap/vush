@@ -18,7 +18,7 @@ namespace vush {
 
     struct Type;
     struct Type_Builtin;
-    struct Type_User_Defined;
+    struct Type_Struct;
     struct Type_Array;
 
     struct Attribute;

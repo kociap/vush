@@ -2927,7 +2927,7 @@ namespace vush {
         return ANTON_MOV(type_array);
       }
 
-      // Match builtin or UDT.
+      // Match builtin or struct.
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       if(Optional kw_mut = match(Token_Kind::kw_mut)) {
@@ -2944,7 +2944,7 @@ namespace vush {
           return Syntax_Node(Syntax_Node_Kind::type_builtin, ANTON_MOV(snots), source);
         } else {
           Source_Info const source = src_info(begin_state, end_state);
-          return Syntax_Node(Syntax_Node_Kind::type_user_defined, ANTON_MOV(snots), source);
+          return Syntax_Node(Syntax_Node_Kind::type_struct, ANTON_MOV(snots), source);
         }
       } else {
         set_error(u8"expected identifier");
