@@ -73,14 +73,24 @@ namespace vush {
                      type.node_kind == Node_Kind::type_user_defined ||
                      type.node_kind == Node_Kind::type_array,
                    u8"unknown ast node type");
-      if(type.node_kind == Node_Kind::type_builtin) {
-        Type_Builtin const& t = static_cast<Type_Builtin const&>(type);
-        return is_opaque_builtin_type_kind(t.value);
-      } else if(type.node_kind == Node_Kind::type_user_defined) {
-        return false;
-      } else {
-        Type_Array const& t = static_cast<Type_Array const&>(type);
-        return is_opaque_type(*t.base);
+      switch(type.node_kind) {
+        case Node_Kind::type_builtin: {
+          Type_Builtin_Kind const v = static_cast<Type_Builtin const&>(type).value;
+          return static_cast<i32>(v) >= static_cast<i32>(Type_Builtin_Kind::e_sampler1D);
+        }
+
+        case Node_Kind::type_user_defined: {
+          return false;
+        }
+
+        case Node_Kind::type_array: {
+          Type_Array const& array = static_cast<Type_Array const&>(type);
+          return is_opaque_type(*array.base);
+        }
+
+        default:
+          ANTON_ASSERT(false, "unknown ast node kind");
+          ANTON_UNREACHABLE();
       }
     }
 
@@ -101,77 +111,44 @@ namespace vush {
 
     bool is_image_type(Type const& type)
     {
-      ANTON_ASSERT(type.node_kind == Node_Kind::type_builtin ||
-                     type.node_kind == Node_Kind::type_user_defined ||
-                     type.node_kind == Node_Kind::type_array,
-                   u8"unknown ast node type");
+      switch(type.node_kind) {
+        case Node_Kind::type_builtin: {
+          Type_Builtin_Kind const v = static_cast<Type_Builtin const&>(type).value;
+          return v == Type_Builtin_Kind::e_image1D || v == Type_Builtin_Kind::e_image1DArray ||
+                 v == Type_Builtin_Kind::e_image2D || v == Type_Builtin_Kind::e_image2DArray ||
+                 v == Type_Builtin_Kind::e_image2DMS || v == Type_Builtin_Kind::e_image2DMSArray ||
+                 v == Type_Builtin_Kind::e_image2DRect || v == Type_Builtin_Kind::e_image3D ||
+                 v == Type_Builtin_Kind::e_imageCube || v == Type_Builtin_Kind::e_imageCubeArray ||
+                 v == Type_Builtin_Kind::e_imageBuffer || v == Type_Builtin_Kind::e_iimage1D ||
+                 v == Type_Builtin_Kind::e_iimage1DArray || v == Type_Builtin_Kind::e_iimage2D ||
+                 v == Type_Builtin_Kind::e_iimage2DArray || v == Type_Builtin_Kind::e_iimage2DMS ||
+                 v == Type_Builtin_Kind::e_iimage2DMSArray ||
+                 v == Type_Builtin_Kind::e_iimage2DRect || v == Type_Builtin_Kind::e_iimage3D ||
+                 v == Type_Builtin_Kind::e_iimageCube ||
+                 v == Type_Builtin_Kind::e_iimageCubeArray ||
+                 v == Type_Builtin_Kind::e_iimageBuffer || v == Type_Builtin_Kind::e_uimage1D ||
+                 v == Type_Builtin_Kind::e_uimage1DArray || v == Type_Builtin_Kind::e_uimage2D ||
+                 v == Type_Builtin_Kind::e_uimage2DArray || v == Type_Builtin_Kind::e_uimage2DMS ||
+                 v == Type_Builtin_Kind::e_uimage2DMSArray ||
+                 v == Type_Builtin_Kind::e_uimage2DRect || v == Type_Builtin_Kind::e_uimage3D ||
+                 v == Type_Builtin_Kind::e_uimageCube ||
+                 v == Type_Builtin_Kind::e_uimageCubeArray ||
+                 v == Type_Builtin_Kind::e_uimageBuffer;
+        }
 
-      if(type.node_kind == Node_Kind::type_user_defined) {
-        return false;
+        case Node_Kind::type_user_defined: {
+          return false;
+        }
+
+        case Node_Kind::type_array: {
+          Type_Array const& array = static_cast<Type_Array const&>(type);
+          return is_image_type(*array.base);
+        }
+
+        default:
+          ANTON_ASSERT(false, u8"unknown ast node kind");
+          ANTON_UNREACHABLE();
       }
-
-      if(type.node_kind == Node_Kind::type_builtin) {
-        Type_Builtin const& t = (Type_Builtin const&)type;
-        return is_image_builtin_type_kind(t.value);
-      }
-
-      Type_Array const& t = (Type_Array const&)type;
-      return is_image_type(*t.base);
-    }
-
-    // anton::String stringify_type(Allocator* const allocator, Type const& type) {
-    //     ANTON_ASSERT(type.node_kind == Node_Kind::type_builtin || type.node_kind == Node_Kind::type_user_defined || type.node_kind == Node_Kind::type_array,
-    //                  u8"unknown ast node type");
-    //     if(type.node_kind == Node_Kind::type_builtin) {
-    //         Type_Builtin const& t = static_cast<Type_Builtin const&>(type);
-    //         anton::String_View sv = stringify_builtin_type_kind(t.value);
-    //         return anton::String(sv, allocator);
-    //     } else if(type.node_kind == Node_Kind::type_user_defined) {
-    //         Type_User_Defined const& t = static_cast<Type_User_Defined const&>(type);
-    //         return anton::String(t.value, allocator);
-    //     } else {
-    //         Type_Array const& t = static_cast<Type_Array const&>(type);
-    //         anton::String str = stringify_type(allocator, *t.base);
-    //         str += u8"[";
-    //         if(t.size) {
-    //             str += t.size->value;
-    //         }
-    //         str += u8"]";
-    //         return str;
-    //     }
-    // }
-
-    bool is_opaque_builtin_type_kind(Type_Builtin_Kind const type)
-    {
-      return static_cast<i32>(type) >= static_cast<i32>(Type_Builtin_Kind::e_sampler1D);
-    }
-
-    bool is_image_builtin_type_kind(Type_Builtin_Kind const type)
-    {
-      return type == Type_Builtin_Kind::e_image1D || type == Type_Builtin_Kind::e_image1DArray ||
-             type == Type_Builtin_Kind::e_image2D || type == Type_Builtin_Kind::e_image2DArray ||
-             type == Type_Builtin_Kind::e_image2DMS ||
-             type == Type_Builtin_Kind::e_image2DMSArray ||
-             type == Type_Builtin_Kind::e_image2DRect || type == Type_Builtin_Kind::e_image3D ||
-             type == Type_Builtin_Kind::e_imageCube ||
-             type == Type_Builtin_Kind::e_imageCubeArray ||
-             type == Type_Builtin_Kind::e_imageBuffer || type == Type_Builtin_Kind::e_iimage1D ||
-             type == Type_Builtin_Kind::e_iimage1DArray || type == Type_Builtin_Kind::e_iimage2D ||
-             type == Type_Builtin_Kind::e_iimage2DArray ||
-             type == Type_Builtin_Kind::e_iimage2DMS ||
-             type == Type_Builtin_Kind::e_iimage2DMSArray ||
-             type == Type_Builtin_Kind::e_iimage2DRect || type == Type_Builtin_Kind::e_iimage3D ||
-             type == Type_Builtin_Kind::e_iimageCube ||
-             type == Type_Builtin_Kind::e_iimageCubeArray ||
-             type == Type_Builtin_Kind::e_iimageBuffer || type == Type_Builtin_Kind::e_uimage1D ||
-             type == Type_Builtin_Kind::e_uimage1DArray || type == Type_Builtin_Kind::e_uimage2D ||
-             type == Type_Builtin_Kind::e_uimage2DArray ||
-             type == Type_Builtin_Kind::e_uimage2DMS ||
-             type == Type_Builtin_Kind::e_uimage2DMSArray ||
-             type == Type_Builtin_Kind::e_uimage2DRect || type == Type_Builtin_Kind::e_uimage3D ||
-             type == Type_Builtin_Kind::e_uimageCube ||
-             type == Type_Builtin_Kind::e_uimageCubeArray ||
-             type == Type_Builtin_Kind::e_uimageBuffer;
     }
 
     bool is_type(Node const& node)
