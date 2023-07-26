@@ -75,7 +75,7 @@ namespace vush {
 
     switch(node->node_kind) {
       case ast::Node_Kind::lt_bool: {
-        ast::Type const* const type = get_builtin_type(ast::Type_Builtin_Kind::glsl_bool);
+        ast::Type const* const type = get_builtin_type(ast::Type_Builtin_Kind::e_bool);
         ctx.add_node_type(node, type);
         return {anton::expected_value, type};
       } break;
@@ -84,13 +84,13 @@ namespace vush {
         ast::Lt_Integer const* const lt = static_cast<ast::Lt_Integer const*>(node);
         switch(lt->kind) {
           case ast::Lt_Integer_Kind::i32: {
-            ast::Type const* const type = get_builtin_type(ast::Type_Builtin_Kind::glsl_int);
+            ast::Type const* const type = get_builtin_type(ast::Type_Builtin_Kind::e_int);
             ctx.add_node_type(node, type);
             return {anton::expected_value, type};
           }
 
           case ast::Lt_Integer_Kind::u32: {
-            ast::Type const* const type = get_builtin_type(ast::Type_Builtin_Kind::glsl_uint);
+            ast::Type const* const type = get_builtin_type(ast::Type_Builtin_Kind::e_uint);
             ctx.add_node_type(node, type);
             return {anton::expected_value, type};
           }
@@ -101,13 +101,13 @@ namespace vush {
         ast::Lt_Float const* const lt = static_cast<ast::Lt_Float const*>(node);
         switch(lt->kind) {
           case ast::Lt_Float_Kind::f32: {
-            ast::Type const* const type = get_builtin_type(ast::Type_Builtin_Kind::glsl_float);
+            ast::Type const* const type = get_builtin_type(ast::Type_Builtin_Kind::e_float);
             ctx.add_node_type(node, type);
             return {anton::expected_value, type};
           }
 
           case ast::Lt_Float_Kind::f64: {
-            ast::Type const* const type = get_builtin_type(ast::Type_Builtin_Kind::glsl_double);
+            ast::Type const* const type = get_builtin_type(ast::Type_Builtin_Kind::e_double);
             ctx.add_node_type(node, type);
             return {anton::expected_value, type};
           }
@@ -279,7 +279,7 @@ namespace vush {
         }
 
         ast::Type const* const condition_type = condition_result.value();
-        ast::Type const* const bool_type = get_builtin_type(ast::Type_Builtin_Kind::glsl_bool);
+        ast::Type const* const bool_type = get_builtin_type(ast::Type_Builtin_Kind::e_bool);
         if(!compare_types_equal(*bool_type, *condition_type)) {
           return {anton::expected_error,
                   err_condition_not_of_bool_type(ctx, expr->condition, condition_type)};
@@ -445,7 +445,7 @@ namespace vush {
           }
 
           ast::Type const* const condition_type = condition_result.value();
-          ast::Type const* const bool_type = get_builtin_type(ast::Type_Builtin_Kind::glsl_bool);
+          ast::Type const* const bool_type = get_builtin_type(ast::Type_Builtin_Kind::e_bool);
           if(!compare_types_equal(*condition_type, *bool_type)) {
             return {anton::expected_error,
                     err_condition_not_of_bool_type(ctx, node->condition, condition_type)};
@@ -471,7 +471,7 @@ namespace vush {
           }
 
           ast::Type const* const condition_type = condition_result.value();
-          ast::Type const* const bool_type = get_builtin_type(ast::Type_Builtin_Kind::glsl_bool);
+          ast::Type const* const bool_type = get_builtin_type(ast::Type_Builtin_Kind::e_bool);
           if(!compare_types_equal(*condition_type, *bool_type)) {
             return {anton::expected_error,
                     err_condition_not_of_bool_type(ctx, node->condition, condition_type)};
@@ -499,8 +499,8 @@ namespace vush {
           }
 
           ast::Type const* const expression_type = expression_result.value();
-          ast::Type const* const i32_type = get_builtin_type(ast::Type_Builtin_Kind::glsl_int);
-          ast::Type const* const u32_type = get_builtin_type(ast::Type_Builtin_Kind::glsl_uint);
+          ast::Type const* const i32_type = get_builtin_type(ast::Type_Builtin_Kind::e_int);
+          ast::Type const* const u32_type = get_builtin_type(ast::Type_Builtin_Kind::e_uint);
           if(!compare_types_equal(*expression_type, *i32_type) &&
              !compare_types_equal(*expression_type, *u32_type)) {
             return {anton::expected_error,
