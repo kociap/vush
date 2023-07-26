@@ -182,9 +182,8 @@ namespace vush {
             // return {anton::expected_value, generic_type};
           } break;
 
-          case ast::Node_Kind::type_user_defined: {
-            ast::Type_User_Defined const* const type =
-              static_cast<ast::Type_User_Defined const*>(generic_type);
+          case ast::Node_Kind::type_struct: {
+            ast::Type_Struct const* const type = static_cast<ast::Type_Struct const*>(generic_type);
             ast::Node const* const definition_node = ctx.find_type_definition(type->value);
             ANTON_ASSERT(definition_node->node_kind == ast::Node_Kind::decl_struct,
                          "type definition node is not a decl_struct");
@@ -236,7 +235,7 @@ namespace vush {
 
       case ast::Node_Kind::expr_assignment: {
         // TODO: We have to verify that the type we are assigning to is not an opaque type
-        //       or a user defined type with opaque types.
+        //       or a struct with opaque types.
         ast::Expr_Assignment const* const expr = static_cast<ast::Expr_Assignment const*>(node);
         anton::Expected<ast::Type const*, Error> result_lhs =
           evaluate_expression_type(ctx, expr->lhs);
@@ -355,9 +354,8 @@ namespace vush {
                     err_type_has_no_member_named(ctx, generic_type, expr->member)};
           } break;
 
-          case ast::Node_Kind::type_user_defined: {
-            ast::Type_User_Defined const* const type =
-              static_cast<ast::Type_User_Defined const*>(generic_type);
+          case ast::Node_Kind::type_struct: {
+            ast::Type_Struct const* const type = static_cast<ast::Type_Struct const*>(generic_type);
             ast::Node const* const definition_node = ctx.find_type_definition(type->value);
             ANTON_ASSERT(definition_node->node_kind == ast::Node_Kind::decl_struct,
                          "type definition node is not a decl_struct");

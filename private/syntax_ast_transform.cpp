@@ -170,17 +170,17 @@ namespace vush {
           allocate<ast::Type_Builtin>(ctx.allocator, qualifiers, result.value(), node.source_info)};
       } break;
 
-      case Syntax_Node_Kind::type_user_defined: {
+      case Syntax_Node_Kind::type_struct: {
         ast::Qualifiers qualifiers;
-        if(anton::Optional mut = get_type_user_defined_mut(node)) {
+        if(anton::Optional mut = get_type_struct_mut(node)) {
           qualifiers.mut = true;
         }
 
-        Syntax_Token const& value_token = get_type_user_defined_value(node);
+        Syntax_Token const& value_token = get_type_struct_value(node);
         anton::String const* const value =
           allocate<anton::String>(ctx.allocator, value_token.value, ctx.allocator);
-        return {anton::expected_value, allocate<ast::Type_User_Defined>(ctx.allocator, qualifiers,
-                                                                        *value, node.source_info)};
+        return {anton::expected_value,
+                allocate<ast::Type_Struct>(ctx.allocator, qualifiers, *value, node.source_info)};
       } break;
 
       case Syntax_Node_Kind::type_array: {

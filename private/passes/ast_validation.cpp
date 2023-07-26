@@ -75,7 +75,7 @@ namespace vush {
             return anton::expected_value;
           } break;
 
-          case ast::Node_Kind::type_user_defined: {
+          case ast::Node_Kind::type_struct: {
             Array<ast::Identifier const*> identifiers{ctx.allocator};
             for(ast::Initializer const* const generic_initializer: expr->initializers) {
               if(generic_initializer->node_kind != ast::Node_Kind::named_initializer) {
@@ -514,8 +514,8 @@ namespace vush {
         return {anton::expected_value};
       } break;
 
-      case ast::Node_Kind::type_user_defined: {
-        ast::Type_User_Defined const& t = static_cast<ast::Type_User_Defined const&>(type);
+      case ast::Node_Kind::type_struct: {
+        ast::Type_Struct const& t = static_cast<ast::Type_Struct const&>(type);
         if(t.value == struct_identifier.value) {
           return {anton::expected_error,
                   err_recursive_type_definition(ctx, struct_identifier.source_info, t.source_info)};
@@ -654,26 +654,26 @@ namespace vush {
     }
 
     // Validate the return type:
-    // - vertex: must be builtin or UDT.
-    // - fragment: must be builtin or UDT.
+    // - vertex: must be builtin or struct.
+    // - fragment: must be builtin or struct.
     // - compute: must be void.
     {
       bool const void_return = ast::is_void(*fn->return_type);
       bool const builtin_return = fn->return_type->node_kind == ast::Node_Kind::type_builtin;
-      bool const udt_return = fn->return_type->node_kind == ast::Node_Kind::type_user_defined;
+      bool const struct_return = fn->return_type->node_kind == ast::Node_Kind::type_struct;
       switch(fn->stage.value) {
         case Stage_Kind::vertex: {
-          if(!builtin_return && !udt_return) {
+          if(!builtin_return && !struct_return) {
             return {anton::expected_error,
-                    err_stage_return_must_be_builtin_or_udt(
+                    err_stage_return_must_be_builtin_or_struct(
                       ctx, fn->pass->value, fn->stage.source_info, fn->return_type->source_info)};
           }
         } break;
 
         case Stage_Kind::fragment: {
-          if(!builtin_return && !udt_return) {
+          if(!builtin_return && !struct_return) {
             return {anton::expected_error,
-                    err_stage_return_must_be_builtin_or_udt(
+                    err_stage_return_must_be_builtin_or_struct(
                       ctx, fn->pass->value, fn->stage.source_info, fn->return_type->source_info)};
           }
         } break;
@@ -688,7 +688,7 @@ namespace vush {
     }
 
     // Validate parameters:
-    // - all parameters must be builtin or UDT. Arrays are not supported yet.
+    // - all parameters must be builtin or struct. Arrays are not supported yet.
     // - vertex: only vertex input parameters and sourced parameters are allowed. vertex input
     //   parameters must not be opaque.
     // - fragment: all parameters must be sourced with the exception of the first one which might be
@@ -699,10 +699,10 @@ namespace vush {
       for(ast::Fn_Parameter const* const p: fn->parameters) {
         {
           bool const builtin_type = fn->return_type->node_kind == ast::Node_Kind::type_builtin;
-          bool const udt_type = fn->return_type->node_kind == ast::Node_Kind::type_user_defined;
-          if(!builtin_type && !udt_type) {
+          bool const struct_type = fn->return_type->node_kind == ast::Node_Kind::type_struct;
+          if(!builtin_type && !struct_type) {
             return {anton::expected_error,
-                    err_stage_parameter_must_be_builtin_or_udt(ctx, p->type->source_info)};
+                    err_stage_parameter_must_be_builtin_or_struct(ctx, p->type->source_info)};
           }
         }
 

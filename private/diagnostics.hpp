@@ -74,10 +74,10 @@ namespace vush {
                                                                 anton::String const& pass_name);
   [[nodiscard]] anton::String format_graphics_and_compute_stages(Context const& ctx,
                                                                  anton::String const& pass_name);
-  [[nodiscard]] Error err_stage_return_must_be_builtin_or_udt(Context const& ctx,
-                                                              anton::String_View pass_name,
-                                                              Source_Info const& stage,
-                                                              Source_Info const& return_type);
+  [[nodiscard]] Error err_stage_return_must_be_builtin_or_struct(Context const& ctx,
+                                                                 anton::String_View pass_name,
+                                                                 Source_Info const& stage,
+                                                                 Source_Info const& return_type);
   [[nodiscard]] Error err_compute_return_must_be_void(Context const& ctx,
                                                       anton::String_View pass_name,
                                                       Source_Info const& return_type);
@@ -164,10 +164,10 @@ namespace vush {
     return Error{.diagnostic = anton::String("err_fn_sourced_parameter_not_allowed")};
   }
   [[nodiscard]] inline Error
-  err_stage_parameter_must_be_builtin_or_udt([[maybe_unused]] Context const& ctx,
-                                             [[maybe_unused]] Source_Info const& parameter_type)
+  err_stage_parameter_must_be_builtin_or_struct([[maybe_unused]] Context const& ctx,
+                                                [[maybe_unused]] Source_Info const& parameter_type)
   {
-    return Error{.diagnostic = anton::String("err_stage_parameter_must_be_builtin_or_udt")};
+    return Error{.diagnostic = anton::String("err_stage_parameter_must_be_builtin_or_struct")};
   }
   [[nodiscard]] inline Error
   err_vertex_ordinary_parameter_not_allowed([[maybe_unused]] Context const& ctx,

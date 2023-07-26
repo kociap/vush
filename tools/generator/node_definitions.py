@@ -28,7 +28,7 @@ syntax_nodes = [
         ]
     },
     {
-        "syntax_name": "type_user_defined",
+        "syntax_name": "type_struct",
         "members": [
             Syntax_Member(Node_Kind.token, "mut", Lookup_Kind.search, "kw_mut", optional = True),
             Syntax_Member(Node_Kind.token, "value", Lookup_Kind.search, "identifier")

@@ -113,7 +113,7 @@ namespace vush {
     tk_setting_string,
 
     type_builtin,
-    type_user_defined,
+    type_struct,
     type_array,
 
     // The base type of array.
@@ -254,7 +254,7 @@ namespace vush {
       identifier,
 
       type_builtin,
-      type_user_defined,
+      type_struct,
       type_array,
 
       attribute,
@@ -523,17 +523,17 @@ namespace vush {
       }
     };
 
-    struct Type_User_Defined: public Type {
+    struct Type_Struct: public Type {
       // The identifier value, that is the name of the type.
       anton::String_View value;
 
-      constexpr Type_User_Defined(anton::String_View value, Source_Info const& source_info)
-        : Type(source_info, Node_Kind::type_user_defined), value(value)
+      constexpr Type_Struct(anton::String_View value, Source_Info const& source_info)
+        : Type(source_info, Node_Kind::type_struct), value(value)
       {
       }
-      constexpr Type_User_Defined(Qualifiers qualifiers, anton::String_View value,
-                                  Source_Info const& source_info)
-        : Type(qualifiers, source_info, Node_Kind::type_user_defined), value(value)
+      constexpr Type_Struct(Qualifiers qualifiers, anton::String_View value,
+                            Source_Info const& source_info)
+        : Type(qualifiers, source_info, Node_Kind::type_struct), value(value)
       {
       }
     };

@@ -70,7 +70,7 @@ namespace vush {
     bool is_opaque_type(Type const& type)
     {
       ANTON_ASSERT(type.node_kind == Node_Kind::type_builtin ||
-                     type.node_kind == Node_Kind::type_user_defined ||
+                     type.node_kind == Node_Kind::type_struct ||
                      type.node_kind == Node_Kind::type_array,
                    u8"unknown ast node type");
       switch(type.node_kind) {
@@ -79,7 +79,7 @@ namespace vush {
           return static_cast<i32>(v) >= static_cast<i32>(Type_Builtin_Kind::e_sampler1D);
         }
 
-        case Node_Kind::type_user_defined: {
+        case Node_Kind::type_struct: {
           return false;
         }
 
@@ -136,7 +136,7 @@ namespace vush {
                  v == Type_Builtin_Kind::e_uimageBuffer;
         }
 
-        case Node_Kind::type_user_defined: {
+        case Node_Kind::type_struct: {
           return false;
         }
 
@@ -154,8 +154,7 @@ namespace vush {
     bool is_type(Node const& node)
     {
       return node.node_kind == Node_Kind::type_builtin ||
-             node.node_kind == Node_Kind::type_user_defined ||
-             node.node_kind == Node_Kind::type_array;
+             node.node_kind == Node_Kind::type_struct || node.node_kind == Node_Kind::type_array;
     }
 
     bool is_sourced_parameter(Fn_Parameter const& parameter)
@@ -518,9 +517,9 @@ namespace vush {
           return lhs_v.value == rhs_v.value;
         }
 
-        case Node_Kind::type_user_defined: {
-          Type_User_Defined const& lhs_v = static_cast<Type_User_Defined const&>(lhs);
-          Type_User_Defined const& rhs_v = static_cast<Type_User_Defined const&>(rhs);
+        case Node_Kind::type_struct: {
+          Type_Struct const& lhs_v = static_cast<Type_Struct const&>(lhs);
+          Type_Struct const& rhs_v = static_cast<Type_Struct const&>(rhs);
           return lhs_v.value == rhs_v.value;
         }
 
