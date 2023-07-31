@@ -538,9 +538,9 @@ namespace vush {
   [[nodiscard]] static Syntax_Node const& get_named_initializer_expression(Syntax_Node const& node)
   {
     ANTON_ASSERT(node.kind == Syntax_Node_Kind::named_initializer, "node is not named_initializer");
-    ANTON_ASSERT(node.children.size() > (4), "named_initializer has too few children");
-    ANTON_ASSERT(node.children[4].is_left(), "expression in named_initializer is not Syntax_Node");
-    return node.children[4].left();
+    ANTON_ASSERT(node.children.size() > (3), "named_initializer has too few children");
+    ANTON_ASSERT(node.children[3].is_left(), "expression in named_initializer is not Syntax_Node");
+    return node.children[3].left();
   }
 
   [[nodiscard]] static Syntax_Node const& get_indexed_initializer_index(Syntax_Node const& node)

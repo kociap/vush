@@ -2538,6 +2538,14 @@ namespace vush {
     {
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
+      if(Optional tk_dot = match(Token_Kind::tk_dot)) {
+        snots.push_back(ANTON_MOV(*tk_dot));
+      } else {
+        set_error("expected '.'"_sv);
+        _lexer.restore_state(begin_state);
+        return anton::null_optional;
+      }
+
       if(Optional tk_identifier = skipmatch(Token_Kind::identifier)) {
         snots.push_back(ANTON_MOV(*tk_identifier));
       } else {

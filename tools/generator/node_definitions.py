@@ -188,7 +188,7 @@ syntax_nodes = [
         "syntax_name": "named_initializer",
         "members": [
             Syntax_Member(Node_Kind.token, "identifier", Lookup_Kind.index, 1),
-            Syntax_Member(Node_Kind.node, "expression", Lookup_Kind.index, 4)
+            Syntax_Member(Node_Kind.node, "expression", Lookup_Kind.index, 3)
         ]
     },
     {
