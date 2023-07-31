@@ -1919,81 +1919,81 @@ namespace vush {
 
         auto get_associativity = [](Syntax_Node_Kind type) -> Associativity {
           switch(type) {
-            case Syntax_Node_Kind::tk_equals:
-              // TODO: Reintroduce.
-              // case Syntax_Node_Kind::tk_pluseq:
-              // case Syntax_Node_Kind::tk_minuseq:
-              // case Syntax_Node_Kind::tk_asteriskeq:
-              // case Syntax_Node_Kind::tk_slasheq:
-              // case Syntax_Node_Kind::tk_percenteq:
-              // case Syntax_Node_Kind::tk_shleq:
-              // case Syntax_Node_Kind::tk_shreq:
-              // case Syntax_Node_Kind::tk_ampeq:
-              // case Syntax_Node_Kind::tk_hateq:
-              // case Syntax_Node_Kind::tk_pipeeq:
-              return ASSOC_RIGHT;
+          case Syntax_Node_Kind::tk_equals:
+            // TODO: Reintroduce.
+            // case Syntax_Node_Kind::tk_pluseq:
+            // case Syntax_Node_Kind::tk_minuseq:
+            // case Syntax_Node_Kind::tk_asteriskeq:
+            // case Syntax_Node_Kind::tk_slasheq:
+            // case Syntax_Node_Kind::tk_percenteq:
+            // case Syntax_Node_Kind::tk_shleq:
+            // case Syntax_Node_Kind::tk_shreq:
+            // case Syntax_Node_Kind::tk_ampeq:
+            // case Syntax_Node_Kind::tk_hateq:
+            // case Syntax_Node_Kind::tk_pipeeq:
+            return ASSOC_RIGHT;
 
-            default:
-              return ASSOC_LEFT;
+          default:
+            return ASSOC_LEFT;
           }
         };
 
         auto get_precedence = [](Syntax_Node_Kind type) -> i32 {
           // Precedence values are exactly the same as in the GLSL Specification.
           switch(type) {
-            case Syntax_Node_Kind::tk_equals:
-              // TODO: Reintroduce.
-              // case Syntax_Node_Kind::tk_pluseq:
-              // case Syntax_Node_Kind::tk_minuseq:
-              // case Syntax_Node_Kind::tk_asteriskeq:
-              // case Syntax_Node_Kind::tk_slasheq:
-              // case Syntax_Node_Kind::tk_percenteq:
-              // case Syntax_Node_Kind::tk_shleq:
-              // case Syntax_Node_Kind::tk_shreq:
-              // case Syntax_Node_Kind::tk_ampeq:
-              // case Syntax_Node_Kind::tk_hateq:
-              // case Syntax_Node_Kind::tk_pipeeq:
-              return 16;
+          case Syntax_Node_Kind::tk_equals:
+            // TODO: Reintroduce.
+            // case Syntax_Node_Kind::tk_pluseq:
+            // case Syntax_Node_Kind::tk_minuseq:
+            // case Syntax_Node_Kind::tk_asteriskeq:
+            // case Syntax_Node_Kind::tk_slasheq:
+            // case Syntax_Node_Kind::tk_percenteq:
+            // case Syntax_Node_Kind::tk_shleq:
+            // case Syntax_Node_Kind::tk_shreq:
+            // case Syntax_Node_Kind::tk_ampeq:
+            // case Syntax_Node_Kind::tk_hateq:
+            // case Syntax_Node_Kind::tk_pipeeq:
+            return 16;
 
-            case Syntax_Node_Kind::tk_pipe2:
-              return 14;
-            case Syntax_Node_Kind::tk_hat2:
-              return 13;
-            case Syntax_Node_Kind::tk_amp2:
-              return 12;
-            case Syntax_Node_Kind::tk_pipe:
-              return 11;
-            case Syntax_Node_Kind::tk_hat:
-              return 10;
-            case Syntax_Node_Kind::tk_amp:
-              return 9;
+          case Syntax_Node_Kind::tk_pipe2:
+            return 14;
+          case Syntax_Node_Kind::tk_hat2:
+            return 13;
+          case Syntax_Node_Kind::tk_amp2:
+            return 12;
+          case Syntax_Node_Kind::tk_pipe:
+            return 11;
+          case Syntax_Node_Kind::tk_hat:
+            return 10;
+          case Syntax_Node_Kind::tk_amp:
+            return 9;
 
-            case Syntax_Node_Kind::tk_eq2:
-            case Syntax_Node_Kind::tk_neq:
-              return 8;
+          case Syntax_Node_Kind::tk_eq2:
+          case Syntax_Node_Kind::tk_neq:
+            return 8;
 
-            case Syntax_Node_Kind::tk_langle:
-            case Syntax_Node_Kind::tk_rangle:
-            case Syntax_Node_Kind::tk_gteq:
-            case Syntax_Node_Kind::tk_lteq:
-              return 7;
+          case Syntax_Node_Kind::tk_langle:
+          case Syntax_Node_Kind::tk_rangle:
+          case Syntax_Node_Kind::tk_gteq:
+          case Syntax_Node_Kind::tk_lteq:
+            return 7;
 
-            case Syntax_Node_Kind::tk_shl:
-            case Syntax_Node_Kind::tk_shr:
-              return 6;
+          case Syntax_Node_Kind::tk_shl:
+          case Syntax_Node_Kind::tk_shr:
+            return 6;
 
-            case Syntax_Node_Kind::tk_plus:
-            case Syntax_Node_Kind::tk_minus:
-              return 5;
+          case Syntax_Node_Kind::tk_plus:
+          case Syntax_Node_Kind::tk_minus:
+            return 5;
 
-            case Syntax_Node_Kind::tk_asterisk:
-            case Syntax_Node_Kind::tk_slash:
-            case Syntax_Node_Kind::tk_percent:
-              return 4;
+          case Syntax_Node_Kind::tk_asterisk:
+          case Syntax_Node_Kind::tk_slash:
+          case Syntax_Node_Kind::tk_percent:
+            return 4;
 
-            default:
-              ANTON_ASSERT(false, "invalid operator type");
-              ANTON_UNREACHABLE();
+          default:
+            ANTON_ASSERT(false, "invalid operator type");
+            ANTON_UNREACHABLE();
           }
         };
 

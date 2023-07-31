@@ -150,23 +150,23 @@ namespace vush {
                      type.node_kind == Node_Kind::type_array,
                    u8"unknown ast node type");
       switch(type.node_kind) {
-        case Node_Kind::type_builtin: {
-          Type_Builtin_Kind const v = static_cast<Type_Builtin const&>(type).value;
-          return static_cast<i32>(v) >= static_cast<i32>(Type_Builtin_Kind::e_sampler1D);
-        }
+      case Node_Kind::type_builtin: {
+        Type_Builtin_Kind const v = static_cast<Type_Builtin const&>(type).value;
+        return static_cast<i32>(v) >= static_cast<i32>(Type_Builtin_Kind::e_sampler1D);
+      }
 
-        case Node_Kind::type_struct: {
-          return false;
-        }
+      case Node_Kind::type_struct: {
+        return false;
+      }
 
-        case Node_Kind::type_array: {
-          Type_Array const& array = static_cast<Type_Array const&>(type);
-          return is_opaque_type(*array.base);
-        }
+      case Node_Kind::type_array: {
+        Type_Array const& array = static_cast<Type_Array const&>(type);
+        return is_opaque_type(*array.base);
+      }
 
-        default:
-          ANTON_ASSERT(false, "unknown ast node kind");
-          ANTON_UNREACHABLE();
+      default:
+        ANTON_ASSERT(false, "unknown ast node kind");
+        ANTON_UNREACHABLE();
       }
     }
 
@@ -188,42 +188,40 @@ namespace vush {
     bool is_image_type(Type const& type)
     {
       switch(type.node_kind) {
-        case Node_Kind::type_builtin: {
-          Type_Builtin_Kind const v = static_cast<Type_Builtin const&>(type).value;
-          return v == Type_Builtin_Kind::e_image1D || v == Type_Builtin_Kind::e_image1DArray ||
-                 v == Type_Builtin_Kind::e_image2D || v == Type_Builtin_Kind::e_image2DArray ||
-                 v == Type_Builtin_Kind::e_image2DMS || v == Type_Builtin_Kind::e_image2DMSArray ||
-                 v == Type_Builtin_Kind::e_image2DRect || v == Type_Builtin_Kind::e_image3D ||
-                 v == Type_Builtin_Kind::e_imageCube || v == Type_Builtin_Kind::e_imageCubeArray ||
-                 v == Type_Builtin_Kind::e_imageBuffer || v == Type_Builtin_Kind::e_iimage1D ||
-                 v == Type_Builtin_Kind::e_iimage1DArray || v == Type_Builtin_Kind::e_iimage2D ||
-                 v == Type_Builtin_Kind::e_iimage2DArray || v == Type_Builtin_Kind::e_iimage2DMS ||
-                 v == Type_Builtin_Kind::e_iimage2DMSArray ||
-                 v == Type_Builtin_Kind::e_iimage2DRect || v == Type_Builtin_Kind::e_iimage3D ||
-                 v == Type_Builtin_Kind::e_iimageCube ||
-                 v == Type_Builtin_Kind::e_iimageCubeArray ||
-                 v == Type_Builtin_Kind::e_iimageBuffer || v == Type_Builtin_Kind::e_uimage1D ||
-                 v == Type_Builtin_Kind::e_uimage1DArray || v == Type_Builtin_Kind::e_uimage2D ||
-                 v == Type_Builtin_Kind::e_uimage2DArray || v == Type_Builtin_Kind::e_uimage2DMS ||
-                 v == Type_Builtin_Kind::e_uimage2DMSArray ||
-                 v == Type_Builtin_Kind::e_uimage2DRect || v == Type_Builtin_Kind::e_uimage3D ||
-                 v == Type_Builtin_Kind::e_uimageCube ||
-                 v == Type_Builtin_Kind::e_uimageCubeArray ||
-                 v == Type_Builtin_Kind::e_uimageBuffer;
-        }
+      case Node_Kind::type_builtin: {
+        Type_Builtin_Kind const v = static_cast<Type_Builtin const&>(type).value;
+        return v == Type_Builtin_Kind::e_image1D || v == Type_Builtin_Kind::e_image1DArray ||
+               v == Type_Builtin_Kind::e_image2D || v == Type_Builtin_Kind::e_image2DArray ||
+               v == Type_Builtin_Kind::e_image2DMS || v == Type_Builtin_Kind::e_image2DMSArray ||
+               v == Type_Builtin_Kind::e_image2DRect || v == Type_Builtin_Kind::e_image3D ||
+               v == Type_Builtin_Kind::e_imageCube || v == Type_Builtin_Kind::e_imageCubeArray ||
+               v == Type_Builtin_Kind::e_imageBuffer || v == Type_Builtin_Kind::e_iimage1D ||
+               v == Type_Builtin_Kind::e_iimage1DArray || v == Type_Builtin_Kind::e_iimage2D ||
+               v == Type_Builtin_Kind::e_iimage2DArray || v == Type_Builtin_Kind::e_iimage2DMS ||
+               v == Type_Builtin_Kind::e_iimage2DMSArray ||
+               v == Type_Builtin_Kind::e_iimage2DRect || v == Type_Builtin_Kind::e_iimage3D ||
+               v == Type_Builtin_Kind::e_iimageCube || v == Type_Builtin_Kind::e_iimageCubeArray ||
+               v == Type_Builtin_Kind::e_iimageBuffer || v == Type_Builtin_Kind::e_uimage1D ||
+               v == Type_Builtin_Kind::e_uimage1DArray || v == Type_Builtin_Kind::e_uimage2D ||
+               v == Type_Builtin_Kind::e_uimage2DArray || v == Type_Builtin_Kind::e_uimage2DMS ||
+               v == Type_Builtin_Kind::e_uimage2DMSArray ||
+               v == Type_Builtin_Kind::e_uimage2DRect || v == Type_Builtin_Kind::e_uimage3D ||
+               v == Type_Builtin_Kind::e_uimageCube || v == Type_Builtin_Kind::e_uimageCubeArray ||
+               v == Type_Builtin_Kind::e_uimageBuffer;
+      }
 
-        case Node_Kind::type_struct: {
-          return false;
-        }
+      case Node_Kind::type_struct: {
+        return false;
+      }
 
-        case Node_Kind::type_array: {
-          Type_Array const& array = static_cast<Type_Array const&>(type);
-          return is_image_type(*array.base);
-        }
+      case Node_Kind::type_array: {
+        Type_Array const& array = static_cast<Type_Array const&>(type);
+        return is_image_type(*array.base);
+      }
 
-        default:
-          ANTON_ASSERT(false, u8"unknown ast node kind");
-          ANTON_UNREACHABLE();
+      default:
+        ANTON_ASSERT(false, u8"unknown ast node kind");
+        ANTON_UNREACHABLE();
       }
     }
 
@@ -587,41 +585,41 @@ namespace vush {
 
       Node_Kind const kind = lhs.node_kind;
       switch(kind) {
-        case Node_Kind::type_builtin: {
-          Type_Builtin const& lhs_v = static_cast<Type_Builtin const&>(lhs);
-          Type_Builtin const& rhs_v = static_cast<Type_Builtin const&>(rhs);
-          return lhs_v.value == rhs_v.value;
+      case Node_Kind::type_builtin: {
+        Type_Builtin const& lhs_v = static_cast<Type_Builtin const&>(lhs);
+        Type_Builtin const& rhs_v = static_cast<Type_Builtin const&>(rhs);
+        return lhs_v.value == rhs_v.value;
+      }
+
+      case Node_Kind::type_struct: {
+        Type_Struct const& lhs_v = static_cast<Type_Struct const&>(lhs);
+        Type_Struct const& rhs_v = static_cast<Type_Struct const&>(rhs);
+        return lhs_v.value == rhs_v.value;
+      }
+
+      case Node_Kind::type_array: {
+        Type_Array const& lhs_v = static_cast<Type_Array const&>(lhs);
+        Type_Array const& rhs_v = static_cast<Type_Array const&>(rhs);
+        if(!compare_types_equal(*lhs_v.base, *rhs_v.base)) {
+          return false;
         }
 
-        case Node_Kind::type_struct: {
-          Type_Struct const& lhs_v = static_cast<Type_Struct const&>(lhs);
-          Type_Struct const& rhs_v = static_cast<Type_Struct const&>(rhs);
-          return lhs_v.value == rhs_v.value;
+        // Both unsized are the sme types.
+        if(!lhs_v.size && !rhs_v.size) {
+          return true;
         }
 
-        case Node_Kind::type_array: {
-          Type_Array const& lhs_v = static_cast<Type_Array const&>(lhs);
-          Type_Array const& rhs_v = static_cast<Type_Array const&>(rhs);
-          if(!compare_types_equal(*lhs_v.base, *rhs_v.base)) {
-            return false;
-          }
-
-          // Both unsized are the sme types.
-          if(!lhs_v.size && !rhs_v.size) {
-            return true;
-          }
-
-          // One sized and one unsized are different types.
-          if((lhs_v.size && !rhs_v.size) || (!lhs_v.size && rhs_v.size)) {
-            return false;
-          }
-
-          // Otherwise compare the sizes to determine whether types are equal.
-          return lhs_v.size->value == rhs_v.size->value;
+        // One sized and one unsized are different types.
+        if((lhs_v.size && !rhs_v.size) || (!lhs_v.size && rhs_v.size)) {
+          return false;
         }
 
-        default:
-          ANTON_UNREACHABLE();
+        // Otherwise compare the sizes to determine whether types are equal.
+        return lhs_v.size->value == rhs_v.size->value;
+      }
+
+      default:
+        ANTON_UNREACHABLE();
       }
     }
   } // namespace ast

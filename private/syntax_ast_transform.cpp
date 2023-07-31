@@ -119,19 +119,19 @@ namespace vush {
     Syntax_Token const& value_token = get_expr_lt_integer_value(node);
     ast::Lt_Integer_Base base;
     switch(value_token.kind) {
-      case Syntax_Node_Kind::lt_bin_integer:
-        base = ast::Lt_Integer_Base::bin;
-        break;
-      case Syntax_Node_Kind::lt_dec_integer:
-        base = ast::Lt_Integer_Base::dec;
-        break;
-      case Syntax_Node_Kind::lt_hex_integer:
-        base = ast::Lt_Integer_Base::hex;
-        break;
+    case Syntax_Node_Kind::lt_bin_integer:
+      base = ast::Lt_Integer_Base::bin;
+      break;
+    case Syntax_Node_Kind::lt_dec_integer:
+      base = ast::Lt_Integer_Base::dec;
+      break;
+    case Syntax_Node_Kind::lt_hex_integer:
+      base = ast::Lt_Integer_Base::hex;
+      break;
 
-      default:
-        ANTON_ASSERT(false, ""); // TODO: Error
-        ANTON_UNREACHABLE();
+    default:
+      ANTON_ASSERT(false, ""); // TODO: Error
+      ANTON_UNREACHABLE();
     }
 
     // The default integer literal type is i32.
@@ -155,65 +155,64 @@ namespace vush {
   transform_type(Context const& ctx, Syntax_Node const& node)
   {
     switch(node.kind) {
-      case Syntax_Node_Kind::type_builtin: {
-        ast::Qualifiers qualifiers;
-        if(anton::Optional mut = get_type_builtin_mut(node)) {
-          qualifiers.mut = true;
+    case Syntax_Node_Kind::type_builtin: {
+      ast::Qualifiers qualifiers;
+      if(anton::Optional mut = get_type_builtin_mut(node)) {
+        qualifiers.mut = true;
+      }
+
+      Syntax_Token const& value_token = get_type_builtin_value(node);
+      anton::Optional<ast::Type_Builtin_Kind> result =
+        ast::enumify_builtin_type_kind(value_token.value);
+      ANTON_ASSERT(result, "invalid builtin type");
+      return {anton::expected_value, allocate<ast::Type_Builtin>(ctx.allocator, qualifiers,
+                                                                 result.value(), node.source_info)};
+    } break;
+
+    case Syntax_Node_Kind::type_struct: {
+      ast::Qualifiers qualifiers;
+      if(anton::Optional mut = get_type_struct_mut(node)) {
+        qualifiers.mut = true;
+      }
+
+      Syntax_Token const& value_token = get_type_struct_value(node);
+      anton::String const* const value =
+        allocate<anton::String>(ctx.allocator, value_token.value, ctx.allocator);
+      return {anton::expected_value,
+              allocate<ast::Type_Struct>(ctx.allocator, qualifiers, *value, node.source_info)};
+    } break;
+
+    case Syntax_Node_Kind::type_array: {
+      ast::Qualifiers qualifiers;
+      if(anton::Optional mut = get_type_array_mut(node)) {
+        qualifiers.mut = true;
+      }
+
+      Syntax_Node const& base_node = get_type_array_base(node);
+      anton::Expected<ast::Type const*, Error> base = transform_type(ctx, base_node);
+      if(!base) {
+        return {anton::expected_error, ANTON_MOV(base.error())};
+      }
+
+      ast::Lt_Integer const* size = nullptr;
+      if(anton::Optional size_node = get_type_array_size(node)) {
+        anton::Expected<ast::Lt_Integer const*, Error> size_result =
+          transform_lt_integer(ctx, *size_node);
+        if(size_result) {
+          size = size_result.value();
+        } else {
+          return {anton::expected_error, ANTON_MOV(size_result.error())};
         }
+      }
 
-        Syntax_Token const& value_token = get_type_builtin_value(node);
-        anton::Optional<ast::Type_Builtin_Kind> result =
-          ast::enumify_builtin_type_kind(value_token.value);
-        ANTON_ASSERT(result, "invalid builtin type");
-        return {
-          anton::expected_value,
-          allocate<ast::Type_Builtin>(ctx.allocator, qualifiers, result.value(), node.source_info)};
-      } break;
+      return {
+        anton::expected_value,
+        allocate<ast::Type_Array>(ctx.allocator, qualifiers, base.value(), size, node.source_info)};
+    } break;
 
-      case Syntax_Node_Kind::type_struct: {
-        ast::Qualifiers qualifiers;
-        if(anton::Optional mut = get_type_struct_mut(node)) {
-          qualifiers.mut = true;
-        }
-
-        Syntax_Token const& value_token = get_type_struct_value(node);
-        anton::String const* const value =
-          allocate<anton::String>(ctx.allocator, value_token.value, ctx.allocator);
-        return {anton::expected_value,
-                allocate<ast::Type_Struct>(ctx.allocator, qualifiers, *value, node.source_info)};
-      } break;
-
-      case Syntax_Node_Kind::type_array: {
-        ast::Qualifiers qualifiers;
-        if(anton::Optional mut = get_type_array_mut(node)) {
-          qualifiers.mut = true;
-        }
-
-        Syntax_Node const& base_node = get_type_array_base(node);
-        anton::Expected<ast::Type const*, Error> base = transform_type(ctx, base_node);
-        if(!base) {
-          return {anton::expected_error, ANTON_MOV(base.error())};
-        }
-
-        ast::Lt_Integer const* size = nullptr;
-        if(anton::Optional size_node = get_type_array_size(node)) {
-          anton::Expected<ast::Lt_Integer const*, Error> size_result =
-            transform_lt_integer(ctx, *size_node);
-          if(size_result) {
-            size = size_result.value();
-          } else {
-            return {anton::expected_error, ANTON_MOV(size_result.error())};
-          }
-        }
-
-        return {anton::expected_value,
-                allocate<ast::Type_Array>(ctx.allocator, qualifiers, base.value(), size,
-                                          node.source_info)};
-      } break;
-
-      default:
-        ANTON_ASSERT(false, "invalid type");
-        ANTON_UNREACHABLE();
+    default:
+      ANTON_ASSERT(false, "invalid type");
+      ANTON_UNREACHABLE();
     }
   }
 
@@ -221,73 +220,73 @@ namespace vush {
   get_operator_identifier_string(Syntax_Node_Kind const kind)
   {
     switch(kind) {
-      case Syntax_Node_Kind::tk_langle:
-        return "operator<"_sv;
-      case Syntax_Node_Kind::tk_rangle:
-        return "operator>"_sv;
-      case Syntax_Node_Kind::tk_plus:
-        return "operator+"_sv;
-      case Syntax_Node_Kind::tk_minus:
-        return "operator-"_sv;
-      case Syntax_Node_Kind::tk_asterisk:
-        return "operator*"_sv;
-      case Syntax_Node_Kind::tk_slash:
-        return "operator/"_sv;
-      case Syntax_Node_Kind::tk_percent:
-        return "operator%"_sv;
-      case Syntax_Node_Kind::tk_amp:
-        return "operator&"_sv;
-      case Syntax_Node_Kind::tk_pipe:
-        return "operator|"_sv;
-      case Syntax_Node_Kind::tk_hat:
-        return "operator^"_sv;
-      case Syntax_Node_Kind::tk_amp2:
-        return "operator&&"_sv;
-      case Syntax_Node_Kind::tk_pipe2:
-        return "operator||"_sv;
-      case Syntax_Node_Kind::tk_hat2:
-        return "operator^^"_sv;
-      case Syntax_Node_Kind::tk_shl:
-        return "operator<<"_sv;
-      case Syntax_Node_Kind::tk_shr:
-        return "operator>>"_sv;
-      case Syntax_Node_Kind::tk_eq2:
-        return "operator=="_sv;
-      case Syntax_Node_Kind::tk_neq:
-        return "operator!="_sv;
-      case Syntax_Node_Kind::tk_lteq:
-        return "operator<="_sv;
-      case Syntax_Node_Kind::tk_gteq:
-        return "operator>="_sv;
-      case Syntax_Node_Kind::tk_bang:
-        return "operator!"_sv;
-      case Syntax_Node_Kind::tk_tilde:
-        return "operator~"_sv;
-        // TODO: Reintroduce.
-        // case Syntax_Node_Kind::tk_pluseq:
-        //     return ast::Expr_Binary_Kind::assign_add;
-        // case Syntax_Node_Kind::tk_minuseq:
-        //     return ast::Expr_Binary_Kind::assign_sub;
-        // case Syntax_Node_Kind::tk_asteriskeq:
-        //     return ast::Expr_Binary_Kind::assign_mul;
-        // case Syntax_Node_Kind::tk_slasheq:
-        //     return ast::Expr_Binary_Kind::assign_div;
-        // case Syntax_Node_Kind::tk_percenteq:
-        //     return ast::Expr_Binary_Kind::assign_mod;
-        // case Syntax_Node_Kind::tk_ampeq:
-        //     return ast::Expr_Binary_Kind::assign_bit_and;
-        // case Syntax_Node_Kind::tk_pipeeq:
-        //     return ast::Expr_Binary_Kind::assign_bit_or;
-        // case Syntax_Node_Kind::tk_hateq:
-        //     return ast::Expr_Binary_Kind::assign_bit_xor;
-        // case Syntax_Node_Kind::tk_shleq:
-        //     return ast::Expr_Binary_Kind::assign_shl;
-        // case Syntax_Node_Kind::tk_shreq:
-        //     return ast::Expr_Binary_Kind::assign_shr;
+    case Syntax_Node_Kind::tk_langle:
+      return "operator<"_sv;
+    case Syntax_Node_Kind::tk_rangle:
+      return "operator>"_sv;
+    case Syntax_Node_Kind::tk_plus:
+      return "operator+"_sv;
+    case Syntax_Node_Kind::tk_minus:
+      return "operator-"_sv;
+    case Syntax_Node_Kind::tk_asterisk:
+      return "operator*"_sv;
+    case Syntax_Node_Kind::tk_slash:
+      return "operator/"_sv;
+    case Syntax_Node_Kind::tk_percent:
+      return "operator%"_sv;
+    case Syntax_Node_Kind::tk_amp:
+      return "operator&"_sv;
+    case Syntax_Node_Kind::tk_pipe:
+      return "operator|"_sv;
+    case Syntax_Node_Kind::tk_hat:
+      return "operator^"_sv;
+    case Syntax_Node_Kind::tk_amp2:
+      return "operator&&"_sv;
+    case Syntax_Node_Kind::tk_pipe2:
+      return "operator||"_sv;
+    case Syntax_Node_Kind::tk_hat2:
+      return "operator^^"_sv;
+    case Syntax_Node_Kind::tk_shl:
+      return "operator<<"_sv;
+    case Syntax_Node_Kind::tk_shr:
+      return "operator>>"_sv;
+    case Syntax_Node_Kind::tk_eq2:
+      return "operator=="_sv;
+    case Syntax_Node_Kind::tk_neq:
+      return "operator!="_sv;
+    case Syntax_Node_Kind::tk_lteq:
+      return "operator<="_sv;
+    case Syntax_Node_Kind::tk_gteq:
+      return "operator>="_sv;
+    case Syntax_Node_Kind::tk_bang:
+      return "operator!"_sv;
+    case Syntax_Node_Kind::tk_tilde:
+      return "operator~"_sv;
+      // TODO: Reintroduce.
+      // case Syntax_Node_Kind::tk_pluseq:
+      //     return ast::Expr_Binary_Kind::assign_add;
+      // case Syntax_Node_Kind::tk_minuseq:
+      //     return ast::Expr_Binary_Kind::assign_sub;
+      // case Syntax_Node_Kind::tk_asteriskeq:
+      //     return ast::Expr_Binary_Kind::assign_mul;
+      // case Syntax_Node_Kind::tk_slasheq:
+      //     return ast::Expr_Binary_Kind::assign_div;
+      // case Syntax_Node_Kind::tk_percenteq:
+      //     return ast::Expr_Binary_Kind::assign_mod;
+      // case Syntax_Node_Kind::tk_ampeq:
+      //     return ast::Expr_Binary_Kind::assign_bit_and;
+      // case Syntax_Node_Kind::tk_pipeeq:
+      //     return ast::Expr_Binary_Kind::assign_bit_or;
+      // case Syntax_Node_Kind::tk_hateq:
+      //     return ast::Expr_Binary_Kind::assign_bit_xor;
+      // case Syntax_Node_Kind::tk_shleq:
+      //     return ast::Expr_Binary_Kind::assign_shl;
+      // case Syntax_Node_Kind::tk_shreq:
+      //     return ast::Expr_Binary_Kind::assign_shr;
 
-      default:
-        ANTON_ASSERT(false, "invalid syntax node kind");
-        ANTON_UNREACHABLE();
+    default:
+      ANTON_ASSERT(false, "invalid syntax node kind");
+      ANTON_UNREACHABLE();
     }
   }
 
@@ -295,295 +294,290 @@ namespace vush {
   transform_expr(Context const& ctx, Syntax_Node const& node)
   {
     switch(node.kind) {
-      case Syntax_Node_Kind::expr_if: {
-        Syntax_Node const& condition_node = get_expr_if_condition(node);
-        anton::Expected<ast::Expr const*, Error> condition = transform_expr(ctx, condition_node);
-        if(!condition) {
-          return {anton::expected_error, ANTON_MOV(condition.error())};
-        }
+    case Syntax_Node_Kind::expr_if: {
+      Syntax_Node const& condition_node = get_expr_if_condition(node);
+      anton::Expected<ast::Expr const*, Error> condition = transform_expr(ctx, condition_node);
+      if(!condition) {
+        return {anton::expected_error, ANTON_MOV(condition.error())};
+      }
 
-        Syntax_Node const& then_expr_node =
-          get_expr_block_expression(get_expr_if_then_branch(node));
-        anton::Expected<ast::Expr const*, Error> then_branch = transform_expr(ctx, then_expr_node);
-        if(!then_branch) {
-          return {anton::expected_error, ANTON_MOV(then_branch.error())};
-        }
+      Syntax_Node const& then_expr_node = get_expr_block_expression(get_expr_if_then_branch(node));
+      anton::Expected<ast::Expr const*, Error> then_branch = transform_expr(ctx, then_expr_node);
+      if(!then_branch) {
+        return {anton::expected_error, ANTON_MOV(then_branch.error())};
+      }
 
-        Syntax_Node const& else_expr_node =
-          get_expr_block_expression(get_expr_if_else_branch(node));
-        anton::Expected<ast::Expr const*, Error> else_branch = transform_expr(ctx, else_expr_node);
-        if(!else_branch) {
-          return {anton::expected_error, ANTON_MOV(else_branch.error())};
-        }
+      Syntax_Node const& else_expr_node = get_expr_block_expression(get_expr_if_else_branch(node));
+      anton::Expected<ast::Expr const*, Error> else_branch = transform_expr(ctx, else_expr_node);
+      if(!else_branch) {
+        return {anton::expected_error, ANTON_MOV(else_branch.error())};
+      }
 
+      return {anton::expected_value,
+              allocate<ast::Expr_If>(ctx.allocator, condition.value(), then_branch.value(),
+                                     else_branch.value(), node.source_info)};
+    } break;
+
+    case Syntax_Node_Kind::expr_identifier: {
+      Syntax_Token const& value_token = get_expr_identifier_value(node);
+      anton::String const* const value =
+        allocate<anton::String>(ctx.allocator, value_token.value, ctx.allocator);
+      return {anton::expected_value,
+              allocate<ast::Expr_Identifier>(ctx.allocator, *value, node.source_info)};
+    } break;
+
+    case Syntax_Node_Kind::expr_binary: {
+      Syntax_Node const& lhs_node = get_expr_binary_lhs(node);
+      anton::Expected<ast::Expr const*, Error> lhs = transform_expr(ctx, lhs_node);
+      if(!lhs) {
+        return ANTON_MOV(lhs);
+      }
+
+      Syntax_Node const& rhs_node = get_expr_binary_rhs(node);
+      anton::Expected<ast::Expr const*, Error> rhs = transform_expr(ctx, rhs_node);
+      if(!rhs) {
+        return ANTON_MOV(rhs);
+      }
+
+      Syntax_Token const& operator_token = get_expr_binary_operator(node);
+      if(operator_token.kind == Syntax_Node_Kind::tk_equals) {
         return {anton::expected_value,
-                allocate<ast::Expr_If>(ctx.allocator, condition.value(), then_branch.value(),
-                                       else_branch.value(), node.source_info)};
-      } break;
-
-      case Syntax_Node_Kind::expr_identifier: {
-        Syntax_Token const& value_token = get_expr_identifier_value(node);
-        anton::String const* const value =
-          allocate<anton::String>(ctx.allocator, value_token.value, ctx.allocator);
-        return {anton::expected_value,
-                allocate<ast::Expr_Identifier>(ctx.allocator, *value, node.source_info)};
-      } break;
-
-      case Syntax_Node_Kind::expr_binary: {
-        Syntax_Node const& lhs_node = get_expr_binary_lhs(node);
-        anton::Expected<ast::Expr const*, Error> lhs = transform_expr(ctx, lhs_node);
-        if(!lhs) {
-          return ANTON_MOV(lhs);
-        }
-
-        Syntax_Node const& rhs_node = get_expr_binary_rhs(node);
-        anton::Expected<ast::Expr const*, Error> rhs = transform_expr(ctx, rhs_node);
-        if(!rhs) {
-          return ANTON_MOV(rhs);
-        }
-
-        Syntax_Token const& operator_token = get_expr_binary_operator(node);
-        if(operator_token.kind == Syntax_Node_Kind::tk_equals) {
-          return {anton::expected_value,
-                  allocate<ast::Expr_Assignment>(ctx.allocator, lhs.value(), rhs.value(),
-                                                 node.source_info)};
-        } else {
-          anton::String_View const identifier_string =
-            get_operator_identifier_string(operator_token.kind);
-          ast::Identifier const* const identifier =
-            allocate<ast::Identifier>(ctx.allocator, identifier_string, operator_token.source_info);
-          Array<ast::Expr const*>& arguments =
-            *allocate<Array<ast::Expr const*>>(ctx.allocator, ctx.allocator);
-          arguments.push_back(lhs.value());
-          arguments.push_back(rhs.value());
-          return {anton::expected_value,
-                  allocate<ast::Expr_Call>(ctx.allocator, identifier, arguments, node.source_info)};
-        }
-      } break;
-
-      case Syntax_Node_Kind::expr_prefix: {
-        Syntax_Node const& expression_node = get_expr_prefix_expression(node);
-        anton::Expected<ast::Expr const*, Error> expression = transform_expr(ctx, expression_node);
-        if(!expression) {
-          return ANTON_MOV(expression);
-        }
-
-        Syntax_Token const& operator_token = get_expr_prefix_operator(node);
+                allocate<ast::Expr_Assignment>(ctx.allocator, lhs.value(), rhs.value(),
+                                               node.source_info)};
+      } else {
         anton::String_View const identifier_string =
           get_operator_identifier_string(operator_token.kind);
         ast::Identifier const* const identifier =
           allocate<ast::Identifier>(ctx.allocator, identifier_string, operator_token.source_info);
         Array<ast::Expr const*>& arguments =
           *allocate<Array<ast::Expr const*>>(ctx.allocator, ctx.allocator);
-        arguments.push_back(expression.value());
+        arguments.push_back(lhs.value());
+        arguments.push_back(rhs.value());
         return {anton::expected_value,
                 allocate<ast::Expr_Call>(ctx.allocator, identifier, arguments, node.source_info)};
-      } break;
+      }
+    } break;
 
-      case Syntax_Node_Kind::expr_field: {
-        Syntax_Node const& expression_node = get_expr_field_expression(node);
-        anton::Expected<ast::Expr const*, Error> expression = transform_expr(ctx, expression_node);
-        if(!expression) {
-          return ANTON_MOV(expression);
-        }
+    case Syntax_Node_Kind::expr_prefix: {
+      Syntax_Node const& expression_node = get_expr_prefix_expression(node);
+      anton::Expected<ast::Expr const*, Error> expression = transform_expr(ctx, expression_node);
+      if(!expression) {
+        return ANTON_MOV(expression);
+      }
 
-        Syntax_Token const& identifier_token = get_expr_field_identifier(node);
-        ast::Identifier const* identifier = transform_identifier(ctx, identifier_token);
-        return {anton::expected_value, allocate<ast::Expr_Field>(ctx.allocator, expression.value(),
-                                                                 identifier, node.source_info)};
-      } break;
+      Syntax_Token const& operator_token = get_expr_prefix_operator(node);
+      anton::String_View const identifier_string =
+        get_operator_identifier_string(operator_token.kind);
+      ast::Identifier const* const identifier =
+        allocate<ast::Identifier>(ctx.allocator, identifier_string, operator_token.source_info);
+      Array<ast::Expr const*>& arguments =
+        *allocate<Array<ast::Expr const*>>(ctx.allocator, ctx.allocator);
+      arguments.push_back(expression.value());
+      return {anton::expected_value,
+              allocate<ast::Expr_Call>(ctx.allocator, identifier, arguments, node.source_info)};
+    } break;
 
-      case Syntax_Node_Kind::expr_index: {
-        Syntax_Node const& expression_node = get_expr_index_expression(node);
-        anton::Expected<ast::Expr const*, Error> expression = transform_expr(ctx, expression_node);
-        if(!expression) {
-          return ANTON_MOV(expression);
-        }
+    case Syntax_Node_Kind::expr_field: {
+      Syntax_Node const& expression_node = get_expr_field_expression(node);
+      anton::Expected<ast::Expr const*, Error> expression = transform_expr(ctx, expression_node);
+      if(!expression) {
+        return ANTON_MOV(expression);
+      }
 
-        Syntax_Node const& index_node = get_expr_index_index(node);
-        anton::Expected<ast::Expr const*, Error> index = transform_expr(ctx, index_node);
-        if(!index) {
-          return ANTON_MOV(index);
-        }
+      Syntax_Token const& identifier_token = get_expr_field_identifier(node);
+      ast::Identifier const* identifier = transform_identifier(ctx, identifier_token);
+      return {anton::expected_value, allocate<ast::Expr_Field>(ctx.allocator, expression.value(),
+                                                               identifier, node.source_info)};
+    } break;
 
-        return {anton::expected_value, allocate<ast::Expr_Index>(ctx.allocator, expression.value(),
-                                                                 index.value(), node.source_info)};
-      } break;
+    case Syntax_Node_Kind::expr_index: {
+      Syntax_Node const& expression_node = get_expr_index_expression(node);
+      anton::Expected<ast::Expr const*, Error> expression = transform_expr(ctx, expression_node);
+      if(!expression) {
+        return ANTON_MOV(expression);
+      }
 
-      case Syntax_Node_Kind::expr_parentheses: {
-        Syntax_Node const& expression_node = get_expr_parentheses_expression(node);
-        anton::Expected<ast::Expr const*, Error> expression = transform_expr(ctx, expression_node);
-        if(!expression) {
-          return ANTON_MOV(expression);
-        }
+      Syntax_Node const& index_node = get_expr_index_index(node);
+      anton::Expected<ast::Expr const*, Error> index = transform_expr(ctx, index_node);
+      if(!index) {
+        return ANTON_MOV(index);
+      }
 
-        return {anton::expected_value, allocate<ast::Expr_Parentheses>(
-                                         ctx.allocator, expression.value(), node.source_info)};
-      } break;
+      return {anton::expected_value, allocate<ast::Expr_Index>(ctx.allocator, expression.value(),
+                                                               index.value(), node.source_info)};
+    } break;
 
-      case Syntax_Node_Kind::expr_reinterpret: {
-        // TODO: implement.
-        ANTON_ASSERT(false, "unimplemented");
-        ANTON_UNREACHABLE();
-      } break;
+    case Syntax_Node_Kind::expr_parentheses: {
+      Syntax_Node const& expression_node = get_expr_parentheses_expression(node);
+      anton::Expected<ast::Expr const*, Error> expression = transform_expr(ctx, expression_node);
+      if(!expression) {
+        return ANTON_MOV(expression);
+      }
 
-      case Syntax_Node_Kind::expr_init: {
-        auto transform_initializer =
-          [](Context const& ctx,
-             Syntax_Node const& node) -> anton::Expected<ast::Initializer const*, Error> {
-          switch(node.kind) {
-            case Syntax_Node_Kind::named_initializer: {
-              Syntax_Token const& identifier_token = get_named_initializer_identifier(node);
-              ast::Identifier const* const identifier = transform_identifier(ctx, identifier_token);
+      return {anton::expected_value,
+              allocate<ast::Expr_Parentheses>(ctx.allocator, expression.value(), node.source_info)};
+    } break;
 
-              Syntax_Node const& expression_node = get_named_initializer_expression(node);
-              anton::Expected<ast::Expr const*, Error> expression =
-                transform_expr(ctx, expression_node);
-              if(!expression) {
-                return {anton::expected_error, ANTON_MOV(expression.error())};
-              }
+    case Syntax_Node_Kind::expr_reinterpret: {
+      // TODO: implement.
+      ANTON_ASSERT(false, "unimplemented");
+      ANTON_UNREACHABLE();
+    } break;
 
-              return {anton::expected_value,
-                      allocate<ast::Named_Initializer>(ctx.allocator, identifier,
-                                                       expression.value(), node.source_info)};
-            } break;
+    case Syntax_Node_Kind::expr_init: {
+      auto transform_initializer =
+        [](Context const& ctx,
+           Syntax_Node const& node) -> anton::Expected<ast::Initializer const*, Error> {
+        switch(node.kind) {
+        case Syntax_Node_Kind::named_initializer: {
+          Syntax_Token const& identifier_token = get_named_initializer_identifier(node);
+          ast::Identifier const* const identifier = transform_identifier(ctx, identifier_token);
 
-            case Syntax_Node_Kind::indexed_initializer: {
-              Syntax_Node const& index_node = get_indexed_initializer_index(node);
-              anton::Expected<ast::Lt_Integer const*, Error> index =
-                transform_lt_integer(ctx, index_node);
-              if(!index) {
-                return {anton::expected_error, ANTON_MOV(index.error())};
-              }
-
-              Syntax_Node const& expression_node = get_indexed_initializer_expression(node);
-              anton::Expected<ast::Expr const*, Error> expression =
-                transform_expr(ctx, expression_node);
-              if(!expression) {
-                return {anton::expected_error, ANTON_MOV(expression.error())};
-              }
-
-              return {anton::expected_value,
-                      allocate<ast::Indexed_Initializer>(ctx.allocator, index.value(),
-                                                         expression.value(), node.source_info)};
-            } break;
-
-            case Syntax_Node_Kind::basic_initializer: {
-              Syntax_Node const& expression_node = get_basic_initializer_expression(node);
-              anton::Expected<ast::Expr const*, Error> expression =
-                transform_expr(ctx, expression_node);
-              if(!expression) {
-                return {anton::expected_error, ANTON_MOV(expression.error())};
-              }
-
-              return {anton::expected_value,
-                      allocate<ast::Basic_Initializer>(ctx.allocator, expression.value(),
-                                                       node.source_info)};
-            } break;
-
-            default:
-              ANTON_ASSERT(false, "invalid syntax node kind");
-              ANTON_UNREACHABLE();
+          Syntax_Node const& expression_node = get_named_initializer_expression(node);
+          anton::Expected<ast::Expr const*, Error> expression =
+            transform_expr(ctx, expression_node);
+          if(!expression) {
+            return {anton::expected_error, ANTON_MOV(expression.error())};
           }
-        };
 
-        Syntax_Node const& type_node = get_expr_init_type(node);
-        anton::Expected<ast::Type const*, Error> type = transform_type(ctx, type_node);
-        if(!type) {
-          return {anton::expected_error, ANTON_MOV(type.error())};
-        }
+          return {anton::expected_value,
+                  allocate<ast::Named_Initializer>(ctx.allocator, identifier, expression.value(),
+                                                   node.source_info)};
+        } break;
 
-        Syntax_Node const& initializers_node = get_expr_init_initializers(node);
-        Array<ast::Initializer const*>& initializers =
-          *allocate<Array<ast::Initializer const*>>(ctx.allocator, ctx.allocator);
-        for(SNOT const& snot: initializers_node.children) {
-          if(snot.is_left()) {
-            anton::Expected<ast::Initializer const*, Error> initializer =
-              transform_initializer(ctx, snot.left());
-            if(initializer) {
-              initializers.push_back(initializer.value());
-            } else {
-              return {anton::expected_error, ANTON_MOV(initializer.error())};
-            }
+        case Syntax_Node_Kind::indexed_initializer: {
+          Syntax_Node const& index_node = get_indexed_initializer_index(node);
+          anton::Expected<ast::Lt_Integer const*, Error> index =
+            transform_lt_integer(ctx, index_node);
+          if(!index) {
+            return {anton::expected_error, ANTON_MOV(index.error())};
           }
-        }
 
-        return {anton::expected_value, allocate<ast::Expr_Init>(ctx.allocator, type.value(),
-                                                                initializers, node.source_info)};
-      } break;
-
-      case Syntax_Node_Kind::expr_call: {
-        Syntax_Token const& identifier_token = get_expr_call_identifier(node);
-        ast::Identifier const* const identifier = transform_identifier(ctx, identifier_token);
-
-        Syntax_Node const& arguments_node = get_expr_call_arguments(node);
-        Array<ast::Expr const*>& arguments =
-          *allocate<Array<ast::Expr const*>>(ctx.allocator, ctx.allocator);
-        for(SNOT const& snot: arguments_node.children) {
-          if(snot.is_left()) {
-            anton::Expected<ast::Expr const*, Error> expression = transform_expr(ctx, snot.left());
-            if(expression) {
-              arguments.push_back(expression.value());
-            } else {
-              return {anton::expected_error, ANTON_MOV(expression.error())};
-            }
+          Syntax_Node const& expression_node = get_indexed_initializer_expression(node);
+          anton::Expected<ast::Expr const*, Error> expression =
+            transform_expr(ctx, expression_node);
+          if(!expression) {
+            return {anton::expected_error, ANTON_MOV(expression.error())};
           }
+
+          return {anton::expected_value,
+                  allocate<ast::Indexed_Initializer>(ctx.allocator, index.value(),
+                                                     expression.value(), node.source_info)};
+        } break;
+
+        case Syntax_Node_Kind::basic_initializer: {
+          Syntax_Node const& expression_node = get_basic_initializer_expression(node);
+          anton::Expected<ast::Expr const*, Error> expression =
+            transform_expr(ctx, expression_node);
+          if(!expression) {
+            return {anton::expected_error, ANTON_MOV(expression.error())};
+          }
+
+          return {anton::expected_value, allocate<ast::Basic_Initializer>(
+                                           ctx.allocator, expression.value(), node.source_info)};
+        } break;
+
+        default:
+          ANTON_ASSERT(false, "invalid syntax node kind");
+          ANTON_UNREACHABLE();
         }
+      };
 
-        return {anton::expected_value,
-                allocate<ast::Expr_Call>(ctx.allocator, identifier, arguments, node.source_info)};
-      } break;
+      Syntax_Node const& type_node = get_expr_init_type(node);
+      anton::Expected<ast::Type const*, Error> type = transform_type(ctx, type_node);
+      if(!type) {
+        return {anton::expected_error, ANTON_MOV(type.error())};
+      }
 
-      case Syntax_Node_Kind::expr_lt_bool: {
-        Syntax_Token const& value_token = get_expr_lt_bool_value(node);
-        bool const value = value_token.value == "true"_sv;
-        return {anton::expected_value,
-                allocate<ast::Lt_Bool>(ctx.allocator, value, node.source_info)};
-      } break;
-
-      case Syntax_Node_Kind::expr_lt_string: {
-        // There are no string literals in the language besides the ones used by decl_import which
-        // we have special handling for in place, therefore we leave this unimplemented.
-        ANTON_ASSERT(false, "unimplemented");
-        ANTON_UNREACHABLE();
-      } break;
-
-      case Syntax_Node_Kind::expr_lt_float: {
-        Syntax_Token const& value_token = get_expr_lt_float_value(node);
-        // The default float literal type is f32.
-        ast::Lt_Float_Kind kind = ast::Lt_Float_Kind::f32;
-        if(anton::Optional<Syntax_Token const&> suffix_token = get_expr_lt_float_suffix(node)) {
-          anton::String_View const suffix = suffix_token->value;
-          if(suffix == "d"_sv || suffix == "D"_sv) {
-            kind = ast::Lt_Float_Kind::f64;
+      Syntax_Node const& initializers_node = get_expr_init_initializers(node);
+      Array<ast::Initializer const*>& initializers =
+        *allocate<Array<ast::Initializer const*>>(ctx.allocator, ctx.allocator);
+      for(SNOT const& snot: initializers_node.children) {
+        if(snot.is_left()) {
+          anton::Expected<ast::Initializer const*, Error> initializer =
+            transform_initializer(ctx, snot.left());
+          if(initializer) {
+            initializers.push_back(initializer.value());
           } else {
-            return {anton::expected_error,
-                    err_invalid_float_suffix(ctx, suffix_token->source_info)};
+            return {anton::expected_error, ANTON_MOV(initializer.error())};
           }
         }
+      }
 
-        anton::String const* const value =
-          allocate<anton::String>(ctx.allocator, value_token.value, ctx.allocator);
-        return {anton::expected_value,
-                allocate<ast::Lt_Float>(ctx.allocator, *value, kind, node.source_info)};
-      } break;
+      return {anton::expected_value, allocate<ast::Expr_Init>(ctx.allocator, type.value(),
+                                                              initializers, node.source_info)};
+    } break;
 
-      case Syntax_Node_Kind::expr_lt_integer: {
-        anton::Expected<ast::Lt_Integer const*, Error> result = transform_lt_integer(ctx, node);
-        if(result) {
-          return {anton::expected_value, result.value()};
-        } else {
-          return {anton::expected_error, result.error()};
+    case Syntax_Node_Kind::expr_call: {
+      Syntax_Token const& identifier_token = get_expr_call_identifier(node);
+      ast::Identifier const* const identifier = transform_identifier(ctx, identifier_token);
+
+      Syntax_Node const& arguments_node = get_expr_call_arguments(node);
+      Array<ast::Expr const*>& arguments =
+        *allocate<Array<ast::Expr const*>>(ctx.allocator, ctx.allocator);
+      for(SNOT const& snot: arguments_node.children) {
+        if(snot.is_left()) {
+          anton::Expected<ast::Expr const*, Error> expression = transform_expr(ctx, snot.left());
+          if(expression) {
+            arguments.push_back(expression.value());
+          } else {
+            return {anton::expected_error, ANTON_MOV(expression.error())};
+          }
         }
-      } break;
+      }
 
-      case Syntax_Node_Kind::expr_default: {
-        return {anton::expected_value,
-                allocate<ast::Expr_Default>(ctx.allocator, node.source_info)};
-      } break;
+      return {anton::expected_value,
+              allocate<ast::Expr_Call>(ctx.allocator, identifier, arguments, node.source_info)};
+    } break;
 
-      default:
-        ANTON_UNREACHABLE();
+    case Syntax_Node_Kind::expr_lt_bool: {
+      Syntax_Token const& value_token = get_expr_lt_bool_value(node);
+      bool const value = value_token.value == "true"_sv;
+      return {anton::expected_value,
+              allocate<ast::Lt_Bool>(ctx.allocator, value, node.source_info)};
+    } break;
+
+    case Syntax_Node_Kind::expr_lt_string: {
+      // There are no string literals in the language besides the ones used by decl_import which
+      // we have special handling for in place, therefore we leave this unimplemented.
+      ANTON_ASSERT(false, "unimplemented");
+      ANTON_UNREACHABLE();
+    } break;
+
+    case Syntax_Node_Kind::expr_lt_float: {
+      Syntax_Token const& value_token = get_expr_lt_float_value(node);
+      // The default float literal type is f32.
+      ast::Lt_Float_Kind kind = ast::Lt_Float_Kind::f32;
+      if(anton::Optional<Syntax_Token const&> suffix_token = get_expr_lt_float_suffix(node)) {
+        anton::String_View const suffix = suffix_token->value;
+        if(suffix == "d"_sv || suffix == "D"_sv) {
+          kind = ast::Lt_Float_Kind::f64;
+        } else {
+          return {anton::expected_error, err_invalid_float_suffix(ctx, suffix_token->source_info)};
+        }
+      }
+
+      anton::String const* const value =
+        allocate<anton::String>(ctx.allocator, value_token.value, ctx.allocator);
+      return {anton::expected_value,
+              allocate<ast::Lt_Float>(ctx.allocator, *value, kind, node.source_info)};
+    } break;
+
+    case Syntax_Node_Kind::expr_lt_integer: {
+      anton::Expected<ast::Lt_Integer const*, Error> result = transform_lt_integer(ctx, node);
+      if(result) {
+        return {anton::expected_value, result.value()};
+      } else {
+        return {anton::expected_error, result.error()};
+      }
+    } break;
+
+    case Syntax_Node_Kind::expr_default: {
+      return {anton::expected_value, allocate<ast::Expr_Default>(ctx.allocator, node.source_info)};
+    } break;
+
+    default:
+      ANTON_UNREACHABLE();
     }
   }
 
@@ -649,255 +643,253 @@ namespace vush {
                                                           Syntax_Node const& node)
   {
     switch(node.kind) {
-      case Syntax_Node_Kind::variable: {
-        anton::Expected<ast::Variable const*, Error> variable = transform_variable(ctx, node);
+    case Syntax_Node_Kind::variable: {
+      anton::Expected<ast::Variable const*, Error> variable = transform_variable(ctx, node);
+      if(variable) {
+        return {anton::expected_value, variable.value()};
+      } else {
+        return {anton::expected_error, ANTON_MOV(variable.error())};
+      }
+    } break;
+
+    case Syntax_Node_Kind::stmt_block: {
+      anton::Expected<ast::Node_List, Error> result = transform_stmt_block_child_stmts(ctx, node);
+      if(!result) {
+        return {anton::expected_error, ANTON_MOV(result.error())};
+      }
+
+      return {anton::expected_value,
+              allocate<ast::Stmt_Block>(ctx.allocator, result.value(), node.source_info)};
+    } break;
+
+    case Syntax_Node_Kind::stmt_if: {
+      anton::Expected<ast::Expr const*, Error> condition =
+        transform_expr(ctx, get_stmt_if_condition(node));
+      if(!condition) {
+        return {anton::expected_error, ANTON_MOV(condition.error())};
+      }
+
+      anton::Expected<ast::Node_List, Error> then_branch =
+        transform_stmt_block_child_stmts(ctx, get_stmt_if_then_branch(node));
+      if(!then_branch) {
+        return {anton::expected_error, ANTON_MOV(then_branch.error())};
+      }
+
+      ast::Node_List else_branch;
+      if(anton::Optional<Syntax_Node const&> else_node = get_stmt_if_else_branch(node)) {
+        anton::Expected<ast::Node_List, Error> result =
+          transform_stmt_block_child_stmts(ctx, else_node.value());
+        if(result) {
+          else_branch = result.value();
+        } else {
+          return {anton::expected_error, ANTON_MOV(result.error())};
+        }
+      }
+
+      return {anton::expected_value,
+              allocate<ast::Stmt_If>(ctx.allocator, condition.value(), then_branch.value(),
+                                     else_branch, node.source_info)};
+    } break;
+
+    case Syntax_Node_Kind::stmt_switch: {
+      anton::Expected<ast::Expr const*, Error> expression =
+        transform_expr(ctx, get_stmt_switch_expression(node));
+      if(!expression) {
+        return {anton::expected_error, ANTON_MOV(expression.error())};
+      }
+
+      Array<ast::Switch_Arm const*>* const arm_list =
+        allocate<Array<ast::Switch_Arm const*>>(ctx.allocator, ctx.allocator);
+      {
+        Syntax_Node const& arm_list_node = get_stmt_switch_arm_list(node);
+        for(SNOT const& snot: arm_list_node.children) {
+          if(!snot.is_left()) {
+            continue;
+          }
+
+          Syntax_Node const& arm_node = snot.left();
+          Array<ast::Expr const*>* const labels =
+            allocate<Array<ast::Expr const*>>(ctx.allocator, ctx.allocator);
+          for(SNOT const& snot: arm_node.children) {
+            if(snot.is_left() && snot.left().kind == Syntax_Node_Kind::switch_arm_label) {
+              Syntax_Node const& expression_node = snot.left().children[0].left();
+              anton::Expected<ast::Expr const*, Error> expression =
+                transform_expr(ctx, expression_node);
+              if(expression) {
+                labels->push_back(expression.value());
+              } else {
+                return {anton::expected_error, ANTON_MOV(expression.error())};
+              }
+            }
+          }
+
+          anton::Expected<ast::Node_List, Error> statements =
+            transform_stmt_block_child_stmts(ctx, get_switch_arm_body(arm_node));
+          if(!statements) {
+            return {anton::expected_error, ANTON_MOV(statements.error())};
+          }
+
+          ast::Switch_Arm const* const arm =
+            allocate<ast::Switch_Arm>(ctx.allocator, *labels, statements.value(), node.source_info);
+          arm_list->push_back(arm);
+        }
+      }
+
+      return {anton::expected_value, allocate<ast::Stmt_Switch>(ctx.allocator, expression.value(),
+                                                                *arm_list, node.source_info)};
+    } break;
+
+    case Syntax_Node_Kind::stmt_for: {
+      // We transform the for loop into a block statement that contains the definition of the
+      // variable and the loop itself in order to limit scope.
+      Array<ast::Node const*>* const statements =
+        allocate<Array<ast::Node const*>>(ctx.allocator, ctx.allocator);
+      if(anton::Optional variable_node = get_stmt_for_variable(node)) {
+        anton::Expected<ast::Variable const*, Error> variable =
+          transform_variable(ctx, variable_node.value());
         if(variable) {
-          return {anton::expected_value, variable.value()};
+          statements->push_back(variable.value());
         } else {
           return {anton::expected_error, ANTON_MOV(variable.error())};
         }
-      } break;
+      }
 
-      case Syntax_Node_Kind::stmt_block: {
-        anton::Expected<ast::Node_List, Error> result = transform_stmt_block_child_stmts(ctx, node);
-        if(!result) {
+      {
+        ast::Expr const* condition = nullptr;
+        if(anton::Optional condition_node = get_stmt_for_condition(node)) {
+          anton::Expected<ast::Expr const*, Error> result =
+            transform_expr(ctx, condition_node.value());
+          if(result) {
+            condition = result.value();
+          } else {
+            return {anton::expected_error, ANTON_MOV(result.error())};
+          }
+        }
+
+        ast::Node_List continuation;
+        if(anton::Optional expression_node = get_stmt_for_expression(node)) {
+          anton::Expected<ast::Expr const*, Error> expression =
+            transform_expr(ctx, expression_node.value());
+          if(!expression) {
+            return {anton::expected_error, ANTON_MOV(expression.error())};
+          }
+
+          Array<ast::Node const*>* const continuation_statements =
+            allocate<Array<ast::Node const*>>(ctx.allocator, ctx.allocator);
+          ast::Stmt_Expression const* const stmt = allocate<ast::Stmt_Expression>(
+            ctx.allocator, expression.value(), expression.value()->source_info);
+          continuation_statements->push_back(stmt);
+          continuation = *continuation_statements;
+        }
+
+        anton::Expected<ast::Node_List, Error> body =
+          transform_stmt_block_child_stmts(ctx, get_stmt_for_body(node));
+        if(!body) {
+          return {anton::expected_error, ANTON_MOV(body.error())};
+        }
+
+        ast::Stmt_Loop const* const loop = allocate<ast::Stmt_Loop>(
+          ctx.allocator, condition, continuation, body.value(), node.source_info);
+        statements->push_back(loop);
+      }
+
+      return {anton::expected_value,
+              allocate<ast::Stmt_Block>(ctx.allocator, *statements, Source_Info{})};
+    } break;
+
+    case Syntax_Node_Kind::stmt_while: {
+      anton::Expected<ast::Expr const*, Error> condition =
+        transform_expr(ctx, get_stmt_while_condition(node));
+      if(!condition) {
+        return {anton::expected_error, ANTON_MOV(condition.error())};
+      }
+
+      anton::Expected<ast::Node_List, Error> statements =
+        transform_stmt_block_child_stmts(ctx, get_stmt_while_statements(node));
+      if(!statements) {
+        return {anton::expected_error, ANTON_MOV(statements.error())};
+      }
+
+      return {anton::expected_value,
+              allocate<ast::Stmt_Loop>(ctx.allocator, condition.value(), ast::Node_List{},
+                                       statements.value(), node.source_info)};
+    } break;
+
+    case Syntax_Node_Kind::stmt_do_while: {
+      anton::Expected<ast::Node_List, Error> statements =
+        transform_stmt_block_child_stmts(ctx, get_stmt_do_while_body(node));
+      if(!statements) {
+        return {anton::expected_error, ANTON_MOV(statements.error())};
+      }
+
+      // We want to place the condition in the continuation block,
+      // therefore we transform it into 'if condition { } else { break }'.
+      Array<ast::Node const*>* const continuation =
+        allocate<Array<ast::Node const*>>(ctx.allocator, ctx.allocator);
+      {
+        anton::Expected<ast::Expr const*, Error> condition =
+          transform_expr(ctx, get_stmt_do_while_condition(node));
+        if(!condition) {
+          return {anton::expected_error, ANTON_MOV(condition.error())};
+        }
+
+        Array<ast::Node const*>* const else_block =
+          allocate<Array<ast::Node const*>>(ctx.allocator, ctx.allocator);
+        else_block->push_back(allocate<ast::Stmt_Break>(ctx.allocator, Source_Info{}));
+        ast::Stmt_If const* const stmt_if = allocate<ast::Stmt_If>(
+          ctx.allocator, condition.value(), ast::Node_List{}, *else_block, Source_Info{});
+        continuation->push_back(stmt_if);
+      }
+
+      return {anton::expected_value,
+              allocate<ast::Stmt_Loop>(ctx.allocator, nullptr, *continuation, statements.value(),
+                                       node.source_info)};
+    } break;
+
+    case Syntax_Node_Kind::stmt_return: {
+      ast::Expr const* expression = nullptr;
+      if(anton::Optional expression_node = get_stmt_return_expression(node)) {
+        anton::Expected<ast::Expr const*, Error> result =
+          transform_expr(ctx, expression_node.value());
+        if(result) {
+          expression = result.value();
+        } else {
           return {anton::expected_error, ANTON_MOV(result.error())};
         }
+      }
+      return {anton::expected_value,
+              allocate<ast::Stmt_Return>(ctx.allocator, expression, node.source_info)};
+    } break;
 
-        return {anton::expected_value,
-                allocate<ast::Stmt_Block>(ctx.allocator, result.value(), node.source_info)};
-      } break;
+    case Syntax_Node_Kind::stmt_break: {
+      return {anton::expected_value, allocate<ast::Stmt_Break>(ctx.allocator, node.source_info)};
+    } break;
 
-      case Syntax_Node_Kind::stmt_if: {
-        anton::Expected<ast::Expr const*, Error> condition =
-          transform_expr(ctx, get_stmt_if_condition(node));
-        if(!condition) {
-          return {anton::expected_error, ANTON_MOV(condition.error())};
-        }
+    case Syntax_Node_Kind::stmt_continue: {
+      return {anton::expected_value, allocate<ast::Stmt_Continue>(ctx.allocator, node.source_info)};
+    } break;
 
-        anton::Expected<ast::Node_List, Error> then_branch =
-          transform_stmt_block_child_stmts(ctx, get_stmt_if_then_branch(node));
-        if(!then_branch) {
-          return {anton::expected_error, ANTON_MOV(then_branch.error())};
-        }
+    case Syntax_Node_Kind::stmt_discard: {
+      return {anton::expected_value, allocate<ast::Stmt_Discard>(ctx.allocator, node.source_info)};
+    } break;
 
-        ast::Node_List else_branch;
-        if(anton::Optional<Syntax_Node const&> else_node = get_stmt_if_else_branch(node)) {
-          anton::Expected<ast::Node_List, Error> result =
-            transform_stmt_block_child_stmts(ctx, else_node.value());
-          if(result) {
-            else_branch = result.value();
-          } else {
-            return {anton::expected_error, ANTON_MOV(result.error())};
-          }
-        }
+    case Syntax_Node_Kind::stmt_expression: {
+      anton::Expected<ast::Expr const*, Error> expression =
+        transform_expr(ctx, get_stmt_expression_expression(node));
+      if(!expression) {
+        return {anton::expected_error, ANTON_MOV(expression.error())};
+      }
 
-        return {anton::expected_value,
-                allocate<ast::Stmt_If>(ctx.allocator, condition.value(), then_branch.value(),
-                                       else_branch, node.source_info)};
-      } break;
+      return {anton::expected_value,
+              allocate<ast::Stmt_Expression>(ctx.allocator, expression.value(), node.source_info)};
+    } break;
 
-      case Syntax_Node_Kind::stmt_switch: {
-        anton::Expected<ast::Expr const*, Error> expression =
-          transform_expr(ctx, get_stmt_switch_expression(node));
-        if(!expression) {
-          return {anton::expected_error, ANTON_MOV(expression.error())};
-        }
+    case Syntax_Node_Kind::stmt_empty: {
+      return {anton::expected_value, nullptr};
+    } break;
 
-        Array<ast::Switch_Arm const*>* const arm_list =
-          allocate<Array<ast::Switch_Arm const*>>(ctx.allocator, ctx.allocator);
-        {
-          Syntax_Node const& arm_list_node = get_stmt_switch_arm_list(node);
-          for(SNOT const& snot: arm_list_node.children) {
-            if(!snot.is_left()) {
-              continue;
-            }
-
-            Syntax_Node const& arm_node = snot.left();
-            Array<ast::Expr const*>* const labels =
-              allocate<Array<ast::Expr const*>>(ctx.allocator, ctx.allocator);
-            for(SNOT const& snot: arm_node.children) {
-              if(snot.is_left() && snot.left().kind == Syntax_Node_Kind::switch_arm_label) {
-                Syntax_Node const& expression_node = snot.left().children[0].left();
-                anton::Expected<ast::Expr const*, Error> expression =
-                  transform_expr(ctx, expression_node);
-                if(expression) {
-                  labels->push_back(expression.value());
-                } else {
-                  return {anton::expected_error, ANTON_MOV(expression.error())};
-                }
-              }
-            }
-
-            anton::Expected<ast::Node_List, Error> statements =
-              transform_stmt_block_child_stmts(ctx, get_switch_arm_body(arm_node));
-            if(!statements) {
-              return {anton::expected_error, ANTON_MOV(statements.error())};
-            }
-
-            ast::Switch_Arm const* const arm = allocate<ast::Switch_Arm>(
-              ctx.allocator, *labels, statements.value(), node.source_info);
-            arm_list->push_back(arm);
-          }
-        }
-
-        return {anton::expected_value, allocate<ast::Stmt_Switch>(ctx.allocator, expression.value(),
-                                                                  *arm_list, node.source_info)};
-      } break;
-
-      case Syntax_Node_Kind::stmt_for: {
-        // We transform the for loop into a block statement that contains the definition of the
-        // variable and the loop itself in order to limit scope.
-        Array<ast::Node const*>* const statements =
-          allocate<Array<ast::Node const*>>(ctx.allocator, ctx.allocator);
-        if(anton::Optional variable_node = get_stmt_for_variable(node)) {
-          anton::Expected<ast::Variable const*, Error> variable =
-            transform_variable(ctx, variable_node.value());
-          if(variable) {
-            statements->push_back(variable.value());
-          } else {
-            return {anton::expected_error, ANTON_MOV(variable.error())};
-          }
-        }
-
-        {
-          ast::Expr const* condition = nullptr;
-          if(anton::Optional condition_node = get_stmt_for_condition(node)) {
-            anton::Expected<ast::Expr const*, Error> result =
-              transform_expr(ctx, condition_node.value());
-            if(result) {
-              condition = result.value();
-            } else {
-              return {anton::expected_error, ANTON_MOV(result.error())};
-            }
-          }
-
-          ast::Node_List continuation;
-          if(anton::Optional expression_node = get_stmt_for_expression(node)) {
-            anton::Expected<ast::Expr const*, Error> expression =
-              transform_expr(ctx, expression_node.value());
-            if(!expression) {
-              return {anton::expected_error, ANTON_MOV(expression.error())};
-            }
-
-            Array<ast::Node const*>* const continuation_statements =
-              allocate<Array<ast::Node const*>>(ctx.allocator, ctx.allocator);
-            ast::Stmt_Expression const* const stmt = allocate<ast::Stmt_Expression>(
-              ctx.allocator, expression.value(), expression.value()->source_info);
-            continuation_statements->push_back(stmt);
-            continuation = *continuation_statements;
-          }
-
-          anton::Expected<ast::Node_List, Error> body =
-            transform_stmt_block_child_stmts(ctx, get_stmt_for_body(node));
-          if(!body) {
-            return {anton::expected_error, ANTON_MOV(body.error())};
-          }
-
-          ast::Stmt_Loop const* const loop = allocate<ast::Stmt_Loop>(
-            ctx.allocator, condition, continuation, body.value(), node.source_info);
-          statements->push_back(loop);
-        }
-
-        return {anton::expected_value,
-                allocate<ast::Stmt_Block>(ctx.allocator, *statements, Source_Info{})};
-      } break;
-
-      case Syntax_Node_Kind::stmt_while: {
-        anton::Expected<ast::Expr const*, Error> condition =
-          transform_expr(ctx, get_stmt_while_condition(node));
-        if(!condition) {
-          return {anton::expected_error, ANTON_MOV(condition.error())};
-        }
-
-        anton::Expected<ast::Node_List, Error> statements =
-          transform_stmt_block_child_stmts(ctx, get_stmt_while_statements(node));
-        if(!statements) {
-          return {anton::expected_error, ANTON_MOV(statements.error())};
-        }
-
-        return {anton::expected_value,
-                allocate<ast::Stmt_Loop>(ctx.allocator, condition.value(), ast::Node_List{},
-                                         statements.value(), node.source_info)};
-      } break;
-
-      case Syntax_Node_Kind::stmt_do_while: {
-        anton::Expected<ast::Node_List, Error> statements =
-          transform_stmt_block_child_stmts(ctx, get_stmt_do_while_body(node));
-        if(!statements) {
-          return {anton::expected_error, ANTON_MOV(statements.error())};
-        }
-
-        // We want to place the condition in the continuation block,
-        // therefore we transform it into 'if condition { } else { break }'.
-        Array<ast::Node const*>* const continuation =
-          allocate<Array<ast::Node const*>>(ctx.allocator, ctx.allocator);
-        {
-          anton::Expected<ast::Expr const*, Error> condition =
-            transform_expr(ctx, get_stmt_do_while_condition(node));
-          if(!condition) {
-            return {anton::expected_error, ANTON_MOV(condition.error())};
-          }
-
-          Array<ast::Node const*>* const else_block =
-            allocate<Array<ast::Node const*>>(ctx.allocator, ctx.allocator);
-          else_block->push_back(allocate<ast::Stmt_Break>(ctx.allocator, Source_Info{}));
-          ast::Stmt_If const* const stmt_if = allocate<ast::Stmt_If>(
-            ctx.allocator, condition.value(), ast::Node_List{}, *else_block, Source_Info{});
-          continuation->push_back(stmt_if);
-        }
-
-        return {anton::expected_value,
-                allocate<ast::Stmt_Loop>(ctx.allocator, nullptr, *continuation, statements.value(),
-                                         node.source_info)};
-      } break;
-
-      case Syntax_Node_Kind::stmt_return: {
-        ast::Expr const* expression = nullptr;
-        if(anton::Optional expression_node = get_stmt_return_expression(node)) {
-          anton::Expected<ast::Expr const*, Error> result =
-            transform_expr(ctx, expression_node.value());
-          if(result) {
-            expression = result.value();
-          } else {
-            return {anton::expected_error, ANTON_MOV(result.error())};
-          }
-        }
-        return {anton::expected_value,
-                allocate<ast::Stmt_Return>(ctx.allocator, expression, node.source_info)};
-      } break;
-
-      case Syntax_Node_Kind::stmt_break: {
-        return {anton::expected_value, allocate<ast::Stmt_Break>(ctx.allocator, node.source_info)};
-      } break;
-
-      case Syntax_Node_Kind::stmt_continue: {
-        return {anton::expected_value,
-                allocate<ast::Stmt_Continue>(ctx.allocator, node.source_info)};
-      } break;
-
-      case Syntax_Node_Kind::stmt_discard: {
-        return {anton::expected_value,
-                allocate<ast::Stmt_Discard>(ctx.allocator, node.source_info)};
-      } break;
-
-      case Syntax_Node_Kind::stmt_expression: {
-        anton::Expected<ast::Expr const*, Error> expression =
-          transform_expr(ctx, get_stmt_expression_expression(node));
-        if(!expression) {
-          return {anton::expected_error, ANTON_MOV(expression.error())};
-        }
-
-        return {anton::expected_value, allocate<ast::Stmt_Expression>(
-                                         ctx.allocator, expression.value(), node.source_info)};
-      } break;
-
-      case Syntax_Node_Kind::stmt_empty: {
-        return {anton::expected_value, nullptr};
-      } break;
-
-      default:
-        ANTON_UNREACHABLE();
+    default:
+      ANTON_UNREACHABLE();
     }
   }
 
@@ -1207,75 +1199,74 @@ namespace vush {
 
       Syntax_Node const& syntax_node = snot.left();
       switch(syntax_node.kind) {
-        case Syntax_Node_Kind::decl_if: {
-          anton::Expected<ast::Node_List, Error> result = transform_decl_if(ctx, syntax_node);
-          if(!result) {
-            return {anton::expected_error, ANTON_MOV(result.error())};
-          }
+      case Syntax_Node_Kind::decl_if: {
+        anton::Expected<ast::Node_List, Error> result = transform_decl_if(ctx, syntax_node);
+        if(!result) {
+          return {anton::expected_error, ANTON_MOV(result.error())};
+        }
 
-          ast::Node_List const decls = result.value();
-          abstract.insert(abstract.end(), decls.begin(), decls.end());
-        } break;
+        ast::Node_List const decls = result.value();
+        abstract.insert(abstract.end(), decls.begin(), decls.end());
+      } break;
 
-        case Syntax_Node_Kind::decl_import: {
-          anton::Expected<ast::Node_List, Error> result = transform_decl_import(ctx, syntax_node);
-          if(!result) {
-            return {anton::expected_error, ANTON_MOV(result.error())};
-          }
+      case Syntax_Node_Kind::decl_import: {
+        anton::Expected<ast::Node_List, Error> result = transform_decl_import(ctx, syntax_node);
+        if(!result) {
+          return {anton::expected_error, ANTON_MOV(result.error())};
+        }
 
-          ast::Node_List const decls = result.value();
-          abstract.insert(abstract.end(), decls.begin(), decls.end());
-        } break;
+        ast::Node_List const decls = result.value();
+        abstract.insert(abstract.end(), decls.begin(), decls.end());
+      } break;
 
-        case Syntax_Node_Kind::variable: {
-          anton::Expected<ast::Variable const*, Error> result =
-            transform_variable(ctx, syntax_node);
-          if(!result) {
-            return {anton::expected_error, ANTON_MOV(result.error())};
-          }
+      case Syntax_Node_Kind::variable: {
+        anton::Expected<ast::Variable const*, Error> result = transform_variable(ctx, syntax_node);
+        if(!result) {
+          return {anton::expected_error, ANTON_MOV(result.error())};
+        }
 
-          abstract.insert(abstract.end(), result.value());
-        } break;
+        abstract.insert(abstract.end(), result.value());
+      } break;
 
-        case Syntax_Node_Kind::decl_struct: {
-          anton::Expected<ast::Decl_Struct const*, Error> result =
-            transform_decl_struct(ctx, syntax_node);
-          if(!result) {
-            return {anton::expected_error, ANTON_MOV(result.error())};
-          }
+      case Syntax_Node_Kind::decl_struct: {
+        anton::Expected<ast::Decl_Struct const*, Error> result =
+          transform_decl_struct(ctx, syntax_node);
+        if(!result) {
+          return {anton::expected_error, ANTON_MOV(result.error())};
+        }
 
-          ast::Decl_Struct const* const decl = result.value();
-          abstract.insert(abstract.end(), decl);
-        } break;
+        ast::Decl_Struct const* const decl = result.value();
+        abstract.insert(abstract.end(), decl);
+      } break;
 
-        case Syntax_Node_Kind::decl_settings: {
-          // TODO
-        } break;
+      case Syntax_Node_Kind::decl_settings: {
+        // TODO
+      } break;
 
-        case Syntax_Node_Kind::decl_function: {
-          anton::Expected<ast::Decl_Function const*, Error> result =
-            transform_decl_function(ctx, syntax_node);
-          if(!result) {
-            return {anton::expected_error, ANTON_MOV(result.error())};
-          }
+      case Syntax_Node_Kind::decl_function: {
+        anton::Expected<ast::Decl_Function const*, Error> result =
+          transform_decl_function(ctx, syntax_node);
+        if(!result) {
+          return {anton::expected_error, ANTON_MOV(result.error())};
+        }
 
-          ast::Decl_Function const* const decl = result.value();
-          abstract.insert(abstract.end(), decl);
-        } break;
+        ast::Decl_Function const* const decl = result.value();
+        abstract.insert(abstract.end(), decl);
+      } break;
 
-        case Syntax_Node_Kind::decl_stage_function: {
-          anton::Expected<ast::Decl_Stage_Function const*, Error> result =
-            transform_decl_stage_function(ctx, syntax_node);
-          if(!result) {
-            return {anton::expected_error, ANTON_MOV(result.error())};
-          }
+      case Syntax_Node_Kind::decl_stage_function: {
+        anton::Expected<ast::Decl_Stage_Function const*, Error> result =
+          transform_decl_stage_function(ctx, syntax_node);
+        if(!result) {
+          return {anton::expected_error, ANTON_MOV(result.error())};
+        }
 
-          ast::Decl_Stage_Function const* const decl = result.value();
-          abstract.insert(abstract.end(), decl);
-        } break;
+        ast::Decl_Stage_Function const* const decl = result.value();
+        abstract.insert(abstract.end(), decl);
+      } break;
 
-        default:
-          ANTON_UNREACHABLE();
+      default:
+        ANTON_UNREACHABLE();
       }
     }
     return {anton::expected_value, abstract};

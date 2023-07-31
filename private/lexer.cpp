@@ -88,44 +88,44 @@ namespace vush {
   {
     u64 const h = anton::hash(string);
     switch(h) {
-      case anton::hash("if"_sv7):
-        return Token_Kind::kw_if;
-      case anton::hash("else"_sv7):
-        return Token_Kind::kw_else;
-      case anton::hash("switch"_sv7):
-        return Token_Kind::kw_switch;
-      case anton::hash("default"_sv7):
-        return Token_Kind::kw_default;
-      case anton::hash("for"_sv7):
-        return Token_Kind::kw_for;
-      case anton::hash("while"_sv7):
-        return Token_Kind::kw_while;
-      case anton::hash("do"_sv7):
-        return Token_Kind::kw_do;
-      case anton::hash("return"_sv7):
-        return Token_Kind::kw_return;
-      case anton::hash("break"_sv7):
-        return Token_Kind::kw_break;
-      case anton::hash("continue"_sv7):
-        return Token_Kind::kw_continue;
-      case anton::hash("discard"_sv7):
-        return Token_Kind::kw_discard;
-      case anton::hash("from"_sv7):
-        return Token_Kind::kw_from;
-      case anton::hash("struct"_sv7):
-        return Token_Kind::kw_struct;
-      case anton::hash("import"_sv7):
-        return Token_Kind::kw_import;
-      case anton::hash("var"_sv7):
-        return Token_Kind::kw_var;
-      case anton::hash("mut"_sv7):
-        return Token_Kind::kw_mut;
-      case anton::hash("settings"_sv7):
-        return Token_Kind::kw_settings;
-      case anton::hash("reinterpret"_sv7):
-        return Token_Kind::kw_reinterpret;
-      default:
-        return anton::null_optional;
+    case anton::hash("if"_sv7):
+      return Token_Kind::kw_if;
+    case anton::hash("else"_sv7):
+      return Token_Kind::kw_else;
+    case anton::hash("switch"_sv7):
+      return Token_Kind::kw_switch;
+    case anton::hash("default"_sv7):
+      return Token_Kind::kw_default;
+    case anton::hash("for"_sv7):
+      return Token_Kind::kw_for;
+    case anton::hash("while"_sv7):
+      return Token_Kind::kw_while;
+    case anton::hash("do"_sv7):
+      return Token_Kind::kw_do;
+    case anton::hash("return"_sv7):
+      return Token_Kind::kw_return;
+    case anton::hash("break"_sv7):
+      return Token_Kind::kw_break;
+    case anton::hash("continue"_sv7):
+      return Token_Kind::kw_continue;
+    case anton::hash("discard"_sv7):
+      return Token_Kind::kw_discard;
+    case anton::hash("from"_sv7):
+      return Token_Kind::kw_from;
+    case anton::hash("struct"_sv7):
+      return Token_Kind::kw_struct;
+    case anton::hash("import"_sv7):
+      return Token_Kind::kw_import;
+    case anton::hash("var"_sv7):
+      return Token_Kind::kw_var;
+    case anton::hash("mut"_sv7):
+      return Token_Kind::kw_mut;
+    case anton::hash("settings"_sv7):
+      return Token_Kind::kw_settings;
+    case anton::hash("reinterpret"_sv7):
+      return Token_Kind::kw_reinterpret;
+    default:
+      return anton::null_optional;
     }
   }
 
@@ -254,47 +254,47 @@ namespace vush {
         if(c == '0' && is_integer_prefix_character(la)) {
           // We're matching a prefixed integer literal.
           switch(la) {
-            case 'b':
-            case 'B': {
-              char8 const* const begin = ++current;
-              while(current != end && is_binary_digit(*current)) {
-                ++current;
-                ++column;
-              }
+          case 'b':
+          case 'B': {
+            char8 const* const begin = ++current;
+            while(current != end && is_binary_digit(*current)) {
+              ++current;
+              ++column;
+            }
 
-              // We have to verify that no digits follow a binary literal because otherwise those
-              // would be tokenised as a separate integer literal.
-              if(is_digit(*current)) {
-                return {anton::expected_error,
-                        err_lexer_invalid_digit_in_binary_literal(
-                          ctx, source_path, current - source_begin, line, column)};
-              }
+            // We have to verify that no digits follow a binary literal because otherwise those
+            // would be tokenised as a separate integer literal.
+            if(is_digit(*current)) {
+              return {anton::expected_error,
+                      err_lexer_invalid_digit_in_binary_literal(
+                        ctx, source_path, current - source_begin, line, column)};
+            }
 
-              tokens.push_back(
-                Token{Token_Kind::lt_bin_integer, anton::String7_View{begin, current}});
-              token_sources.push_back(Token_Source_Info{state.offset, state.line, state.column,
-                                                        current - source_begin, line, column});
-            } break;
+            tokens.push_back(
+              Token{Token_Kind::lt_bin_integer, anton::String7_View{begin, current}});
+            token_sources.push_back(Token_Source_Info{state.offset, state.line, state.column,
+                                                      current - source_begin, line, column});
+          } break;
 
-            case 'x':
-            case 'X': {
-              char8 const* const begin = ++current;
-              while(current != end && is_hexadecimal_digit(*current)) {
-                ++current;
-                ++column;
-              }
+          case 'x':
+          case 'X': {
+            char8 const* const begin = ++current;
+            while(current != end && is_hexadecimal_digit(*current)) {
+              ++current;
+              ++column;
+            }
 
-              // We do not do any verification here of what follows
-              // a hexadecimal literal because it might be a suffix.
+            // We do not do any verification here of what follows
+            // a hexadecimal literal because it might be a suffix.
 
-              tokens.push_back(
-                Token{Token_Kind::lt_hex_integer, anton::String7_View{begin, current}});
-              token_sources.push_back(Token_Source_Info{state.offset, state.line, state.column,
-                                                        current - source_begin, line, column});
-            } break;
+            tokens.push_back(
+              Token{Token_Kind::lt_hex_integer, anton::String7_View{begin, current}});
+            token_sources.push_back(Token_Source_Info{state.offset, state.line, state.column,
+                                                      current - source_begin, line, column});
+          } break;
 
-            default:
-              ANTON_UNREACHABLE();
+          default:
+            ANTON_UNREACHABLE();
           }
         } else {
           // We haven't found a prefixed integer. Match integer or float.
@@ -414,85 +414,84 @@ namespace vush {
         char8 const* const begin = current;
         Token_Kind token_kind;
         switch(c) {
-          case '{':
-            token_kind = Token_Kind::tk_lbrace;
-            break;
-          case '}':
-            token_kind = Token_Kind::tk_rbrace;
-            break;
-          case '[':
-            token_kind = Token_Kind::tk_lbracket;
-            break;
-          case ']':
-            token_kind = Token_Kind::tk_rbracket;
-            break;
-          case '(':
-            token_kind = Token_Kind::tk_lparen;
-            break;
-          case ')':
-            token_kind = Token_Kind::tk_rparen;
-            break;
-          case '<':
-            token_kind = Token_Kind::tk_langle;
-            break;
-          case '>':
-            token_kind = Token_Kind::tk_rangle;
-            break;
-          case ';':
-            token_kind = Token_Kind::tk_semicolon;
-            break;
-          case ':':
-            token_kind = Token_Kind::tk_colon;
-            break;
-          case ',':
-            token_kind = Token_Kind::tk_comma;
-            break;
-          case '.':
-            token_kind = Token_Kind::tk_dot;
-            break;
-          case '\"':
-            token_kind = Token_Kind::tk_double_quote;
-            break;
-          case '@':
-            token_kind = Token_Kind::tk_at;
-            break;
-          case '+':
-            token_kind = Token_Kind::tk_plus;
-            break;
-          case '-':
-            token_kind = Token_Kind::tk_minus;
-            break;
-          case '*':
-            token_kind = Token_Kind::tk_asterisk;
-            break;
-          case '/':
-            token_kind = Token_Kind::tk_slash;
-            break;
-          case '%':
-            token_kind = Token_Kind::tk_percent;
-            break;
-          case '&':
-            token_kind = Token_Kind::tk_amp;
-            break;
-          case '|':
-            token_kind = Token_Kind::tk_pipe;
-            break;
-          case '^':
-            token_kind = Token_Kind::tk_hat;
-            break;
-          case '!':
-            token_kind = Token_Kind::tk_bang;
-            break;
-          case '~':
-            token_kind = Token_Kind::tk_tilde;
-            break;
-          case '=':
-            token_kind = Token_Kind::tk_equals;
-            break;
-          default:
-            return {
-              anton::expected_error,
-              err_lexer_unrecognised_token(ctx, source_path, current - source_begin, line, column)};
+        case '{':
+          token_kind = Token_Kind::tk_lbrace;
+          break;
+        case '}':
+          token_kind = Token_Kind::tk_rbrace;
+          break;
+        case '[':
+          token_kind = Token_Kind::tk_lbracket;
+          break;
+        case ']':
+          token_kind = Token_Kind::tk_rbracket;
+          break;
+        case '(':
+          token_kind = Token_Kind::tk_lparen;
+          break;
+        case ')':
+          token_kind = Token_Kind::tk_rparen;
+          break;
+        case '<':
+          token_kind = Token_Kind::tk_langle;
+          break;
+        case '>':
+          token_kind = Token_Kind::tk_rangle;
+          break;
+        case ';':
+          token_kind = Token_Kind::tk_semicolon;
+          break;
+        case ':':
+          token_kind = Token_Kind::tk_colon;
+          break;
+        case ',':
+          token_kind = Token_Kind::tk_comma;
+          break;
+        case '.':
+          token_kind = Token_Kind::tk_dot;
+          break;
+        case '\"':
+          token_kind = Token_Kind::tk_double_quote;
+          break;
+        case '@':
+          token_kind = Token_Kind::tk_at;
+          break;
+        case '+':
+          token_kind = Token_Kind::tk_plus;
+          break;
+        case '-':
+          token_kind = Token_Kind::tk_minus;
+          break;
+        case '*':
+          token_kind = Token_Kind::tk_asterisk;
+          break;
+        case '/':
+          token_kind = Token_Kind::tk_slash;
+          break;
+        case '%':
+          token_kind = Token_Kind::tk_percent;
+          break;
+        case '&':
+          token_kind = Token_Kind::tk_amp;
+          break;
+        case '|':
+          token_kind = Token_Kind::tk_pipe;
+          break;
+        case '^':
+          token_kind = Token_Kind::tk_hat;
+          break;
+        case '!':
+          token_kind = Token_Kind::tk_bang;
+          break;
+        case '~':
+          token_kind = Token_Kind::tk_tilde;
+          break;
+        case '=':
+          token_kind = Token_Kind::tk_equals;
+          break;
+        default:
+          return {anton::expected_error, err_lexer_unrecognised_token(
+                                           ctx, source_path, current - source_begin, line, column)};
         }
         ++current;
         ++column;
