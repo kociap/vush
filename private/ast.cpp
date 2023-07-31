@@ -46,6 +46,42 @@ namespace vush {
              v == Kind::e_uvec2 || v == Kind::e_uvec3 || v == Kind::e_uvec4;
     }
 
+    bool is_vector2(Type const& type)
+    {
+      if(type.node_kind != Node_Kind::type_builtin) {
+        return false;
+      }
+
+      using Kind = Type_Builtin_Kind;
+      Kind const v = static_cast<Type_Builtin const&>(type).value;
+      return v == Kind::e_vec2 || v == Kind::e_dvec2 || v == Kind::e_bvec2 || v == Kind::e_ivec2 ||
+             v == Kind::e_uvec2;
+    }
+
+    bool is_vector3(Type const& type)
+    {
+      if(type.node_kind != Node_Kind::type_builtin) {
+        return false;
+      }
+
+      using Kind = Type_Builtin_Kind;
+      Kind const v = static_cast<Type_Builtin const&>(type).value;
+      return v == Kind::e_vec3 || v == Kind::e_dvec3 || v == Kind::e_bvec3 || v == Kind::e_ivec3 ||
+             v == Kind::e_uvec3;
+    }
+
+    bool is_vector4(Type const& type)
+    {
+      if(type.node_kind != Node_Kind::type_builtin) {
+        return false;
+      }
+
+      using Kind = Type_Builtin_Kind;
+      Kind const v = static_cast<Type_Builtin const&>(type).value;
+      return v == Kind::e_vec4 || v == Kind::e_dvec4 || v == Kind::e_bvec4 || v == Kind::e_ivec4 ||
+             v == Kind::e_uvec4;
+    }
+
     bool is_bool_vector(Type const& type)
     {
       if(type.node_kind != Node_Kind::type_builtin) {

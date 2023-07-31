@@ -1,6 +1,5 @@
 #pragma once
 
-#include "ast_fwd.hpp"
 #include <anton/string.hpp>
 #include <anton/string_view.hpp>
 
@@ -110,13 +109,10 @@ namespace vush {
   {
     return Error{.diagnostic = anton::String("err_duplicate_default_label")};
   }
-  // TODO: Implement.
-  [[nodiscard]] inline Error err_duplicate_label([[maybe_unused]] Context const& ctx,
-                                                 [[maybe_unused]] Source_Info const& first,
-                                                 [[maybe_unused]] Source_Info const& second)
-  {
-    return Error{.diagnostic = anton::String("err_duplicate_label")};
-  }
+
+  [[nodiscard]] Error err_duplicate_label(Context const& ctx, Source_Info const& first,
+                                          Source_Info const& second);
+
   // TODO: Implement.
   [[nodiscard]] inline Error
   err_invalid_switch_arm_expression([[maybe_unused]] Context const& ctx,
@@ -275,13 +271,8 @@ namespace vush {
     return Error{.diagnostic = anton::String("err_array_index_is_not_integer")};
   }
 
-  [[nodiscard]] inline Error
-  err_type_has_no_member_named([[maybe_unused]] Context const& ctx,
-                               [[maybe_unused]] ast::Type const* type,
-                               [[maybe_unused]] ast::Identifier const* member_identifier)
-  {
-    return Error{.diagnostic = anton::String("err_type_has_no_member_named")};
-  }
+  [[nodiscard]] Error err_type_has_no_field_named(Context const& ctx, ast::Type const* type,
+                                                  ast::Identifier const* field_identifier);
 
   [[nodiscard]] inline Error
   err_builtin_type_has_no_member_named([[maybe_unused]] Context const& ctx,
@@ -291,7 +282,9 @@ namespace vush {
     return Error{.diagnostic = anton::String("err_builtin_type_has_no_member_named")};
   }
 
-  [[nodiscard]] Error err_vector_swizzle_invalid(Context const& ctx, ast::Identifier const* member);
+  [[nodiscard]] Error err_vector_swizzle_invalid(Context const& ctx, ast::Identifier const* field);
+  [[nodiscard]] Error err_vector_swizzle_overlong(Context const& ctx, ast::Type_Builtin const* type,
+                                                  ast::Identifier const* field);
   [[nodiscard]] Error err_unknown_vector_type(Context const& ctx, ast::Type const* type);
 
   [[nodiscard]] inline Error err_init_type_is_builtin([[maybe_unused]] Context const& ctx,

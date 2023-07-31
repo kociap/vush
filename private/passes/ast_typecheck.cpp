@@ -7,6 +7,84 @@
 #include <diagnostics.hpp>
 
 namespace vush {
+  // select_overload
+  //
+  [[nodiscard]] static anton::Expected<ast::Decl_Function const*, Error>
+  select_overload(Context& ctx, ast::Expr_Call const* const call,
+                  ast::Decl_Overloaded_Function const* const overloads);
+
+  // evaluate_expression_type
+  // Evaluate the type of an expression node. Recursively descend the hierarchy evaluating types of
+  // all expressions in the tree. To prevent costly reevaluation, evaluated types are maintained in
+  // a cache within Context.
+  //
+  [[nodiscard]] static anton::Expected<ast::Type const*, Error>
+  evaluate_expression_type(Context& ctx, ast::Node const* const node);
+
+  // evaluate_vector_field
+  //
+  [[nodiscard]] static anton::Expected<ast::Type const*, Error>
+  evaluate_vector_field(Context const& ctx, ast::Type_Builtin const& type,
+                        ast::Identifier const& field);
+
+  // evaluate_matrix_field
+  //
+  [[nodiscard]] static anton::Expected<ast::Type const*, Error>
+  evaluate_matrix_field(Context const& ctx, ast::Type_Builtin const& type,
+                        ast::Identifier const& field);
+
+  [[nodiscard]] static anton::Expected<void, Error>
+  evaluate_vector_initializer(Context& ctx, ast::Type_Builtin const& type,
+                              ast::Initializer const& generic_initializer)
+  {
+    ANTON_ASSERT(is_vector(type), "type is not vector");
+    ANTON_ASSERT(generic_initializer.node_kind == ast::Node_King::named_initializer,
+                 "vector initializer is not a field initializer");
+    // Match the type of the swizzle initializer against the type of the expression.
+    auto const initializer = static_cast<ast::Named_Initializer const&>(generic_initializer);
+    auto initializer_result = evaluate_expression_type(ctx, initializer.expression);
+    if(!initializer_result) {
+      return {anton::expected_error, ANTON_MOV(initializer_result.error())};
+    }
+
+    // Validate out swizzles larger than the vector type.
+    i64 const field_size = initializer.identifier->value.size_bytes();
+    if(is_vector2(type) && field_size > 2) {
+      return {anton::expected_error,
+              err_vector_swizzle_overlong(ctx, &type, initializer.identifier)};
+    }
+
+    if(is_vector3(type) && field_size > 3) {
+      return {anton::expected_error,
+              err_vector_swizzle_overlong(ctx, &type, initializer.identifier)};
+    }
+
+    if(is_vector4(type) && field_size > 4) {
+      return {anton::expected_error,
+              err_vector_swizzle_overlong(ctx, &type, initializer.identifier)};
+    }
+
+    auto field_result = evaluate_vector_field(ctx, type, *initializer.identifier);
+    if(!field_result) {
+      return {anton::expected_error, ANTON_MOV(field_result.error())};
+    }
+
+    ast::Type const* const field_type = field_result.value();
+    ast::Type const* const initializer_type = initializer_result.value();
+    if(compare_types_equal(*field_type, *initializer_type)) {
+      return anton::expected_value;
+    } else {
+      return {anton::expected_error, err_cannot_convert_type(ctx, field_type, initializer_type)};
+    }
+  }
+
+  [[nodiscard]] static anton::Expected<void, Error>
+  evaluate_matrix_initializer(Context& ctx, ast::Type_Builtin const& type,
+                              ast::Initializer const& generic_initializer)
+  {
+    return {anton::expected_error, err_unimplemented(ctx, generic_initializer.source_info)};
+  }
+
   anton::Expected<ast::Type const*, Error> evaluate_vector_field(Context const& ctx,
                                                                  ast::Type_Builtin const& type,
                                                                  ast::Identifier const& field)
@@ -18,7 +96,7 @@ namespace vush {
     i64 const size = value.size_bytes();
     if(size > 4 || size < 1) {
       // Less than 1 check for sanity.
-      return {anton::expected_error, err_vector_swizzle_invalid(ctx, &field)};
+      return {anton::expected_error, err_vector_swizzle_overlong(ctx, &type, &field)};
     }
 
     for(char8 const c: value.bytes()) {
@@ -105,20 +183,6 @@ namespace vush {
     // TODO: Implement.
     return {anton::expected_error, err_unimplemented(ctx, field.source_info)};
   }
-
-  // select_overload
-  //
-  [[nodiscard]] static anton::Expected<ast::Decl_Function const*, Error>
-  select_overload(Context& ctx, ast::Expr_Call const* const call,
-                  ast::Decl_Overloaded_Function const* const overloads);
-
-  // evaluate_expression_type
-  // Evaluate the type of an expression node. Recursively descend the hierarchy evaluating types of
-  // all expressions in the tree. To prevent costly reevaluation, evaluated types are maintained in
-  // a cache within Context.
-  //
-  [[nodiscard]] static anton::Expected<ast::Type const*, Error>
-  evaluate_expression_type(Context& ctx, ast::Node const* const node);
 
   anton::Expected<ast::Decl_Function const*, Error>
   select_overload(Context& ctx, ast::Expr_Call const* const call,
@@ -271,13 +335,24 @@ namespace vush {
       ast::Type const* generic_type = expr->type;
       switch(generic_type->node_kind) {
       case ast::Node_Kind::type_builtin: {
-        // Initialization of builtin types has already been validated, hence we proceed with
-        // vectors and matrices.
-        // TODO: We ought to make swizzles an exception to member lookup since generating all
-        //       permutations would result in considerably too many members. Additionally, we
-        //       would have to include an exception for their initialization.
-        // return {anton::expected_error, err_unimplemented(ctx, expr->source_info)};
-        // return {anton::expected_value, generic_type};
+        auto const type = static_cast<ast::Type_Builtin const*>(generic_type);
+        if(is_vector(*type)) {
+          for(ast::Initializer const* const initializer: expr->initializers) {
+            auto result = evaluate_vector_initializer(ctx, *type, *initializer);
+            if(!result) {
+              return {anton::expected_error, ANTON_MOV(result.error())};
+            }
+          }
+        } else if(is_matrix(*type)) {
+          for(ast::Initializer const* const initializer: expr->initializers) {
+            auto result = evaluate_matrix_initializer(ctx, *type, *initializer);
+            if(!result) {
+              return {anton::expected_error, ANTON_MOV(result.error())};
+            }
+          }
+        } else {
+          return {anton::expected_error, err_init_type_is_builtin(ctx, type)};
+        }
       } break;
 
       case ast::Node_Kind::type_struct: {
@@ -481,12 +556,12 @@ namespace vush {
         }
 
         return {anton::expected_error,
-                err_type_has_no_member_named(ctx, generic_type, expr->member)};
+                err_type_has_no_field_named(ctx, generic_type, expr->member)};
       } break;
 
       case ast::Node_Kind::type_array: {
         return {anton::expected_error,
-                err_type_has_no_member_named(ctx, generic_type, expr->member)};
+                err_type_has_no_field_named(ctx, generic_type, expr->member)};
       } break;
 
       default:

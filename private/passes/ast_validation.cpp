@@ -86,7 +86,7 @@ namespace vush {
 
       for(auto i = identifiers.begin(), j = identifiers.begin() + 1, e = identifiers.end(); j != e;
           ++i, ++j) {
-        bool const equal = compare((*i)->value, (*j)->value);
+        bool const equal = compare((*i)->value, (*j)->value) == 0;
         if(equal) {
           Source_Info const& src1 = (*i)->source_info;
           Source_Info const& src2 = (*j)->source_info;
@@ -199,7 +199,7 @@ namespace vush {
 
           for(auto i = indices.begin(), j = indices.begin() + 1, e = indices.end(); j != e;
               ++i, ++j) {
-            bool const equal = compare_integer_literals(*i, *j);
+            bool const equal = compare_integer_literals(*i, *j) == 0;
             if(equal) {
               Source_Info const& src1 = (*i)->source_info;
               Source_Info const& src2 = (*j)->source_info;

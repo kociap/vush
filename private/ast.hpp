@@ -342,6 +342,9 @@ namespace vush {
     [[nodiscard]] bool is_void(Type const& type);
     [[nodiscard]] bool is_integer(Type const& type);
     [[nodiscard]] bool is_vector(Type const& type);
+    [[nodiscard]] bool is_vector2(Type const& type);
+    [[nodiscard]] bool is_vector3(Type const& type);
+    [[nodiscard]] bool is_vector4(Type const& type);
     [[nodiscard]] bool is_bool_vector(Type const& type);
     [[nodiscard]] bool is_i32_vector(Type const& type);
     [[nodiscard]] bool is_u32_vector(Type const& type);
