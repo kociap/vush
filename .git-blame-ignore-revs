@@ -1,2 +1,5 @@
 # Reformat entire codebase to 100 column width
 7da3a904210c492f0619b7db9a01780104c860fd
+
+# Deindent case labels
+0ea200f1ddf4766acf74ab09755af26c7e3ad82a
