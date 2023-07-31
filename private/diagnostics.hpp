@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ast_fwd.hpp"
 #include <anton/string.hpp>
 #include <anton/string_view.hpp>
 
@@ -282,18 +283,25 @@ namespace vush {
     return Error{.diagnostic = anton::String("err_type_has_no_member_named")};
   }
 
+  [[nodiscard]] inline Error
+  err_builtin_type_has_no_member_named([[maybe_unused]] Context const& ctx,
+                                       [[maybe_unused]] ast::Type const* type,
+                                       [[maybe_unused]] ast::Identifier const* member_identifier)
+  {
+    return Error{.diagnostic = anton::String("err_builtin_type_has_no_member_named")};
+  }
+
+  [[nodiscard]] Error err_vector_swizzle_invalid(Context const& ctx, ast::Identifier const* member);
+  [[nodiscard]] Error err_unknown_vector_type(Context const& ctx, ast::Type const* type);
+
   [[nodiscard]] inline Error err_init_type_is_builtin([[maybe_unused]] Context const& ctx,
                                                       [[maybe_unused]] ast::Type const* type)
   {
     return Error{.diagnostic = anton::String("err_init_type_is_builtin")};
   }
 
-  [[nodiscard]] inline Error
-  err_init_invalid_struct_initializer_kind([[maybe_unused]] Context const& ctx,
-                                           [[maybe_unused]] ast::Initializer const* initializer)
-  {
-    return Error{.diagnostic = anton::String("err_init_invalid_struct_initializer_kind")};
-  }
+  [[nodiscard]] Error err_init_invalid_struct_initializer_kind(Context const& ctx,
+                                                               ast::Initializer const* initializer);
 
   [[nodiscard]] inline Error
   err_init_invalid_array_initializer_kind([[maybe_unused]] Context const& ctx,
@@ -310,11 +318,7 @@ namespace vush {
                    "err_init_array_initialization_must_not_have_both_initializer_kinds")};
   }
 
-  [[nodiscard]] inline Error err_unimplemented([[maybe_unused]] Context const& ctx,
-                                               [[maybe_unused]] Source_Info const& source)
-  {
-    return Error{.diagnostic = anton::String("err_unimplemented")};
-  }
+  [[nodiscard]] Error err_unimplemented(Context const& ctx, Source_Info const& source);
 
   [[nodiscard]] inline Error
   err_named_initializer_no_field_named([[maybe_unused]] Context const& ctx,

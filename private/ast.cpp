@@ -38,15 +38,67 @@ namespace vush {
         return false;
       }
 
+      using Kind = Type_Builtin_Kind;
+      Kind const v = static_cast<Type_Builtin const&>(type).value;
+      return v == Kind::e_vec2 || v == Kind::e_vec3 || v == Kind::e_vec4 || v == Kind::e_dvec2 ||
+             v == Kind::e_dvec3 || v == Kind::e_dvec4 || v == Kind::e_bvec2 || v == Kind::e_bvec3 ||
+             v == Kind::e_bvec4 || v == Kind::e_ivec2 || v == Kind::e_ivec3 || v == Kind::e_ivec4 ||
+             v == Kind::e_uvec2 || v == Kind::e_uvec3 || v == Kind::e_uvec4;
+    }
+
+    bool is_bool_vector(Type const& type)
+    {
+      if(type.node_kind != Node_Kind::type_builtin) {
+        return false;
+      }
+
+      using Kind = Type_Builtin_Kind;
       Type_Builtin_Kind const v = static_cast<Type_Builtin const&>(type).value;
-      return v == Type_Builtin_Kind::e_vec2 || v == Type_Builtin_Kind::e_vec3 ||
-             v == Type_Builtin_Kind::e_vec4 || v == Type_Builtin_Kind::e_dvec2 ||
-             v == Type_Builtin_Kind::e_dvec3 || v == Type_Builtin_Kind::e_dvec4 ||
-             v == Type_Builtin_Kind::e_bvec2 || v == Type_Builtin_Kind::e_bvec3 ||
-             v == Type_Builtin_Kind::e_bvec4 || v == Type_Builtin_Kind::e_ivec2 ||
-             v == Type_Builtin_Kind::e_ivec3 || v == Type_Builtin_Kind::e_ivec4 ||
-             v == Type_Builtin_Kind::e_uvec2 || v == Type_Builtin_Kind::e_uvec3 ||
-             v == Type_Builtin_Kind::e_uvec4;
+      return v == Kind::e_bvec2 || v == Kind::e_bvec3 || v == Kind::e_bvec4;
+    }
+
+    bool is_i32_vector(Type const& type)
+    {
+      if(type.node_kind != Node_Kind::type_builtin) {
+        return false;
+      }
+
+      using Kind = Type_Builtin_Kind;
+      Type_Builtin_Kind const v = static_cast<Type_Builtin const&>(type).value;
+      return v == Kind::e_ivec2 || v == Kind::e_ivec3 || v == Kind::e_ivec4;
+    }
+
+    bool is_u32_vector(Type const& type)
+    {
+      if(type.node_kind != Node_Kind::type_builtin) {
+        return false;
+      }
+
+      using Kind = Type_Builtin_Kind;
+      Type_Builtin_Kind const v = static_cast<Type_Builtin const&>(type).value;
+      return v == Kind::e_uvec2 || v == Kind::e_uvec3 || v == Kind::e_uvec4;
+    }
+
+    bool is_f32_vector(Type const& type)
+    {
+      if(type.node_kind != Node_Kind::type_builtin) {
+        return false;
+      }
+
+      using Kind = Type_Builtin_Kind;
+      Type_Builtin_Kind const v = static_cast<Type_Builtin const&>(type).value;
+      return v == Kind::e_vec2 || v == Kind::e_vec3 || v == Kind::e_vec4;
+    }
+
+    bool is_f64_vector(Type const& type)
+    {
+      if(type.node_kind != Node_Kind::type_builtin) {
+        return false;
+      }
+
+      using Kind = Type_Builtin_Kind;
+      Type_Builtin_Kind const v = static_cast<Type_Builtin const&>(type).value;
+      return v == Kind::e_dvec2 || v == Kind::e_dvec3 || v == Kind::e_dvec4;
     }
 
     bool is_matrix(Type const& type)
@@ -55,16 +107,40 @@ namespace vush {
         return false;
       }
 
-      Type_Builtin_Kind const v = static_cast<Type_Builtin const&>(type).value;
-      return v == Type_Builtin_Kind::e_mat2 || v == Type_Builtin_Kind::e_mat3 ||
-             v == Type_Builtin_Kind::e_mat4 || v == Type_Builtin_Kind::e_mat2x3 ||
-             v == Type_Builtin_Kind::e_mat2x4 || v == Type_Builtin_Kind::e_mat3x2 ||
-             v == Type_Builtin_Kind::e_mat3x4 || v == Type_Builtin_Kind::e_mat4x2 ||
-             v == Type_Builtin_Kind::e_mat4x3 || v == Type_Builtin_Kind::e_dmat2 ||
-             v == Type_Builtin_Kind::e_dmat3 || v == Type_Builtin_Kind::e_dmat4 ||
-             v == Type_Builtin_Kind::e_dmat2x3 || v == Type_Builtin_Kind::e_dmat2x4 ||
-             v == Type_Builtin_Kind::e_dmat3x2 || v == Type_Builtin_Kind::e_dmat3x4 ||
-             v == Type_Builtin_Kind::e_dmat4x2 || v == Type_Builtin_Kind::e_dmat4x3;
+      using Kind = Type_Builtin_Kind;
+      Kind const v = static_cast<Type_Builtin const&>(type).value;
+      return v == Kind::e_mat2 || v == Kind::e_mat3 || v == Kind::e_mat4 || v == Kind::e_mat2x3 ||
+             v == Kind::e_mat2x4 || v == Kind::e_mat3x2 || v == Kind::e_mat3x4 ||
+             v == Kind::e_mat4x2 || v == Kind::e_mat4x3 || v == Kind::e_dmat2 ||
+             v == Kind::e_dmat3 || v == Kind::e_dmat4 || v == Kind::e_dmat2x3 ||
+             v == Kind::e_dmat2x4 || v == Kind::e_dmat3x2 || v == Kind::e_dmat3x4 ||
+             v == Kind::e_dmat4x2 || v == Kind::e_dmat4x3;
+    }
+
+    bool is_f32_matrix(Type const& type)
+    {
+      if(type.node_kind != Node_Kind::type_builtin) {
+        return false;
+      }
+
+      using Kind = Type_Builtin_Kind;
+      Kind const v = static_cast<Type_Builtin const&>(type).value;
+      return v == Kind::e_mat2 || v == Kind::e_mat3 || v == Kind::e_mat4 || v == Kind::e_mat2x3 ||
+             v == Kind::e_mat2x4 || v == Kind::e_mat3x2 || v == Kind::e_mat3x4 ||
+             v == Kind::e_mat4x2 || v == Kind::e_mat4x3;
+    }
+
+    bool is_f64_matrix(Type const& type)
+    {
+      if(type.node_kind != Node_Kind::type_builtin) {
+        return false;
+      }
+
+      using Kind = Type_Builtin_Kind;
+      Kind const v = static_cast<Type_Builtin const&>(type).value;
+      return v == Kind::e_dmat2 || v == Kind::e_dmat3 || v == Kind::e_dmat4 ||
+             v == Kind::e_dmat2x3 || v == Kind::e_dmat2x4 || v == Kind::e_dmat3x2 ||
+             v == Kind::e_dmat3x4 || v == Kind::e_dmat4x2 || v == Kind::e_dmat4x3;
     }
 
     bool is_opaque_type(Type const& type)

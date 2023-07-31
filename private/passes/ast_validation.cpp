@@ -1,3 +1,4 @@
+#include "ast_fwd.hpp"
 #include <passes.hpp>
 
 #include <anton/algorithm/sort.hpp>
@@ -52,23 +53,77 @@ namespace vush {
     return anton::expected_value;
   }
 
-  [[nodiscard]] static anton::Expected<void, Error> validate_expression(Context const& ctx,
-                                                                        ast::Node const* const node)
+  [[nodiscard]] static anton::Expected<void, Error>
+  validate_expression(Context const& ctx, ast::Node const* const node);
+
+  [[nodiscard]] static anton::Expected<void, Error>
+  validate_named_initializers(Context const& ctx, ast::Initializer_List const initializers)
+  {
+    Array<ast::Identifier const*> identifiers{ctx.allocator};
+    for(ast::Initializer const* const generic_initializer: initializers) {
+      if(generic_initializer->node_kind != ast::Node_Kind::named_initializer) {
+        return {anton::expected_error,
+                err_init_invalid_struct_initializer_kind(ctx, generic_initializer)};
+      }
+
+      ast::Named_Initializer const* const initializer =
+        static_cast<ast::Named_Initializer const*>(generic_initializer);
+      anton::Expected<void, Error> result = validate_expression(ctx, initializer->expression);
+      if(!result) {
+        return ANTON_MOV(result);
+      }
+
+      identifiers.push_back(initializer->identifier);
+    }
+
+    // Ensure there are no duplicate identifiers.
+    if(identifiers.size() > 0) {
+      // We use a stable sort to ensure the duplicates are reported in the correct order.
+      anton::merge_sort(identifiers.begin(), identifiers.end(),
+                        [](ast::Identifier const* const v1, ast::Identifier const* const v2) {
+                          return compare(v1->value, v2->value) == -1;
+                        });
+
+      for(auto i = identifiers.begin(), j = identifiers.begin() + 1, e = identifiers.end(); j != e;
+          ++i, ++j) {
+        bool const equal = compare((*i)->value, (*j)->value);
+        if(equal) {
+          Source_Info const& src1 = (*i)->source_info;
+          Source_Info const& src2 = (*j)->source_info;
+          return {anton::expected_error, err_duplicate_label(ctx, src1, src2)};
+        }
+      }
+    }
+
+    return anton::expected_value;
+  }
+
+  anton::Expected<void, Error> validate_expression(Context const& ctx, ast::Node const* const node)
   {
     switch(node->node_kind) {
       case ast::Node_Kind::expr_init: {
         // Initialization rules:
         // - Builtin types: we do not allow initialization of builtin types with the exception of
-        //   vectors which have members x, y, z, w and alternatives, and matrices.
-        // - Struct types: we allow initialization of struct types using only named initializers.
-        // - Array types: we allow initialization of struct types using only indexed or basic
+        //   vectors and matrices. Vectors follow rules for structs, matrices have special rules
+        //   allowing both field initializers and range initializers.
+        // - Struct types: we allow initialization of struct types using only field initializers.
+        // - Array types: we allow initialization of array types using only range or basic
         //   initializers. Usage of both kinds of initializers in one initialization is disallowed.
-        // Duplicate initializers are not allowed.
+        //   TODO: We might lift this restriction at a later time.
+        // Duplicate or overlapping initializers are not allowed. Initializers are evaluated in the
+        // order of appearance.
 
         ast::Expr_Init const* const expr = static_cast<ast::Expr_Init const*>(node);
         switch(expr->type->node_kind) {
           case ast::Node_Kind::type_builtin: {
-            if(!is_vector(*expr->type) && !is_matrix(*expr->type)) {
+            if(is_vector(*expr->type)) {
+              anton::Expected<void, Error> result =
+                validate_named_initializers(ctx, expr->initializers);
+              if(!result) {
+                return ANTON_MOV(result);
+              }
+            } else if(is_matrix(*expr->type)) {
+            } else {
               return {anton::expected_error, err_init_type_is_builtin(ctx, expr->type)};
             }
 
@@ -76,42 +131,10 @@ namespace vush {
           } break;
 
           case ast::Node_Kind::type_struct: {
-            Array<ast::Identifier const*> identifiers{ctx.allocator};
-            for(ast::Initializer const* const generic_initializer: expr->initializers) {
-              if(generic_initializer->node_kind != ast::Node_Kind::named_initializer) {
-                return {anton::expected_error,
-                        err_init_invalid_struct_initializer_kind(ctx, generic_initializer)};
-              }
-
-              ast::Named_Initializer const* const initializer =
-                static_cast<ast::Named_Initializer const*>(generic_initializer);
-              anton::Expected<void, Error> result =
-                validate_expression(ctx, initializer->expression);
-              if(!result) {
-                return ANTON_MOV(result);
-              }
-
-              identifiers.push_back(initializer->identifier);
-            }
-
-            // Ensure there are no duplicate identifiers.
-            if(identifiers.size() > 0) {
-              // We use a stable sort to ensure the duplicates are reported in the correct order.
-              anton::merge_sort(
-                identifiers.begin(), identifiers.end(),
-                [](ast::Identifier const* const v1, ast::Identifier const* const v2) {
-                  return compare(v1->value, v2->value) == -1;
-                });
-
-              for(auto i = identifiers.begin(), j = identifiers.begin() + 1, e = identifiers.end();
-                  j != e; ++i, ++j) {
-                bool const equal = compare((*i)->value, (*j)->value);
-                if(equal) {
-                  Source_Info const& src1 = (*i)->source_info;
-                  Source_Info const& src2 = (*j)->source_info;
-                  return {anton::expected_error, err_duplicate_label(ctx, src1, src2)};
-                }
-              }
+            anton::Expected<void, Error> result =
+              validate_named_initializers(ctx, expr->initializers);
+            if(!result) {
+              return ANTON_MOV(result);
             }
 
             return anton::expected_value;

@@ -1,13 +1,111 @@
-#include "anton/expected.hpp"
-#include "builtin_symbols.hpp"
 #include <passes.hpp>
 
 #include <anton/algorithm.hpp>
 #include <ast.hpp>
+#include <builtin_symbols.hpp>
 #include <context.hpp>
 #include <diagnostics.hpp>
 
 namespace vush {
+  anton::Expected<ast::Type const*, Error> evaluate_vector_field(Context const& ctx,
+                                                                 ast::Type_Builtin const& type,
+                                                                 ast::Identifier const& field)
+  {
+    ANTON_ASSERT(is_vector(type), "type is not vector");
+    // Vectors have swizzle members of sizes 1 (scalar), 2 (vec2), 3 (vec3), 4 (vec4). The set of
+    // allowed characters is { x, y, z, w, s, t, u, v, r, g, b, a }.
+    anton::String_View const value = field.value;
+    i64 const size = value.size_bytes();
+    if(size > 4 || size < 1) {
+      // Less than 1 check for sanity.
+      return {anton::expected_error, err_vector_swizzle_invalid(ctx, &field)};
+    }
+
+    for(char8 const c: value.bytes()) {
+      bool const is_allowed = c == 'x' | c == 'y' | c == 'z' | c == 'w' | c == 's' | c == 't' |
+                              c == 'u' | c == 'v' | c == 'r' | c == 'g' | c == 'b' | c == 'a';
+      if(!is_allowed) {
+        return {anton::expected_error, err_vector_swizzle_invalid(ctx, &field)};
+      }
+    }
+
+    if(is_bool_vector(type)) {
+      switch(size) {
+        case 1:
+          return {anton::expected_value, get_builtin_type(ast::Type_Builtin_Kind::e_bool)};
+        case 2:
+          return {anton::expected_value, get_builtin_type(ast::Type_Builtin_Kind::e_bvec2)};
+        case 3:
+          return {anton::expected_value, get_builtin_type(ast::Type_Builtin_Kind::e_bvec3)};
+        case 4:
+          return {anton::expected_value, get_builtin_type(ast::Type_Builtin_Kind::e_bvec4)};
+      }
+    }
+
+    if(is_i32_vector(type)) {
+      switch(size) {
+        case 1:
+          return {anton::expected_value, get_builtin_type(ast::Type_Builtin_Kind::e_int)};
+        case 2:
+          return {anton::expected_value, get_builtin_type(ast::Type_Builtin_Kind::e_ivec2)};
+        case 3:
+          return {anton::expected_value, get_builtin_type(ast::Type_Builtin_Kind::e_ivec3)};
+        case 4:
+          return {anton::expected_value, get_builtin_type(ast::Type_Builtin_Kind::e_ivec4)};
+      }
+    }
+
+    if(is_u32_vector(type)) {
+      switch(size) {
+        case 1:
+          return {anton::expected_value, get_builtin_type(ast::Type_Builtin_Kind::e_uint)};
+        case 2:
+          return {anton::expected_value, get_builtin_type(ast::Type_Builtin_Kind::e_uvec2)};
+        case 3:
+          return {anton::expected_value, get_builtin_type(ast::Type_Builtin_Kind::e_uvec3)};
+        case 4:
+          return {anton::expected_value, get_builtin_type(ast::Type_Builtin_Kind::e_uvec4)};
+      }
+    }
+
+    if(is_f32_vector(type)) {
+      switch(size) {
+        case 1:
+          return {anton::expected_value, get_builtin_type(ast::Type_Builtin_Kind::e_float)};
+        case 2:
+          return {anton::expected_value, get_builtin_type(ast::Type_Builtin_Kind::e_vec2)};
+        case 3:
+          return {anton::expected_value, get_builtin_type(ast::Type_Builtin_Kind::e_vec3)};
+        case 4:
+          return {anton::expected_value, get_builtin_type(ast::Type_Builtin_Kind::e_vec4)};
+      }
+    }
+
+    if(is_f64_vector(type)) {
+      switch(size) {
+        case 1:
+          return {anton::expected_value, get_builtin_type(ast::Type_Builtin_Kind::e_double)};
+        case 2:
+          return {anton::expected_value, get_builtin_type(ast::Type_Builtin_Kind::e_dvec2)};
+        case 3:
+          return {anton::expected_value, get_builtin_type(ast::Type_Builtin_Kind::e_dvec3)};
+        case 4:
+          return {anton::expected_value, get_builtin_type(ast::Type_Builtin_Kind::e_dvec4)};
+      }
+    }
+
+    return {anton::expected_error, err_unimplemented(ctx, field.source_info)};
+  }
+
+  anton::Expected<ast::Type const*, Error> evaluate_matrix_field(Context const& ctx,
+                                                                 ast::Type_Builtin const& type,
+                                                                 ast::Identifier const& field)
+  {
+    ANTON_ASSERT(is_matrix(type), "type is not matrix");
+    // TODO: Implement.
+    return {anton::expected_error, err_unimplemented(ctx, field.source_info)};
+  }
+
   // select_overload
   //
   [[nodiscard]] static anton::Expected<ast::Decl_Function const*, Error>
@@ -174,7 +272,7 @@ namespace vush {
         switch(generic_type->node_kind) {
           case ast::Node_Kind::type_builtin: {
             // Initialization of builtin types has already been validated, hence we proceed with
-            // vectors.
+            // vectors and matrices.
             // TODO: We ought to make swizzles an exception to member lookup since generating all
             //       permutations would result in considerably too many members. Additionally, we
             //       would have to include an exception for their initialization.
@@ -343,15 +441,29 @@ namespace vush {
           return ANTON_MOV(result);
         }
 
-        // Arrays have no members. Builtin types with the exception of vectors do not have members.
+        // Arrays have no members. Builtin types with the exception of vectors and matrices do not
+        // have members.
         // TODO: Separate diagnostics for each type kind.
         ast::Type const* generic_type = result.value();
         switch(generic_type->node_kind) {
           case ast::Node_Kind::type_builtin: {
-            // TODO: We temporarily do not make an exception for the vectors and reject all
-            //       member accesses on builtin types. Allow swizzles on vectors.
-            return {anton::expected_error,
-                    err_type_has_no_member_named(ctx, generic_type, expr->member)};
+            auto const type = static_cast<ast::Type_Builtin const*>(generic_type);
+            if(is_vector(*type)) {
+              auto field_result = evaluate_vector_field(ctx, *type, *expr->member);
+              if(field_result) {
+                ctx.add_node_type(expr, field_result.value());
+              }
+              return ANTON_MOV(field_result);
+            } else if(is_matrix(*type)) {
+              auto field_result = evaluate_matrix_field(ctx, *type, *expr->member);
+              if(field_result) {
+                ctx.add_node_type(expr, field_result.value());
+              }
+              return ANTON_MOV(field_result);
+            } else {
+              return {anton::expected_error,
+                      err_builtin_type_has_no_member_named(ctx, generic_type, expr->member)};
+            }
           } break;
 
           case ast::Node_Kind::type_struct: {

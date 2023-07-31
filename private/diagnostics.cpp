@@ -469,4 +469,39 @@ namespace vush {
     error.extended_diagnostic += " not constant evaluable"_sv;
     return error;
   }
+
+  Error err_init_invalid_struct_initializer_kind(Context const& ctx,
+                                                 ast::Initializer const* const initializer)
+  {
+    Source_Info const source_info = initializer->source_info;
+    Error error = error_from_source(ctx.allocator, source_info);
+    anton::String_View const source = ctx.find_source(source_info.source_path)->data;
+    error.diagnostic = "error: initializer is not named initializer"_sv;
+    print_source_snippet(ctx, error.extended_diagnostic, source, source_info);
+    error.extended_diagnostic += " struct initializers must be named initializers"_sv;
+    return error;
+  }
+
+  Error err_vector_swizzle_invalid(Context const& ctx, ast::Identifier const* field)
+  {
+    Source_Info const source_info = field->source_info;
+    Error error = error_from_source(ctx.allocator, source_info);
+    anton::String_View const source = ctx.find_source(source_info.source_path)->data;
+    anton::String_View const field_code = get_source_bit(source, source_info);
+    error.diagnostic = anton::format("error: invalid vector swizzle '{}'"_sv, field_code);
+    print_source_snippet(ctx, error.extended_diagnostic, source, source_info);
+    error.extended_diagnostic +=
+      " vector swizzle must contain at most 4 of { x, y, z, w, r, g, b, a, s, t, u, v }"_sv;
+    return error;
+  }
+
+  Error err_unimplemented(Context const& ctx, Source_Info const& source_info)
+  {
+    Error error = error_from_source(ctx.allocator, source_info);
+    anton::String_View const source = ctx.find_source(source_info.source_path)->data;
+    error.diagnostic = "error: unimplemented"_sv;
+    print_source_snippet(ctx, error.extended_diagnostic, source, source_info);
+    error.extended_diagnostic += " resulted in the compiler to reach an unimplemented path"_sv;
+    return error;
+  }
 } // namespace vush
