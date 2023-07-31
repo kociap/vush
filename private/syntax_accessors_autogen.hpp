@@ -497,9 +497,9 @@ namespace vush {
   [[nodiscard]] static Syntax_Token const& get_expr_field_identifier(Syntax_Node const& node)
   {
     ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_field, "node is not expr_field");
-    ANTON_ASSERT(node.children.size() > (1), "expr_field has too few children");
-    ANTON_ASSERT(node.children[1].is_right(), "identifier in expr_field is not Syntax_Token");
-    return node.children[1].right();
+    ANTON_ASSERT(node.children.size() > (2), "expr_field has too few children");
+    ANTON_ASSERT(node.children[2].is_right(), "identifier in expr_field is not Syntax_Token");
+    return node.children[2].right();
   }
 
   [[nodiscard]] static Syntax_Node const& get_expr_index_expression(Syntax_Node const& node)
