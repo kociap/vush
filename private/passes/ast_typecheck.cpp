@@ -316,6 +316,16 @@ namespace vush {
                    "expr_call's definition is not a decl_overloaded_function");
       ast::Decl_Overloaded_Function const* const fn =
         static_cast<ast::Decl_Overloaded_Function const*>(definition);
+      // Always evaluate all arguments before doing overload resolution. The types are cached, so there is no risk of
+      // reevaluation or a major performance penalty, but this way we ensure that all expressions have their types
+      // evaluated.
+      for(ast::Expr const* const argument: expr->arguments) {
+        anton::Expected<ast::Type const*, Error> result = evaluate_expression_type(ctx, argument);
+        if(!result) {
+          return ANTON_MOV(result);
+        }
+      }
+
       anton::Expected<ast::Decl_Function const*, Error> result = select_overload(ctx, expr, fn);
       if(!result) {
         return {anton::expected_error, ANTON_MOV(result.error())};
