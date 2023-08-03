@@ -488,9 +488,10 @@ namespace vush {
         return ANTON_MOV(base_result);
       }
 
-      ast::Type const* const base_type = base_result.value();
-      if(!is_array(*base_type)) {
-        return {anton::expected_error, err_type_is_not_array(ctx, base_type, expr->base)};
+      ast::Type const* const generic_base_type = base_result.value();
+      if(!is_array(*generic_base_type)) {
+        return {anton::expected_error,
+                err_expression_is_not_indexable(ctx, generic_base_type, expr->base)};
       }
 
       anton::Expected<ast::Type const*, Error> index_result =
@@ -504,8 +505,9 @@ namespace vush {
                 err_array_index_is_not_integer(ctx, index_result.value(), expr->index)};
       }
 
-      ctx.add_node_type(node, base_type);
-      return {anton::expected_value, base_type};
+      auto const base_type = static_cast<ast::Type_Array const*>(generic_base_type);
+      ctx.add_node_type(node, base_type->base);
+      return {anton::expected_value, base_type->base};
     } break;
 
     case ast::Node_Kind::expr_field: {

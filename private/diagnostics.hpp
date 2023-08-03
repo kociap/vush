@@ -256,11 +256,12 @@ namespace vush {
     return Error{.diagnostic = anton::String("err_incompatible_if_expression_types")};
   }
 
-  [[nodiscard]] inline Error err_type_is_not_array([[maybe_unused]] Context const& ctx,
-                                                   [[maybe_unused]] ast::Type const* expr_type,
-                                                   [[maybe_unused]] ast::Expr const* expr)
+  [[nodiscard]] inline Error
+  err_expression_is_not_indexable([[maybe_unused]] Context const& ctx,
+                                  [[maybe_unused]] ast::Type const* expr_type,
+                                  [[maybe_unused]] ast::Expr const* expr)
   {
-    return Error{.diagnostic = anton::String("err_type_is_not_array")};
+    return Error{.diagnostic = anton::String("err_expression_is_not_indexable")};
   }
 
   [[nodiscard]] inline Error
