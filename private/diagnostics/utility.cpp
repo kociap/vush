@@ -112,8 +112,8 @@ namespace vush {
     return length;
   }
 
-  static void print_left_margin(Allocator* const allocator, anton::String& out, i64 const width,
-                                anton::Optional<i64> const number = anton::null_optional)
+  void print_left_margin(Allocator* const allocator, anton::String& out, i64 const width,
+                         anton::Optional<i64> const number)
   {
     if(number) {
       out += ' ';

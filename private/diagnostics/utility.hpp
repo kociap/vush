@@ -1,5 +1,7 @@
 #pragma once
 
+#include <anton/optional.hpp>
+
 #include <ast_fwd.hpp>
 #include <vush/vush.hpp>
 
@@ -29,6 +31,9 @@ namespace vush {
                                                   i64 end_offset);
   [[nodiscard]] anton::String_View get_source_bit(anton::String_View source,
                                                   Source_Info const& src_info);
+
+  void print_left_margin(Allocator* allocator, anton::String& out, i64 width,
+                         anton::Optional<i64> number = anton::null_optional);
 
   void print_source_snippet(Context const& ctx, anton::String& out, anton::String_View source,
                             i64 offset, i64 end_offset, i64 line);

@@ -45,13 +45,10 @@ namespace vush {
                                                   Source_Info const& return2);
   [[nodiscard]] anton::String
   format_variable_declaration_in_global_scope(Context const& ctx, Source_Info const& declaration);
-  // TODO: Implement.
-  [[nodiscard]] inline Error
-  err_immutable_variable_missing_initializer([[maybe_unused]] Context const& ctx,
-                                             [[maybe_unused]] Source_Info const& constant)
-  {
-    return Error{.diagnostic = anton::String("err_immutable_variable_missing_initializer")};
-  }
+
+  [[nodiscard]] Error err_immutable_variable_missing_initializer(Context const& ctx,
+                                                                 Source_Info const& constant);
+
   [[nodiscard]] anton::String
   format_expression_not_implicitly_convertible_to_bool(Context const& ctx,
                                                        Source_Info const& expression);
@@ -217,13 +214,9 @@ namespace vush {
     return Error{.diagnostic = anton::String("err_ambiguous_overload")};
   }
 
-  [[nodiscard]] inline Error
-  err_no_matching_overload([[maybe_unused]] Context const& ctx,
-                           [[maybe_unused]] ast::Expr_Call const* call,
-                           [[maybe_unused]] anton::Slice<ast::Decl_Function const* const> overloads)
-  {
-    return Error{.diagnostic = anton::String("err_no_matching_overload")};
-  }
+  [[nodiscard]] Error
+  err_no_matching_overload(Context const& ctx, ast::Expr_Call const* call,
+                           anton::Slice<ast::Decl_Function const* const> overloads);
 
   [[nodiscard]] inline Error err_no_assignment_operator(
     [[maybe_unused]] Context const& ctx, [[maybe_unused]] ast::Type const* from_type,
@@ -322,10 +315,6 @@ namespace vush {
     return Error{.diagnostic = anton::String("err_named_initializer_no_field_named")};
   }
 
-  [[nodiscard]] inline Error err_cannot_convert_type([[maybe_unused]] Context const& ctx,
-                                                     [[maybe_unused]] ast::Type const* to,
-                                                     [[maybe_unused]] ast::Type const* from)
-  {
-    return Error{.diagnostic = anton::String("err_cannot_convert_type")};
-  }
+  [[nodiscard]] Error err_cannot_convert_type(Context const& ctx, Source_Info const& where,
+                                              ast::Type const* to, ast::Type const* from);
 } // namespace vush

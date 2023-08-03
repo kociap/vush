@@ -74,7 +74,9 @@ namespace vush {
     if(compare_types_equal(*field_type, *initializer_type)) {
       return anton::expected_value;
     } else {
-      return {anton::expected_error, err_cannot_convert_type(ctx, field_type, initializer_type)};
+      return {anton::expected_error,
+              err_cannot_convert_type(ctx, initializer.expression->source_info, field_type,
+                                      initializer_type)};
     }
   }
 
@@ -396,7 +398,8 @@ namespace vush {
 
           if(!compare_types_equal(*(*member)->type, *result.value())) {
             return {anton::expected_error,
-                    err_cannot_convert_type(ctx, (*member)->type, result.value())};
+                    err_cannot_convert_type(ctx, initializer->expression->source_info,
+                                            (*member)->type, result.value())};
           }
         }
       } break;
@@ -611,7 +614,8 @@ namespace vush {
 
           ast::Type const* const type = result.value();
           if(!compare_types_equal(*node->type, *type)) {
-            return {anton::expected_error, err_cannot_convert_type(ctx, node->type, type)};
+            return {anton::expected_error,
+                    err_cannot_convert_type(ctx, node->initializer->source_info, node->type, type)};
           }
         } else {
           // Immutable variables must have an initializer.
