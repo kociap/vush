@@ -21,6 +21,7 @@
 #include <parser.hpp>
 #include <passes.hpp>
 #include <sources.hpp>
+#include <syntax_lowering.hpp>
 
 namespace vush {
   using namespace anton::literals;

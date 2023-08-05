@@ -3,9 +3,12 @@
 #include <anton/expected.hpp>
 #include <anton/string_view.hpp>
 
-#include <ast.hpp>
+#include <syntax.hpp>
+#include <vush/vush.hpp>
 
 namespace vush {
+  struct Context;
+
   struct Parse_Syntax_Options {
     // include_whitespace_and_comments
     // Whether whitespace and comment tokens should be included

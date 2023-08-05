@@ -21,14 +21,7 @@ class Syntax_Member:
 
 syntax_nodes = [
     {
-        "syntax_name": "type_builtin",
-        "members": [
-            Syntax_Member(Node_Kind.token, "mut", Lookup_Kind.search, "kw_mut", optional = True),
-            Syntax_Member(Node_Kind.token, "value", Lookup_Kind.search, "identifier")
-        ]
-    },
-    {
-        "syntax_name": "type_struct",
+        "syntax_name": "type_named",
         "members": [
             Syntax_Member(Node_Kind.token, "mut", Lookup_Kind.search, "kw_mut", optional = True),
             Syntax_Member(Node_Kind.token, "value", Lookup_Kind.search, "identifier")

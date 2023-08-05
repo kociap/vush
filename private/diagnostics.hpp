@@ -7,6 +7,8 @@
 #include <vush/vush.hpp>
 
 namespace vush {
+  struct Source_Info;
+
   [[nodiscard]] inline anton::String build_error_message(anton::String_View const message)
   {
     return anton::String{u8"error: "} + message;

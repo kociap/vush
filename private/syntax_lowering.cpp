@@ -1,9 +1,10 @@
-#include <ast.hpp>
+#include <syntax_lowering.hpp>
 
 #include <anton/expected.hpp>
 #include <anton/intrinsics.hpp>
 #include <anton/optional.hpp>
 
+#include <ast.hpp>
 #include <context.hpp>
 #include <diagnostics.hpp>
 #include <memory.hpp>
@@ -46,7 +47,7 @@ namespace vush {
       }
 
       anton::Expected<ast::Node_List, Error> transform_result =
-        transform_syntax_tree_to_ast(ctx, parse_result.value());
+        lower_syntax_to_ast(ctx, parse_result.value());
       if(!transform_result) {
         return {anton::expected_error, ANTON_MOV(transform_result.error())};
       }
@@ -56,54 +57,6 @@ namespace vush {
       return {anton::expected_value, ast::Node_List{}};
     }
   }
-
-  // resolve_imports_and_declaration_ifs
-  // Processes top-level ast to resolve import declarations and declaration ifs. Modifies ast.
-  //
-  // static anton::Expected<void, anton::String> resolve_imports_and_declaration_ifs(Context& ctx, Declaration_List& ast) {
-  //     // TODO: Currently constants cannot be used in declaration ifs because they are not added to the symbol table as
-  //     //       we process the ast. Should we allow constants in declaration ifs?
-  //     for(i64 i = 0; i < ast.size();) {
-  //         bool const should_advance = ast[i]->node_type != AST_Node_Type::import_declaration && ast[i]->node_type != AST_Node_Type::declaration_if;
-  //         if(ast[i]->node_type == AST_Node_Type::import_declaration) {
-  //             Owning_Ptr<Import_Declaration> node{downcast, ANTON_MOV(ast[i])};
-  //             ast.erase(ast.begin() + i, ast.begin() + i + 1);
-  //             anton::Expected<Declaration_List, Error> import_result = import_source_code(ctx, node->path->value, node->source_info);
-  //             if(!import_result) {
-  //                 return {anton::expected_error, import_result.error().format(ctx.allocator, ctx.diagnostics.extended)};
-  //             }
-
-  //             // Insert the result of parsing into the ast.
-  //             Declaration_List& decls = import_result.value();
-  //             anton::Move_Iterator begin(decls.begin());
-  //             anton::Move_Iterator end(decls.end());
-  //             ast.insert(i, begin, end);
-  //         } else if(ast[i]->node_type == AST_Node_Type::declaration_if) {
-  //             Owning_Ptr<Declaration_If> node{downcast, ANTON_MOV(ast[i])};
-  //             ast.erase(ast.begin() + i, ast.begin() + i + 1);
-
-  //             anton::Expected<Expr_Value, anton::String> result = evaluate_const_expr(ctx, *node->condition);
-  //             if(!result) {
-  //                 return {anton::expected_error, ANTON_MOV(result.error())};
-  //             }
-
-  //             if(!is_implicitly_convertible_to_boolean(result.value().type)) {
-  //                 Source_Info const& src = node->condition->source_info;
-  //                 return {anton::expected_error, format_expression_not_implicitly_convertible_to_bool(ctx, src)};
-  //             }
-
-  //             // Insert one of the branches into the ast
-  //             Declaration_List& decls = (result.value().as_boolean() ? node->true_declarations : node->false_declarations);
-  //             anton::Move_Iterator begin(decls.begin());
-  //             anton::Move_Iterator end(decls.end());
-  //             ast.insert(i, begin, end);
-  //         }
-
-  //         i += should_advance;
-  //     }
-
-  //     return {anton::expected_value};
-  // }
 
   [[nodiscard]] static ast::Identifier const* transform_identifier(Context const& ctx,
                                                                    Syntax_Token const& token)
@@ -155,31 +108,26 @@ namespace vush {
   transform_type(Context const& ctx, Syntax_Node const& node)
   {
     switch(node.kind) {
-    case Syntax_Node_Kind::type_builtin: {
+    case Syntax_Node_Kind::type_named: {
       ast::Qualifiers qualifiers;
-      if(anton::Optional mut = get_type_builtin_mut(node)) {
+      if(anton::Optional mut = get_type_named_mut(node)) {
         qualifiers.mut = true;
       }
 
-      Syntax_Token const& value_token = get_type_builtin_value(node);
-      anton::Optional<ast::Type_Builtin_Kind> result =
+      Syntax_Token const& value_token = get_type_named_value(node);
+      anton::Optional<ast::Type_Builtin_Kind> enumified =
         ast::enumify_builtin_type_kind(value_token.value);
-      ANTON_ASSERT(result, "invalid builtin type");
-      return {anton::expected_value, allocate<ast::Type_Builtin>(ctx.allocator, qualifiers,
-                                                                 result.value(), node.source_info)};
-    } break;
-
-    case Syntax_Node_Kind::type_struct: {
-      ast::Qualifiers qualifiers;
-      if(anton::Optional mut = get_type_struct_mut(node)) {
-        qualifiers.mut = true;
+      if(enumified) {
+        return {anton::expected_value,
+                allocate<ast::Type_Builtin>(ctx.allocator, qualifiers, enumified.value(),
+                                            node.source_info)};
+      } else {
+        // We allocate the String for the value as the syntax tokens are destroyed at a later stage.
+        anton::String const* const value =
+          allocate<anton::String>(ctx.allocator, value_token.value, ctx.allocator);
+        return {anton::expected_value,
+                allocate<ast::Type_Struct>(ctx.allocator, qualifiers, *value, node.source_info)};
       }
-
-      Syntax_Token const& value_token = get_type_struct_value(node);
-      anton::String const* const value =
-        allocate<anton::String>(ctx.allocator, value_token.value, ctx.allocator);
-      return {anton::expected_value,
-              allocate<ast::Type_Struct>(ctx.allocator, qualifiers, *value, node.source_info)};
     } break;
 
     case Syntax_Node_Kind::type_array: {
@@ -968,11 +916,11 @@ namespace vush {
 
     if(condition.value()) {
       Syntax_Node const& then_node = get_decl_if_then_branch(node);
-      return transform_syntax_tree_to_ast(ctx, then_node.children);
+      return lower_syntax_to_ast(ctx, then_node.children);
     } else {
       anton::Optional<Syntax_Node const&> else_node = get_decl_if_else_branch(node);
       if(else_node) {
-        return transform_syntax_tree_to_ast(ctx, else_node.value().children);
+        return lower_syntax_to_ast(ctx, else_node.value().children);
       } else {
         return {anton::expected_value, ast::Node_List{}};
       }
@@ -1187,8 +1135,8 @@ namespace vush {
                                                body.value(), node.source_info)};
   }
 
-  anton::Expected<ast::Node_List, Error> transform_syntax_tree_to_ast(Context& ctx,
-                                                                      Array<SNOT> const& syntax)
+  anton::Expected<ast::Node_List, Error> lower_syntax_to_ast(Context& ctx,
+                                                             Array<SNOT> const& syntax)
   {
     Array<ast::Node const*>& abstract =
       *allocate<Array<ast::Node const*>>(ctx.allocator, ctx.allocator);

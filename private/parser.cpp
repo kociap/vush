@@ -2943,17 +2943,10 @@ namespace vush {
       }
 
       if(Optional type = skipmatch(Token_Kind::identifier)) {
-        Lexer_State const end_state = _lexer.get_current_state_noskip();
-        anton::String_View const type_name = type->value;
         snots.push_back(ANTON_MOV(*type));
-        if(anton::Optional<ast::Type_Builtin_Kind> res =
-             ast::enumify_builtin_type_kind(type_name)) {
-          Source_Info const source = src_info(begin_state, end_state);
-          return Syntax_Node(Syntax_Node_Kind::type_builtin, ANTON_MOV(snots), source);
-        } else {
-          Source_Info const source = src_info(begin_state, end_state);
-          return Syntax_Node(Syntax_Node_Kind::type_struct, ANTON_MOV(snots), source);
-        }
+        Lexer_State const end_state = _lexer.get_current_state_noskip();
+        Source_Info const source = src_info(begin_state, end_state);
+        return Syntax_Node(Syntax_Node_Kind::type_named, ANTON_MOV(snots), source);
       } else {
         set_error(u8"expected identifier");
         return anton::null_optional;

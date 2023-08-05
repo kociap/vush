@@ -7,6 +7,7 @@
 
 namespace vush {
   struct Context;
+  struct Source_Info;
 
   // error_from_source
   // Create empty Error with source information filled out.

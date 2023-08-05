@@ -2,9 +2,9 @@
 
 namespace vush {
   [[nodiscard]] static anton::Optional<Syntax_Token const&>
-  get_type_builtin_mut(Syntax_Node const& node)
+  get_type_named_mut(Syntax_Node const& node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::type_builtin, "node is not type_builtin");
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::type_named, "node is not type_named");
     for(SNOT const& snot: node.children) {
       if(snot.is_right() && snot.right().kind == Syntax_Node_Kind::kw_mut) {
         return snot.right();
@@ -13,39 +13,15 @@ namespace vush {
     return anton::null_optional;
   };
 
-  [[nodiscard]] static Syntax_Token const& get_type_builtin_value(Syntax_Node const& node)
+  [[nodiscard]] static Syntax_Token const& get_type_named_value(Syntax_Node const& node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::type_builtin, "node is not type_builtin");
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::type_named, "node is not type_named");
     for(SNOT const& snot: node.children) {
       if(snot.is_right() && snot.right().kind == Syntax_Node_Kind::identifier) {
         return snot.right();
       }
     }
-    ANTON_ASSERT(false, "identifier not present in type_builtin");
-    ANTON_UNREACHABLE();
-  };
-
-  [[nodiscard]] static anton::Optional<Syntax_Token const&>
-  get_type_struct_mut(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::type_struct, "node is not type_struct");
-    for(SNOT const& snot: node.children) {
-      if(snot.is_right() && snot.right().kind == Syntax_Node_Kind::kw_mut) {
-        return snot.right();
-      }
-    }
-    return anton::null_optional;
-  };
-
-  [[nodiscard]] static Syntax_Token const& get_type_struct_value(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::type_struct, "node is not type_struct");
-    for(SNOT const& snot: node.children) {
-      if(snot.is_right() && snot.right().kind == Syntax_Node_Kind::identifier) {
-        return snot.right();
-      }
-    }
-    ANTON_ASSERT(false, "identifier not present in type_struct");
+    ANTON_ASSERT(false, "identifier not present in type_named");
     ANTON_UNREACHABLE();
   };
 
