@@ -6,9 +6,12 @@ buildf.bat
 buildf.sh
 CMakeSettings.json
 TODO
+TODO.md
 
 build/
 testbed/
+storage/
+
 # IDE files
 .vs/
 .vscode/
