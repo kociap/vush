@@ -17,4 +17,8 @@ namespace vush {
 
   [[nodiscard]] Error err_cannot_convert_type(Context const& ctx, Source_Info const& where,
                                               ast::Type const* to, ast::Type const* from);
+
+  [[nodiscard]] Error err_no_assignment_operator(Context const& ctx, ast::Type const* from_type,
+                                                 ast::Type const* to_type,
+                                                 ast::Expr_Assignment const* expr);
 } // namespace vush

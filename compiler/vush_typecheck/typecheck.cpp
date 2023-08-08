@@ -223,10 +223,13 @@ namespace vush {
 
       if(viable) {
         if(overload_rank < best_score) {
+          best_score = overload_rank;
           candidates.clear();
         }
 
-        candidates.push_back(fn);
+        if(overload_rank == best_score) {
+          candidates.push_back(fn);
+        }
       }
     }
 

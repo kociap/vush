@@ -210,13 +210,6 @@ namespace vush {
     return Error{.diagnostic = anton::String("err_compute_vin_not_allowed_on_stage")};
   }
 
-  [[nodiscard]] inline Error err_no_assignment_operator(
-    [[maybe_unused]] Context const& ctx, [[maybe_unused]] ast::Type const* from_type,
-    [[maybe_unused]] ast::Type const* to_type, [[maybe_unused]] ast::Expr_Assignment const* expr)
-  {
-    return Error{.diagnostic = anton::String("err_no_assignment_operator")};
-  }
-
   [[nodiscard]] inline Error
   err_condition_not_of_bool_type([[maybe_unused]] Context const& ctx,
                                  [[maybe_unused]] ast::Expr const* condition,

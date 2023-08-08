@@ -38,10 +38,15 @@ namespace vush {
     anton::String_View const source = ctx.find_source(call->source_info.source_path)->data;
     print_source_snippet(ctx, error.extended_diagnostic, source, call->identifier->source_info);
     for(ast::Decl_Function const* const fn: overloads) {
+      error.extended_diagnostic += '\n';
       auto result = ctx.find_source(fn->source_info.source_path);
       if(result != nullptr) {
         ANTON_ASSERT(!fn->builtin, "builtin function has source");
         anton::String_View const source = result->data;
+        Source_Info const& fn_info = fn->identifier->source_info;
+        error.extended_diagnostic += format_diagnostic_location(ctx.allocator, fn_info.source_path,
+                                                                fn_info.line, fn_info.column);
+        error.extended_diagnostic += "note: function is not a viable candidate\n"_sv;
         print_source_snippet(ctx, error.extended_diagnostic, source, fn->identifier->source_info);
         error.extended_diagnostic += " candidate function not viable"_sv;
       } else {
@@ -68,6 +73,29 @@ namespace vush {
                                      call->identifier->value, arguments);
     anton::String_View const source = ctx.find_source(call->source_info.source_path)->data;
     print_source_snippet(ctx, error.extended_diagnostic, source, call->source_info);
+    for(ast::Decl_Function const* const fn: candidates) {
+      error.extended_diagnostic += '\n';
+      auto result = ctx.find_source(fn->source_info.source_path);
+      if(result != nullptr) {
+        ANTON_ASSERT(!fn->builtin, "builtin function has source");
+        anton::String_View const source = result->data;
+        Source_Info const& fn_info = fn->identifier->source_info;
+        error.extended_diagnostic += format_diagnostic_location(ctx.allocator, fn_info.source_path,
+                                                                fn_info.line, fn_info.column);
+        error.extended_diagnostic += "note: viable candidate function\n"_sv;
+        print_source_snippet(ctx, error.extended_diagnostic, source, fn->identifier->source_info);
+      } else {
+        ANTON_ASSERT(fn->builtin, "non-builtin function has no source");
+        error.extended_diagnostic += format_diagnostic_location(ctx.allocator, "<vush>", 1, 1);
+        error.extended_diagnostic += "note: viable candidate builtin function\n"_sv;
+        print_left_margin(ctx.allocator, error.extended_diagnostic, 0);
+        error.extended_diagnostic += '\n';
+        print_left_margin(ctx.allocator, error.extended_diagnostic, 0);
+        error.extended_diagnostic += stringify_builtin_function(ctx, fn);
+        error.extended_diagnostic += '\n';
+        print_left_margin(ctx.allocator, error.extended_diagnostic, 0);
+      }
+    }
     return error;
   }
 
@@ -82,6 +110,22 @@ namespace vush {
       anton::format("error: cannot convert '{}' to '{}'"_sv, from_string, to_string);
     print_source_snippet(ctx, error.extended_diagnostic, source, where);
     error.extended_diagnostic += anton::format(" '{}' cannot be converted"_sv, from_string);
+    return error;
+  }
+
+  Error err_no_assignment_operator(Context const& ctx, ast::Type const* const from_type,
+                                   ast::Type const* const to_type,
+                                   ast::Expr_Assignment const* const expr)
+  {
+    Error error = error_from_source(ctx.allocator, expr->source_info);
+    anton::String from_string = stringify_type(ctx, from_type);
+    anton::String to_string = stringify_type(ctx, to_type);
+    error.diagnostic =
+      anton::format("error: no viable assignment from '{}' to '{}'"_sv, from_string, to_string);
+    anton::String_View const source = ctx.find_source(expr->source_info.source_path)->data;
+    print_source_snippet(ctx, error.extended_diagnostic, source, expr->source_info);
+    error.extended_diagnostic +=
+      anton::format(" '{}' cannot be assigned to '{}'"_sv, from_string, to_string);
     return error;
   }
 } // namespace vush
