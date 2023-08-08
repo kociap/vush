@@ -35,13 +35,9 @@ namespace vush {
     error.diagnostic =
       anton::format("error: no matching function for call to '{}' with arguments '{}'"_sv,
                     call->identifier->value, arguments);
-    for(bool first = true; ast::Decl_Function const* const fn: overloads) {
-      if(!first) {
-        error.extended_diagnostic += u8'\n';
-      }
-
-      first = false;
-
+    anton::String_View const source = ctx.find_source(call->source_info.source_path)->data;
+    print_source_snippet(ctx, error.extended_diagnostic, source, call->identifier->source_info);
+    for(ast::Decl_Function const* const fn: overloads) {
       auto result = ctx.find_source(fn->source_info.source_path);
       if(result != nullptr) {
         ANTON_ASSERT(!fn->builtin, "builtin function has source");
