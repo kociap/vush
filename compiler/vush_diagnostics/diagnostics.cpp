@@ -538,7 +538,7 @@ namespace vush {
     anton::String_View const source = ctx.find_source(source_info.source_path)->data;
     error.diagnostic = "error: unimplemented"_sv;
     print_source_snippet(ctx, error.extended_diagnostic, source, source_info);
-    error.extended_diagnostic += " resulted in the compiler to reach an unimplemented path"_sv;
+    error.extended_diagnostic += " resulted in the compiler reaching an unimplemented path"_sv;
     return error;
   }
 } // namespace vush
