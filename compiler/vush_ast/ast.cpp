@@ -646,4 +646,18 @@ namespace vush::ast {
       ANTON_UNREACHABLE();
     }
   }
+
+  anton::Strong_Ordering compare_integer_literals(ast::Lt_Integer const* const lhs,
+                                                  ast::Lt_Integer const* const rhs)
+  {
+    i64 const lhs_value = anton::str_to_i64(lhs->value, static_cast<i32>(lhs->base));
+    i64 const rhs_value = anton::str_to_i64(rhs->value, static_cast<i32>(rhs->base));
+    if(lhs_value < rhs_value) {
+      return anton::Strong_Ordering::less;
+    } else if(lhs_value == rhs_value) {
+      return anton::Strong_Ordering::equal;
+    } else {
+      return anton::Strong_Ordering::greater;
+    }
+  }
 } // namespace vush::ast

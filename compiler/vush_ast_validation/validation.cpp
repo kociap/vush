@@ -10,33 +10,6 @@
 namespace vush {
   using namespace anton::literals;
 
-  enum Strong_Ordering {
-    less = -1,
-    equal,
-    greater,
-  };
-
-  // compare_integer_literals
-  // Three-way compare integer literals' value regardless of their base. The literal values must be
-  // trimmed to contain only plus or minus and digits.
-  //
-  // Returns:
-  // Ordering of the numeric values of the literals.
-  //
-  [[nodiscard]] static Strong_Ordering compare_integer_literals(ast::Lt_Integer const* const lhs,
-                                                                ast::Lt_Integer const* const rhs)
-  {
-    i64 const lhs_value = anton::str_to_i64(lhs->value, static_cast<i32>(lhs->base));
-    i64 const rhs_value = anton::str_to_i64(rhs->value, static_cast<i32>(rhs->base));
-    if(lhs_value < rhs_value) {
-      return Strong_Ordering::less;
-    } else if(lhs_value == rhs_value) {
-      return Strong_Ordering::equal;
-    } else {
-      return Strong_Ordering::greater;
-    }
-  }
-
   [[nodiscard]] static anton::Expected<void, Error> check_array_is_sized(Context const& ctx,
                                                                          ast::Type const& type)
   {
@@ -193,12 +166,13 @@ namespace vush {
           // We use a stable sort to ensure the duplicates are reported in the correct order.
           anton::merge_sort(indices.begin(), indices.end(),
                             [](ast::Lt_Integer const* const v1, ast::Lt_Integer const* const v2) {
-                              return compare_integer_literals(v1, v2) == Strong_Ordering::less;
+                              return compare_integer_literals(v1, v2) ==
+                                     anton::Strong_Ordering::less;
                             });
 
           for(auto i = indices.begin(), j = indices.begin() + 1, e = indices.end(); j != e;
               ++i, ++j) {
-            bool const equal = compare_integer_literals(*i, *j) == 0;
+            bool const equal = compare_integer_literals(*i, *j) == anton::Strong_Ordering::equal;
             if(equal) {
               Source_Info const& src1 = (*i)->source_info;
               Source_Info const& src2 = (*j)->source_info;
@@ -459,7 +433,8 @@ namespace vush {
           // We use a stable sort to ensure the duplicates are reported in the correct order.
           anton::merge_sort(labels.begin(), labels.end(),
                             [](ast::Lt_Integer const* const v1, ast::Lt_Integer const* const v2) {
-                              return compare_integer_literals(v1, v2) == Strong_Ordering::less;
+                              return compare_integer_literals(v1, v2) ==
+                                     anton::Strong_Ordering::less;
                             });
           for(auto i = labels.begin(), j = labels.begin() + 1, e = labels.end(); j != e; ++i, ++j) {
             bool const equal = (*i)->value == (*j)->value;

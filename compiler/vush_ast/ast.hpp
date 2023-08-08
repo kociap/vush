@@ -1,6 +1,7 @@
 #pragma once
 
 #include <anton/optional.hpp>
+#include <anton/ordering.hpp>
 
 #include <vush_ast/ast_fwd.hpp>
 #include <vush_core/either.hpp>
@@ -631,6 +632,16 @@ namespace vush::ast {
     {
     }
   };
+
+  // compare_integer_literals
+  // Three-way compare integer literals' value regardless of their base. The literal values must be
+  // trimmed to contain only plus or minus and digits.
+  //
+  // Returns:
+  // Ordering of the numeric values of the literals.
+  //
+  [[nodiscard]] anton::Strong_Ordering compare_integer_literals(ast::Lt_Integer const* lhs,
+                                                                ast::Lt_Integer const* rhs);
 
   enum struct Lt_Float_Kind { f32, f64 };
 
