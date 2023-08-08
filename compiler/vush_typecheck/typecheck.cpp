@@ -6,6 +6,8 @@
 #include <vush_autogen/builtin_symbols.hpp>
 #include <vush_core/context.hpp>
 #include <vush_diagnostics/diagnostics.hpp>
+#include <vush_typecheck/diagnostics.hpp>
+#include <vush_typecheck/typeconv.hpp>
 
 namespace vush {
   // select_overload
@@ -72,7 +74,7 @@ namespace vush {
 
     ast::Type const* const field_type = field_result.value();
     ast::Type const* const initializer_type = initializer_result.value();
-    if(compare_types_equal(*field_type, *initializer_type)) {
+    if(is_convertible(field_type, initializer_type)) {
       return anton::expected_value;
     } else {
       return {anton::expected_error,
@@ -192,12 +194,14 @@ namespace vush {
                   ast::Decl_Overloaded_Function const* const overloads)
   {
     Array<ast::Decl_Function const*> candidates(ctx.allocator);
+    i64 best_score = anton::limits::maximum_i64;
     for(ast::Decl_Function const* const fn: overloads->overloads) {
       if(fn->parameters.size() != call->arguments.size()) {
         continue;
       }
 
-      bool equal = true;
+      bool viable = true;
+      i64 overload_rank = 0;
       anton::Zip_Iterator begin{call->arguments.begin(), fn->parameters.begin()};
       anton::Zip_Iterator end{call->arguments.end(), fn->parameters.end()};
       for(auto const [argument, parameter]: anton::Range(ANTON_MOV(begin), ANTON_MOV(end))) {
@@ -208,13 +212,20 @@ namespace vush {
         }
 
         ast::Type const* const type = eval_result.value();
-        if(!ast::compare_types_equal(*type, *parameter->type)) {
-          equal = false;
+        anton::Optional<i64> rank_result = rank_conversion(parameter->type, type);
+        if(!rank_result) {
+          viable = false;
           break;
         }
+
+        overload_rank += rank_result.value();
       }
 
-      if(equal) {
+      if(viable) {
+        if(overload_rank < best_score) {
+          candidates.clear();
+        }
+
         candidates.push_back(fn);
       }
     }
@@ -397,10 +408,12 @@ namespace vush {
             return ANTON_MOV(result);
           }
 
-          if(!compare_types_equal(*(*member)->type, *result.value())) {
+          ast::Type const* const field_type = (*member)->type;
+          ast::Type const* const initializer_type = result.value();
+          if(!is_convertible(field_type, initializer_type)) {
             return {anton::expected_error,
-                    err_cannot_convert_type(ctx, initializer->expression->source_info,
-                                            (*member)->type, result.value())};
+                    err_cannot_convert_type(ctx, initializer->expression->source_info, field_type,
+                                            initializer_type)};
           }
         }
       } break;
@@ -437,7 +450,7 @@ namespace vush {
 
       ast::Type const* const lhs_type = result_lhs.value();
       ast::Type const* const rhs_type = result_rhs.value();
-      if(compare_types_equal(*lhs_type, *rhs_type)) {
+      if(is_convertible(lhs_type, rhs_type)) {
         ctx.add_node_type(node, lhs_type);
         return {anton::expected_value, lhs_type};
       } else {
@@ -465,7 +478,7 @@ namespace vush {
 
       ast::Type const* const condition_type = condition_result.value();
       ast::Type const* const bool_type = get_builtin_type(ast::Type_Builtin_Kind::e_bool);
-      if(!compare_types_equal(*bool_type, *condition_type)) {
+      if(!is_convertible(bool_type, condition_type)) {
         return {anton::expected_error,
                 err_condition_not_of_bool_type(ctx, expr->condition, condition_type)};
       }
@@ -484,6 +497,7 @@ namespace vush {
 
       ast::Type const* const then_type = then_result.value();
       ast::Type const* const else_type = else_result.value();
+      // 'then' and 'else' types must always be equal. Otherwise, there is no reliable way for us to convert the types.
       if(!compare_types_equal(*then_type, *else_type)) {
         return {anton::expected_error,
                 err_incompatible_if_expression_types(ctx, then_type, expr->then_branch, else_type,
@@ -613,10 +627,11 @@ namespace vush {
             return {anton::expected_error, ANTON_MOV(result.error())};
           }
 
-          ast::Type const* const type = result.value();
-          if(!compare_types_equal(*node->type, *type)) {
+          ast::Type const* const initializer_type = result.value();
+          if(!is_convertible(node->type, initializer_type)) {
             return {anton::expected_error,
-                    err_cannot_convert_type(ctx, node->initializer->source_info, node->type, type)};
+                    err_cannot_convert_type(ctx, node->initializer->source_info, node->type,
+                                            initializer_type)};
           }
         } else {
           // Immutable variables must have an initializer.
@@ -646,7 +661,7 @@ namespace vush {
 
         ast::Type const* const condition_type = condition_result.value();
         ast::Type const* const bool_type = get_builtin_type(ast::Type_Builtin_Kind::e_bool);
-        if(!compare_types_equal(*condition_type, *bool_type)) {
+        if(!is_convertible(bool_type, condition_type)) {
           return {anton::expected_error,
                   err_condition_not_of_bool_type(ctx, node->condition, condition_type)};
         }
@@ -672,7 +687,7 @@ namespace vush {
 
         ast::Type const* const condition_type = condition_result.value();
         ast::Type const* const bool_type = get_builtin_type(ast::Type_Builtin_Kind::e_bool);
-        if(!compare_types_equal(*condition_type, *bool_type)) {
+        if(!is_convertible(bool_type, condition_type)) {
           return {anton::expected_error,
                   err_condition_not_of_bool_type(ctx, node->condition, condition_type)};
         }

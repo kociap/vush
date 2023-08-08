@@ -210,18 +210,6 @@ namespace vush {
     return Error{.diagnostic = anton::String("err_compute_vin_not_allowed_on_stage")};
   }
 
-  [[nodiscard]] inline Error
-  err_ambiguous_overload([[maybe_unused]] Context const& ctx,
-                         [[maybe_unused]] ast::Expr_Call const* call,
-                         [[maybe_unused]] anton::Slice<ast::Decl_Function const* const> overloads)
-  {
-    return Error{.diagnostic = anton::String("err_ambiguous_overload")};
-  }
-
-  [[nodiscard]] Error
-  err_no_matching_overload(Context const& ctx, ast::Expr_Call const* call,
-                           anton::Slice<ast::Decl_Function const* const> overloads);
-
   [[nodiscard]] inline Error err_no_assignment_operator(
     [[maybe_unused]] Context const& ctx, [[maybe_unused]] ast::Type const* from_type,
     [[maybe_unused]] ast::Type const* to_type, [[maybe_unused]] ast::Expr_Assignment const* expr)
@@ -319,6 +307,4 @@ namespace vush {
     return Error{.diagnostic = anton::String("err_named_initializer_no_field_named")};
   }
 
-  [[nodiscard]] Error err_cannot_convert_type(Context const& ctx, Source_Info const& where,
-                                              ast::Type const* to, ast::Type const* from);
 } // namespace vush

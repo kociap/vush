@@ -41,4 +41,8 @@ namespace vush {
                             i64 offset, i64 end_offset, i64 line);
   void print_source_snippet(Context const& ctx, anton::String& out, anton::String_View source,
                             Source_Info const& src_info);
+
+  [[nodiscard]] anton::String stringify_type(Context const& ctx, ast::Type const* generic_type);
+  [[nodiscard]] anton::String stringify_builtin_function(Context const& ctx,
+                                                         ast::Decl_Function const* fn);
 } // namespace vush
