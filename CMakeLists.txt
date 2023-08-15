@@ -80,6 +80,7 @@ target_sources(vush
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_core/types.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_diagnostics/diagnostics.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_diagnostics/diagnostics.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_diagnostics/error.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_diagnostics/error.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_diagnostics/lexer.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_diagnostics/lexer.hpp"
@@ -95,6 +96,10 @@ target_sources(vush
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_syntax/syntax.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_syntax_lowering/syntax_lowering.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_syntax_lowering/syntax_lowering.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_typecheck/diagnostics.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_typecheck/diagnostics.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_typecheck/typecheck.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_typecheck/typecheck.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_typecheck/typeconv.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_typecheck/typeconv.hpp"
 )
