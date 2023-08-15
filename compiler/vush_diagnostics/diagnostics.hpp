@@ -290,7 +290,8 @@ namespace vush {
                    "err_init_array_initialization_must_not_have_both_initializer_kinds")};
   }
 
-  [[nodiscard]] Error err_unimplemented(Context const& ctx, Source_Info const& source);
+  [[nodiscard]] Error err_unimplemented(Context const& ctx, Source_Info const& source,
+                                        anton::String_View file, i64 line);
 
   [[nodiscard]] inline Error
   err_named_initializer_no_field_named([[maybe_unused]] Context const& ctx,

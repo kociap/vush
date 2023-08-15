@@ -83,13 +83,6 @@ namespace vush {
     }
   }
 
-  [[nodiscard]] static anton::Expected<void, Error>
-  evaluate_matrix_initializer(Context& ctx, ast::Type_Builtin const& type,
-                              ast::Initializer const& generic_initializer)
-  {
-    return {anton::expected_error, err_unimplemented(ctx, generic_initializer.source_info)};
-  }
-
   anton::Expected<ast::Type const*, Error> evaluate_vector_field(Context const& ctx,
                                                                  ast::Type_Builtin const& type,
                                                                  ast::Identifier const& field)
@@ -177,7 +170,20 @@ namespace vush {
       }
     }
 
-    return {anton::expected_error, err_unimplemented(ctx, field.source_info)};
+    return {anton::expected_error, err_unimplemented(ctx, field.source_info, __FILE__, __LINE__)};
+  }
+
+  [[nodiscard]] static anton::Expected<void, Error>
+  evaluate_matrix_initializer(Context& ctx, ast::Type_Builtin const& type,
+                              ast::Initializer const& generic_initializer)
+  {
+    ANTON_ASSERT(is_matrix(type), "type is not matrix");
+    ANTON_ASSERT(generic_initializer.node_kind == ast::Node_Kind::named_initializer ||
+                   generic_initializer.node_kind == ast::Node_Kind::indexed_initializer,
+                 "matrix initializer is not a field or range initializer");
+
+    return {anton::expected_error,
+            err_unimplemented(ctx, generic_initializer.source_info, __FILE__, __LINE__)};
   }
 
   anton::Expected<ast::Type const*, Error> evaluate_matrix_field(Context const& ctx,
@@ -185,8 +191,8 @@ namespace vush {
                                                                  ast::Identifier const& field)
   {
     ANTON_ASSERT(is_matrix(type), "type is not matrix");
-    // TODO: Implement.
-    return {anton::expected_error, err_unimplemented(ctx, field.source_info)};
+
+    return {anton::expected_error, err_unimplemented(ctx, field.source_info, __FILE__, __LINE__)};
   }
 
   anton::Expected<ast::Decl_Function const*, Error>
@@ -423,7 +429,8 @@ namespace vush {
 
       case ast::Node_Kind::type_array: {
         // TODO: Implement
-        return {anton::expected_error, err_unimplemented(ctx, expr->source_info)};
+        return {anton::expected_error,
+                err_unimplemented(ctx, expr->source_info, __FILE__, __LINE__)};
       } break;
 
       default:

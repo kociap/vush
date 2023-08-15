@@ -532,11 +532,15 @@ namespace vush {
     return error;
   }
 
-  Error err_unimplemented(Context const& ctx, Source_Info const& source_info)
+  Error err_unimplemented(Context const& ctx, Source_Info const& source_info,
+                          anton::String_View const file, i64 const line)
   {
     Error error = error_from_source(ctx.allocator, source_info);
+    // Trim the base of the path up to 'compiler'.
+    i64 const offset = anton::find_substring(file, "compiler"_sv);
+    anton::String_View trimmed_file = anton::shrink_front_bytes(file, offset);
+    error.diagnostic = anton::format("error: unimplemented at {}:{}"_sv, trimmed_file, line);
     anton::String_View const source = ctx.find_source(source_info.source_path)->data;
-    error.diagnostic = "error: unimplemented"_sv;
     print_source_snippet(ctx, error.extended_diagnostic, source, source_info);
     error.extended_diagnostic += " resulted in the compiler reaching an unimplemented path"_sv;
     return error;
