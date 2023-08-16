@@ -128,4 +128,12 @@ namespace vush {
       anton::format(" '{}' cannot be assigned to '{}'"_sv, from_string, to_string);
     return error;
   }
+
+  Error err_matrix_field_invalid(Context const& ctx, ast::Identifier const* field)
+  {
+    Error error = error_from_source(ctx.allocator, field->source_info);
+    error.diagnostic = anton::format("error: invalid matrix field '{}'"_sv, field->value);
+    // TODO: Extended diagnostic.
+    return error;
+  }
 } // namespace vush

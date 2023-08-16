@@ -21,4 +21,6 @@ namespace vush {
   [[nodiscard]] Error err_no_assignment_operator(Context const& ctx, ast::Type const* from_type,
                                                  ast::Type const* to_type,
                                                  ast::Expr_Assignment const* expr);
+
+  [[nodiscard]] Error err_matrix_field_invalid(Context const& ctx, ast::Identifier const* field);
 } // namespace vush
