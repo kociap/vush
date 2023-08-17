@@ -698,7 +698,7 @@ namespace vush {
     ANTON_ASSERT(node.kind == Syntax_Node_Kind::stmt_for, "node is not stmt_for");
     for(SNOT const& snot: node.children) {
       if(snot.is_left() && snot.left().kind == Syntax_Node_Kind::for_variable) {
-        return snot.left();
+        return snot.left().children[0].left();
       }
     }
     return anton::null_optional;

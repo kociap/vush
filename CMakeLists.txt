@@ -47,6 +47,7 @@ set(ANTON_UNREACHABLE_ASSERTS ON)
 FetchContent_Declare(
   anton_core
   GIT_REPOSITORY https://github.com/kociap/anton_core.git
+  GIT_TAG 2a714748f2f433434d48e1a1e836e416c98b7fc4
 )
 FetchContent_MakeAvailable(anton_core)
 

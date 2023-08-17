@@ -1609,7 +1609,8 @@ namespace vush {
 
         Lexer_State const end_state = _lexer.get_current_state_noskip();
         Source_Info const source = src_info(begin_state, end_state);
-        return Syntax_Node(Syntax_Node_Kind::for_variable, ANTON_MOV(snots), source);
+        return WRAP_NODE(_allocator, Syntax_Node_Kind::for_variable,
+                         Syntax_Node(Syntax_Node_Kind::variable, ANTON_MOV(snots), source), source);
       };
 
       Lexer_State const begin_state = _lexer.get_current_state();
@@ -2038,7 +2039,7 @@ namespace vush {
       auto insert_expression = [](Syntax_Node* root, Syntax_Node&& expr) -> void {
         // We only ever have to descend down the right children.
         while(root->children.size() == 3) {
-          ANTON_ASSERT(root->type == Syntax_Node_Kind::expr_binary,
+          ANTON_ASSERT(root->kind == Syntax_Node_Kind::expr_binary,
                        "Syntax_Node is not expr_binary");
           ANTON_ASSERT(root->children[2].is_left(),
                        "third child of a binary expression node is not a Syntax_Node");
