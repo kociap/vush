@@ -478,18 +478,6 @@ namespace vush {
     return error;
   }
 
-  Error err_init_invalid_struct_initializer_kind(Context const& ctx,
-                                                 ast::Initializer const* const initializer)
-  {
-    Source_Info const source_info = initializer->source_info;
-    Error error = error_from_source(ctx.allocator, source_info);
-    anton::String_View const source = ctx.find_source(source_info.source_path)->data;
-    error.diagnostic = "error: initializer is not named initializer"_sv;
-    print_source_snippet(ctx, error.extended_diagnostic, source, source_info);
-    error.extended_diagnostic += " struct initializers must be named initializers"_sv;
-    return error;
-  }
-
   Error err_type_has_no_field_named(Context const& ctx, ast::Type const* type,
                                     ast::Identifier const* field_identifier)
   {

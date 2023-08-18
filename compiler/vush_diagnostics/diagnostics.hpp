@@ -272,9 +272,6 @@ namespace vush {
     return Error{.diagnostic = anton::String("err_init_type_is_builtin")};
   }
 
-  [[nodiscard]] Error err_init_invalid_struct_initializer_kind(Context const& ctx,
-                                                               ast::Initializer const* initializer);
-
   [[nodiscard]] inline Error
   err_init_invalid_array_initializer_kind([[maybe_unused]] Context const& ctx,
                                           [[maybe_unused]] ast::Initializer const* initializer)

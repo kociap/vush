@@ -4,6 +4,7 @@
 #include <anton/flat_hash_map.hpp>
 
 #include <vush_ast/ast.hpp>
+#include <vush_ast_validation/diagnostics.hpp>
 #include <vush_core/context.hpp>
 #include <vush_diagnostics/diagnostics.hpp>
 
@@ -62,8 +63,43 @@ namespace vush {
         if(equal) {
           Source_Info const& src1 = (*i)->source_info;
           Source_Info const& src2 = (*j)->source_info;
+          // TODO: Diagnostic.
           return {anton::expected_error, err_duplicate_label(ctx, src1, src2)};
         }
+      }
+    }
+    return anton::expected_value;
+  }
+
+  [[nodiscard]] static anton::Expected<void, Error>
+  validate_matrix_initializers(Context const& ctx, ast::Initializer_List const initializers)
+  {
+    for(ast::Initializer const* const generic_initializer: initializers) {
+      switch(generic_initializer->node_kind) {
+      case ast::Node_Kind::named_initializer: {
+        auto const initializer = static_cast<ast::Named_Initializer const*>(generic_initializer);
+        anton::Expected<void, Error> result = validate_expression(ctx, initializer->expression);
+        if(!result) {
+          return ANTON_MOV(result);
+        }
+      } break;
+
+      case ast::Node_Kind::indexed_initializer: {
+        auto const initializer = static_cast<ast::Indexed_Initializer const*>(generic_initializer);
+        anton::Expected<void, Error> range_result = validate_expression(ctx, initializer->index);
+        if(!range_result) {
+          return ANTON_MOV(range_result);
+        }
+        anton::Expected<void, Error> expression_result =
+          validate_expression(ctx, initializer->expression);
+        if(!expression_result) {
+          return ANTON_MOV(expression_result);
+        }
+      }
+
+      default:
+        return {anton::expected_error,
+                err_init_invalid_matrix_initializer_kind(ctx, generic_initializer)};
       }
     }
 
@@ -95,7 +131,11 @@ namespace vush {
             return ANTON_MOV(result);
           }
         } else if(is_matrix(*expr->type)) {
-          // TODO: Implement.
+          anton::Expected<void, Error> result =
+            validate_matrix_initializers(ctx, expr->initializers);
+          if(!result) {
+            return ANTON_MOV(result);
+          }
         } else {
           return {anton::expected_error, err_init_type_is_builtin(ctx, expr->type)};
         }

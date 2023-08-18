@@ -67,6 +67,8 @@ target_sources(vush
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast/ast_fwd.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast_transform/overload_construction.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast_transform/transforms.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast_validation/diagnostics.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast_validation/diagnostics.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast_validation/validation.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast_validation/validation.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_autogen/builtin_symbols.cpp"
