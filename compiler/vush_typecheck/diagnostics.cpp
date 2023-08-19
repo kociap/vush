@@ -32,16 +32,22 @@ namespace vush {
   {
     Error error = error_from_source(ctx.allocator, call->source_info);
     anton::String arguments = stringify_call_argument_types(ctx, call->arguments);
-    error.diagnostic =
-      anton::format("error: no matching function for call to '{}' with arguments '{}'"_sv,
-                    call->identifier->value, arguments);
+    bool const is_operator = anton::begins_with(call->identifier->value, "operator"_sv);
+    if(is_operator) {
+      error.diagnostic = anton::format("error: no matching '{}' for arguments '{}'"_sv,
+                                       call->identifier->value, arguments);
+    } else {
+      error.diagnostic =
+        anton::format("error: no matching function for call to '{}' with arguments '{}'"_sv,
+                      call->identifier->value, arguments);
+    }
     anton::String_View const source = ctx.find_source(call->source_info.source_path)->data;
     print_source_snippet(ctx, error.extended_diagnostic, source, call->identifier->source_info);
     for(ast::Decl_Function const* const fn: overloads) {
-      error.extended_diagnostic += '\n';
       auto result = ctx.find_source(fn->source_info.source_path);
       if(result != nullptr) {
         ANTON_ASSERT(!fn->builtin, "builtin function has source");
+        error.extended_diagnostic += '\n';
         anton::String_View const source = result->data;
         Source_Info const& fn_info = fn->identifier->source_info;
         error.extended_diagnostic += format_diagnostic_location(ctx.allocator, fn_info.source_path,
@@ -50,7 +56,13 @@ namespace vush {
         print_source_snippet(ctx, error.extended_diagnostic, source, fn->identifier->source_info);
         error.extended_diagnostic += " candidate function not viable"_sv;
       } else {
+        // Do not output builtin operators as that leads to extremely long diagnostic messages.
+        if(is_operator) {
+          continue;
+        }
+
         ANTON_ASSERT(fn->builtin, "non-builtin function has no source");
+        error.extended_diagnostic += '\n';
         error.extended_diagnostic += format_diagnostic_location(ctx.allocator, "<vush>", 1, 1);
         error.extended_diagnostic += "note: builtin function is not a viable candidate\n"_sv;
         print_left_margin(ctx.allocator, error.extended_diagnostic, 0);
