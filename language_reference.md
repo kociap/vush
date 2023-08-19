@@ -1,10 +1,13 @@
 # Types
 
 ## Builtin Types
+### Vectors
+### Matrices
+Members in the form matY or matYxZ where Y and Z are in {2, 3, 4} construct a matrix. Each component (i, j) which has a corresponding component (i, j) in the source matrix will be initialized from it. Other components will be initialized from the identity matrix.
 
 ## Array Types
 
-## User Defined Types
+## Struct Types
 
 # Literals
 ## Bool Literals
@@ -36,7 +39,7 @@ condition -> no expr_init
 
 ## Initializer expression
 ```
-     initializer -> identifier '=' expression
+     initializer -> '.' identifier '=' expression
                     '[' integer_literal ']' '=' expression
                     expression
 initializer_list -> initializer ',' initializer_list
@@ -44,6 +47,8 @@ initializer_list -> initializer ',' initializer_list
                     epsilon
        init_expr -> type '{' initializer_list '}'
 ```
+
+Initializers are evaluated in the order of appearance.
 
 # Statements
 ## Switch
