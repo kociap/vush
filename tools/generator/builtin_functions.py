@@ -81,7 +81,7 @@ fn_definitions = (
     Fn(name = "asinh", signature = (return_, "x"), replacements = (ParamT.genFType, )),
     Fn(name = "acosh", signature = (return_, "x"), replacements = (ParamT.genFType, )),
     Fn(name = "atanh", signature = (return_, "x"), replacements = (ParamT.genFType, )),
-    Fn(name = "pow", signature = (return_, "x"), replacements = (ParamT.genFType, )),
+    Fn(name = "pow", signature = (return_, "x", "y"), replacements = (ParamT.genFType, )),
     Fn(name = "exp", signature = (return_, "x"), replacements = (ParamT.genFType, )),
     Fn(name = "log", signature = (return_, "x"), replacements = (ParamT.genFType, )),
     Fn(name = "exp2", signature = (return_, "x"), replacements = (ParamT.genFType, )),
