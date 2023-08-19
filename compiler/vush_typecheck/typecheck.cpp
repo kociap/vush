@@ -184,8 +184,40 @@ namespace vush {
     ANTON_ASSERT(generic_initializer.node_kind == ast::Node_Kind::named_initializer ||
                    generic_initializer.node_kind == ast::Node_Kind::indexed_initializer,
                  "matrix initializer is not a field or range initializer");
-    return {anton::expected_error,
-            err_unimplemented(ctx, generic_initializer.source_info, __FILE__, __LINE__)};
+
+    switch(generic_initializer.node_kind) {
+    case ast::Node_Kind::named_initializer: {
+      auto initializer = static_cast<ast::Named_Initializer const&>(generic_initializer);
+      auto initializer_result = evaluate_expression_type(ctx, initializer.expression);
+      if(!initializer_result) {
+        return {anton::expected_error, ANTON_MOV(initializer_result.error())};
+      }
+
+      auto field_result = evaluate_matrix_field(ctx, type, *initializer.identifier);
+      if(!field_result) {
+        return {anton::expected_error, ANTON_MOV(field_result.error())};
+      }
+
+      ast::Type const* field_type = field_result.value();
+      ast::Type const* initializer_type = initializer_result.value();
+      if(is_convertible(field_type, initializer_type)) {
+        return anton::expected_value;
+      } else {
+        return {anton::expected_error,
+                err_cannot_convert_type(ctx, initializer.expression->source_info, field_type,
+                                        initializer_type)};
+      }
+    }
+
+    case ast::Node_Kind::indexed_initializer: {
+      return {anton::expected_error,
+              err_unimplemented(ctx, generic_initializer.source_info, __FILE__, __LINE__)};
+    }
+
+    default:
+      return {anton::expected_error,
+              err_unimplemented(ctx, generic_initializer.source_info, __FILE__, __LINE__)};
+    }
   }
 
   anton::Expected<ast::Type const*, Error> evaluate_matrix_field(Context const& ctx,
@@ -194,42 +226,6 @@ namespace vush {
   {
     ANTON_ASSERT(is_matrix(type), "type is not matrix");
     // Matrices have fields named matX or matYxZ where X, Y, Z in {2, 3, 4}.
-    // A matrix may not have a field that represents a matrix larger than itself.
-
-    auto get_dimensions = [](ast::Type_Builtin_Kind const kind) -> anton::Pair<i32, i32> {
-      switch(kind) {
-      case ast::Type_Builtin_Kind::e_mat2:
-      case ast::Type_Builtin_Kind::e_dmat2:
-        return {2, 2};
-      case ast::Type_Builtin_Kind::e_mat3:
-      case ast::Type_Builtin_Kind::e_dmat3:
-        return {3, 3};
-      case ast::Type_Builtin_Kind::e_mat4:
-      case ast::Type_Builtin_Kind::e_dmat4:
-        return {4, 4};
-      case ast::Type_Builtin_Kind::e_mat2x3:
-      case ast::Type_Builtin_Kind::e_dmat2x3:
-        return {2, 3};
-      case ast::Type_Builtin_Kind::e_mat2x4:
-      case ast::Type_Builtin_Kind::e_dmat2x4:
-        return {2, 4};
-      case ast::Type_Builtin_Kind::e_mat3x2:
-      case ast::Type_Builtin_Kind::e_dmat3x2:
-        return {3, 2};
-      case ast::Type_Builtin_Kind::e_mat3x4:
-      case ast::Type_Builtin_Kind::e_dmat3x4:
-        return {3, 4};
-      case ast::Type_Builtin_Kind::e_mat4x2:
-      case ast::Type_Builtin_Kind::e_dmat4x2:
-        return {4, 2};
-      case ast::Type_Builtin_Kind::e_mat4x3:
-      case ast::Type_Builtin_Kind::e_dmat4x3:
-        return {4, 3};
-      default:
-        ANTON_ASSERT(false, "invalid matrix size");
-        ANTON_UNREACHABLE();
-      }
-    };
 
     auto select_kind_from_field =
       [](Context const& ctx, ast::Identifier const* const field,
@@ -266,13 +262,6 @@ namespace vush {
     }
 
     ast::Type_Builtin_Kind const field_kind = result.value();
-    anton::Pair<i32, i32> const field_dimensions = get_dimensions(field_kind);
-    anton::Pair<i32, i32> const type_dimensions = get_dimensions(type.value);
-    if(field_dimensions.first > type_dimensions.first ||
-       field_dimensions.second > type_dimensions.second) {
-      return {anton::expected_error, err_matrix_field_invalid(ctx, &field)};
-    }
-
     return {anton::expected_value, get_builtin_type(field_kind)};
   }
 
