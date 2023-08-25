@@ -31,6 +31,8 @@ if(VUSH_COMPILER_CLANGPP)
     # -Wunreachable-code-break
 
     -Wno-reorder-init-list # Supress warnings about reordering in designated initializers
+    -Wno-invalid-unevaluated-string # Fires in asserts causing spam
+    -Wno-missing-field-initializers # TODO: Temporarily because of spam from vush_diagnostics/diagnostics.hpp
   )
 elseif(MSVC)
   set(VUSH_COMPILE_FLAGS
@@ -47,7 +49,7 @@ set(ANTON_UNREACHABLE_ASSERTS ON)
 FetchContent_Declare(
   anton_core
   GIT_REPOSITORY https://github.com/kociap/anton_core.git
-  GIT_TAG 2a714748f2f433434d48e1a1e836e416c98b7fc4
+  GIT_TAG ca721f3b6d630e3c2aef7612a334ecc0323191d9
 )
 FetchContent_MakeAvailable(anton_core)
 
