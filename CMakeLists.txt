@@ -81,6 +81,7 @@ target_sources(vush
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_core/context.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_core/either.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_core/memory.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_core/scoped_map.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_core/source_info.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_core/types.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_diagnostics/diagnostics.cpp"
