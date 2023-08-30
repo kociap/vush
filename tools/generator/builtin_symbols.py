@@ -122,7 +122,7 @@ def generate_functions(fn):
         def create_static_type_builtin(name):
             return f"builtin_{name}", f"static constexpr ast::Type_Builtin builtin_{name}(ast::Type_Builtin_Kind::e_{name}, {{}});"
         def create_static_literal_integer(value):
-            return f"int_{value}", f"static constexpr ast::Lt_Integer int_{value}(\"{value}\"_sv, ast::Lt_Integer_Kind::i32, ast::Lt_Integer_Base::dec, {{}});"
+            return f"int_{value}", f"static constexpr ast::Lt_Integer int_{value}(ast::lt_integer_i32, {value}, {{}});"
         def create_static_type_array(name, base, size):
             return f"array_{name}", f"static constexpr ast::Type_Array array_{name}(&{base}, &{size}, {{}});"
         def create_static_parameter(name, ss_identifier, ss_type):

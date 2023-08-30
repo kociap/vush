@@ -318,31 +318,8 @@ namespace vush {
       return anton::expected_value;
     } break;
 
-    case ast::Node_Kind::lt_integer: {
-      ast::Lt_Integer const* const expr = static_cast<ast::Lt_Integer const*>(node);
-      // Integer literals must require at most 32 bits.
-      // TODO: Literals may include leading 0s.
-      // TODO: Validate overflow.
-      // The max allowed value is 4294967295
-      switch(expr->base) {
-      case ast::Lt_Integer_Base::dec: {
-      } break;
-
-      case ast::Lt_Integer_Base::bin: {
-      } break;
-
-      case ast::Lt_Integer_Base::hex: {
-      } break;
-      }
-
-      return anton::expected_value;
-    } break;
-
-    case ast::Node_Kind::lt_float: {
-      // TODO: Implement validation.
-      return anton::expected_value;
-    } break;
-
+    case ast::Node_Kind::lt_integer:
+    case ast::Node_Kind::lt_float:
     case ast::Node_Kind::lt_bool:
     case ast::Node_Kind::expr_identifier:
     case ast::Node_Kind::expr_default:
@@ -477,8 +454,8 @@ namespace vush {
                                      anton::Strong_Ordering::less;
                             });
           for(auto i = labels.begin(), j = labels.begin() + 1, e = labels.end(); j != e; ++i, ++j) {
-            bool const equal = (*i)->value == (*j)->value;
-            if(equal) {
+            anton::Strong_Ordering const ordering = compare_integer_literals(*i, *j);
+            if(ordering == anton::Strong_Ordering::equal) {
               Source_Info const& src1 = (*i)->source_info;
               Source_Info const& src2 = (*j)->source_info;
               return {anton::expected_error, err_duplicate_label(ctx, src1, src2)};

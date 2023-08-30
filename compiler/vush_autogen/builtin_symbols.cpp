@@ -770,7 +770,7 @@ namespace vush {
   static constexpr ast::Identifier ident___vush_operatorhat_left_uvec4("__vush_operatorhat_left_uvec4"_sv, {});
   static constexpr ast::Identifier ident___vush_operatorhat_right_uvec4("__vush_operatorhat_right_uvec4"_sv, {});
 
-  static constexpr ast::Lt_Integer int_4("4"_sv, ast::Lt_Integer_Kind::i32, ast::Lt_Integer_Base::dec, {});
+  static constexpr ast::Lt_Integer int_4(ast::lt_integer_i32, 4, {});
 
   static constexpr ast::Type_Builtin builtin_void(ast::Type_Builtin_Kind::e_void, {});
   static constexpr ast::Type_Builtin builtin_bool(ast::Type_Builtin_Kind::e_bool, {});

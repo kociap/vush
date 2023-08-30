@@ -639,7 +639,7 @@ namespace vush::ast {
       }
 
       // Otherwise compare the sizes to determine whether types are equal.
-      return lhs_v.size->value == rhs_v.size->value;
+      return compare_integer_literals(lhs_v.size, rhs_v.size) == anton::Strong_Ordering::equal;
     }
 
     default:
@@ -647,17 +647,33 @@ namespace vush::ast {
     }
   }
 
-  anton::Strong_Ordering compare_integer_literals(ast::Lt_Integer const* const lhs,
-                                                  ast::Lt_Integer const* const rhs)
+  [[nodiscard]] static u32 get_lt_integer_value_as_u32(Lt_Integer const* const integer)
   {
-    i64 const lhs_value = anton::str_to_i64(lhs->value, static_cast<i32>(lhs->base));
-    i64 const rhs_value = anton::str_to_i64(rhs->value, static_cast<i32>(rhs->base));
-    if(lhs_value < rhs_value) {
+    switch(integer->kind) {
+    case Lt_Integer_Kind::i32:
+      return integer->i32_value;
+
+    case Lt_Integer_Kind::u32:
+      return integer->u32_value;
+    }
+  }
+
+  [[nodiscard]] static anton::Strong_Ordering compare_integers_strong(u32 const lhs, u32 const rhs)
+  {
+    if(lhs < rhs) {
       return anton::Strong_Ordering::less;
-    } else if(lhs_value == rhs_value) {
+    } else if(lhs == rhs) {
       return anton::Strong_Ordering::equal;
     } else {
       return anton::Strong_Ordering::greater;
     }
+  }
+
+  anton::Strong_Ordering compare_integer_literals(Lt_Integer const* const lhs,
+                                                  Lt_Integer const* const rhs)
+  {
+    u32 const lhs_value = get_lt_integer_value_as_u32(lhs);
+    u32 const rhs_value = get_lt_integer_value_as_u32(rhs);
+    return compare_integers_strong(lhs_value, rhs_value);
   }
 } // namespace vush::ast

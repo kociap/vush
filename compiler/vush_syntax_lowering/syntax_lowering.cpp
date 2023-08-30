@@ -67,20 +67,26 @@ namespace vush {
   }
 
   [[nodiscard]] static anton::Expected<ast::Lt_Integer const*, Error>
-  transform_lt_integer(Context const& ctx, Syntax_Node const& node)
+  lower_lt_integer(Context const& ctx, Syntax_Node const& node)
   {
     Syntax_Token const& value_token = get_expr_lt_integer_value(node);
-    ast::Lt_Integer_Base base;
+    // TODO: Integer literals must require at most 32 bits.
+    // TODO: Literals may include leading 0s.
+    // TODO: Validate overflow.
+    // The max allowed value is 4294967295
+    i32 base = 0;
     switch(value_token.kind) {
-    case Syntax_Node_Kind::lt_bin_integer:
-      base = ast::Lt_Integer_Base::bin;
-      break;
-    case Syntax_Node_Kind::lt_dec_integer:
-      base = ast::Lt_Integer_Base::dec;
-      break;
-    case Syntax_Node_Kind::lt_hex_integer:
-      base = ast::Lt_Integer_Base::hex;
-      break;
+    case Syntax_Node_Kind::lt_bin_integer: {
+      base = 2;
+    } break;
+
+    case Syntax_Node_Kind::lt_dec_integer: {
+      base = 10;
+    } break;
+
+    case Syntax_Node_Kind::lt_hex_integer: {
+      base = 16;
+    } break;
 
     default:
       ANTON_ASSERT(false, ""); // TODO: Error
@@ -98,10 +104,19 @@ namespace vush {
       }
     }
 
-    anton::String const* const value =
-      allocate<anton::String>(ctx.allocator, value_token.value, ctx.allocator);
-    return {anton::expected_value,
-            allocate<ast::Lt_Integer>(ctx.allocator, *value, kind, base, node.source_info)};
+    switch(kind) {
+    case ast::Lt_Integer_Kind::i32: {
+      i32 const value = anton::str_to_i64(value_token.value, base);
+      return {anton::expected_value, allocate<ast::Lt_Integer>(ctx.allocator, ast::lt_integer_i32,
+                                                               value, node.source_info)};
+    }
+
+    case ast::Lt_Integer_Kind::u32: {
+      u32 const value = anton::str_to_u64(value_token.value, base);
+      return {anton::expected_value, allocate<ast::Lt_Integer>(ctx.allocator, ast::lt_integer_u32,
+                                                               value, node.source_info)};
+    }
+    }
   }
 
   [[nodiscard]] static anton::Expected<ast::Type const*, Error>
@@ -145,7 +160,7 @@ namespace vush {
       ast::Lt_Integer const* size = nullptr;
       if(anton::Optional size_node = get_type_array_size(node)) {
         anton::Expected<ast::Lt_Integer const*, Error> size_result =
-          transform_lt_integer(ctx, *size_node);
+          lower_lt_integer(ctx, *size_node);
         if(size_result) {
           size = size_result.value();
         } else {
@@ -395,8 +410,7 @@ namespace vush {
 
         case Syntax_Node_Kind::indexed_initializer: {
           Syntax_Node const& index_node = get_indexed_initializer_index(node);
-          anton::Expected<ast::Lt_Integer const*, Error> index =
-            transform_lt_integer(ctx, index_node);
+          anton::Expected<ast::Lt_Integer const*, Error> index = lower_lt_integer(ctx, index_node);
           if(!index) {
             return {anton::expected_error, ANTON_MOV(index.error())};
           }
@@ -512,7 +526,7 @@ namespace vush {
     } break;
 
     case Syntax_Node_Kind::expr_lt_integer: {
-      anton::Expected<ast::Lt_Integer const*, Error> result = transform_lt_integer(ctx, node);
+      anton::Expected<ast::Lt_Integer const*, Error> result = lower_lt_integer(ctx, node);
       if(result) {
         return {anton::expected_value, result.value()};
       } else {

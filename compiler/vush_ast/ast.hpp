@@ -618,17 +618,34 @@ namespace vush::ast {
     }
   };
 
-  enum struct Lt_Integer_Kind { i32, u32 };
-  enum struct Lt_Integer_Base { dec = 10, bin = 2, hex = 16 };
+  enum struct Lt_Integer_Kind : u8 { i32, u32 };
+
+  namespace detail {
+    template<Lt_Integer_Kind Value>
+    struct Lt_Integer_Tag {
+      explicit constexpr Lt_Integer_Tag() = default;
+    };
+  } // namespace detail
+
+  constexpr detail::Lt_Integer_Tag<Lt_Integer_Kind::i32> lt_integer_i32;
+  constexpr detail::Lt_Integer_Tag<Lt_Integer_Kind::u32> lt_integer_u32;
 
   struct Lt_Integer: public Expr {
-    anton::String_View value;
+    union {
+      i32 i32_value;
+      u32 u32_value;
+    };
     Lt_Integer_Kind kind;
-    Lt_Integer_Base base;
 
-    constexpr Lt_Integer(anton::String_View value, Lt_Integer_Kind kind, Lt_Integer_Base base,
+    constexpr Lt_Integer(detail::Lt_Integer_Tag<Lt_Integer_Kind::i32>, i32 value,
                          Source_Info const& source_info)
-      : Expr(source_info, Node_Kind::lt_integer), value(value), kind(kind), base(base)
+      : Expr(source_info, Node_Kind::lt_integer), i32_value(value), kind(Lt_Integer_Kind::i32)
+    {
+    }
+
+    constexpr Lt_Integer(detail::Lt_Integer_Tag<Lt_Integer_Kind::u32>, u32 value,
+                         Source_Info const& source_info)
+      : Expr(source_info, Node_Kind::lt_integer), u32_value(value), kind(Lt_Integer_Kind::u32)
     {
     }
   };
@@ -640,8 +657,8 @@ namespace vush::ast {
   // Returns:
   // Ordering of the numeric values of the literals.
   //
-  [[nodiscard]] anton::Strong_Ordering compare_integer_literals(ast::Lt_Integer const* lhs,
-                                                                ast::Lt_Integer const* rhs);
+  [[nodiscard]] anton::Strong_Ordering compare_integer_literals(Lt_Integer const* lhs,
+                                                                Lt_Integer const* rhs);
 
   enum struct Lt_Float_Kind { f32, f64 };
 

@@ -484,7 +484,15 @@ namespace vush {
       anton::String base = stringify_type(ctx, type->base);
       anton::String size;
       if(type->size) {
-        size = anton::String(type->size->value, ctx.allocator);
+        switch(type->size->kind) {
+        case ast::Lt_Integer_Kind::i32: {
+          size = anton::to_string(ctx.allocator, type->size->i32_value);
+        } break;
+
+        case ast::Lt_Integer_Kind::u32: {
+          size = anton::to_string(ctx.allocator, type->size->u32_value);
+        } break;
+        }
       }
       return anton::concat(ctx.allocator, "["_sv, base, ";"_sv, size, "]"_sv);
     } break;
