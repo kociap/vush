@@ -31,7 +31,6 @@ ContinuationIndentWidth: 2
 Cpp11BracedListStyle: true
 DerivePointerAlignment: false
 DisableFormat: false
-IndentCaseLabels: true
 IndentPPDirectives: BeforeHash
 IndentWidth: 2
 IndentCaseLabels: false
