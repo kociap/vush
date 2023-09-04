@@ -1,4 +1,4 @@
-#include <vush_diagnostics/lexer.hpp>
+#include <vush_lexer/diagnostics.hpp>
 
 #include <anton/format.hpp>
 

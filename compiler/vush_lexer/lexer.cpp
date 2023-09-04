@@ -3,7 +3,7 @@
 #include <anton/optional.hpp>
 
 #include <vush_core/context.hpp>
-#include <vush_diagnostics/lexer.hpp>
+#include <vush_lexer/diagnostics.hpp>
 
 namespace vush {
   using namespace anton::literals;
