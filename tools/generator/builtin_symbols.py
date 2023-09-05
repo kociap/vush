@@ -1,4 +1,4 @@
-from builtin_functions import ParamT, Array_Type, Return_Placeholder, return_, Fn, fn_definitions
+from builtin_functions import Param_Type, Array_Type, Return_Placeholder, return_, Fn, fn_definitions
 from builtin_type import Builtin_Type, stringify_builtin_type
 from builtin_operator import Builtin_Operator, builtin_operator_definitions
 
@@ -119,8 +119,9 @@ def generate_functions(fn):
     def create_function_declaration(identifier, return_type, parameter_generator):
         def create_static_identifier(name, value):
             return f"ident_{name}", f"static constexpr ast::Identifier ident_{name}(\"{value}\"_sv, {{}});"
-        def create_static_type_builtin(name):
-            return f"builtin_{name}", f"static constexpr ast::Type_Builtin builtin_{name}(ast::Type_Builtin_Kind::e_{name}, {{}});"
+        def create_static_type_builtin(builtin):
+            stringified_type = stringify_builtin_type(builtin)
+            return f"builtin_{stringified_type}", f"static constexpr ast::Type_Builtin builtin_{stringified_type}(ast::Type_Builtin_Kind::e_{stringified_type}, {{}});"
         def create_static_literal_integer(value):
             return f"int_{value}", f"static constexpr ast::Lt_Integer int_{value}(ast::lt_integer_i32, {value}, {{}});"
         def create_static_type_array(name, base, size):
@@ -155,7 +156,7 @@ def generate_functions(fn):
                 static_types[stb_base] = stb_base_string
                 sli_size, sli_size_string = create_static_literal_integer(t.size)
                 static_integers[sli_size] = sli_size_string
-                stringified_type = f"{t.base}_{t.size}"
+                stringified_type = f"{stringify_builtin_type(t.base)}_{t.size}"
                 sta_ptype, sta_ptype_string = create_static_type_array(stringified_type, stb_base, sli_size)
                 static_types[sta_ptype] = sta_ptype_string
                 sp_param, sp_param_string = create_static_parameter(f"{identifier}_{n}_{stringified_type}", si_pidentifier, sta_ptype)
@@ -165,10 +166,10 @@ def generate_functions(fn):
             else:
                 stb_ptype, stb_ptype_string = create_static_type_builtin(t)
                 static_types[stb_ptype] = stb_ptype_string
-                sp_param, sp_param_string = create_static_parameter(f"{identifier}_{n}_{t}", si_pidentifier, stb_ptype)
+                sp_param, sp_param_string = create_static_parameter(f"{identifier}_{n}_{stringify_builtin_type(t)}", si_pidentifier, stb_ptype)
                 static_parameters[sp_param] = sp_param_string
                 parameter_statics.append(sp_param)
-                parameter_types.append(t)
+                parameter_types.append(stringify_builtin_type(t))
         if len(parameter_statics) > 0:
             discriminator = "_".join(parameter_types)
             spa, spa_string = create_static_parameter_array(identifier + "_" + discriminator, parameter_statics)
@@ -181,69 +182,46 @@ def generate_functions(fn):
 
         return fn, static_identifiers, static_integers, static_types, static_parameters, static_arrays, static_functions
 
-    def generate_name(signature):
-        for v in signature:
-            unpack = v
-            if isinstance(v, tuple):
-                unpack = v[0]
-            if isinstance(unpack, str):
-                yield unpack
+    def create_signature_generator(signature):
+        # The enumerations within Param_Type are tuples containing one element, therefore we have to
+        # unwrap them everywhere by accessing the first element.
 
-    # generate_type_generator
-    #
-    # Yields:
-    # Generator returning types.
-    #
-    def generate_type_generator(signature, replacement):
-        # For some reason the value of ParamT is a tuple containing one element,
-        # therefore we have to unwrap it everywhere by accessing the first element.
-
-        def calculate_min_length(t):
-            max_length = 1
-            for v in replacement:
-                if isinstance(v, ParamT):
-                    max_length = max(len(v.value[0]), max_length)
-            min_length = max_length
-            for v in replacement:
-                if isinstance(v, ParamT):
-                    min_length = min(len(v.value[0]), min_length)
-            return min_length
-
-        def sew_signature_replacement(signature, replacement):
+        # calculate_min_length
+        # Calculate the minimum length of all Param_Type.
+        #
+        # Returns:
+        # The least length of all Param_Type, If no Param_Type is present in the signature, the
+        # length is 1.
+        #
+        def calculate_min_length(signature):
+            min_length = 99
+            has_param_type = False
             for p in signature:
-                if isinstance(p, tuple):
-                    yield p[1]
+                t = p[1]
+                if isinstance(t, Param_Type):
+                    min_length = min(len(t.value), min_length)
+                    has_param_type = True
+            if has_param_type == True:
+                return min_length
+            else:
+                return 1
+
+        def signature_generator(signature, index):
+            for p in signature:
+                if isinstance(p[1], Param_Type):
+                    yield (p[0], p[1].value[index])
+                elif isinstance(p[1], Builtin_Type) or isinstance(p[1], Array_Type):
+                    yield p
                 else:
-                    yield next(replacement)
+                    raise TypeError("invalid parameter type")
 
-        if isinstance(replacement, str) or isinstance(replacement, Array_Type):
-            yield sew_signature_replacement(signature, (replacement for _ in range(0, len(signature))))
-        elif isinstance(replacement, ParamT):
-            for t in replacement.value[0]:
-                yield sew_signature_replacement(signature, (t for _ in range(0, len(signature))))
-        elif isinstance(replacement, tuple):
-            min_length = calculate_min_length(replacement)
-            for i in range(0, min_length):
-                def unwrap(replacement, i):
-                    for v in replacement:
-                        if isinstance(v, ParamT):
-                            yield v.value[0][i]
-                        else:
-                            yield v
+        min_length = calculate_min_length(signature)
+        for index in range(0, min_length):
+            yield signature_generator(signature, index)
 
-                yield sew_signature_replacement(signature, unwrap(replacement, i))
-        else:
-            raise TypeError(f"invalid replacement type {type(replacement)} ({replacement})")
-
-    # Handle case where a function has no replacements,
-    # i.e. all parameters are provided in the signature.
-    if len(fn.replacements) > 0:
-        for replacement in fn.replacements:
-            for type_gen in generate_type_generator(fn.signature, replacement):
-                yield create_function_declaration(fn.name, next(type_gen), zip(generate_name(fn.signature), type_gen))
-    else:
-        for type_gen in generate_type_generator(fn.signature, ()):
-            yield create_function_declaration(fn.name, next(type_gen), zip(generate_name(fn.signature), type_gen))
+    for g in create_signature_generator(fn.signature):
+        return_parameter = next(g)
+        yield create_function_declaration(fn.name, return_parameter[1], g)
 
 
 def write_get_builtin_functions_declarations(file, functions):
