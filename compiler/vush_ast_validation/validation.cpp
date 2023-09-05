@@ -32,7 +32,7 @@ namespace vush {
   [[nodiscard]] static anton::Expected<void, Error>
   validate_named_initializers(Context const& ctx, ast::Initializer_List const initializers)
   {
-    Array<ast::Identifier const*> identifiers{ctx.allocator};
+    Array<ast::Identifier> identifiers{ctx.allocator};
     for(ast::Initializer const* const generic_initializer: initializers) {
       if(generic_initializer->node_kind != ast::Node_Kind::named_initializer) {
         return {anton::expected_error,
@@ -53,16 +53,16 @@ namespace vush {
     if(identifiers.size() > 0) {
       // We use a stable sort to ensure the duplicates are reported in the correct order.
       anton::merge_sort(identifiers.begin(), identifiers.end(),
-                        [](ast::Identifier const* const v1, ast::Identifier const* const v2) {
-                          return compare(v1->value, v2->value) == -1;
+                        [](ast::Identifier const& v1, ast::Identifier const& v2) {
+                          return compare(v1.value, v2.value) == -1;
                         });
 
       for(auto i = identifiers.begin(), j = identifiers.begin() + 1, e = identifiers.end(); j != e;
           ++i, ++j) {
-        bool const equal = compare((*i)->value, (*j)->value) == 0;
+        bool const equal = compare(i->value, j->value) == 0;
         if(equal) {
-          Source_Info const& src1 = (*i)->source_info;
-          Source_Info const& src2 = (*j)->source_info;
+          Source_Info const& src1 = i->source_info;
+          Source_Info const& src2 = j->source_info;
           // TODO: Diagnostic.
           return {anton::expected_error, err_duplicate_label(ctx, src1, src2)};
         }
@@ -546,13 +546,13 @@ namespace vush {
   validate_struct(Context const& ctx, ast::Decl_Struct const* const dstruct)
   {
     if(dstruct->members.size() == 0) {
-      return {anton::expected_error, err_empty_struct(ctx, dstruct->identifier->source_info)};
+      return {anton::expected_error, err_empty_struct(ctx, dstruct->identifier.source_info)};
     }
 
     // Member types must be complete types and must not be self.
     for(ast::Struct_Member const* const member: dstruct->members) {
       anton::Expected<void, Error> result =
-        validate_struct_member_type(ctx, *member->type, *dstruct->identifier);
+        validate_struct_member_type(ctx, *member->type, dstruct->identifier);
       if(!result) {
         return result;
       }
@@ -560,14 +560,14 @@ namespace vush {
 
     // Member names must be unique.
     {
-      anton::Flat_Hash_Map<anton::String_View, ast::Identifier const*> member_identifiers;
+      anton::Flat_Hash_Map<anton::String_View, ast::Identifier> member_identifiers;
       for(ast::Struct_Member const* const member: dstruct->members) {
-        auto iter = member_identifiers.find(member->identifier->value);
+        auto iter = member_identifiers.find(member->identifier.value);
         if(iter != member_identifiers.end()) {
           return {anton::expected_error,
-                  err_duplicate_struct_member(ctx, iter->value->source_info, member->source_info)};
+                  err_duplicate_struct_member(ctx, iter->value.source_info, member->source_info)};
         } else {
-          member_identifiers.emplace(member->identifier->value, member->identifier);
+          member_identifiers.emplace(member->identifier.value, member->identifier);
         }
       }
     }
@@ -598,8 +598,7 @@ namespace vush {
   {
     // Validate attributes. Currently there are no attributes that are not allowed on ordinary functions.
     for(ast::Attribute const* const attribute: fn->attributes) {
-      return {anton::expected_error,
-              err_illegal_attribute(ctx, attribute->identifier->source_info)};
+      return {anton::expected_error, err_illegal_attribute(ctx, attribute->identifier.source_info)};
     }
 
     // Validate the return type:
@@ -638,17 +637,17 @@ namespace vush {
     case Stage_Kind::compute: {
       ast::Attribute const* workgroup = nullptr;
       for(ast::Attribute const* const attribute: fn->attributes) {
-        if(attribute->identifier->value == "workgroup"_sv) {
+        if(attribute->identifier.value == "workgroup"_sv) {
           if(!workgroup) {
             workgroup = attribute;
           } else {
             return {anton::expected_error,
-                    err_duplicate_attribute(ctx, workgroup->identifier->source_info,
-                                            attribute->identifier->source_info)};
+                    err_duplicate_attribute(ctx, workgroup->identifier.source_info,
+                                            attribute->identifier.source_info)};
           }
         } else {
           return {anton::expected_error,
-                  err_illegal_attribute(ctx, attribute->identifier->source_info)};
+                  err_illegal_attribute(ctx, attribute->identifier.source_info)};
         }
       }
     } break;
@@ -673,7 +672,7 @@ namespace vush {
         if(!builtin_return && !struct_return) {
           return {anton::expected_error,
                   err_stage_return_must_be_builtin_or_struct(
-                    ctx, fn->pass->value, fn->stage.source_info, fn->return_type->source_info)};
+                    ctx, fn->pass.value, fn->stage.source_info, fn->return_type->source_info)};
         }
       } break;
 
@@ -681,14 +680,14 @@ namespace vush {
         if(!builtin_return && !struct_return) {
           return {anton::expected_error,
                   err_stage_return_must_be_builtin_or_struct(
-                    ctx, fn->pass->value, fn->stage.source_info, fn->return_type->source_info)};
+                    ctx, fn->pass.value, fn->stage.source_info, fn->return_type->source_info)};
         }
       } break;
 
       case Stage_Kind::compute: {
         if(!void_return) {
           return {anton::expected_error, err_compute_return_must_be_void(
-                                           ctx, fn->pass->value, fn->return_type->source_info)};
+                                           ctx, fn->pass.value, fn->return_type->source_info)};
         }
       } break;
       }
@@ -742,7 +741,7 @@ namespace vush {
 
           if(ast::is_vertex_input_parameter(*p)) {
             return {anton::expected_error,
-                    err_fragment_vin_not_allowed(ctx, p->source->source_info)};
+                    err_fragment_vin_not_allowed(ctx, p->source.source_info)};
           }
         } break;
 
@@ -799,12 +798,12 @@ namespace vush {
           if(!ast::compare_types_equal(*overload1->return_type, *overload2->return_type)) {
             return {anton::expected_error,
                     err_overload_on_return_type(
-                      ctx, overload1->identifier->source_info, overload1->return_type->source_info,
-                      overload2->identifier->source_info, overload2->return_type->source_info)};
+                      ctx, overload1->identifier.source_info, overload1->return_type->source_info,
+                      overload2->identifier.source_info, overload2->return_type->source_info)};
           } else {
             return {anton::expected_error,
-                    err_symbol_redefinition(ctx, overload1->identifier->source_info,
-                                            overload2->identifier->source_info)};
+                    err_symbol_redefinition(ctx, overload1->identifier.source_info,
+                                            overload2->identifier.source_info)};
           }
         }
       }

@@ -478,48 +478,6 @@ namespace vush {
     return error;
   }
 
-  Error err_type_has_no_field_named(Context const& ctx, ast::Type const* type,
-                                    ast::Identifier const* field_identifier)
-  {
-    Source_Info const field_source_info = field_identifier->source_info;
-    Source_Info const type_source_info = type->source_info;
-    Error error = error_from_source(ctx.allocator, field_source_info);
-    anton::String_View const type_source = ctx.find_source(type_source_info.source_path)->data;
-    anton::String_View const type_value = get_source_bit(type_source, type_source_info);
-    anton::String_View const field_source = ctx.find_source(field_source_info.source_path)->data;
-    anton::String_View const field_value = get_source_bit(field_source, field_source_info);
-    error.diagnostic =
-      anton::format("error: '{}' does not have field '{}'"_sv, type_value, field_value);
-    print_source_snippet(ctx, error.extended_diagnostic, field_source, field_source_info);
-    return error;
-  }
-
-  Error err_vector_swizzle_invalid(Context const& ctx, ast::Identifier const* field)
-  {
-    Source_Info const source_info = field->source_info;
-    Error error = error_from_source(ctx.allocator, source_info);
-    anton::String_View const source = ctx.find_source(source_info.source_path)->data;
-    anton::String_View const field_code = get_source_bit(source, source_info);
-    error.diagnostic = anton::format("error: invalid vector swizzle '{}'"_sv, field_code);
-    print_source_snippet(ctx, error.extended_diagnostic, source, source_info);
-    error.extended_diagnostic +=
-      " vector swizzle must contain at most 4 of { x, y, z, w, r, g, b, a, s, t, u, v }"_sv;
-    return error;
-  }
-
-  Error err_vector_swizzle_overlong(Context const& ctx, ast::Type_Builtin const* type,
-                                    ast::Identifier const* field)
-  {
-    Source_Info const source_info = field->source_info;
-    Error error = error_from_source(ctx.allocator, source_info);
-    anton::String_View const source = ctx.find_source(source_info.source_path)->data;
-    anton::String_View const field_code = get_source_bit(source, source_info);
-    error.diagnostic =
-      anton::format("error: vector swizzle '{}' overlong for type '{}'"_sv, field_code, ""_sv);
-    print_source_snippet(ctx, error.extended_diagnostic, source, source_info);
-    return error;
-  }
-
   Error err_unimplemented(Context const& ctx, Source_Info const& source_info,
                           anton::String_View const file, i64 const line)
   {

@@ -13,15 +13,7 @@ namespace vush {
 }
 
 namespace vush::ast {
-  template<typename T>
-  struct With_Source {
-    T value;
-    Source_Info source_info;
-  };
-
   enum struct Node_Kind : u8 {
-    identifier,
-
     type_builtin,
     type_struct,
     type_array,
@@ -77,15 +69,6 @@ namespace vush::ast {
 
     constexpr Node(Source_Info const& source_info, Node_Kind node_kind)
       : source_info(source_info), node_kind(node_kind)
-    {
-    }
-  };
-
-  struct Identifier: public Node {
-    anton::String_View value;
-
-    constexpr Identifier(anton::String_View value, Source_Info const& source_info)
-      : Node(source_info, Node_Kind::identifier), value(value)
     {
     }
   };
@@ -295,6 +278,7 @@ namespace vush::ast {
       : Type(source_info, Node_Kind::type_builtin), value(value)
     {
     }
+
     constexpr Type_Builtin(Qualifiers qualifiers, Type_Builtin_Kind value,
                            Source_Info const& source_info)
       : Type(qualifiers, source_info, Node_Kind::type_builtin), value(value)
@@ -310,6 +294,7 @@ namespace vush::ast {
       : Type(source_info, Node_Kind::type_struct), value(value)
     {
     }
+
     constexpr Type_Struct(Qualifiers qualifiers, anton::String_View value,
                           Source_Info const& source_info)
       : Type(qualifiers, source_info, Node_Kind::type_struct), value(value)
@@ -326,6 +311,7 @@ namespace vush::ast {
       : Type(source_info, Node_Kind::type_array), base(base), size(size)
     {
     }
+
     constexpr Type_Array(Qualifiers qualifiers, Type const* base, Lt_Integer const* size,
                          Source_Info const& source_info)
       : Type(qualifiers, source_info, Node_Kind::type_array), base(base), size(size)
@@ -336,17 +322,16 @@ namespace vush::ast {
   [[nodiscard]] bool is_type(Node const& node);
 
   struct Attribute_Parameter {
-    // nullptr if the parameters positional.
-    Identifier const* key;
+    // empty if the parameters positional.
+    Identifier key;
     Expr const* value;
   };
 
   struct Attribute: public Node {
-    Identifier const* identifier;
+    Identifier identifier;
     anton::Slice<Attribute_Parameter const> parameters;
 
-    constexpr Attribute(Identifier const* identifier,
-                        anton::Slice<Attribute_Parameter const> parameters,
+    constexpr Attribute(Identifier identifier, anton::Slice<Attribute_Parameter const> parameters,
                         Source_Info const& source_info)
       : Node(source_info, Node_Kind::attribute), identifier(identifier), parameters(parameters)
     {
@@ -355,11 +340,11 @@ namespace vush::ast {
 
   struct Variable: public Node {
     Type const* type;
-    Identifier const* identifier;
+    Identifier identifier;
     // nullptr when Variable does not have an initializer.
     Expr const* initializer;
 
-    constexpr Variable(Type const* type, Identifier const* identifier, Expr const* initializer,
+    constexpr Variable(Type const* type, Identifier identifier, Expr const* initializer,
                        Source_Info const& source_info)
       : Node(source_info, Node_Kind::variable), type(type), identifier(identifier),
         initializer(initializer)
@@ -369,12 +354,12 @@ namespace vush::ast {
 
   struct Struct_Member: public Node {
     Attr_List attributes;
-    Identifier const* identifier;
+    Identifier identifier;
     Type const* type;
     // nullptr when the member does not have an initializer.
     Expr const* initializer;
 
-    constexpr Struct_Member(Attr_List attributes, Identifier const* identifier, Type const* type,
+    constexpr Struct_Member(Attr_List attributes, Identifier identifier, Type const* type,
                             Expr const* initializer, Source_Info const& source_info)
       : Node(source_info, Node_Kind::struct_member), attributes(attributes), identifier(identifier),
         type(type), initializer(initializer)
@@ -383,10 +368,10 @@ namespace vush::ast {
   };
 
   struct Decl_Struct: public Node {
-    Identifier const* identifier;
+    Identifier identifier;
     Member_List members;
 
-    constexpr Decl_Struct(Identifier const* identifier, Member_List members,
+    constexpr Decl_Struct(Identifier identifier, Member_List members,
                           Source_Info const& source_info)
       : Node(source_info, Node_Kind::decl_struct), identifier(identifier), members(members)
     {
@@ -394,13 +379,13 @@ namespace vush::ast {
   };
 
   struct Fn_Parameter: public Node {
-    Identifier const* identifier;
+    Identifier identifier;
     Type const* type;
-    // nullptr when the parameter has no source.
+    // Empty when the parameter has no source.
     // "in" when the parameter is a vertex input parameter.
-    Identifier const* source;
+    Identifier source;
 
-    constexpr Fn_Parameter(Identifier const* identifier, Type const* type, Identifier const* source,
+    constexpr Fn_Parameter(Identifier identifier, Type const* type, Identifier source,
                            Source_Info const& source_info)
       : Node(source_info, Node_Kind::fn_parameter), identifier(identifier), type(type),
         source(source)
@@ -413,14 +398,14 @@ namespace vush::ast {
 
   struct Decl_Function: public Node {
     Attr_List attributes;
-    Identifier const* identifier;
+    Identifier identifier;
     Fn_Parameter_List parameters;
     Type const* return_type;
     Node_List body;
     // Whether the function is a builtin function.
     bool builtin;
 
-    constexpr Decl_Function(Attr_List attributes, Identifier const* identifier,
+    constexpr Decl_Function(Attr_List attributes, Identifier identifier,
                             Fn_Parameter_List parameters, Type const* return_type, Node_List body,
                             bool builtin, Source_Info const& source_info)
       : Node(source_info, Node_Kind::decl_function), attributes(attributes), identifier(identifier),
@@ -449,13 +434,13 @@ namespace vush::ast {
 
   struct Decl_Stage_Function: public Node {
     Attr_List attributes;
-    Identifier const* pass;
+    Identifier pass;
     With_Source<Stage_Kind> stage;
     Fn_Parameter_List parameters;
     Type const* return_type;
     Node_List body;
 
-    constexpr Decl_Stage_Function(Attr_List attributes, Identifier const* pass,
+    constexpr Decl_Stage_Function(Attr_List attributes, Identifier pass,
                                   With_Source<Stage_Kind> stage, Fn_Parameter_List parameters,
                                   Type const* return_type, Node_List body,
                                   Source_Info const& source_info)
@@ -506,10 +491,10 @@ namespace vush::ast {
   };
 
   struct Named_Initializer: public Initializer {
-    Identifier const* identifier;
+    Identifier identifier;
     Expr const* expression;
 
-    constexpr Named_Initializer(Identifier const* identifier, Expr const* expression,
+    constexpr Named_Initializer(Identifier identifier, Expr const* expression,
                                 Source_Info const& source_info)
       : Initializer(source_info, Node_Kind::named_initializer), identifier(identifier),
         expression(expression)
@@ -550,11 +535,10 @@ namespace vush::ast {
   };
 
   struct Expr_Call: public Expr {
-    Identifier const* identifier;
+    Identifier identifier;
     Expr_List arguments;
 
-    constexpr Expr_Call(Identifier const* identifier, Expr_List arguments,
-                        Source_Info const& source_info)
+    constexpr Expr_Call(Identifier identifier, Expr_List arguments, Source_Info const& source_info)
       : Expr(source_info, Node_Kind::expr_call), identifier(identifier), arguments(arguments)
     {
     }
@@ -562,9 +546,9 @@ namespace vush::ast {
 
   struct Expr_Field: public Expr {
     Expr const* base;
-    Identifier const* member;
+    Identifier member;
 
-    constexpr Expr_Field(Expr const* base, Identifier const* member, Source_Info const& source_info)
+    constexpr Expr_Field(Expr const* base, Identifier member, Source_Info const& source_info)
       : Expr(source_info, Node_Kind::expr_field), base(base), member(member)
     {
     }

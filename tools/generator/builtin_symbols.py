@@ -18,7 +18,7 @@ def get_static_parameter_id(name):
     return f"param_{name}"
 
 def get_static_parameter_string(name, identifier_id, type_id):
-    return f"static constexpr ast::Fn_Parameter {get_static_parameter_id(name)}(&{identifier_id}, &{type_id}, nullptr, {{}});"
+    return f"static constexpr ast::Fn_Parameter {get_static_parameter_id(name)}({identifier_id}, &{type_id}, {{}}, {{}});"
 
 def get_static_parameter_list_id(name):
     return f"paramlist_{name}"
@@ -42,7 +42,7 @@ def get_static_function_id(name):
     return f"fn_{name}"
 
 def get_static_function_string(name, identifier_id, parameter_list_id, return_type_id):
-    return f"static constexpr ast::Decl_Function {get_static_function_id(name)}({{}}, &{identifier_id}, {{{parameter_list_id}}}, &{return_type_id}, {{}}, true, {{}});"
+    return f"static constexpr ast::Decl_Function {get_static_function_id(name)}({{}}, {identifier_id}, {{{parameter_list_id}}}, &{return_type_id}, {{}}, true, {{}});"
 
 def generate_builtin_types(statics):
     for v in Builtin_Type:
@@ -126,11 +126,11 @@ def generate_functions(fn):
         def create_static_type_array(name, base, size):
             return f"array_{name}", f"static constexpr ast::Type_Array array_{name}(&{base}, &{size}, {{}});"
         def create_static_parameter(name, ss_identifier, ss_type):
-            return f"param_{name}", f"static constexpr ast::Fn_Parameter param_{name}(&{ss_identifier}, &{ss_type}, nullptr, {{}});"
+            return f"param_{name}", f"static constexpr ast::Fn_Parameter param_{name}({ss_identifier}, &{ss_type}, {{}}, {{}});"
         def create_static_parameter_array(name, parameters):
             return f"paramlist_{name}", f"static constexpr ast::Fn_Parameter const* paramlist_{name}[{len(parameters)}] = {{{', '.join(map(lambda v: f'&{v}', parameters))}}};"
         def create_static_function(name, ss_identifier, ss_return_type, parameter_count, ss_parameters):
-            return f"fn_{name}", f"static constexpr ast::Decl_Function fn_{name}({{}}, &{ss_identifier}, {{{ss_parameters}, {parameter_count}}}, &{ss_return_type}, {{}}, true, {{}});"
+            return f"fn_{name}", f"static constexpr ast::Decl_Function fn_{name}({{}}, {ss_identifier}, {{{ss_parameters}, {parameter_count}}}, &{ss_return_type}, {{}}, true, {{}});"
 
         static_identifiers = dict()
         static_integers = dict()

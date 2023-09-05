@@ -54,7 +54,7 @@ namespace vush {
     }
 
     // Validate out swizzles larger than the vector type.
-    i64 const field_size = initializer.identifier->value.size_bytes();
+    i64 const field_size = initializer.identifier.value.size_bytes();
     if(is_vector2(type) && field_size > 2) {
       return {anton::expected_error,
               err_vector_swizzle_overlong(ctx, &type, initializer.identifier)};
@@ -70,7 +70,7 @@ namespace vush {
               err_vector_swizzle_overlong(ctx, &type, initializer.identifier)};
     }
 
-    auto field_result = evaluate_vector_field(ctx, type, *initializer.identifier);
+    auto field_result = evaluate_vector_field(ctx, type, initializer.identifier);
     if(!field_result) {
       return {anton::expected_error, ANTON_MOV(field_result.error())};
     }
@@ -97,14 +97,14 @@ namespace vush {
     i64 const size = value.size_bytes();
     if(size > 4 || size < 1) {
       // Less than 1 check for sanity.
-      return {anton::expected_error, err_vector_swizzle_overlong(ctx, &type, &field)};
+      return {anton::expected_error, err_vector_swizzle_overlong(ctx, &type, field)};
     }
 
     for(char8 const c: value.bytes()) {
       bool const is_allowed = c == 'x' | c == 'y' | c == 'z' | c == 'w' | c == 's' | c == 't' |
                               c == 'u' | c == 'v' | c == 'r' | c == 'g' | c == 'b' | c == 'a';
       if(!is_allowed) {
-        return {anton::expected_error, err_vector_swizzle_invalid(ctx, &field)};
+        return {anton::expected_error, err_vector_swizzle_invalid(ctx, field)};
       }
     }
 
@@ -193,7 +193,7 @@ namespace vush {
         return {anton::expected_error, ANTON_MOV(initializer_result.error())};
       }
 
-      auto field_result = evaluate_matrix_field(ctx, type, *initializer.identifier);
+      auto field_result = evaluate_matrix_field(ctx, type, initializer.identifier);
       if(!field_result) {
         return {anton::expected_error, ANTON_MOV(field_result.error())};
       }
@@ -471,10 +471,10 @@ namespace vush {
                        "struct initializer is not named_initializer");
           ast::Named_Initializer const* const initializer =
             static_cast<ast::Named_Initializer const*>(generic_initializer);
-          anton::String_View const identifier = initializer->identifier->value;
+          anton::String_View const identifier = initializer->identifier.value;
           ast::Member_List::iterator const member = anton::find_if(
             members_begin, members_end, [identifier](ast::Struct_Member const* const member) {
-              return member->identifier->value == identifier;
+              return member->identifier.value == identifier;
             });
           if(member == members_end) {
             return {anton::expected_error,
@@ -633,13 +633,13 @@ namespace vush {
       case ast::Node_Kind::type_builtin: {
         auto const type = static_cast<ast::Type_Builtin const*>(generic_type);
         if(is_vector(*type)) {
-          auto field_result = evaluate_vector_field(ctx, *type, *expr->member);
+          auto field_result = evaluate_vector_field(ctx, *type, expr->member);
           if(field_result) {
             ctx.add_node_type(expr, field_result.value());
           }
           return ANTON_MOV(field_result);
         } else if(is_matrix(*type)) {
-          auto field_result = evaluate_matrix_field(ctx, *type, *expr->member);
+          auto field_result = evaluate_matrix_field(ctx, *type, expr->member);
           if(field_result) {
             ctx.add_node_type(expr, field_result.value());
           }
@@ -657,7 +657,7 @@ namespace vush {
                      "type definition node is not a decl_struct");
         ast::Decl_Struct const* const decl = static_cast<ast::Decl_Struct const*>(definition_node);
         for(ast::Struct_Member const* const member: decl->members) {
-          if(member->identifier->value != expr->member->value) {
+          if(member->identifier.value != expr->member.value) {
             continue;
           }
 

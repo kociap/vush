@@ -12,11 +12,11 @@ namespace vush {
     anton::Flat_Hash_Map<anton::String_View, Array<ast::Decl_Function const*>*>& dictionary,
     ast::Decl_Function const* const fn)
   {
-    auto iter = dictionary.find(fn->identifier->value);
+    auto iter = dictionary.find(fn->identifier.value);
     if(iter == dictionary.end()) {
       auto const functions = allocate<Array<ast::Decl_Function const*>>(
         allocator, allocator, anton::variadic_construct, fn);
-      dictionary.emplace(fn->identifier->value, functions);
+      dictionary.emplace(fn->identifier.value, functions);
     } else {
       iter->value->push_back(fn);
     }

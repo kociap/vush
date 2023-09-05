@@ -257,12 +257,12 @@ namespace vush::ast {
 
   bool is_sourced_parameter(Fn_Parameter const& parameter)
   {
-    return parameter.source;
+    return parameter.source.value.size_bytes() != 0;
   }
 
   bool is_vertex_input_parameter(Fn_Parameter const& parameter)
   {
-    return parameter.source && parameter.source->value == u8"in";
+    return parameter.source.value == u8"in";
   }
 
   anton::Optional<Type_Builtin_Kind> enumify_builtin_type_kind(anton::String_View const type)

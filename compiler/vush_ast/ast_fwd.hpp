@@ -3,14 +3,21 @@
 #include <anton/array.hpp>
 #include <anton/slice.hpp>
 
+#include <vush_core/source_info.hpp>
 #include <vush_core/types.hpp>
 
 namespace vush::ast {
+  template<typename T>
+  struct With_Source {
+    T value;
+    Source_Info source_info;
+  };
+
+  using Identifier = With_Source<anton::String_View>;
+
   enum struct Node_Kind : u8;
 
   struct Node;
-
-  struct Identifier;
 
   enum struct Type_Builtin_Kind : u8;
 
