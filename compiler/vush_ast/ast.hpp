@@ -640,8 +640,8 @@ namespace vush::ast {
   // Returns:
   // Ordering of the numeric values of the literals.
   //
-  [[nodiscard]] anton::Strong_Ordering compare_integer_literals(Lt_Integer const* lhs,
-                                                                Lt_Integer const* rhs);
+  [[nodiscard]] anton::Strong_Ordering compare_integer_literals(Lt_Integer const& lhs,
+                                                                Lt_Integer const& rhs);
 
   enum struct Lt_Float_Kind { f32, f64 };
 

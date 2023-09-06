@@ -206,13 +206,13 @@ namespace vush {
           // We use a stable sort to ensure the duplicates are reported in the correct order.
           anton::merge_sort(indices.begin(), indices.end(),
                             [](ast::Lt_Integer const* const v1, ast::Lt_Integer const* const v2) {
-                              return compare_integer_literals(v1, v2) ==
+                              return compare_integer_literals(*v1, *v2) ==
                                      anton::Strong_Ordering::less;
                             });
 
           for(auto i = indices.begin(), j = indices.begin() + 1, e = indices.end(); j != e;
               ++i, ++j) {
-            bool const equal = compare_integer_literals(*i, *j) == anton::Strong_Ordering::equal;
+            bool const equal = compare_integer_literals(**i, **j) == anton::Strong_Ordering::equal;
             if(equal) {
               Source_Info const& src1 = (*i)->source_info;
               Source_Info const& src2 = (*j)->source_info;
@@ -450,11 +450,11 @@ namespace vush {
           // We use a stable sort to ensure the duplicates are reported in the correct order.
           anton::merge_sort(labels.begin(), labels.end(),
                             [](ast::Lt_Integer const* const v1, ast::Lt_Integer const* const v2) {
-                              return compare_integer_literals(v1, v2) ==
+                              return compare_integer_literals(*v1, *v2) ==
                                      anton::Strong_Ordering::less;
                             });
           for(auto i = labels.begin(), j = labels.begin() + 1, e = labels.end(); j != e; ++i, ++j) {
-            anton::Strong_Ordering const ordering = compare_integer_literals(*i, *j);
+            anton::Strong_Ordering const ordering = compare_integer_literals(**i, **j);
             if(ordering == anton::Strong_Ordering::equal) {
               Source_Info const& src1 = (*i)->source_info;
               Source_Info const& src2 = (*j)->source_info;
