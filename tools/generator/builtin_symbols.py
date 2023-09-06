@@ -24,9 +24,9 @@ def generate_alloc_parameter(parameter):
 def generate_alloc_parameter_array(parameters):
     parameter_list = [generate_alloc_parameter(p) for p in parameters]
     if len(parameter_list) > 0:
-        return f"allocate<Array<ast::Fn_Parameter *>>(allocator, allocator, anton::variadic_construct, {','.join(parameter_list)})"
+        return f"allocate<Array<ast::Fn_Parameter*>>(allocator, allocator, anton::variadic_construct, {','.join(parameter_list)})"
     else:
-        return f"allocate<Array<ast::Fn_Parameter *>>(allocator, allocator)"
+        return f"allocate<Array<ast::Fn_Parameter*>>(allocator, allocator)"
 
 def generate_alloc_function(identifier, return_type, parameters):
     fn_return_type = generate_alloc_type(return_type)
@@ -96,7 +96,7 @@ def write_get_builtin_functions_declarations(file, functions):
 
     for i, (name, fn) in enumerate(functions.items()):
         identifier = f"\"{name}\"_sv"
-        array = f"allocate<Array<ast::Decl_Function const*>>(allocator, allocator, anton::variadic_construct, {','.join(fn)})"
+        array = f"allocate<Array<ast::Decl_Function*>>(allocator, allocator, anton::variadic_construct, {','.join(fn)})"
         file.write(f"functions[{i}] = allocate<ast::Decl_Overloaded_Function>(allocator, {identifier}, *{array});\n")
 
     file.write(f"""\

@@ -302,16 +302,16 @@ namespace vush::ast {
   };
 
   struct Type_Array: public Type {
-    Type const* base;
+    Type* base;
     // nullptr when the array is unsized.
-    Lt_Integer const* size;
+    Lt_Integer* size;
 
-    constexpr Type_Array(Type const* base, Lt_Integer const* size, Source_Info const& source_info)
+    constexpr Type_Array(Type* base, Lt_Integer* size, Source_Info const& source_info)
       : Type(source_info, Node_Kind::type_array), base(base), size(size)
     {
     }
 
-    constexpr Type_Array(Qualifiers qualifiers, Type const* base, Lt_Integer const* size,
+    constexpr Type_Array(Qualifiers qualifiers, Type* base, Lt_Integer* size,
                          Source_Info const& source_info)
       : Type(qualifiers, source_info, Node_Kind::type_array), base(base), size(size)
     {
@@ -323,14 +323,14 @@ namespace vush::ast {
   struct Attribute_Parameter {
     // empty if the parameters positional.
     Identifier key;
-    Expr const* value;
+    Expr* value;
   };
 
   struct Attribute: public Node {
     Identifier identifier;
-    anton::Slice<Attribute_Parameter const> parameters;
+    anton::Slice<Attribute_Parameter> parameters;
 
-    constexpr Attribute(Identifier identifier, anton::Slice<Attribute_Parameter const> parameters,
+    constexpr Attribute(Identifier identifier, anton::Slice<Attribute_Parameter> parameters,
                         Source_Info const& source_info)
       : Node(source_info, Node_Kind::attribute), identifier(identifier), parameters(parameters)
     {
@@ -338,12 +338,12 @@ namespace vush::ast {
   };
 
   struct Variable: public Node {
-    Type const* type;
+    Type* type;
     Identifier identifier;
     // nullptr when Variable does not have an initializer.
-    Expr const* initializer;
+    Expr* initializer;
 
-    constexpr Variable(Type const* type, Identifier identifier, Expr const* initializer,
+    constexpr Variable(Type* type, Identifier identifier, Expr* initializer,
                        Source_Info const& source_info)
       : Node(source_info, Node_Kind::variable), type(type), identifier(identifier),
         initializer(initializer)
@@ -354,12 +354,12 @@ namespace vush::ast {
   struct Struct_Member: public Node {
     Attr_List attributes;
     Identifier identifier;
-    Type const* type;
+    Type* type;
     // nullptr when the member does not have an initializer.
-    Expr const* initializer;
+    Expr* initializer;
 
-    constexpr Struct_Member(Attr_List attributes, Identifier identifier, Type const* type,
-                            Expr const* initializer, Source_Info const& source_info)
+    constexpr Struct_Member(Attr_List attributes, Identifier identifier, Type* type,
+                            Expr* initializer, Source_Info const& source_info)
       : Node(source_info, Node_Kind::struct_member), attributes(attributes), identifier(identifier),
         type(type), initializer(initializer)
     {
@@ -379,12 +379,12 @@ namespace vush::ast {
 
   struct Fn_Parameter: public Node {
     Identifier identifier;
-    Type const* type;
+    Type* type;
     // Empty when the parameter has no source.
     // "in" when the parameter is a vertex input parameter.
     Identifier source;
 
-    constexpr Fn_Parameter(Identifier identifier, Type const* type, Identifier source,
+    constexpr Fn_Parameter(Identifier identifier, Type* type, Identifier source,
                            Source_Info const& source_info)
       : Node(source_info, Node_Kind::fn_parameter), identifier(identifier), type(type),
         source(source)
@@ -399,13 +399,13 @@ namespace vush::ast {
     Attr_List attributes;
     Identifier identifier;
     Fn_Parameter_List parameters;
-    Type const* return_type;
+    Type* return_type;
     Node_List body;
     // Whether the function is a builtin function.
     bool builtin;
 
     constexpr Decl_Function(Attr_List attributes, Identifier identifier,
-                            Fn_Parameter_List parameters, Type const* return_type, Node_List body,
+                            Fn_Parameter_List parameters, Type* return_type, Node_List body,
                             bool builtin, Source_Info const& source_info)
       : Node(source_info, Node_Kind::decl_function), attributes(attributes), identifier(identifier),
         parameters(parameters), return_type(return_type), body(body), builtin(builtin)
@@ -421,10 +421,10 @@ namespace vush::ast {
   //
   struct Decl_Overloaded_Function: public Node {
     anton::String_View identifier;
-    anton::Slice<Decl_Function const* const> overloads;
+    anton::Slice<Decl_Function* const> overloads;
 
     constexpr Decl_Overloaded_Function(anton::String_View identifier,
-                                       anton::Slice<Decl_Function const* const> overloads)
+                                       anton::Slice<Decl_Function* const> overloads)
       : Node(Source_Info{}, Node_Kind::decl_overloaded_function), identifier(identifier),
         overloads(overloads)
     {
@@ -436,13 +436,12 @@ namespace vush::ast {
     Identifier pass;
     With_Source<Stage_Kind> stage;
     Fn_Parameter_List parameters;
-    Type const* return_type;
+    Type* return_type;
     Node_List body;
 
     constexpr Decl_Stage_Function(Attr_List attributes, Identifier pass,
                                   With_Source<Stage_Kind> stage, Fn_Parameter_List parameters,
-                                  Type const* return_type, Node_List body,
-                                  Source_Info const& source_info)
+                                  Type* return_type, Node_List body, Source_Info const& source_info)
       : Node(source_info, Node_Kind::decl_stage_function), attributes(attributes), pass(pass),
         stage(stage), parameters(parameters), return_type(return_type), body(body)
     {
@@ -454,11 +453,11 @@ namespace vush::ast {
   };
 
   struct Expr_If: public Expr {
-    Expr const* condition;
-    Expr const* then_branch;
-    Expr const* else_branch;
+    Expr* condition;
+    Expr* then_branch;
+    Expr* else_branch;
 
-    constexpr Expr_If(Expr const* condition, Expr const* then_branch, Expr const* else_branch,
+    constexpr Expr_If(Expr* condition, Expr* then_branch, Expr* else_branch,
                       Source_Info const& source_info)
       : Expr(source_info, Node_Kind::expr_if), condition(condition), then_branch(then_branch),
         else_branch(else_branch)
@@ -476,10 +475,10 @@ namespace vush::ast {
   };
 
   struct Expr_Assignment: public Expr {
-    Expr const* lhs;
-    Expr const* rhs;
+    Expr* lhs;
+    Expr* rhs;
 
-    constexpr Expr_Assignment(Expr const* lhs, Expr const* rhs, Source_Info const& source_info)
+    constexpr Expr_Assignment(Expr* lhs, Expr* rhs, Source_Info const& source_info)
       : Expr(source_info, Node_Kind::expr_assignment), lhs(lhs), rhs(rhs)
     {
     }
@@ -491,9 +490,9 @@ namespace vush::ast {
 
   struct Named_Initializer: public Initializer {
     Identifier identifier;
-    Expr const* expression;
+    Expr* expression;
 
-    constexpr Named_Initializer(Identifier identifier, Expr const* expression,
+    constexpr Named_Initializer(Identifier identifier, Expr* expression,
                                 Source_Info const& source_info)
       : Initializer(source_info, Node_Kind::named_initializer), identifier(identifier),
         expression(expression)
@@ -502,10 +501,10 @@ namespace vush::ast {
   };
 
   struct Indexed_Initializer: public Initializer {
-    Lt_Integer const* index;
-    Expr const* expression;
+    Lt_Integer* index;
+    Expr* expression;
 
-    constexpr Indexed_Initializer(Lt_Integer const* index, Expr const* expression,
+    constexpr Indexed_Initializer(Lt_Integer* index, Expr* expression,
                                   Source_Info const& source_info)
       : Initializer(source_info, Node_Kind::indexed_initializer), index(index),
         expression(expression)
@@ -514,20 +513,19 @@ namespace vush::ast {
   };
 
   struct Basic_Initializer: public Initializer {
-    Expr const* expression;
+    Expr* expression;
 
-    constexpr Basic_Initializer(Expr const* expression, Source_Info const& source_info)
+    constexpr Basic_Initializer(Expr* expression, Source_Info const& source_info)
       : Initializer(source_info, Node_Kind::basic_initializer), expression(expression)
     {
     }
   };
 
   struct Expr_Init: public Expr {
-    Type const* type;
+    Type* type;
     Initializer_List initializers;
 
-    constexpr Expr_Init(Type const* type, Initializer_List initializers,
-                        Source_Info const& source_info)
+    constexpr Expr_Init(Type* type, Initializer_List initializers, Source_Info const& source_info)
       : Expr(source_info, Node_Kind::expr_init), type(type), initializers(initializers)
     {
     }
@@ -544,40 +542,40 @@ namespace vush::ast {
   };
 
   struct Expr_Field: public Expr {
-    Expr const* base;
+    Expr* base;
     Identifier member;
 
-    constexpr Expr_Field(Expr const* base, Identifier member, Source_Info const& source_info)
+    constexpr Expr_Field(Expr* base, Identifier member, Source_Info const& source_info)
       : Expr(source_info, Node_Kind::expr_field), base(base), member(member)
     {
     }
   };
 
   struct Expr_Index: public Expr {
-    Expr const* base;
-    Expr const* index;
+    Expr* base;
+    Expr* index;
 
-    constexpr Expr_Index(Expr const* base, Expr const* index, Source_Info const& source_info)
+    constexpr Expr_Index(Expr* base, Expr* index, Source_Info const& source_info)
       : Expr(source_info, Node_Kind::expr_index), base(base), index(index)
     {
     }
   };
 
   struct Expr_Parentheses: public Expr {
-    Expr const* expression;
+    Expr* expression;
 
-    constexpr Expr_Parentheses(Expr const* expression, Source_Info const& source_info)
+    constexpr Expr_Parentheses(Expr* expression, Source_Info const& source_info)
       : Expr(source_info, Node_Kind::expr_parentheses), expression(expression)
     {
     }
   };
 
   struct Expr_Reinterpret: public Expr {
-    Type const* target_type;
-    Expr const* source;
-    Expr const* index;
+    Type* target_type;
+    Expr* source;
+    Expr* index;
 
-    constexpr Expr_Reinterpret(Type const* target_type, Expr const* source, Expr const* index,
+    constexpr Expr_Reinterpret(Type* target_type, Expr* source, Expr* index,
                                Source_Info const& source_info)
       : Expr(source_info, Node_Kind::expr_reinterpret), target_type(target_type), source(source),
         index(index)
@@ -675,11 +673,11 @@ namespace vush::ast {
   };
 
   struct Stmt_If: public Node {
-    Expr const* condition;
+    Expr* condition;
     Node_List then_branch;
     Node_List else_branch;
 
-    constexpr Stmt_If(Expr const* condition, Node_List then_branch, Node_List else_branch,
+    constexpr Stmt_If(Expr* condition, Node_List then_branch, Node_List else_branch,
                       Source_Info const& source_info)
       : Node(source_info, Node_Kind::stmt_if), condition(condition), then_branch(then_branch),
         else_branch(else_branch)
@@ -688,10 +686,10 @@ namespace vush::ast {
   };
 
   struct Stmt_Switch: public Node {
-    Expr const* expression;
+    Expr* expression;
     anton::Slice<Switch_Arm const* const> arms;
 
-    constexpr Stmt_Switch(Expr const* const expression, anton::Slice<Switch_Arm const* const> arms,
+    constexpr Stmt_Switch(Expr* const expression, anton::Slice<Switch_Arm const* const> arms,
                           Source_Info const& source_info)
       : Node(source_info, Node_Kind::stmt_switch), expression(expression), arms(arms)
     {
@@ -700,12 +698,12 @@ namespace vush::ast {
 
   struct Stmt_Loop: public Node {
     // nullptr if the loop does not have a condition.
-    Expr const* condition;
+    Expr* condition;
     // continue statements are not allowed within the continuation block.
     Node_List continuation;
     Node_List statements;
 
-    constexpr Stmt_Loop(Expr const* condition, Node_List continuation, Node_List statements,
+    constexpr Stmt_Loop(Expr* condition, Node_List continuation, Node_List statements,
                         Source_Info const& source_info)
       : Node(source_info, Node_Kind::stmt_loop), condition(condition), continuation(continuation),
         statements(statements)
@@ -715,9 +713,9 @@ namespace vush::ast {
 
   struct Stmt_Return: public Node {
     // nullptr if expression not present.
-    Expr const* expression;
+    Expr* expression;
 
-    constexpr Stmt_Return(Expr const* expression, Source_Info const& source_info)
+    constexpr Stmt_Return(Expr* expression, Source_Info const& source_info)
       : Node(source_info, Node_Kind::stmt_return), expression(expression)
     {
     }
@@ -744,9 +742,9 @@ namespace vush::ast {
   };
 
   struct Stmt_Expression: public Node {
-    Expr const* expression;
+    Expr* expression;
 
-    constexpr Stmt_Expression(Expr const* expression, Source_Info const& source_info)
+    constexpr Stmt_Expression(Expr* expression, Source_Info const& source_info)
       : Node(source_info, Node_Kind::stmt_expression), expression(expression)
     {
     }

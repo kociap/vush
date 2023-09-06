@@ -25,7 +25,7 @@ namespace vush {
     Array<ast::Decl_Overloaded_Function*> functions(162, nullptr);
     functions[0] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "radians"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "radians"_sv, ALLOC_BUILTIN(e_float),
@@ -45,7 +45,7 @@ namespace vush {
                          ALLOC_PARAM("pdegrees"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[1] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "degrees"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "degrees"_sv, ALLOC_BUILTIN(e_float),
@@ -65,7 +65,7 @@ namespace vush {
                          ALLOC_PARAM("pradians"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[2] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "sin"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "sin"_sv, ALLOC_BUILTIN(e_float),
@@ -85,7 +85,7 @@ namespace vush {
                                                ALLOC_PARAM("angle"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[3] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "cos"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "cos"_sv, ALLOC_BUILTIN(e_float),
@@ -105,7 +105,7 @@ namespace vush {
                                                ALLOC_PARAM("angle"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[4] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "tan"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "tan"_sv, ALLOC_BUILTIN(e_float),
@@ -125,7 +125,7 @@ namespace vush {
                                                ALLOC_PARAM("angle"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[5] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "asin"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "asin"_sv, ALLOC_BUILTIN(e_float),
@@ -145,7 +145,7 @@ namespace vush {
                                                ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[6] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "acos"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "acos"_sv, ALLOC_BUILTIN(e_float),
@@ -165,7 +165,7 @@ namespace vush {
                                                ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[7] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "atan"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "atan"_sv, ALLOC_BUILTIN(e_float),
@@ -205,7 +205,7 @@ namespace vush {
                          ALLOC_PARAM("y_over_x"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[8] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "sinh"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "sinh"_sv, ALLOC_BUILTIN(e_float),
@@ -225,7 +225,7 @@ namespace vush {
                                                ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[9] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "cosh"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "cosh"_sv, ALLOC_BUILTIN(e_float),
@@ -245,7 +245,7 @@ namespace vush {
                                                ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[10] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "tanh"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "tanh"_sv, ALLOC_BUILTIN(e_float),
@@ -265,7 +265,7 @@ namespace vush {
                                                ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[11] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "asinh"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "asinh"_sv, ALLOC_BUILTIN(e_float),
@@ -285,7 +285,7 @@ namespace vush {
                                                ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[12] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "acosh"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "acosh"_sv, ALLOC_BUILTIN(e_float),
@@ -305,7 +305,7 @@ namespace vush {
                                                ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[13] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "atanh"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "atanh"_sv, ALLOC_BUILTIN(e_float),
@@ -325,7 +325,7 @@ namespace vush {
                                                ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[14] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "pow"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "pow"_sv, ALLOC_BUILTIN(e_float),
@@ -349,7 +349,7 @@ namespace vush {
                                                ALLOC_PARAM("y"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[15] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "exp"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "exp"_sv, ALLOC_BUILTIN(e_float),
@@ -369,7 +369,7 @@ namespace vush {
                                                ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[16] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "log"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "log"_sv, ALLOC_BUILTIN(e_float),
@@ -389,7 +389,7 @@ namespace vush {
                                                ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[17] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "exp2"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "exp2"_sv, ALLOC_BUILTIN(e_float),
@@ -409,7 +409,7 @@ namespace vush {
                                                ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[18] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "log2"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "log2"_sv, ALLOC_BUILTIN(e_float),
@@ -429,7 +429,7 @@ namespace vush {
                                                ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[19] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "sqrt"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "sqrt"_sv, ALLOC_BUILTIN(e_float),
@@ -465,7 +465,7 @@ namespace vush {
                                                ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_dvec4))))));
     functions[20] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "inversesqrt"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "inversesqrt"_sv, ALLOC_BUILTIN(e_float),
@@ -501,7 +501,7 @@ namespace vush {
                                                ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_dvec4))))));
     functions[21] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "abs"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "abs"_sv, ALLOC_BUILTIN(e_float),
@@ -553,7 +553,7 @@ namespace vush {
                                                ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_ivec4))))));
     functions[22] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "sign"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "sign"_sv, ALLOC_BUILTIN(e_float),
@@ -605,7 +605,7 @@ namespace vush {
                                                ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_ivec4))))));
     functions[23] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "floor"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "floor"_sv, ALLOC_BUILTIN(e_float),
@@ -641,7 +641,7 @@ namespace vush {
                                                ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_dvec4))))));
     functions[24] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "trunc"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "trunc"_sv, ALLOC_BUILTIN(e_float),
@@ -677,7 +677,7 @@ namespace vush {
                                                ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_dvec4))))));
     functions[25] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "round"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "round"_sv, ALLOC_BUILTIN(e_float),
@@ -713,7 +713,7 @@ namespace vush {
                                                ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_dvec4))))));
     functions[26] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "roundEven"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "roundEven"_sv, ALLOC_BUILTIN(e_float),
@@ -749,7 +749,7 @@ namespace vush {
                                                ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_dvec4))))));
     functions[27] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "ceil"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "ceil"_sv, ALLOC_BUILTIN(e_float),
@@ -785,7 +785,7 @@ namespace vush {
                                                ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_dvec4))))));
     functions[28] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "fract"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "fract"_sv, ALLOC_BUILTIN(e_float),
@@ -821,7 +821,7 @@ namespace vush {
                                                ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_dvec4))))));
     functions[29] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "mod"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "mod"_sv, ALLOC_BUILTIN(e_float),
@@ -895,7 +895,7 @@ namespace vush {
                                                ALLOC_PARAM("y"_sv, ALLOC_BUILTIN(e_dvec4))))));
     functions[30] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "modf"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "modf"_sv, ALLOC_BUILTIN(e_float),
@@ -939,7 +939,7 @@ namespace vush {
                                                ALLOC_PARAM("y"_sv, ALLOC_BUILTIN(e_dvec4))))));
     functions[31] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "min"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "min"_sv, ALLOC_BUILTIN(e_float),
@@ -1083,7 +1083,7 @@ namespace vush {
                                                ALLOC_PARAM("y"_sv, ALLOC_BUILTIN(e_uvec4))))));
     functions[32] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "max"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "max"_sv, ALLOC_BUILTIN(e_float),
@@ -1227,7 +1227,7 @@ namespace vush {
                                                ALLOC_PARAM("y"_sv, ALLOC_BUILTIN(e_uvec4))))));
     functions[33] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "clamp"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "clamp"_sv, ALLOC_BUILTIN(e_float),
@@ -1327,7 +1327,7 @@ namespace vush {
                                                ALLOC_PARAM("max_val"_sv, ALLOC_BUILTIN(e_uint))))));
     functions[34] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "packUnorm2x16"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "packUnorm2x16"_sv, ALLOC_BUILTIN(e_uint),
@@ -1335,7 +1335,7 @@ namespace vush {
                                                ALLOC_PARAM("v"_sv, ALLOC_BUILTIN(e_vec2))))));
     functions[35] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "packSnorm2x16"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "packSnorm2x16"_sv, ALLOC_BUILTIN(e_uint),
@@ -1343,7 +1343,7 @@ namespace vush {
                                                ALLOC_PARAM("v"_sv, ALLOC_BUILTIN(e_vec2))))));
     functions[36] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "packUnorm4x8"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "packUnorm4x8"_sv, ALLOC_BUILTIN(e_uint),
@@ -1351,7 +1351,7 @@ namespace vush {
                                                ALLOC_PARAM("v"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[37] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "packSnorm4x8"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "packSnorm4x8"_sv, ALLOC_BUILTIN(e_uint),
@@ -1359,7 +1359,7 @@ namespace vush {
                                                ALLOC_PARAM("v"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[38] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "unpackUnorm2x16"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "unpackUnorm2x16"_sv, ALLOC_BUILTIN(e_vec2),
@@ -1367,7 +1367,7 @@ namespace vush {
                                                ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_uint))))));
     functions[39] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "unpackSnorm2x16"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "unpackSnorm2x16"_sv, ALLOC_BUILTIN(e_vec2),
@@ -1375,7 +1375,7 @@ namespace vush {
                                                ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_uint))))));
     functions[40] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "unpackUnorm4x8"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "unpackUnorm4x8"_sv, ALLOC_BUILTIN(e_vec4),
@@ -1383,7 +1383,7 @@ namespace vush {
                                                ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_uint))))));
     functions[41] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "unpackSnorm4x8"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "unpackSnorm4x8"_sv, ALLOC_BUILTIN(e_vec4),
@@ -1391,7 +1391,7 @@ namespace vush {
                                                ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_uint))))));
     functions[42] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "packHalf2x16"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "packHalf2x16"_sv, ALLOC_BUILTIN(e_uint),
@@ -1399,7 +1399,7 @@ namespace vush {
                                                ALLOC_PARAM("v"_sv, ALLOC_BUILTIN(e_vec2))))));
     functions[43] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "unpackHalf2x16"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "unpackHalf2x16"_sv, ALLOC_BUILTIN(e_vec2),
@@ -1407,7 +1407,7 @@ namespace vush {
                                                ALLOC_PARAM("v"_sv, ALLOC_BUILTIN(e_uint))))));
     functions[44] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "packDouble2x32"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "packDouble2x32"_sv, ALLOC_BUILTIN(e_double),
@@ -1415,7 +1415,7 @@ namespace vush {
                                                ALLOC_PARAM("v"_sv, ALLOC_BUILTIN(e_uvec2))))));
     functions[45] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "unpackDouble2x32"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "unpackDouble2x32"_sv, ALLOC_BUILTIN(e_uvec2),
@@ -1423,7 +1423,7 @@ namespace vush {
                                                ALLOC_PARAM("v"_sv, ALLOC_BUILTIN(e_double))))));
     functions[46] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "length"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "length"_sv, ALLOC_BUILTIN(e_float),
@@ -1445,10 +1445,10 @@ namespace vush {
           "length"_sv, ALLOC_BUILTIN(e_double),
           *allocate<Array<ast::Fn_Parameter*>>(allocator, allocator, anton::variadic_construct,
                                                ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_double)))),
-        ALLOC_FUNCTION(
-          "length"_sv, ALLOC_BUILTIN(e_double),
-          *allocate<Array<ast::Fn_Parameter*>>(allocator, allocator, anton::variadic_construct,
-                                               ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_dvec2)))),
+        ALLOC_FUNCTION("length"_sv, ALLOC_BUILTIN(e_double),
+                       *allocate<Array<ast::Fn_Parameter*>>(
+                         allocator, allocator, anton::variadic_construct,
+                         ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_dvec2)))),
         ALLOC_FUNCTION("length"_sv, ALLOC_BUILTIN(e_double),
                        *allocate<Array<ast::Fn_Parameter*>>(
                          allocator, allocator, anton::variadic_construct,
@@ -1459,7 +1459,7 @@ namespace vush {
                          ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_dvec4))))));
     functions[47] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "distance"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "distance"_sv, ALLOC_BUILTIN(e_float),
@@ -1503,7 +1503,7 @@ namespace vush {
                                                ALLOC_PARAM("p1"_sv, ALLOC_BUILTIN(e_dvec4))))));
     functions[48] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "dot"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "dot"_sv, ALLOC_BUILTIN(e_float),
@@ -1547,7 +1547,7 @@ namespace vush {
                                                ALLOC_PARAM("y"_sv, ALLOC_BUILTIN(e_dvec4))))));
     functions[49] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "cross"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "cross"_sv, ALLOC_BUILTIN(e_vec3),
@@ -1561,7 +1561,7 @@ namespace vush {
                                                ALLOC_PARAM("y"_sv, ALLOC_BUILTIN(e_dvec3))))));
     functions[50] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "normalize"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "normalize"_sv, ALLOC_BUILTIN(e_float),
@@ -1597,7 +1597,7 @@ namespace vush {
                                                ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_dvec4))))));
     functions[51] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "faceforward"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "faceforward"_sv, ALLOC_BUILTIN(e_float),
@@ -1649,7 +1649,7 @@ namespace vush {
                                                ALLOC_PARAM("Nref"_sv, ALLOC_BUILTIN(e_dvec4))))));
     functions[52] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "reflect"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "reflect"_sv, ALLOC_BUILTIN(e_float),
@@ -1693,7 +1693,7 @@ namespace vush {
                                                ALLOC_PARAM("N"_sv, ALLOC_BUILTIN(e_dvec4))))));
     functions[53] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "refract"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "refract"_sv, ALLOC_BUILTIN(e_float),
@@ -1745,7 +1745,7 @@ namespace vush {
                                                ALLOC_PARAM("eta"_sv, ALLOC_BUILTIN(e_double))))));
     functions[54] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "matrixCompMult"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "matrixCompMult"_sv, ALLOC_BUILTIN(e_mat2),
@@ -1794,7 +1794,7 @@ namespace vush {
                                                ALLOC_PARAM("y"_sv, ALLOC_BUILTIN(e_mat4x3))))));
     functions[55] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "outerProduct"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "outerProduct"_sv, ALLOC_BUILTIN(e_mat2),
@@ -1843,7 +1843,7 @@ namespace vush {
                                                ALLOC_PARAM("r"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[56] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "transpose"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "transpose"_sv, ALLOC_BUILTIN(e_mat2),
@@ -1883,7 +1883,7 @@ namespace vush {
                                                ALLOC_PARAM("m"_sv, ALLOC_BUILTIN(e_mat3x4))))));
     functions[57] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "determinant"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "determinant"_sv, ALLOC_BUILTIN(e_float),
@@ -1899,7 +1899,7 @@ namespace vush {
                                                ALLOC_PARAM("m"_sv, ALLOC_BUILTIN(e_mat4))))));
     functions[58] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "inverse"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "inverse"_sv, ALLOC_BUILTIN(e_mat2),
@@ -1915,7 +1915,7 @@ namespace vush {
                                                ALLOC_PARAM("m"_sv, ALLOC_BUILTIN(e_mat4))))));
     functions[59] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "lessThan"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "lessThan"_sv, ALLOC_BUILTIN(e_bvec2),
@@ -1979,7 +1979,7 @@ namespace vush {
                                                ALLOC_PARAM("y"_sv, ALLOC_BUILTIN(e_uvec4))))));
     functions[60] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "lessThanEqual"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "lessThanEqual"_sv, ALLOC_BUILTIN(e_bvec2),
@@ -2043,7 +2043,7 @@ namespace vush {
                                                ALLOC_PARAM("y"_sv, ALLOC_BUILTIN(e_uvec4))))));
     functions[61] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "greaterThan"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "greaterThan"_sv, ALLOC_BUILTIN(e_bvec2),
@@ -2107,7 +2107,7 @@ namespace vush {
                                                ALLOC_PARAM("y"_sv, ALLOC_BUILTIN(e_uvec4))))));
     functions[62] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "greaterThanEqual"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "greaterThanEqual"_sv, ALLOC_BUILTIN(e_bvec2),
@@ -2171,7 +2171,7 @@ namespace vush {
                                                ALLOC_PARAM("y"_sv, ALLOC_BUILTIN(e_uvec4))))));
     functions[63] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "equal"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "equal"_sv, ALLOC_BUILTIN(e_bvec2),
@@ -2235,7 +2235,7 @@ namespace vush {
                                                ALLOC_PARAM("y"_sv, ALLOC_BUILTIN(e_uvec4))))));
     functions[64] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "notEqual"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "notEqual"_sv, ALLOC_BUILTIN(e_bvec2),
@@ -2299,7 +2299,7 @@ namespace vush {
                                                ALLOC_PARAM("y"_sv, ALLOC_BUILTIN(e_uvec4))))));
     functions[65] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "any"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "any"_sv, ALLOC_BUILTIN(e_bool),
@@ -2315,7 +2315,7 @@ namespace vush {
                                                ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_bvec4))))));
     functions[66] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "all"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "all"_sv, ALLOC_BUILTIN(e_bool),
@@ -2331,7 +2331,7 @@ namespace vush {
                                                ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_bvec4))))));
     functions[67] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "not"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "not"_sv, ALLOC_BUILTIN(e_bvec2),
@@ -2347,7 +2347,7 @@ namespace vush {
                                                ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_bvec4))))));
     functions[68] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "uaddCarry"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "uaddCarry"_sv, ALLOC_BUILTIN(e_uint),
@@ -2375,7 +2375,7 @@ namespace vush {
                                                ALLOC_PARAM("carry"_sv, ALLOC_BUILTIN(e_uvec4))))));
     functions[69] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "usubBorrow"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "usubBorrow"_sv, ALLOC_BUILTIN(e_uint),
@@ -2403,7 +2403,7 @@ namespace vush {
                                                ALLOC_PARAM("borrow"_sv, ALLOC_BUILTIN(e_uvec4))))));
     functions[70] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "umulExtended"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "umulExtended"_sv, ALLOC_BUILTIN(e_void),
@@ -2435,7 +2435,7 @@ namespace vush {
                                                ALLOC_PARAM("lsb"_sv, ALLOC_BUILTIN(e_uvec4))))));
     functions[71] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "imulExtended"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "imulExtended"_sv, ALLOC_BUILTIN(e_void),
@@ -2467,7 +2467,7 @@ namespace vush {
                                                ALLOC_PARAM("lsb"_sv, ALLOC_BUILTIN(e_ivec4))))));
     functions[72] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "bitfieldExtract"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "bitfieldExtract"_sv, ALLOC_BUILTIN(e_void),
@@ -2519,7 +2519,7 @@ namespace vush {
                                                ALLOC_PARAM("bits"_sv, ALLOC_BUILTIN(e_int))))));
     functions[73] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "bitfieldInsert"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "bitfieldInsert"_sv, ALLOC_BUILTIN(e_void),
@@ -2579,7 +2579,7 @@ namespace vush {
                                                ALLOC_PARAM("bits"_sv, ALLOC_BUILTIN(e_int))))));
     functions[74] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "bitfieldReverse"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "bitfieldReverse"_sv, ALLOC_BUILTIN(e_void),
@@ -2615,7 +2615,7 @@ namespace vush {
                                                ALLOC_PARAM("base"_sv, ALLOC_BUILTIN(e_uvec4))))));
     functions[75] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "bitCount"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "bitCount"_sv, ALLOC_BUILTIN(e_void),
@@ -2651,7 +2651,7 @@ namespace vush {
                                                ALLOC_PARAM("base"_sv, ALLOC_BUILTIN(e_uvec4))))));
     functions[76] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "findLSB"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "findLSB"_sv, ALLOC_BUILTIN(e_void),
@@ -2687,7 +2687,7 @@ namespace vush {
                                                ALLOC_PARAM("base"_sv, ALLOC_BUILTIN(e_uvec4))))));
     functions[77] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "findMSB"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "findMSB"_sv, ALLOC_BUILTIN(e_void),
@@ -2723,7 +2723,7 @@ namespace vush {
                                                ALLOC_PARAM("base"_sv, ALLOC_BUILTIN(e_uvec4))))));
     functions[78] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "textureSize"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION("textureSize"_sv, ALLOC_BUILTIN(e_int),
                        *allocate<Array<ast::Fn_Parameter*>>(
@@ -2914,7 +2914,7 @@ namespace vush {
                          ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_usampler2DMSArray))))));
     functions[79] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "textureQueryLod"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION("textureQueryLod"_sv, ALLOC_BUILTIN(e_vec2),
                        *allocate<Array<ast::Fn_Parameter*>>(
@@ -3053,7 +3053,7 @@ namespace vush {
                          ALLOC_PARAM("P"_sv, ALLOC_BUILTIN(e_vec3))))));
     functions[80] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "textureQueryLevels"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION("textureQueryLevels"_sv, ALLOC_BUILTIN(e_int),
                        *allocate<Array<ast::Fn_Parameter*>>(
@@ -3165,7 +3165,7 @@ namespace vush {
                          ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_samplerCubeArrayShadow))))));
     functions[81] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "textureSamples"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION("textureSamples"_sv, ALLOC_BUILTIN(e_int),
                        *allocate<Array<ast::Fn_Parameter*>>(
@@ -3193,7 +3193,7 @@ namespace vush {
                          ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_usampler2DMSArray))))));
     functions[82] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "texture"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION("texture"_sv, ALLOC_BUILTIN(e_vec4),
                        *allocate<Array<ast::Fn_Parameter*>>(
@@ -3503,7 +3503,7 @@ namespace vush {
                          ALLOC_PARAM("compare"_sv, ALLOC_BUILTIN(e_float))))));
     functions[83] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "textureProj"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION("textureProj"_sv, ALLOC_BUILTIN(e_vec4),
                        *allocate<Array<ast::Fn_Parameter*>>(
@@ -3729,7 +3729,7 @@ namespace vush {
                          ALLOC_PARAM("P"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[84] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "textureLod"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION("textureLod"_sv, ALLOC_BUILTIN(e_vec4),
                        *allocate<Array<ast::Fn_Parameter*>>(
@@ -3877,7 +3877,7 @@ namespace vush {
                          ALLOC_PARAM("lod"_sv, ALLOC_BUILTIN(e_float))))));
     functions[85] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "textureOffset"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION("textureOffset"_sv, ALLOC_BUILTIN(e_vec4),
                        *allocate<Array<ast::Fn_Parameter*>>(
@@ -4145,7 +4145,7 @@ namespace vush {
                          ALLOC_PARAM("offset"_sv, ALLOC_BUILTIN(e_ivec2))))));
     functions[86] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "texelFetch"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION("texelFetch"_sv, ALLOC_BUILTIN(e_vec4),
                        *allocate<Array<ast::Fn_Parameter*>>(
@@ -4296,7 +4296,7 @@ namespace vush {
                          ALLOC_PARAM("sample"_sv, ALLOC_BUILTIN(e_int))))));
     functions[87] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "texelFetchOffset"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION("texelFetchOffset"_sv, ALLOC_BUILTIN(e_vec4),
                        *allocate<Array<ast::Fn_Parameter*>>(
@@ -4423,7 +4423,7 @@ namespace vush {
                          ALLOC_PARAM("offset"_sv, ALLOC_BUILTIN(e_ivec2))))));
     functions[88] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "textureProjOffset"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION("textureProjOffset"_sv, ALLOC_BUILTIN(e_vec4),
                        *allocate<Array<ast::Fn_Parameter*>>(
@@ -4690,7 +4690,7 @@ namespace vush {
                          ALLOC_PARAM("offset"_sv, ALLOC_BUILTIN(e_ivec2))))));
     functions[89] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "textureLodOffset"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION("textureLodOffset"_sv, ALLOC_BUILTIN(e_vec4),
                        *allocate<Array<ast::Fn_Parameter*>>(
@@ -4820,7 +4820,7 @@ namespace vush {
                          ALLOC_PARAM("offset"_sv, ALLOC_BUILTIN(e_int))))));
     functions[90] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "textureProjLod"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION("textureProjLod"_sv, ALLOC_BUILTIN(e_vec4),
                        *allocate<Array<ast::Fn_Parameter*>>(
@@ -4926,7 +4926,7 @@ namespace vush {
                          ALLOC_PARAM("lod"_sv, ALLOC_BUILTIN(e_float))))));
     functions[91] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "textureProjLodOffset"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION("textureProjLodOffset"_sv, ALLOC_BUILTIN(e_vec4),
                        *allocate<Array<ast::Fn_Parameter*>>(
@@ -5049,7 +5049,7 @@ namespace vush {
                          ALLOC_PARAM("offset"_sv, ALLOC_BUILTIN(e_ivec2))))));
     functions[92] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "textureGrad"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION("textureGrad"_sv, ALLOC_BUILTIN(e_vec4),
                        *allocate<Array<ast::Fn_Parameter*>>(
@@ -5263,7 +5263,7 @@ namespace vush {
                          ALLOC_PARAM("dPdy"_sv, ALLOC_BUILTIN(e_vec2))))));
     functions[93] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "textureGradOffset"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION("textureGradOffset"_sv, ALLOC_BUILTIN(e_vec4),
                        *allocate<Array<ast::Fn_Parameter*>>(
@@ -5451,7 +5451,7 @@ namespace vush {
                          ALLOC_PARAM("offset"_sv, ALLOC_BUILTIN(e_ivec2))))));
     functions[94] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "textureProjGrad"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION("textureProjGrad"_sv, ALLOC_BUILTIN(e_vec4),
                        *allocate<Array<ast::Fn_Parameter*>>(
@@ -5623,7 +5623,7 @@ namespace vush {
                          ALLOC_PARAM("dPdy"_sv, ALLOC_BUILTIN(e_vec2))))));
     functions[95] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "textureProjGradOffset"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION("textureProjGradOffset"_sv, ALLOC_BUILTIN(e_vec4),
                        *allocate<Array<ast::Fn_Parameter*>>(
@@ -5819,7 +5819,7 @@ namespace vush {
                          ALLOC_PARAM("offset"_sv, ALLOC_BUILTIN(e_ivec2))))));
     functions[96] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "textureGather"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION("textureGather"_sv, ALLOC_BUILTIN(e_vec4),
                        *allocate<Array<ast::Fn_Parameter*>>(
@@ -6018,7 +6018,7 @@ namespace vush {
                          ALLOC_PARAM("refZ"_sv, ALLOC_BUILTIN(e_float))))));
     functions[97] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "textureGatherOffset"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION("textureGatherOffset"_sv, ALLOC_BUILTIN(e_vec4),
                        *allocate<Array<ast::Fn_Parameter*>>(
@@ -6160,7 +6160,7 @@ namespace vush {
                          ALLOC_PARAM("offset"_sv, ALLOC_BUILTIN(e_ivec2))))));
     functions[98] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "textureGatherOffsets"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "textureGatherOffsets"_sv, ALLOC_BUILTIN(e_vec4),
@@ -6407,7 +6407,7 @@ namespace vush {
                                         Source_Info{}))))));
     functions[99] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "atomicAdd"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "atomicAdd"_sv, ALLOC_BUILTIN(e_int),
@@ -6421,7 +6421,7 @@ namespace vush {
                                                ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_uint))))));
     functions[100] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "atomicMin"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "atomicMin"_sv, ALLOC_BUILTIN(e_int),
@@ -6435,7 +6435,7 @@ namespace vush {
                                                ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_uint))))));
     functions[101] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "atomicMax"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "atomicMax"_sv, ALLOC_BUILTIN(e_int),
@@ -6449,7 +6449,7 @@ namespace vush {
                                                ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_uint))))));
     functions[102] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "atomicAnd"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "atomicAnd"_sv, ALLOC_BUILTIN(e_int),
@@ -6463,7 +6463,7 @@ namespace vush {
                                                ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_uint))))));
     functions[103] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "atomicOr"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "atomicOr"_sv, ALLOC_BUILTIN(e_int),
@@ -6477,7 +6477,7 @@ namespace vush {
                                                ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_uint))))));
     functions[104] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "atomicXor"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "atomicXor"_sv, ALLOC_BUILTIN(e_int),
@@ -6491,7 +6491,7 @@ namespace vush {
                                                ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_uint))))));
     functions[105] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "atomicExchange"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "atomicExchange"_sv, ALLOC_BUILTIN(e_int),
@@ -6505,7 +6505,7 @@ namespace vush {
                                                ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_uint))))));
     functions[106] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "atomicCompSwap"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "atomicCompSwap"_sv, ALLOC_BUILTIN(e_int),
@@ -6521,7 +6521,7 @@ namespace vush {
                                                ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_uint))))));
     functions[107] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "imageSize"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "imageSize"_sv, ALLOC_BUILTIN(e_int),
@@ -6645,7 +6645,7 @@ namespace vush {
                          ALLOC_PARAM("image"_sv, ALLOC_BUILTIN(e_uimageBuffer))))));
     functions[108] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "imageSamples"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION("imageSamples"_sv, ALLOC_BUILTIN(e_int),
                        *allocate<Array<ast::Fn_Parameter*>>(
@@ -6673,7 +6673,7 @@ namespace vush {
                          ALLOC_PARAM("image"_sv, ALLOC_BUILTIN(e_uimage2DMSArray))))));
     functions[109] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "imageLoad"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "imageLoad"_sv, ALLOC_BUILTIN(e_vec4),
@@ -6833,7 +6833,7 @@ namespace vush {
                          ALLOC_PARAM("sample"_sv, ALLOC_BUILTIN(e_int))))));
     functions[110] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "imageStore"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "imageStore"_sv, ALLOC_BUILTIN(e_void),
@@ -7023,7 +7023,7 @@ namespace vush {
                          ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_uvec4))))));
     functions[111] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "imageAtomicAdd"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "imageAtomicAdd"_sv, ALLOC_BUILTIN(e_uint),
@@ -7399,7 +7399,7 @@ namespace vush {
                          ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_int))))));
     functions[112] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "imageAtomicMin"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "imageAtomicMin"_sv, ALLOC_BUILTIN(e_uint),
@@ -7775,7 +7775,7 @@ namespace vush {
                          ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_int))))));
     functions[113] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "imageAtomicMax"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "imageAtomicMax"_sv, ALLOC_BUILTIN(e_uint),
@@ -8151,7 +8151,7 @@ namespace vush {
                          ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_int))))));
     functions[114] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "imageAtomicAnd"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "imageAtomicAnd"_sv, ALLOC_BUILTIN(e_uint),
@@ -8527,7 +8527,7 @@ namespace vush {
                          ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_int))))));
     functions[115] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "imageAtomicOr"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "imageAtomicOr"_sv, ALLOC_BUILTIN(e_uint),
@@ -8903,7 +8903,7 @@ namespace vush {
                          ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_int))))));
     functions[116] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "imageAtomicXor"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "imageAtomicXor"_sv, ALLOC_BUILTIN(e_uint),
@@ -9279,7 +9279,7 @@ namespace vush {
                          ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_int))))));
     functions[117] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "imageAtomicExchange"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "imageAtomicExchange"_sv, ALLOC_BUILTIN(e_uint),
@@ -9841,7 +9841,7 @@ namespace vush {
                          ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_float))))));
     functions[118] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "imageAtomicCompSwap"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "imageAtomicCompSwap"_sv, ALLOC_BUILTIN(e_uint),
@@ -10277,7 +10277,7 @@ namespace vush {
                          ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_int))))));
     functions[119] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "dFdx"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "dFdx"_sv, ALLOC_BUILTIN(e_float),
@@ -10297,7 +10297,7 @@ namespace vush {
                                                ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[120] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "dFdy"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "dFdy"_sv, ALLOC_BUILTIN(e_float),
@@ -10317,7 +10317,7 @@ namespace vush {
                                                ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[121] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "dFdxFine"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "dFdxFine"_sv, ALLOC_BUILTIN(e_float),
@@ -10337,7 +10337,7 @@ namespace vush {
                                                ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[122] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "dFdyFine"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "dFdyFine"_sv, ALLOC_BUILTIN(e_float),
@@ -10357,7 +10357,7 @@ namespace vush {
                                                ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[123] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "dFdxCoarse"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "dFdxCoarse"_sv, ALLOC_BUILTIN(e_float),
@@ -10377,7 +10377,7 @@ namespace vush {
                                                ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[124] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "dFdyCoarse"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "dFdyCoarse"_sv, ALLOC_BUILTIN(e_float),
@@ -10397,7 +10397,7 @@ namespace vush {
                                                ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[125] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "fwidth"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "fwidth"_sv, ALLOC_BUILTIN(e_float),
@@ -10417,7 +10417,7 @@ namespace vush {
                                                ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[126] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "fwidthFine"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "fwidthFine"_sv, ALLOC_BUILTIN(e_float),
@@ -10437,7 +10437,7 @@ namespace vush {
                                                ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[127] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "fwidthCoarse"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "fwidthCoarse"_sv, ALLOC_BUILTIN(e_float),
@@ -10457,7 +10457,7 @@ namespace vush {
                                                ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[128] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "interpolateAtCentroid"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION("interpolateAtCentroid"_sv, ALLOC_BUILTIN(e_float),
                        *allocate<Array<ast::Fn_Parameter*>>(
@@ -10477,7 +10477,7 @@ namespace vush {
                          ALLOC_PARAM("interpolant"_sv, ALLOC_BUILTIN(e_vec4))))));
     functions[129] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "interpolateAtSample"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION("interpolateAtSample"_sv, ALLOC_BUILTIN(e_float),
                        *allocate<Array<ast::Fn_Parameter*>>(
@@ -10501,7 +10501,7 @@ namespace vush {
                                                ALLOC_PARAM("sample"_sv, ALLOC_BUILTIN(e_int))))));
     functions[130] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "interpolateAtOffset"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION("interpolateAtOffset"_sv, ALLOC_BUILTIN(e_float),
                        *allocate<Array<ast::Fn_Parameter*>>(
@@ -10525,49 +10525,49 @@ namespace vush {
                                                ALLOC_PARAM("offset"_sv, ALLOC_BUILTIN(e_vec2))))));
     functions[131] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "barrier"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION("barrier"_sv, ALLOC_BUILTIN(e_void),
                        *allocate<Array<ast::Fn_Parameter*>>(allocator, allocator))));
     functions[132] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "memoryBarrier"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION("memoryBarrier"_sv, ALLOC_BUILTIN(e_void),
                        *allocate<Array<ast::Fn_Parameter*>>(allocator, allocator))));
     functions[133] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "memoryBarrierAtomicCounter"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION("memoryBarrierAtomicCounter"_sv, ALLOC_BUILTIN(e_void),
                        *allocate<Array<ast::Fn_Parameter*>>(allocator, allocator))));
     functions[134] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "memoryBarrierBuffer"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION("memoryBarrierBuffer"_sv, ALLOC_BUILTIN(e_void),
                        *allocate<Array<ast::Fn_Parameter*>>(allocator, allocator))));
     functions[135] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "memoryBarrierShared"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION("memoryBarrierShared"_sv, ALLOC_BUILTIN(e_void),
                        *allocate<Array<ast::Fn_Parameter*>>(allocator, allocator))));
     functions[136] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "memoryBarrierImage"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION("memoryBarrierImage"_sv, ALLOC_BUILTIN(e_void),
                        *allocate<Array<ast::Fn_Parameter*>>(allocator, allocator))));
     functions[137] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "groupMemoryBarrier"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION("groupMemoryBarrier"_sv, ALLOC_BUILTIN(e_void),
                        *allocate<Array<ast::Fn_Parameter*>>(allocator, allocator))));
     functions[138] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "subpassLoad"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION("subpassLoad"_sv, ALLOC_BUILTIN(e_vec4),
                        *allocate<Array<ast::Fn_Parameter*>>(
@@ -10598,7 +10598,7 @@ namespace vush {
                          ALLOC_PARAM("sample"_sv, ALLOC_BUILTIN(e_int))))));
     functions[139] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "anyInvocation"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "anyInvocation"_sv, ALLOC_BUILTIN(e_bool),
@@ -10606,7 +10606,7 @@ namespace vush {
                                                ALLOC_PARAM("value"_sv, ALLOC_BUILTIN(e_bool))))));
     functions[140] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "allInvocations"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "allInvocations"_sv, ALLOC_BUILTIN(e_bool),
@@ -10614,7 +10614,7 @@ namespace vush {
                                                ALLOC_PARAM("value"_sv, ALLOC_BUILTIN(e_bool))))));
     functions[141] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "allInvocationsEqual"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "allInvocationsEqual"_sv, ALLOC_BUILTIN(e_bool),
@@ -10622,7 +10622,7 @@ namespace vush {
                                                ALLOC_PARAM("value"_sv, ALLOC_BUILTIN(e_bool))))));
     functions[142] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "operator+"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "operator+"_sv, ALLOC_BUILTIN(e_int),
@@ -11066,7 +11066,7 @@ namespace vush {
                                                ALLOC_PARAM("rhs"_sv, ALLOC_BUILTIN(e_dmat4x3))))));
     functions[143] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "operator-"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "operator-"_sv, ALLOC_BUILTIN(e_int),
@@ -11658,7 +11658,7 @@ namespace vush {
                          ALLOC_PARAM("value"_sv, ALLOC_BUILTIN(e_dmat4x3))))));
     functions[144] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "operator*"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "operator*"_sv, ALLOC_BUILTIN(e_int),
@@ -12237,7 +12237,7 @@ namespace vush {
                                                ALLOC_PARAM("rhs"_sv, ALLOC_BUILTIN(e_mat4))))));
     functions[145] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "operator/"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "operator/"_sv, ALLOC_BUILTIN(e_int),
@@ -12681,7 +12681,7 @@ namespace vush {
                                                ALLOC_PARAM("rhs"_sv, ALLOC_BUILTIN(e_dmat4x3))))));
     functions[146] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "operator%"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "operator%"_sv, ALLOC_BUILTIN(e_int),
@@ -12725,7 +12725,7 @@ namespace vush {
                                                ALLOC_PARAM("rhs"_sv, ALLOC_BUILTIN(e_uvec4))))));
     functions[147] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "operator>"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "operator>"_sv, ALLOC_BUILTIN(e_bool),
@@ -12749,7 +12749,7 @@ namespace vush {
                                                ALLOC_PARAM("rhs"_sv, ALLOC_BUILTIN(e_double))))));
     functions[148] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "operator>="_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "operator>="_sv, ALLOC_BUILTIN(e_bool),
@@ -12773,7 +12773,7 @@ namespace vush {
                                                ALLOC_PARAM("rhs"_sv, ALLOC_BUILTIN(e_double))))));
     functions[149] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "operator<"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "operator<"_sv, ALLOC_BUILTIN(e_bool),
@@ -12797,7 +12797,7 @@ namespace vush {
                                                ALLOC_PARAM("rhs"_sv, ALLOC_BUILTIN(e_double))))));
     functions[150] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "operator<="_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "operator<="_sv, ALLOC_BUILTIN(e_bool),
@@ -12821,7 +12821,7 @@ namespace vush {
                                                ALLOC_PARAM("rhs"_sv, ALLOC_BUILTIN(e_double))))));
     functions[151] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "operator=="_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "operator=="_sv, ALLOC_BUILTIN(e_bool),
@@ -13015,7 +13015,7 @@ namespace vush {
                                                ALLOC_PARAM("rhs"_sv, ALLOC_BUILTIN(e_dmat4x3))))));
     functions[152] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "operator!="_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "operator!="_sv, ALLOC_BUILTIN(e_bool),
@@ -13209,7 +13209,7 @@ namespace vush {
                                                ALLOC_PARAM("rhs"_sv, ALLOC_BUILTIN(e_dmat4x3))))));
     functions[153] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "operator&&"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "operator&&"_sv, ALLOC_BUILTIN(e_bool),
@@ -13218,7 +13218,7 @@ namespace vush {
                                                ALLOC_PARAM("rhs"_sv, ALLOC_BUILTIN(e_bool))))));
     functions[154] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "operator||"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "operator||"_sv, ALLOC_BUILTIN(e_bool),
@@ -13227,7 +13227,7 @@ namespace vush {
                                                ALLOC_PARAM("rhs"_sv, ALLOC_BUILTIN(e_bool))))));
     functions[155] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "operator^^"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "operator^^"_sv, ALLOC_BUILTIN(e_bool),
@@ -13236,7 +13236,7 @@ namespace vush {
                                                ALLOC_PARAM("rhs"_sv, ALLOC_BUILTIN(e_bool))))));
     functions[156] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "operator!"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "operator!"_sv, ALLOC_BUILTIN(e_bool),
@@ -13244,7 +13244,7 @@ namespace vush {
                                                ALLOC_PARAM("value"_sv, ALLOC_BUILTIN(e_bool))))));
     functions[157] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "operator~"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "operator~"_sv, ALLOC_BUILTIN(e_int),
@@ -13280,7 +13280,7 @@ namespace vush {
                                                ALLOC_PARAM("value"_sv, ALLOC_BUILTIN(e_uvec4))))));
     functions[158] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "operator<<"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "operator<<"_sv, ALLOC_BUILTIN(e_int),
@@ -13424,7 +13424,7 @@ namespace vush {
                                                ALLOC_PARAM("rhs"_sv, ALLOC_BUILTIN(e_uint))))));
     functions[159] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "operator&"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "operator&"_sv, ALLOC_BUILTIN(e_int),
@@ -13528,7 +13528,7 @@ namespace vush {
                                                ALLOC_PARAM("rhs"_sv, ALLOC_BUILTIN(e_uvec4))))));
     functions[160] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "operator|"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "operator|"_sv, ALLOC_BUILTIN(e_int),
@@ -13632,7 +13632,7 @@ namespace vush {
                                                ALLOC_PARAM("rhs"_sv, ALLOC_BUILTIN(e_uvec4))))));
     functions[161] = allocate<ast::Decl_Overloaded_Function>(
       allocator, "operator^"_sv,
-      *allocate<Array<ast::Decl_Function const*>>(
+      *allocate<Array<ast::Decl_Function*>>(
         allocator, allocator, anton::variadic_construct,
         ALLOC_FUNCTION(
           "operator^"_sv, ALLOC_BUILTIN(e_int),
