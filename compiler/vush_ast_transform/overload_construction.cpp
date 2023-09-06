@@ -29,7 +29,8 @@ namespace vush {
       overloads_dictionary(ctx.allocator);
     // First add builtin functions so that they are reported in diagnostics as the functions defined
     // first.
-    for(ast::Decl_Overloaded_Function const* const ofn: get_builtin_functions_declarations()) {
+    for(ast::Decl_Overloaded_Function const* const ofn:
+        get_builtin_functions_declarations(ctx.allocator)) {
       for(ast::Decl_Function const* const fn: ofn->overloads) {
         add_overload(ctx.allocator, overloads_dictionary, fn);
       }

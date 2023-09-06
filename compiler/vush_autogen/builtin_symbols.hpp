@@ -5,8 +5,8 @@
 #include <vush_ast/ast_fwd.hpp>
 
 namespace vush {
-  [[nodiscard]] anton::Slice<ast::Decl_Overloaded_Function const* const>
-  get_builtin_functions_declarations();
+  [[nodiscard]] Array<ast::Decl_Overloaded_Function*>
+  get_builtin_functions_declarations(Allocator* allocator);
 
   // get_builtin_type
   // Get an immutable builtin type.

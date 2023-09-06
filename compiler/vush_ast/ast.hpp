@@ -110,7 +110,6 @@ namespace vush::ast {
   [[nodiscard]] bool is_unsized_array(Type const& type);
   [[nodiscard]] bool is_sized_array(Type const& type);
   [[nodiscard]] bool is_image_type(Type const& type);
-  [[nodiscard]] anton::String stringify_type(Allocator* const allocator, Type const& type);
 
   enum struct Type_Builtin_Kind : u8 {
     e_void,
