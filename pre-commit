@@ -1,0 +1,24 @@
+#!/bin/bash
+
+function find_files_with_quote_includes() {
+  git diff --staged --name-only | while read file; do
+    if ! [ -e "$file" ]; then
+      continue
+    fi
+
+    if git diff --staged -U0 "$file" | grep -E '\+\w*#include *"' > /dev/null; then
+      echo "$file"
+    fi
+  done
+}
+
+files_with_quote_includes=$(find_files_with_quote_includes)
+if [ -n "$files_with_quote_includes" ]; then
+  echo "error: failed to commit because the following files contain quote includes"
+  echo "$files_with_quote_includes" | sed 's/^/ - /'
+  exit 1
+fi
+
+
+
+
