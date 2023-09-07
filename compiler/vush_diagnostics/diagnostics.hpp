@@ -141,13 +141,6 @@ namespace vush {
   [[nodiscard]] Error err_expression_is_not_constant_evaluable(Context const& ctx,
                                                                Source_Info const& expression);
 
-  [[nodiscard]] inline Error
-  err_identifier_names_a_function_but_is_not_called([[maybe_unused]] Context const& ctx,
-                                                    [[maybe_unused]] Source_Info const& identifier)
-  {
-    return Error{.diagnostic = anton::String("err_identifier_names_a_function_but_is_not_called")};
-  }
-
   // TODO: Implement.
   [[nodiscard]] inline Error
   err_unsized_array_not_allowed([[maybe_unused]] Context const& ctx,

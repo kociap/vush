@@ -1,10 +1,10 @@
-#include <vush_ast_validation/validation.hpp>
+#include <vush_ast_passes/passes.hpp>
 
 #include <anton/algorithm/sort.hpp>
 #include <anton/flat_hash_map.hpp>
 
 #include <vush_ast/ast.hpp>
-#include <vush_ast_validation/diagnostics.hpp>
+#include <vush_ast_passes/diagnostics.hpp>
 #include <vush_core/context.hpp>
 #include <vush_diagnostics/diagnostics.hpp>
 

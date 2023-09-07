@@ -13,11 +13,9 @@
 
 #include <vush_ast/ast.hpp>
 #include <vush_ast_passes/passes.hpp>
-#include <vush_ast_validation/validation.hpp>
 #include <vush_core/context.hpp>
 #include <vush_core/memory.hpp>
 #include <vush_diagnostics/diagnostics.hpp>
-#include <vush_namebind/namebind.hpp>
 #include <vush_parser/parser.hpp>
 #include <vush_syntax_lowering/syntax_lowering.hpp>
 #include <vush_typecheck/typecheck.hpp>

@@ -1,4 +1,4 @@
-#include <vush_namebind/namebind.hpp>
+#include <vush_ast_passes/passes.hpp>
 
 #include <anton/assert.hpp>
 

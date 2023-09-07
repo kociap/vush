@@ -1,4 +1,4 @@
-#include <vush_ast_validation/diagnostics.hpp>
+#include <vush_ast_passes/diagnostics.hpp>
 
 #include <anton/format.hpp>
 
