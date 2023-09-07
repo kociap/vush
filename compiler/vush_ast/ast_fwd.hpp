@@ -34,7 +34,7 @@ namespace vush::ast {
 
   struct Decl_Struct;
   struct Decl_Function;
-  struct Decl_Overloaded_Function;
+  struct Overload_Group;
   struct Decl_Stage_Function;
 
   struct Initializer;

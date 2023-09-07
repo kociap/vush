@@ -1,11 +1,11 @@
 #pragma once
 
-#include <anton/slice.hpp>
+#include <anton/flat_hash_map.hpp>
 
 #include <vush_ast/ast_fwd.hpp>
 
 namespace vush {
-  [[nodiscard]] Array<ast::Decl_Overloaded_Function*>
+  [[nodiscard]] anton::Flat_Hash_Map<anton::String_View, ast::Overload_Group*>
   get_builtin_functions_declarations(Allocator* allocator);
 
   // get_builtin_type

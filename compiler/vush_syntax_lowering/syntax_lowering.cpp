@@ -310,7 +310,7 @@ namespace vush {
         anton::String_View const identifier_string =
           get_operator_identifier_string(operator_token.kind);
         ast::Identifier const identifier{identifier_string, operator_token.source_info};
-        Array<ast::Expr*>& arguments = *allocate<Array<ast::Expr*>>(ctx.allocator, ctx.allocator);
+        auto& arguments = *allocate<Array<ast::Expr*>>(ctx.allocator, ctx.allocator);
         arguments.push_back(lhs.value());
         arguments.push_back(rhs.value());
         return {anton::expected_value,
@@ -329,7 +329,7 @@ namespace vush {
       anton::String_View const identifier_string =
         get_operator_identifier_string(operator_token.kind);
       ast::Identifier const identifier{identifier_string, operator_token.source_info};
-      Array<ast::Expr*>& arguments = *allocate<Array<ast::Expr*>>(ctx.allocator, ctx.allocator);
+      auto& arguments = *allocate<Array<ast::Expr*>>(ctx.allocator, ctx.allocator);
       arguments.push_back(expression.value());
       return {anton::expected_value,
               allocate<ast::Expr_Call>(ctx.allocator, identifier, arguments, node.source_info)};
@@ -444,8 +444,7 @@ namespace vush {
       }
 
       Syntax_Node const& initializers_node = get_expr_init_initializers(node);
-      Array<ast::Initializer*>& initializers =
-        *allocate<Array<ast::Initializer*>>(ctx.allocator, ctx.allocator);
+      auto& initializers = *allocate<Array<ast::Initializer*>>(ctx.allocator, ctx.allocator);
       for(SNOT const& snot: initializers_node.children) {
         if(snot.is_left()) {
           anton::Expected<ast::Initializer*, Error> initializer =
@@ -467,7 +466,7 @@ namespace vush {
       ast::Identifier const identifier = transform_identifier(ctx, identifier_token);
 
       Syntax_Node const& arguments_node = get_expr_call_arguments(node);
-      Array<ast::Expr*>& arguments = *allocate<Array<ast::Expr*>>(ctx.allocator, ctx.allocator);
+      auto& arguments = *allocate<Array<ast::Expr*>>(ctx.allocator, ctx.allocator);
       for(SNOT const& snot: arguments_node.children) {
         if(snot.is_left()) {
           anton::Expected<ast::Expr*, Error> expression = transform_expr(ctx, snot.left());
@@ -548,7 +547,7 @@ namespace vush {
                                                                           Syntax_Node const& node)
   {
     ANTON_ASSERT(node.kind == Syntax_Node_Kind::stmt_block, "Syntax_Node is not stmt_block");
-    auto statements = *allocate<Array<ast::Node*>>(ctx.allocator, ctx.allocator);
+    auto& statements = *allocate<Array<ast::Node*>>(ctx.allocator, ctx.allocator);
     for(SNOT const& snot: node.children) {
       if(!snot.is_left()) {
         continue;
@@ -647,8 +646,7 @@ namespace vush {
         return {anton::expected_error, ANTON_MOV(expression.error())};
       }
 
-      Array<ast::Switch_Arm const*>* const arm_list =
-        allocate<Array<ast::Switch_Arm const*>>(ctx.allocator, ctx.allocator);
+      auto& arm_list = *allocate<Array<ast::Switch_Arm*>>(ctx.allocator, ctx.allocator);
       {
         Syntax_Node const& arm_list_node = get_stmt_switch_arm_list(node);
         for(SNOT const& snot: arm_list_node.children) {
@@ -657,14 +655,13 @@ namespace vush {
           }
 
           Syntax_Node const& arm_node = snot.left();
-          Array<ast::Expr*>* const labels =
-            allocate<Array<ast::Expr*>>(ctx.allocator, ctx.allocator);
+          auto& labels = *allocate<Array<ast::Expr*>>(ctx.allocator, ctx.allocator);
           for(SNOT const& snot: arm_node.children) {
             if(snot.is_left() && snot.left().kind == Syntax_Node_Kind::switch_arm_label) {
               Syntax_Node const& expression_node = snot.left().children[0].left();
               anton::Expected<ast::Expr*, Error> expression = transform_expr(ctx, expression_node);
               if(expression) {
-                labels->push_back(expression.value());
+                labels.push_back(expression.value());
               } else {
                 return {anton::expected_error, ANTON_MOV(expression.error())};
               }
@@ -677,20 +674,20 @@ namespace vush {
             return {anton::expected_error, ANTON_MOV(statements.error())};
           }
 
-          ast::Switch_Arm const* const arm =
-            allocate<ast::Switch_Arm>(ctx.allocator, *labels, statements.value(), node.source_info);
-          arm_list->push_back(arm);
+          ast::Switch_Arm* const arm =
+            allocate<ast::Switch_Arm>(ctx.allocator, labels, statements.value(), node.source_info);
+          arm_list.push_back(arm);
         }
       }
 
       return {anton::expected_value, allocate<ast::Stmt_Switch>(ctx.allocator, expression.value(),
-                                                                *arm_list, node.source_info)};
+                                                                arm_list, node.source_info)};
     } break;
 
     case Syntax_Node_Kind::stmt_for: {
       // We transform the for loop into a block statement that contains the definition of the
       // variable and the loop itself in order to limit scope.
-      auto statements = *allocate<Array<ast::Node*>>(ctx.allocator, ctx.allocator);
+      auto& statements = *allocate<Array<ast::Node*>>(ctx.allocator, ctx.allocator);
       if(anton::Optional variable_node = get_stmt_for_variable(node)) {
         anton::Expected<ast::Variable*, Error> variable =
           transform_variable(ctx, variable_node.value());
@@ -720,7 +717,8 @@ namespace vush {
             return {anton::expected_error, ANTON_MOV(expression.error())};
           }
 
-          auto continuation_statements = *allocate<Array<ast::Node*>>(ctx.allocator, ctx.allocator);
+          auto& continuation_statements =
+            *allocate<Array<ast::Node*>>(ctx.allocator, ctx.allocator);
           ast::Stmt_Expression* const stmt = allocate<ast::Stmt_Expression>(
             ctx.allocator, expression.value(), expression.value()->source_info);
           continuation_statements.push_back(stmt);
@@ -769,7 +767,7 @@ namespace vush {
 
       // We want to place the condition in the continuation block,
       // therefore we transform it into 'if condition { } else { break }'.
-      auto continuation = *allocate<Array<ast::Node*>>(ctx.allocator, ctx.allocator);
+      auto& continuation = *allocate<Array<ast::Node*>>(ctx.allocator, ctx.allocator);
       {
         anton::Expected<ast::Expr*, Error> condition =
           transform_expr(ctx, get_stmt_do_while_condition(node));
@@ -777,7 +775,7 @@ namespace vush {
           return {anton::expected_error, ANTON_MOV(condition.error())};
         }
 
-        auto else_block = *allocate<Array<ast::Node*>>(ctx.allocator, ctx.allocator);
+        auto& else_block = *allocate<Array<ast::Node*>>(ctx.allocator, ctx.allocator);
         else_block.push_back(allocate<ast::Stmt_Break>(ctx.allocator, Source_Info{}));
         ast::Stmt_If* const stmt_if = allocate<ast::Stmt_If>(
           ctx.allocator, condition.value(), ast::Node_List{}, else_block, Source_Info{});
@@ -842,12 +840,12 @@ namespace vush {
       return {anton::expected_value, ast::Attr_List{}};
     }
 
-    auto attributes = *allocate<Array<ast::Attribute*>>(ctx.allocator, ctx.allocator);
+    auto& attributes = *allocate<Array<ast::Attribute*>>(ctx.allocator, ctx.allocator);
     for(SNOT const& attribute_snot: node.children) {
       Syntax_Node const& attribute_node = attribute_snot.left();
       anton::Slice<ast::Attribute_Parameter> parameters;
       if(anton::Optional const parameter_list_node = get_attribute_parameter_list(attribute_node)) {
-        auto parameters_array =
+        auto& parameters_array =
           *allocate<Array<ast::Attribute_Parameter>>(ctx.allocator, ctx.allocator);
         for(SNOT const& snot: parameter_list_node->children) {
           if(!snot.is_left()) {
@@ -934,7 +932,7 @@ namespace vush {
   [[nodiscard]] static anton::Expected<ast::Decl_Struct*, Error>
   transform_decl_struct(Context const& ctx, Syntax_Node const& node)
   {
-    auto members = *allocate<Array<ast::Struct_Member*>>(ctx.allocator, ctx.allocator);
+    auto& members = *allocate<Array<ast::Struct_Member*>>(ctx.allocator, ctx.allocator);
     Syntax_Node const& members_node = get_decl_struct_members(node);
     for(SNOT const& member_snot: members_node.children) {
       if(!member_snot.is_left()) {
@@ -1019,7 +1017,7 @@ namespace vush {
   [[nodiscard]] static anton::Expected<ast::Fn_Parameter_List, Error>
   transform_parameter_list(Context const& ctx, Syntax_Node const& node)
   {
-    auto parameters = *allocate<Array<ast::Fn_Parameter*>>(ctx.allocator, ctx.allocator);
+    auto& parameters = *allocate<Array<ast::Fn_Parameter*>>(ctx.allocator, ctx.allocator);
     for(SNOT const& snot: node.children) {
       if(!snot.is_left()) {
         continue;
@@ -1125,7 +1123,7 @@ namespace vush {
   anton::Expected<ast::Node_List, Error> lower_syntax_to_ast(Context& ctx,
                                                              Array<SNOT> const& syntax)
   {
-    auto abstract = *allocate<Array<ast::Node*>>(ctx.allocator, ctx.allocator);
+    auto& abstract = *allocate<Array<ast::Node*>>(ctx.allocator, ctx.allocator);
     for(SNOT const& snot: syntax) {
       if(!snot.is_left()) {
         continue;

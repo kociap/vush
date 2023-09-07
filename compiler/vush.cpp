@@ -12,7 +12,7 @@
 #include <anton/string_stream.hpp>
 
 #include <vush_ast/ast.hpp>
-#include <vush_ast_transform/transforms.hpp>
+#include <vush_ast_passes/passes.hpp>
 #include <vush_ast_validation/validation.hpp>
 #include <vush_core/context.hpp>
 #include <vush_core/memory.hpp>
@@ -386,17 +386,10 @@ namespace vush {
         return {anton::expected_error, import_result.error()};
       }
 
-      ast::Node_List ast_nodes = import_result.value();
+      ast::Node_List const ast_nodes = import_result.value();
+      ctx.overload_groups = run_overload_group_pass(ctx.allocator, ast_nodes);
       {
-        anton::Expected<ast::Node_List, Error> result = run_ast_construction_pass(ctx, ast_nodes);
-        if(result) {
-          ast_nodes = result.value();
-        } else {
-          return {anton::expected_error, ANTON_MOV(result.error())};
-        }
-      }
-      {
-        anton::Expected<void, Error> result = run_ast_defcheck_pass(ctx, ast_nodes);
+        anton::Expected<void, Error> result = run_namebind_pass(ctx, ast_nodes);
         if(!result) {
           return {anton::expected_error, ANTON_MOV(result.error())};
         }

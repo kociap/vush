@@ -772,7 +772,7 @@ namespace vush {
   }
 
   [[nodiscard]] static anton::Expected<void, Error>
-  validate_overloaded_function(Context& ctx, ast::Decl_Overloaded_Function const* const fn)
+  validate_overload_group(Context& ctx, ast::Overload_Group const* const fn)
   {
     // Ensure all overloads have different sets of parameters.
     // Compare all with all. O(n^2) comparisons.
@@ -818,64 +818,51 @@ namespace vush {
     // Currently we validate structs first as that seems to be the best solution giving us the
     // option to conduct the most thorough analysis.
 
-    // TODO: The following code results in out-of-order error reporting, i.e. code appearing sooner
-    //       in the source might be validated after code appearing later in the source. The problem
-    //       stems from the fact that we gather overloads before doing validation and validate
-    //       groups of constructs. We cannot possibly move overload gather to after defcheck or
-    //       validation because of the dependency of their symbols, therefore we must come up with a
-    //       different solution so that we report errors in their order of occurence.
-
-    // Validate structs.
-    for(ast::Node const* const decl: ast) {
-      if(decl->node_kind != ast::Node_Kind::decl_struct) {
-        continue;
-      }
-
-      ast::Decl_Struct const* const dstruct = static_cast<ast::Decl_Struct const*>(decl);
-      if(anton::Expected<void, Error> result = validate_struct(ctx, dstruct); !result) {
-        return {anton::expected_error, ANTON_MOV(result.error())};
-      }
-    }
-
-    // Validate constants.
-    for(ast::Node const* const decl: ast) {
-      if(decl->node_kind != ast::Node_Kind::variable) {
-        continue;
-      }
-
-      ast::Variable const* const constant = static_cast<ast::Variable const*>(decl);
-      if(anton::Expected<void, Error> result = validate_constant(ctx, constant); !result) {
-        return {anton::expected_error, ANTON_MOV(result.error())};
-      }
-    }
-
-    // Validate functions.
-    for(ast::Node const* const decl: ast) {
-      if(decl->node_kind != ast::Node_Kind::decl_overloaded_function) {
-        continue;
-      }
-
-      ast::Decl_Overloaded_Function const* const ofn =
-        static_cast<ast::Decl_Overloaded_Function const*>(decl);
-      if(anton::Expected<void, Error> result = validate_overloaded_function(ctx, ofn); !result) {
-        return {anton::expected_error, ANTON_MOV(result.error())};
-      }
-
-      for(ast::Decl_Function const* const fn: ofn->overloads) {
-        if(anton::Expected<void, Error> result = validate_function(ctx, fn); !result) {
+    for(ast::Node const* const node: ast) {
+      switch(node->node_kind) {
+      case ast::Node_Kind::variable: {
+        ast::Variable const* const decl = static_cast<ast::Variable const*>(node);
+        if(anton::Expected<void, Error> result = validate_constant(ctx, decl); !result) {
           return {anton::expected_error, ANTON_MOV(result.error())};
         }
+      } break;
+
+      case ast::Node_Kind::decl_struct: {
+        auto const decl = static_cast<ast::Decl_Struct const*>(node);
+        if(anton::Expected<void, Error> result = validate_struct(ctx, decl); !result) {
+          return {anton::expected_error, ANTON_MOV(result.error())};
+        }
+      } break;
+
+      case ast::Node_Kind::decl_function: {
+        auto const decl = static_cast<ast::Decl_Function const*>(node);
+        if(anton::Expected<void, Error> result = validate_function(ctx, decl); !result) {
+          return {anton::expected_error, ANTON_MOV(result.error())};
+        }
+      } break;
+
+      case ast::Node_Kind::decl_stage_function: {
+        auto const decl = static_cast<ast::Decl_Stage_Function const*>(node);
+        if(anton::Expected<void, Error> result = validate_stage_function(ctx, decl); !result) {
+          return {anton::expected_error, ANTON_MOV(result.error())};
+        }
+      } break;
+
+      default:
+        // Nothing.
+        break;
       }
     }
 
-    // Validate stage functions.
-    for(ast::Node const* const decl: ast) {
-      if(decl->node_kind != ast::Node_Kind::decl_stage_function) {
-        continue;
-      }
+    // TODO: The following code results in out-of-order error reporting, i.e. the overload group
+    //       validation happens after all other validation is complete. The problem stems from the
+    //       fact that we gather overloads before doing validation and validate groups of
+    //       constructs. We cannot possibly move overload gather to after defcheck or validation
+    //       because of the dependency of their symbols, therefore we must come up with a different
+    //       solution so that we report errors in their order of occurence.
 
-      ast::Decl_Stage_Function const* const fn = static_cast<ast::Decl_Stage_Function const*>(decl);
-      if(anton::Expected<void, Error> result = validate_stage_function(ctx, fn); !result) {
+    for(auto [key, group]: ctx.overload_groups) {
+      if(anton::Expected<void, Error> result = validate_overload_group(ctx, group); !result) {
         return {anton::expected_error, ANTON_MOV(result.error())};
       }
     }

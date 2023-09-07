@@ -2,6 +2,7 @@
 
 #include <anton/optional.hpp>
 #include <anton/ordering.hpp>
+#include <anton/string.hpp>
 
 #include <vush_ast/ast_fwd.hpp>
 #include <vush_core/either.hpp>
@@ -26,7 +27,6 @@ namespace vush::ast {
 
     decl_struct,
     decl_function,
-    decl_overloaded_function,
     decl_stage_function,
 
     named_initializer,
@@ -288,6 +288,7 @@ namespace vush::ast {
   struct Type_Struct: public Type {
     // The identifier value, that is the name of the type.
     anton::String_View value;
+    Decl_Struct* definition = nullptr;
 
     constexpr Type_Struct(anton::String_View value, Source_Info const& source_info)
       : Type(source_info, Node_Kind::type_struct), value(value)
@@ -403,6 +404,7 @@ namespace vush::ast {
     Node_List body;
     // Whether the function is a builtin function.
     bool builtin;
+    Overload_Group* overload_group = nullptr;
 
     constexpr Decl_Function(Attr_List attributes, Identifier identifier,
                             Fn_Parameter_List parameters, Type* return_type, Node_List body,
@@ -413,20 +415,15 @@ namespace vush::ast {
     }
   };
 
-  // Decl_Overloaded_Function
-  // A semantic node representing overloaded function. This node is not backed by syntax and acts
-  // as a binding node of all functions with identical identifiers (overloads). Due to being a
-  // collection of references to other nodes rather than a standalone semantic node, this node
-  // does not have source information.
+  // Overload_Group
+  // A semantic node representing an overload group of functions.
   //
-  struct Decl_Overloaded_Function: public Node {
-    anton::String_View identifier;
-    anton::Slice<Decl_Function* const> overloads;
+  struct Overload_Group {
+    anton::String identifier;
+    Array<Decl_Function*> overloads;
 
-    constexpr Decl_Overloaded_Function(anton::String_View identifier,
-                                       anton::Slice<Decl_Function* const> overloads)
-      : Node(Source_Info{}, Node_Kind::decl_overloaded_function), identifier(identifier),
-        overloads(overloads)
+    Overload_Group(Allocator* allocator, anton::String_View identifier)
+      : identifier(identifier, allocator), overloads(allocator)
     {
     }
   };
@@ -467,6 +464,7 @@ namespace vush::ast {
 
   struct Expr_Identifier: public Expr {
     anton::String_View value;
+    Node* definition = nullptr;
 
     constexpr Expr_Identifier(anton::String_View value, Source_Info const& source_info)
       : Expr(source_info, Node_Kind::expr_identifier), value(value)
@@ -534,6 +532,8 @@ namespace vush::ast {
   struct Expr_Call: public Expr {
     Identifier identifier;
     Expr_List arguments;
+    Overload_Group* overload_group = nullptr;
+    Decl_Function* function = nullptr;
 
     constexpr Expr_Call(Identifier identifier, Expr_List arguments, Source_Info const& source_info)
       : Expr(source_info, Node_Kind::expr_call), identifier(identifier), arguments(arguments)
@@ -687,9 +687,9 @@ namespace vush::ast {
 
   struct Stmt_Switch: public Node {
     Expr* expression;
-    anton::Slice<Switch_Arm const* const> arms;
+    anton::Slice<Switch_Arm* const> arms;
 
-    constexpr Stmt_Switch(Expr* const expression, anton::Slice<Switch_Arm const* const> arms,
+    constexpr Stmt_Switch(Expr* const expression, anton::Slice<Switch_Arm* const> arms,
                           Source_Info const& source_info)
       : Node(source_info, Node_Kind::stmt_switch), expression(expression), arms(arms)
     {

@@ -8,84 +8,98 @@
 #include <vush_diagnostics/diagnostics.hpp>
 
 namespace vush {
-  using Symbol_Kind = ast::Node_Kind;
+  enum struct Symbol_Kind {
+    e_variable,
+    e_parameter,
+    e_struct,
+    e_overload_group,
+  };
 
   struct Symbol {
-  private:
-    anton::String_View name;
-    ast::Node const* node;
+    anton::String_View identifier;
+    union {
+      ast::Variable* value_variable;
+      ast::Fn_Parameter* value_parameter;
+      ast::Decl_Struct* value_struct;
+      ast::Overload_Group* value_overload_group;
+    };
+    Symbol_Kind kind;
 
-  public:
-    Symbol(anton::String_View name, ast::Node const* node): name(name), node(node) {}
-
-    [[nodiscard]] anton::String_View get_name() const
+    Symbol(anton::String_View identifier, ast::Variable* value)
+      : identifier(identifier), value_variable(value), kind(Symbol_Kind::e_variable)
     {
-      return name;
     }
 
-    [[nodiscard]] ast::Node const* get_node() const
+    Symbol(anton::String_View identifier, ast::Fn_Parameter* value)
+      : identifier(identifier), value_parameter(value), kind(Symbol_Kind::e_parameter)
     {
-      return node;
     }
 
-    [[nodiscard]] Symbol_Kind get_kind() const
+    Symbol(anton::String_View identifier, ast::Decl_Struct* value)
+      : identifier(identifier), value_struct(value), kind(Symbol_Kind::e_struct)
     {
-      return node->node_kind;
+    }
+
+    Symbol(anton::String_View identifier, ast::Overload_Group* value)
+      : identifier(identifier), value_overload_group(value), kind(Symbol_Kind::e_overload_group)
+    {
     }
   };
 
   using Symbol_Table = Scoped_Map<anton::String_View, Symbol>;
 
-  // check_and_add_symbol
-  // Checks whether a symbol already exists and if not, adds it to the symbol table.
-  // Otherwise returns an error diagnostic.
-  //
   [[nodiscard]] static anton::Expected<void, Error>
-  check_and_add_symbol(Context& ctx, Symbol_Table& symtable, Symbol const& symbol)
+  namebind_call(Context& ctx, Symbol_Table const& symtable, ast::Expr_Call* const call)
   {
-    Symbol const* const original_symbol = symtable.find_entry(symbol.get_name());
-    if(original_symbol != nullptr) {
-      auto get_symbol_name = [](Symbol const& symbol) -> Source_Info {
-        switch(symbol.get_kind()) {
-        case Symbol_Kind::variable: {
-          auto const v = static_cast<ast::Variable const*>(symbol.get_node());
-          return v->identifier.source_info;
-        }
-
-        case Symbol_Kind::fn_parameter: {
-          auto const v = static_cast<ast::Fn_Parameter const*>(symbol.get_node());
-          return v->identifier.source_info;
-        }
-
-        case Symbol_Kind::decl_overloaded_function: {
-          auto const v = static_cast<ast::Decl_Overloaded_Function const*>(symbol.get_node());
-          // Use the first overload as the source location.
-          ast::Decl_Function const* const overload = v->overloads[0];
-          return overload->identifier.source_info;
-        }
-
-        case Symbol_Kind::decl_struct: {
-          auto const v = static_cast<ast::Decl_Struct const*>(symbol.get_node());
-          return v->identifier.source_info;
-        }
-
-        default:
-          ANTON_FAIL(false, "unknown symbol type");
-          ANTON_UNREACHABLE();
-        }
-      };
-
-      Source_Info const old_name = get_symbol_name(*original_symbol);
-      Source_Info const new_name = get_symbol_name(symbol);
-      return {anton::expected_error, err_symbol_redefinition(ctx, old_name, new_name)};
+    Symbol const* const symbol = symtable.find_entry(call->identifier.value);
+    if(!symbol) {
+      return {anton::expected_error, err_undefined_symbol(ctx, call->source_info)};
     }
 
-    symtable.add_entry(symbol.get_name(), symbol);
-    return anton::expected_value;
+    switch(symbol->kind) {
+    case Symbol_Kind::e_overload_group: {
+      call->overload_group = symbol->value_overload_group;
+      return anton::expected_value;
+    }
+
+    default:
+      // TODO: Error.
+      return {anton::expected_error, Error()};
+    }
   }
 
   [[nodiscard]] static anton::Expected<void, Error>
-  defcheck_type(Context& ctx, Symbol_Table& symtable, ast::Type const* const type)
+  namebind_identifier(Context& ctx, Symbol_Table const& symtable, ast::Expr_Identifier* identifier)
+  {
+    Symbol const* const symbol = symtable.find_entry(identifier->value);
+    if(!symbol) {
+      return {anton::expected_error, err_undefined_symbol(ctx, identifier->source_info)};
+    }
+
+    switch(symbol->kind) {
+    case Symbol_Kind::e_variable: {
+      identifier->definition = symbol->value_variable;
+      return anton::expected_value;
+    }
+
+    case Symbol_Kind::e_parameter: {
+      identifier->definition = symbol->value_parameter;
+      return anton::expected_value;
+    }
+
+    case Symbol_Kind::e_overload_group: {
+      return {anton::expected_error,
+              err_identifier_names_a_function_but_is_not_called(ctx, identifier->source_info)};
+    } break;
+
+    default:
+      // TODO: Error.
+      return {anton::expected_error, Error()};
+    }
+  }
+
+  [[nodiscard]] static anton::Expected<void, Error>
+  namebind_type(Context& ctx, Symbol_Table const& symtable, ast::Type* const type)
   {
     switch(type->node_kind) {
     case ast::Node_Kind::type_builtin: {
@@ -93,20 +107,30 @@ namespace vush {
     }
 
     case ast::Node_Kind::type_struct: {
-      ast::Type_Struct const* const type_struct = static_cast<ast::Type_Struct const*>(type);
+      auto const type_struct = static_cast<ast::Type_Struct*>(type);
       Symbol const* const symbol = symtable.find_entry(type_struct->value);
       if(symbol == nullptr) {
         return {anton::expected_error, err_undefined_symbol(ctx, type->source_info)};
       }
 
-      ast::Node const* const symbol_node = symbol->get_node();
-      ctx.add_node_definition(type, symbol_node);
+      switch(symbol->kind) {
+      case Symbol_Kind::e_struct: {
+        type_struct->definition = symbol->value_struct;
+        return anton::expected_value;
+      }
+
+      default:
+        // TODO: Error.
+        return {anton::expected_error, Error()};
+      }
+
+      type_struct->definition = symbol->value_struct;
       return anton::expected_value;
     }
 
     case ast::Node_Kind::type_array: {
-      ast::Type_Array const* const array = static_cast<ast::Type_Array const*>(type);
-      return defcheck_type(ctx, symtable, array->base);
+      auto const array = static_cast<ast::Type_Array*>(type);
+      return namebind_type(ctx, symtable, array->base);
     }
 
     default:
@@ -115,37 +139,93 @@ namespace vush {
     }
   }
 
+  // add_symbol
+  // Checks whether a symbol already exists and if not, adds it to the symbol table.
+  // Otherwise returns an error diagnostic.
+  //
+  [[nodiscard]] static anton::Expected<void, Error> add_symbol(Context& ctx, Symbol_Table& symtable,
+                                                               Symbol const& symbol)
+  {
+    Symbol const* const original_symbol = symtable.find_entry(symbol.identifier);
+    if(original_symbol != nullptr) {
+      auto get_symbol_identifier_source = [](Symbol const& symbol) -> Source_Info {
+        switch(symbol.kind) {
+        case Symbol_Kind::e_variable: {
+          return symbol.value_variable->identifier.source_info;
+        }
+
+        case Symbol_Kind::e_parameter: {
+          return symbol.value_parameter->identifier.source_info;
+        }
+
+        case Symbol_Kind::e_struct: {
+          return symbol.value_struct->identifier.source_info;
+        }
+
+        case Symbol_Kind::e_overload_group: {
+          // Use the first overload as the source location.
+          ast::Decl_Function* const overload = symbol.value_overload_group->overloads[0];
+          return overload->identifier.source_info;
+        }
+
+        default:
+          ANTON_FAIL(false, "unknown symbol type");
+          ANTON_UNREACHABLE();
+        }
+      };
+
+      Source_Info const old_name = get_symbol_identifier_source(*original_symbol);
+      Source_Info const new_name = get_symbol_identifier_source(symbol);
+      return {anton::expected_error, err_symbol_redefinition(ctx, old_name, new_name)};
+    }
+
+    symtable.add_entry(symbol.identifier, symbol);
+    return anton::expected_value;
+  }
+
   [[nodiscard]] static anton::Expected<void, Error>
-  defcheck_expression(Context& ctx, Symbol_Table& symtable, ast::Expr const* const expression)
+  defcheck_expression(Context& ctx, Symbol_Table& symtable, ast::Expr* const expression)
   {
     switch(expression->node_kind) {
     case ast::Node_Kind::expr_identifier: {
-      ast::Expr_Identifier const* const node = static_cast<ast::Expr_Identifier const*>(expression);
+      auto const node = static_cast<ast::Expr_Identifier*>(expression);
+      anton::Expected<void, Error> result = namebind_identifier(ctx, symtable, node);
+      if(!result) {
+        return ANTON_MOV(result);
+      } else {
+        return anton::expected_value;
+      }
+    }
 
-      // TODO: Add symbols for builtin variables.
-
-      Symbol const* const symbol = symtable.find_entry(node->value);
-      if(!symbol) {
-        return {anton::expected_error, err_undefined_symbol(ctx, node->source_info)};
+    case ast::Node_Kind::expr_call: {
+      auto const node = static_cast<ast::Expr_Call*>(expression);
+      anton::Expected<void, Error> result = namebind_call(ctx, symtable, node);
+      if(!result) {
+        return ANTON_MOV(result);
       }
 
-      ast::Node const* const symbol_node = symbol->get_node();
-      ctx.add_node_definition(node, symbol_node);
+      for(ast::Expr* const argument: node->arguments) {
+        anton::Expected<void, Error> result = defcheck_expression(ctx, symtable, argument);
+        if(!result) {
+          return ANTON_MOV(result);
+        }
+      }
+
       return anton::expected_value;
     }
 
     case ast::Node_Kind::expr_init: {
-      ast::Expr_Init const* const node = static_cast<ast::Expr_Init const*>(expression);
-      anton::Expected<void, Error> type_result = defcheck_type(ctx, symtable, node->type);
+      auto const node = static_cast<ast::Expr_Init*>(expression);
+      anton::Expected<void, Error> type_result = namebind_type(ctx, symtable, node->type);
       if(!type_result) {
         return ANTON_MOV(type_result);
       }
 
-      for(ast::Initializer const* const generic_initializer: node->initializers) {
+      for(ast::Initializer* const generic_initializer: node->initializers) {
         switch(generic_initializer->node_kind) {
         case ast::Node_Kind::named_initializer: {
-          ast::Named_Initializer const* const initializer =
-            static_cast<ast::Named_Initializer const*>(generic_initializer);
+          ast::Named_Initializer* const initializer =
+            static_cast<ast::Named_Initializer*>(generic_initializer);
           // Checking struct members is done at typecheck stage, hence we do not check the
           // identifier.
           anton::Expected<void, Error> result =
@@ -156,8 +236,8 @@ namespace vush {
         } break;
 
         case ast::Node_Kind::indexed_initializer: {
-          ast::Indexed_Initializer const* const initializer =
-            static_cast<ast::Indexed_Initializer const*>(generic_initializer);
+          ast::Indexed_Initializer* const initializer =
+            static_cast<ast::Indexed_Initializer*>(generic_initializer);
           // Checking bounds is done at typecheck stage, hence we do not check the index.
           anton::Expected<void, Error> result =
             defcheck_expression(ctx, symtable, initializer->expression);
@@ -167,8 +247,8 @@ namespace vush {
         } break;
 
         case ast::Node_Kind::basic_initializer: {
-          ast::Basic_Initializer const* const initializer =
-            static_cast<ast::Basic_Initializer const*>(generic_initializer);
+          ast::Basic_Initializer* const initializer =
+            static_cast<ast::Basic_Initializer*>(generic_initializer);
           anton::Expected<void, Error> result =
             defcheck_expression(ctx, symtable, initializer->expression);
           if(!result) {
@@ -185,33 +265,13 @@ namespace vush {
       return anton::expected_value;
     } break;
 
-    case ast::Node_Kind::expr_call: {
-      ast::Expr_Call const* const node = static_cast<ast::Expr_Call const*>(expression);
-      Symbol const* const symbol = symtable.find_entry(node->identifier.value);
-      if(!symbol) {
-        return {anton::expected_error, err_undefined_symbol(ctx, node->identifier.source_info)};
-      }
-
-      ast::Node const* const symbol_node = symbol->get_node();
-      ctx.add_node_definition(node, symbol_node);
-
-      for(ast::Expr const* const argument: node->arguments) {
-        anton::Expected<void, Error> result = defcheck_expression(ctx, symtable, argument);
-        if(!result) {
-          return ANTON_MOV(result);
-        }
-      }
-
-      return anton::expected_value;
-    }
-
     case ast::Node_Kind::expr_field: {
-      ast::Expr_Field const* const node = static_cast<ast::Expr_Field const*>(expression);
+      ast::Expr_Field* const node = static_cast<ast::Expr_Field*>(expression);
       return defcheck_expression(ctx, symtable, node->base);
     }
 
     case ast::Node_Kind::expr_index: {
-      ast::Expr_Index const* const node = static_cast<ast::Expr_Index const*>(expression);
+      ast::Expr_Index* const node = static_cast<ast::Expr_Index*>(expression);
       anton::Expected<void, Error> base_result = defcheck_expression(ctx, symtable, node->base);
       if(!base_result) {
         return ANTON_MOV(base_result);
@@ -226,13 +286,12 @@ namespace vush {
     }
 
     case ast::Node_Kind::expr_parentheses: {
-      ast::Expr_Parentheses const* const node =
-        static_cast<ast::Expr_Parentheses const*>(expression);
+      ast::Expr_Parentheses* const node = static_cast<ast::Expr_Parentheses*>(expression);
       return defcheck_expression(ctx, symtable, node->expression);
     }
 
     case ast::Node_Kind::expr_assignment: {
-      ast::Expr_Assignment const* const node = static_cast<ast::Expr_Assignment const*>(expression);
+      ast::Expr_Assignment* const node = static_cast<ast::Expr_Assignment*>(expression);
       if(anton::Expected<void, Error> lhs = defcheck_expression(ctx, symtable, node->lhs); !lhs) {
         return ANTON_MOV(lhs);
       }
@@ -245,7 +304,7 @@ namespace vush {
     }
 
     case ast::Node_Kind::expr_if: {
-      ast::Expr_If const* const node = static_cast<ast::Expr_If const*>(expression);
+      ast::Expr_If* const node = static_cast<ast::Expr_If*>(expression);
       anton::Expected<void, Error> result_condition =
         defcheck_expression(ctx, symtable, node->condition);
       if(!result_condition) {
@@ -296,11 +355,11 @@ namespace vush {
     // not pop the scope when we fail because an error always leads to termination.
     symtable.push_scope();
 
-    for(ast::Node const* const stmt: statements) {
+    for(ast::Node* const stmt: statements) {
       switch(stmt->node_kind) {
       case ast::Node_Kind::variable: {
-        ast::Variable const* const node = static_cast<ast::Variable const*>(stmt);
-        anton::Expected<void, Error> type_res = defcheck_type(ctx, symtable, node->type);
+        ast::Variable* const node = static_cast<ast::Variable*>(stmt);
+        anton::Expected<void, Error> type_res = namebind_type(ctx, symtable, node->type);
         if(!type_res) {
           return ANTON_MOV(type_res);
         }
@@ -316,14 +375,14 @@ namespace vush {
         }
 
         anton::Expected<void, Error> symbol_res =
-          check_and_add_symbol(ctx, symtable, Symbol(node->identifier.value, node));
+          add_symbol(ctx, symtable, Symbol(node->identifier.value, node));
         if(!symbol_res) {
           return ANTON_MOV(symbol_res);
         }
       } break;
 
       case ast::Node_Kind::stmt_block: {
-        ast::Stmt_Block const* const node = static_cast<ast::Stmt_Block const*>(stmt);
+        ast::Stmt_Block* const node = static_cast<ast::Stmt_Block*>(stmt);
         anton::Expected<void, Error> result = defcheck_statements(ctx, symtable, node->statements);
         if(!result) {
           return ANTON_MOV(result);
@@ -331,7 +390,7 @@ namespace vush {
       } break;
 
       case ast::Node_Kind::stmt_if: {
-        ast::Stmt_If const* const node = static_cast<ast::Stmt_If const*>(stmt);
+        ast::Stmt_If* const node = static_cast<ast::Stmt_If*>(stmt);
         if(anton::Expected<void, Error> res = defcheck_expression(ctx, symtable, node->condition);
            !res) {
           return ANTON_MOV(res);
@@ -349,7 +408,7 @@ namespace vush {
       } break;
 
       case ast::Node_Kind::stmt_loop: {
-        ast::Stmt_Loop const* const node = static_cast<ast::Stmt_Loop const*>(stmt);
+        ast::Stmt_Loop* const node = static_cast<ast::Stmt_Loop*>(stmt);
         if(node->condition) {
           anton::Expected<void, Error> res = defcheck_expression(ctx, symtable, node->condition);
           if(!res) {
@@ -371,14 +430,14 @@ namespace vush {
       } break;
 
       case ast::Node_Kind::stmt_switch: {
-        ast::Stmt_Switch const* const node = static_cast<ast::Stmt_Switch const*>(stmt);
+        auto const node = static_cast<ast::Stmt_Switch*>(stmt);
         anton::Expected<void, Error> switch_expr_result =
           defcheck_expression(ctx, symtable, node->expression);
         if(!switch_expr_result) {
           return ANTON_MOV(switch_expr_result);
         }
 
-        for(ast::Switch_Arm const* const arm: node->arms) {
+        for(ast::Switch_Arm* const arm: node->arms) {
           anton::Expected<void, Error> result = defcheck_statements(ctx, symtable, arm->statements);
           if(!result) {
             return ANTON_MOV(result);
@@ -387,7 +446,7 @@ namespace vush {
       } break;
 
       case ast::Node_Kind::stmt_return: {
-        ast::Stmt_Return const* const node = static_cast<ast::Stmt_Return const*>(stmt);
+        ast::Stmt_Return* const node = static_cast<ast::Stmt_Return*>(stmt);
         if(node->expression) {
           anton::Expected<void, Error> result =
             defcheck_expression(ctx, symtable, node->expression);
@@ -398,7 +457,7 @@ namespace vush {
       } break;
 
       case ast::Node_Kind::stmt_expression: {
-        ast::Stmt_Expression const* const node = static_cast<ast::Stmt_Expression const*>(stmt);
+        ast::Stmt_Expression* const node = static_cast<ast::Stmt_Expression*>(stmt);
         anton::Expected<void, Error> result = defcheck_expression(ctx, symtable, node->expression);
         if(!result) {
           return ANTON_MOV(result);
@@ -416,10 +475,10 @@ namespace vush {
   }
 
   [[nodiscard]] static anton::Expected<void, Error>
-  defcheck_struct(Context& ctx, Symbol_Table& symtable, ast::Decl_Struct const* const d)
+  defcheck_struct(Context& ctx, Symbol_Table& symtable, ast::Decl_Struct* const d)
   {
-    for(ast::Struct_Member const* const member: d->members) {
-      anton::Expected<void, Error> result = defcheck_type(ctx, symtable, member->type);
+    for(ast::Struct_Member* const member: d->members) {
+      anton::Expected<void, Error> result = namebind_type(ctx, symtable, member->type);
       if(!result) {
         return ANTON_MOV(result);
       }
@@ -429,26 +488,26 @@ namespace vush {
   }
 
   [[nodiscard]] static anton::Expected<void, Error>
-  defcheck_function(Context& ctx, Symbol_Table& symtable, ast::Decl_Function const* const fn)
+  defcheck_function(Context& ctx, Symbol_Table& symtable, ast::Decl_Function* const fn)
   {
     // We do not defcheck the identifier of the function because it has
     // already been added as an overloaded function.
 
-    anton::Expected<void, Error> return_result = defcheck_type(ctx, symtable, fn->return_type);
+    anton::Expected<void, Error> return_result = namebind_type(ctx, symtable, fn->return_type);
     if(!return_result) {
       return ANTON_MOV(return_result);
     }
 
     // Push a new scope for the function body and parameters.
     symtable.push_scope();
-    for(ast::Fn_Parameter const* const parameter: fn->parameters) {
-      anton::Expected<void, Error> type_result = defcheck_type(ctx, symtable, parameter->type);
+    for(ast::Fn_Parameter* const parameter: fn->parameters) {
+      anton::Expected<void, Error> type_result = namebind_type(ctx, symtable, parameter->type);
       if(!type_result) {
         return ANTON_MOV(type_result);
       }
 
       anton::Expected<void, Error> symbol_result =
-        check_and_add_symbol(ctx, symtable, Symbol(parameter->identifier.value, parameter));
+        add_symbol(ctx, symtable, Symbol(parameter->identifier.value, parameter));
       if(!symbol_result) {
         return ANTON_MOV(symbol_result);
       }
@@ -464,24 +523,23 @@ namespace vush {
   }
 
   [[nodiscard]] static anton::Expected<void, Error>
-  defcheck_stage_function(Context& ctx, Symbol_Table& symtable,
-                          ast::Decl_Stage_Function const* const fn)
+  defcheck_stage_function(Context& ctx, Symbol_Table& symtable, ast::Decl_Stage_Function* const fn)
   {
-    anton::Expected<void, Error> return_result = defcheck_type(ctx, symtable, fn->return_type);
+    anton::Expected<void, Error> return_result = namebind_type(ctx, symtable, fn->return_type);
     if(!return_result) {
       return ANTON_MOV(return_result);
     }
 
     // Push a new scope for the function body and parameters.
     symtable.push_scope();
-    for(ast::Fn_Parameter const* const parameter: fn->parameters) {
-      anton::Expected<void, Error> type_result = defcheck_type(ctx, symtable, parameter->type);
+    for(ast::Fn_Parameter* const parameter: fn->parameters) {
+      anton::Expected<void, Error> type_result = namebind_type(ctx, symtable, parameter->type);
       if(!type_result) {
         return ANTON_MOV(type_result);
       }
 
       anton::Expected<void, Error> symbol_result =
-        check_and_add_symbol(ctx, symtable, Symbol(parameter->identifier.value, parameter));
+        add_symbol(ctx, symtable, Symbol(parameter->identifier.value, parameter));
       if(!symbol_result) {
         return ANTON_MOV(symbol_result);
       }
@@ -496,36 +554,30 @@ namespace vush {
     return anton::expected_value;
   }
 
-  anton::Expected<void, Error> run_ast_defcheck_pass(Context& ctx, ast::Node_List const ast)
+  anton::Expected<void, Error> run_namebind_pass(Context& ctx, ast::Node_List const ast)
   {
     Symbol_Table symtable(ctx.allocator);
     symtable.push_scope();
-    // First add all global symbols to the symtab...
-    for(ast::Node const* const decl: ast) {
+    // First add all overload groups...
+    for(auto [key, group]: ctx.overload_groups) {
+      symtable.add_entry(key, Symbol(key, group));
+    }
+    // ...then all global symbols from the AST apart from functions...
+    for(ast::Node* const decl: ast) {
       switch(decl->node_kind) {
       case ast::Node_Kind::variable: {
-        ast::Variable const* const d = static_cast<ast::Variable const*>(decl);
+        ast::Variable* const d = static_cast<ast::Variable*>(decl);
         anton::Expected<void, Error> result =
-          check_and_add_symbol(ctx, symtable, Symbol(d->identifier.value, d));
+          add_symbol(ctx, symtable, Symbol(d->identifier.value, d));
         if(!result) {
           return ANTON_MOV(result);
         }
       } break;
 
       case ast::Node_Kind::decl_struct: {
-        ast::Decl_Struct const* const d = static_cast<ast::Decl_Struct const*>(decl);
+        ast::Decl_Struct* const d = static_cast<ast::Decl_Struct*>(decl);
         anton::Expected<void, Error> result =
-          check_and_add_symbol(ctx, symtable, Symbol(d->identifier.value, d));
-        if(!result) {
-          return ANTON_MOV(result);
-        }
-      } break;
-
-      case ast::Node_Kind::decl_overloaded_function: {
-        ast::Decl_Overloaded_Function const* const d =
-          static_cast<ast::Decl_Overloaded_Function const*>(decl);
-        anton::Expected<void, Error> result =
-          check_and_add_symbol(ctx, symtable, Symbol(d->identifier, d));
+          add_symbol(ctx, symtable, Symbol(d->identifier.value, d));
         if(!result) {
           return ANTON_MOV(result);
         }
@@ -541,31 +593,35 @@ namespace vush {
 
     // TODO: Constants defcheck.
 
-    for(ast::Node const* const node: ast) {
-      if(node->node_kind == ast::Node_Kind::decl_struct) {
-        ast::Decl_Struct const* const decl = static_cast<ast::Decl_Struct const*>(node);
+    for(ast::Node* const node: ast) {
+      switch(node->node_kind) {
+      case ast::Node_Kind::decl_struct: {
+        auto const decl = static_cast<ast::Decl_Struct*>(node);
         anton::Expected<void, Error> result = defcheck_struct(ctx, symtable, decl);
         if(!result) {
           return ANTON_MOV(result);
         }
+      } break;
 
-        ctx.add_type_definition(decl->identifier.value, decl);
-      } else if(node->node_kind == ast::Node_Kind::decl_overloaded_function) {
-        ast::Decl_Overloaded_Function const* const ofn =
-          static_cast<ast::Decl_Overloaded_Function const*>(node);
-        for(ast::Decl_Function const* const fn: ofn->overloads) {
-          anton::Expected<void, Error> result = defcheck_function(ctx, symtable, fn);
-          if(!result) {
-            return ANTON_MOV(result);
-          }
+      case ast::Node_Kind::decl_function: {
+        auto const fn = static_cast<ast::Decl_Function*>(node);
+        anton::Expected<void, Error> result = defcheck_function(ctx, symtable, fn);
+        if(!result) {
+          return ANTON_MOV(result);
         }
-      } else if(node->node_kind == ast::Node_Kind::decl_stage_function) {
-        ast::Decl_Stage_Function const* const fn =
-          static_cast<ast::Decl_Stage_Function const* const>(node);
+      } break;
+
+      case ast::Node_Kind::decl_stage_function: {
+        auto const fn = static_cast<ast::Decl_Stage_Function* const>(node);
         anton::Expected<void, Error> result = defcheck_stage_function(ctx, symtable, fn);
         if(!result) {
           return ANTON_MOV(result);
         }
+      } break;
+
+      default:
+        // Nothing.
+        break;
       }
     }
 

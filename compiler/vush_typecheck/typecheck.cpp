@@ -15,9 +15,8 @@ namespace vush {
 
   // select_overload
   //
-  [[nodiscard]] static anton::Expected<ast::Decl_Function const*, Error>
-  select_overload(Context& ctx, ast::Expr_Call const* const call,
-                  ast::Decl_Overloaded_Function const* const overloads);
+  [[nodiscard]] static anton::Expected<ast::Decl_Function*, Error>
+  select_overload(Context& ctx, ast::Expr_Call* const call, ast::Overload_Group const* const group);
 
   // evaluate_expression_type
   // Evaluate the type of an expression node. Recursively descend the hierarchy evaluating types of
@@ -25,7 +24,7 @@ namespace vush {
   // a cache within Context.
   //
   [[nodiscard]] static anton::Expected<ast::Type const*, Error>
-  evaluate_expression_type(Context& ctx, ast::Node const* const node);
+  evaluate_expression_type(Context& ctx, ast::Node* const node);
 
   // evaluate_vector_field
   //
@@ -265,13 +264,12 @@ namespace vush {
     return {anton::expected_value, get_builtin_type(field_kind)};
   }
 
-  anton::Expected<ast::Decl_Function const*, Error>
-  select_overload(Context& ctx, ast::Expr_Call const* const call,
-                  ast::Decl_Overloaded_Function const* const overloads)
+  anton::Expected<ast::Decl_Function*, Error>
+  select_overload(Context& ctx, ast::Expr_Call* const call, ast::Overload_Group const* const group)
   {
-    Array<ast::Decl_Function const*> candidates(ctx.allocator);
+    Array<ast::Decl_Function*> candidates(ctx.allocator);
     i64 best_score = anton::limits::maximum_i64;
-    for(ast::Decl_Function const* const fn: overloads->overloads) {
+    for(ast::Decl_Function* const fn: group->overloads) {
       if(fn->parameters.size() != call->arguments.size()) {
         continue;
       }
@@ -310,7 +308,7 @@ namespace vush {
     }
 
     if(candidates.size() == 0) {
-      return {anton::expected_error, err_no_matching_overload(ctx, call, overloads->overloads)};
+      return {anton::expected_error, err_no_matching_overload(ctx, call, group->overloads)};
     }
 
     if(candidates.size() > 1) {
@@ -321,7 +319,7 @@ namespace vush {
   }
 
   anton::Expected<ast::Type const*, Error> evaluate_expression_type(Context& ctx,
-                                                                    ast::Node const* const node)
+                                                                    ast::Node* const node)
   {
     ast::Type const* const cached_type = ctx.find_node_type(node);
     if(cached_type) {
@@ -370,7 +368,8 @@ namespace vush {
     } break;
 
     case ast::Node_Kind::expr_identifier: {
-      ast::Node const* const definition = ctx.find_node_definition(node);
+      auto const expr = static_cast<ast::Expr_Identifier const*>(node);
+      ast::Node const* const definition = expr->definition;
       switch(definition->node_kind) {
       case ast::Node_Kind::variable: {
         ast::Variable const* const variable = static_cast<ast::Variable const*>(definition);
@@ -387,12 +386,6 @@ namespace vush {
         return {anton::expected_value, type};
       }
 
-      case ast::Node_Kind::decl_overloaded_function: {
-        // We expected an identifier naming a variable or a parameter.
-        return {anton::expected_error,
-                err_identifier_names_a_function_but_is_not_called(ctx, node->source_info)};
-      }
-
       default:
         // Validated in the validation pass.
         ANTON_ASSERT(false, "invalid identifier definition kind");
@@ -401,32 +394,27 @@ namespace vush {
     } break;
 
     case ast::Node_Kind::expr_call: {
-      ast::Expr_Call const* const expr = static_cast<ast::Expr_Call const*>(node);
-
-      ast::Node const* const definition = ctx.find_node_definition(node);
-      ANTON_ASSERT(definition != nullptr, "expr_call has no definition");
-      ANTON_ASSERT(definition->node_kind == ast::Node_Kind::decl_overloaded_function,
-                   "expr_call's definition is not a decl_overloaded_function");
-      ast::Decl_Overloaded_Function const* const fn =
-        static_cast<ast::Decl_Overloaded_Function const*>(definition);
+      auto const expr = static_cast<ast::Expr_Call*>(node);
+      ast::Overload_Group const* const group = expr->overload_group;
+      ANTON_ASSERT(group != nullptr, "expr_call has no group");
       // Always evaluate all arguments before doing overload resolution. The types are cached, so there is no risk of
       // reevaluation or a major performance penalty, but this way we ensure that all expressions have their types
       // evaluated.
-      for(ast::Expr const* const argument: expr->arguments) {
+      for(ast::Expr* const argument: expr->arguments) {
         anton::Expected<ast::Type const*, Error> result = evaluate_expression_type(ctx, argument);
         if(!result) {
           return ANTON_MOV(result);
         }
       }
 
-      anton::Expected<ast::Decl_Function const*, Error> result = select_overload(ctx, expr, fn);
+      anton::Expected<ast::Decl_Function*, Error> result = select_overload(ctx, expr, group);
       if(!result) {
         return {anton::expected_error, ANTON_MOV(result.error())};
       }
 
-      ast::Decl_Function const* const overload = result.value();
-      ctx.add_overload(node, overload);
-      ast::Type const* const type = overload->return_type;
+      auto const fn = result.value();
+      expr->function = fn;
+      ast::Type const* const type = fn->return_type;
       ctx.add_node_type(node, type);
       return {anton::expected_value, type};
     } break;
@@ -460,10 +448,7 @@ namespace vush {
 
       case ast::Node_Kind::type_struct: {
         ast::Type_Struct const* const type = static_cast<ast::Type_Struct const*>(generic_type);
-        ast::Node const* const definition_node = ctx.find_type_definition(type->value);
-        ANTON_ASSERT(definition_node->node_kind == ast::Node_Kind::decl_struct,
-                     "type definition node is not a decl_struct");
-        ast::Decl_Struct const* const decl = static_cast<ast::Decl_Struct const*>(definition_node);
+        ast::Decl_Struct const* const decl = type->definition;
         ast::Member_List::iterator const members_begin = decl->members.begin();
         ast::Member_List::iterator const members_end = decl->members.end();
         for(ast::Initializer const* const generic_initializer: expr->initializers) {
@@ -652,10 +637,7 @@ namespace vush {
 
       case ast::Node_Kind::type_struct: {
         ast::Type_Struct const* const type = static_cast<ast::Type_Struct const*>(generic_type);
-        ast::Node const* const definition_node = ctx.find_type_definition(type->value);
-        ANTON_ASSERT(definition_node->node_kind == ast::Node_Kind::decl_struct,
-                     "type definition node is not a decl_struct");
-        ast::Decl_Struct const* const decl = static_cast<ast::Decl_Struct const*>(definition_node);
+        ast::Decl_Struct const* const decl = type->definition;
         for(ast::Struct_Member const* const member: decl->members) {
           if(member->identifier.value != expr->member.value) {
             continue;
@@ -848,25 +830,18 @@ namespace vush {
 
   anton::Expected<void, Error> run_ast_typecheck_pass(Context& ctx, ast::Node_List const ast)
   {
-    for(ast::Node const* const node: ast) {
+    for(ast::Node* const node: ast) {
       switch(node->node_kind) {
-      case ast::Node_Kind::decl_overloaded_function: {
-        ast::Decl_Overloaded_Function const* const fn =
-          static_cast<ast::Decl_Overloaded_Function const*>(node);
-        // TODO: Identical problem like in validation. Errors are reported out of order.
-        //       We have to keep functions in the ast in the order they appear and
-        //       gather them to a separate storage of overloaded functions elsewhere.
-        for(ast::Decl_Function const* const fn_overload: fn->overloads) {
-          anton::Expected<void, Error> result = typecheck_statements(ctx, fn_overload->body);
-          if(!result) {
-            return ANTON_MOV(result);
-          }
+      case ast::Node_Kind::decl_function: {
+        auto const fn = static_cast<ast::Decl_Function*>(node);
+        anton::Expected<void, Error> result = typecheck_statements(ctx, fn->body);
+        if(!result) {
+          return ANTON_MOV(result);
         }
       } break;
 
       case ast::Node_Kind::decl_stage_function: {
-        ast::Decl_Stage_Function const* const fn =
-          static_cast<ast::Decl_Stage_Function const*>(node);
+        auto const fn = static_cast<ast::Decl_Stage_Function*>(node);
         anton::Expected<void, Error> result = typecheck_statements(ctx, fn->body);
         if(!result) {
           return ANTON_MOV(result);

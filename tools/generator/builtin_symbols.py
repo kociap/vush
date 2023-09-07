@@ -23,10 +23,7 @@ def generate_alloc_parameter(parameter):
 
 def generate_alloc_parameter_array(parameters):
     parameter_list = [generate_alloc_parameter(p) for p in parameters]
-    if len(parameter_list) > 0:
-        return f"allocate<Array<ast::Fn_Parameter*>>(allocator, allocator, anton::variadic_construct, {','.join(parameter_list)})"
-    else:
-        return f"allocate<Array<ast::Fn_Parameter*>>(allocator, allocator)"
+    return f"ALLOC_ARRAY_PARAM({','.join(parameter_list)})"
 
 def generate_alloc_function(identifier, return_type, parameters):
     fn_return_type = generate_alloc_type(return_type)
@@ -90,17 +87,19 @@ def generate_operator(operator):
 
 def write_get_builtin_functions_declarations(file, functions):
     file.write(f"""\
-  Array<ast::Decl_Overloaded_Function*> get_builtin_functions_declarations(Allocator* allocator) {{
+  anton::Flat_Hash_Map<anton::String_View, ast::Overload_Group*> get_builtin_functions_declarations(Allocator* const allocator) {{
 """)
-    file.write(f"Array<ast::Decl_Overloaded_Function*> functions({len(functions)}, nullptr);\n")
+    file.write(f"anton::Flat_Hash_Map<anton::String_View, ast::Overload_Group*> groups(anton::reserve, {2 * len(functions)}, allocator);\n")
 
-    for i, (name, fn) in enumerate(functions.items()):
+    for i, (name, group) in enumerate(functions.items()):
         identifier = f"\"{name}\"_sv"
-        array = f"allocate<Array<ast::Decl_Function*>>(allocator, allocator, anton::variadic_construct, {','.join(fn)})"
-        file.write(f"functions[{i}] = allocate<ast::Decl_Overloaded_Function>(allocator, {identifier}, *{array});\n")
+        file.write(f"auto group_{i} = allocate<ast::Overload_Group>(allocator, allocator, {identifier});\n")
+        for fn in group:
+            file.write(f"group_{i}->overloads.push_back({fn});\n")
+        file.write(f"groups.emplace({identifier}, group_{i});\n")
 
     file.write(f"""\
-    return functions;
+    return groups;
   }}
 """)
 
@@ -127,12 +126,15 @@ def write_preamble(file):
 // Do not modify manually.
 //
 
+#include <anton/flat_hash_map.hpp>
+
 #include <vush_ast/ast.hpp>
 #include <vush_core/memory.hpp>
 
 #define BUILTIN_TYPE(identifier, value) static constexpr ast::Type_Builtin identifier(ast::Type_Builtin_Kind::value, {})
 #define ALLOC_BUILTIN(value) allocate<ast::Type_Builtin>(allocator, ast::Type_Builtin_Kind::value, Source_Info{})
 #define ALLOC_PARAM(name, type) allocate<ast::Fn_Parameter>(allocator, ast::Identifier{name, {}}, type, ast::Identifier{""_sv, {}}, Source_Info{})
+#define ALLOC_ARRAY_PARAM(...) allocate<Array<ast::Fn_Parameter*>>(allocator, allocator, anton::variadic_construct __VA_OPT__(,) __VA_ARGS__)
 #define ALLOC_FUNCTION(identifier, return_type, parameter_array) \\
     allocate<ast::Decl_Function>(allocator, ast::Attr_List{}, ast::Identifier{identifier, {}}, \\
         parameter_array, return_type, ast::Node_List{}, true, Source_Info{})
