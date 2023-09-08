@@ -8,13 +8,9 @@
 
 #include <vush.hpp>
 #include <vush_ast/ast_fwd.hpp>
+#include <vush_core/source_registry.hpp>
 
 namespace vush {
-  struct Source_Data {
-    anton::String name;
-    anton::String data;
-  };
-
   struct Context {
   public:
     source_definition_callback source_definition_cb = nullptr;
@@ -24,24 +20,14 @@ namespace vush {
     Diagnostics_Options diagnostics = {};
     Allocator* allocator = nullptr;
     anton::Flat_Hash_Map<anton::String_View, ast::Overload_Group*> overload_groups;
+    Source_Registry* source_registry = nullptr;
 
   private:
-    // Maps source's name to source information.
-    anton::Flat_Hash_Map<anton::String_View, Source_Data> source_registry;
     // Maps ast::Node* to evaluated expression type.
     anton::Flat_Hash_Map<ast::Node const*, ast::Type const*> types;
 
   public:
     Context(Allocator* allocator);
-
-    // find_source
-    // Find the source data corresponding to given name.
-    //
-    Source_Data const* find_source(anton::String_View name) const;
-
-    // add_source
-    //
-    void add_source(Source_Data source);
 
     // find_node_type
     //

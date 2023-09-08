@@ -15,6 +15,7 @@
 #include <vush_ast_passes/passes.hpp>
 #include <vush_core/context.hpp>
 #include <vush_core/memory.hpp>
+#include <vush_core/source_registry.hpp>
 #include <vush_diagnostics/diagnostics.hpp>
 #include <vush_parser/parser.hpp>
 #include <vush_syntax_lowering/syntax_lowering.hpp>
@@ -358,12 +359,15 @@ namespace vush {
     anton::Expected<Build_Result, Error> compile(Configuration const& config, Allocator& allocator,
                                                  source_import_callback callback, void* user_data)
     {
+      Source_Registry registry(&allocator);
+
       Context ctx(&allocator);
       ctx.source_import_cb = callback;
       ctx.source_import_user_data = user_data;
       ctx.source_definition_cb = config.source_definition_cb;
       ctx.source_definition_user_data = config.source_definition_user_data;
       ctx.diagnostics = config.diagnostics;
+      ctx.source_registry = &registry;
 
       // TODO: Fix constant defines.
       // Create symbols for the constant defines passed via config.

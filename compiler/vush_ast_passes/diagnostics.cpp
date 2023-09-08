@@ -14,7 +14,7 @@ namespace vush {
   {
     Source_Info const source_info = initializer->source_info;
     Error error = error_from_source(ctx.allocator, source_info);
-    anton::String_View const source = ctx.find_source(source_info.source_path)->data;
+    anton::String_View const source = ctx.source_registry->find_source(source_info.source_path)->data;
     error.diagnostic = "error: matrix initializer is not a field or range initializer"_sv;
     print_source_snippet(ctx, error.extended_diagnostic, source, source_info);
     error.extended_diagnostic += " matrix initializers must be field or range initializers"_sv;
@@ -26,7 +26,7 @@ namespace vush {
   {
     Source_Info const source_info = initializer->source_info;
     Error error = error_from_source(ctx.allocator, source_info);
-    anton::String_View const source = ctx.find_source(source_info.source_path)->data;
+    anton::String_View const source = ctx.source_registry->find_source(source_info.source_path)->data;
     error.diagnostic = "error: initializer is not field initializer"_sv;
     print_source_snippet(ctx, error.extended_diagnostic, source, source_info);
     error.extended_diagnostic += " struct initializers must be field initializers"_sv;

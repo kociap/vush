@@ -3,6 +3,7 @@
 #include <anton/assert.hpp>
 
 #include <vush_ast/ast.hpp>
+#include <vush_ast_passes/diagnostics.hpp>
 #include <vush_core/context.hpp>
 #include <vush_core/scoped_map.hpp>
 #include <vush_diagnostics/diagnostics.hpp>

@@ -3,25 +3,7 @@
 #include <vush_ast/ast.hpp>
 
 namespace vush {
-  Context::Context(Allocator* const allocator)
-    : allocator(allocator), source_registry(allocator), types(allocator)
-  {
-  }
-
-  Source_Data const* Context::find_source(anton::String_View const name) const
-  {
-    auto result = source_registry.find(name);
-    if(result != source_registry.end()) {
-      return &result->value;
-    } else {
-      return nullptr;
-    }
-  }
-
-  void Context::add_source(Source_Data source)
-  {
-    source_registry.emplace(source.name, ANTON_MOV(source));
-  }
+  Context::Context(Allocator* const allocator): allocator(allocator), types(allocator) {}
 
   ast::Type const* Context::find_node_type(ast::Node const* node) const
   {
