@@ -9312,15 +9312,6 @@ namespace vush {
       ALLOC_FUNCTION("operator-"_sv, ALLOC_BUILTIN(e_dvec4),
                      *ALLOC_ARRAY_PARAM(ALLOC_PARAM("value"_sv, ALLOC_BUILTIN(e_dvec4)))));
     group_143->overloads.push_back(
-      ALLOC_FUNCTION("operator-"_sv, ALLOC_BUILTIN(e_bvec2),
-                     *ALLOC_ARRAY_PARAM(ALLOC_PARAM("value"_sv, ALLOC_BUILTIN(e_bvec2)))));
-    group_143->overloads.push_back(
-      ALLOC_FUNCTION("operator-"_sv, ALLOC_BUILTIN(e_bvec3),
-                     *ALLOC_ARRAY_PARAM(ALLOC_PARAM("value"_sv, ALLOC_BUILTIN(e_bvec3)))));
-    group_143->overloads.push_back(
-      ALLOC_FUNCTION("operator-"_sv, ALLOC_BUILTIN(e_bvec4),
-                     *ALLOC_ARRAY_PARAM(ALLOC_PARAM("value"_sv, ALLOC_BUILTIN(e_bvec4)))));
-    group_143->overloads.push_back(
       ALLOC_FUNCTION("operator-"_sv, ALLOC_BUILTIN(e_ivec2),
                      *ALLOC_ARRAY_PARAM(ALLOC_PARAM("value"_sv, ALLOC_BUILTIN(e_ivec2)))));
     group_143->overloads.push_back(
