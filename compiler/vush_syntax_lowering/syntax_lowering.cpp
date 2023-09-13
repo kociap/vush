@@ -367,13 +367,7 @@ namespace vush {
 
     case Syntax_Node_Kind::expr_parentheses: {
       Syntax_Node const& expression_node = get_expr_parentheses_expression(node);
-      anton::Expected<ast::Expr*, Error> expression = transform_expr(ctx, expression_node);
-      if(!expression) {
-        return ANTON_MOV(expression);
-      }
-
-      return {anton::expected_value,
-              allocate<ast::Expr_Parentheses>(ctx.allocator, expression.value(), node.source_info)};
+      return transform_expr(ctx, expression_node);
     } break;
 
     case Syntax_Node_Kind::expr_reinterpret: {

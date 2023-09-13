@@ -286,11 +286,6 @@ namespace vush {
       return anton::expected_value;
     }
 
-    case ast::Node_Kind::expr_parentheses: {
-      ast::Expr_Parentheses* const node = static_cast<ast::Expr_Parentheses*>(expression);
-      return defcheck_expression(ctx, symtable, node->expression);
-    }
-
     case ast::Node_Kind::expr_assignment: {
       ast::Expr_Assignment* const node = static_cast<ast::Expr_Assignment*>(expression);
       if(anton::Expected<void, Error> lhs = defcheck_expression(ctx, symtable, node->lhs); !lhs) {

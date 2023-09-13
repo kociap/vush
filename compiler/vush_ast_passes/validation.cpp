@@ -303,16 +303,6 @@ namespace vush {
       return anton::expected_value;
     } break;
 
-    case ast::Node_Kind::expr_parentheses: {
-      ast::Expr_Parentheses const* const expr = static_cast<ast::Expr_Parentheses const*>(node);
-      anton::Expected<void, Error> result = validate_expression(ctx, expr->expression);
-      if(!result) {
-        return ANTON_MOV(result);
-      }
-
-      return anton::expected_value;
-    } break;
-
     case ast::Node_Kind::expr_reinterpret: {
       // TODO: Implement.
       return anton::expected_value;

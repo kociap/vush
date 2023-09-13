@@ -40,7 +40,6 @@ namespace vush::ast {
     expr_call,
     expr_field,
     expr_index,
-    expr_parentheses,
     expr_reinterpret,
     expr_default,
     lt_bool,
@@ -557,15 +556,6 @@ namespace vush::ast {
 
     constexpr Expr_Index(Expr* base, Expr* index, Source_Info const& source_info)
       : Expr(source_info, Node_Kind::expr_index), base(base), index(index)
-    {
-    }
-  };
-
-  struct Expr_Parentheses: public Expr {
-    Expr* expression;
-
-    constexpr Expr_Parentheses(Expr* expression, Source_Info const& source_info)
-      : Expr(source_info, Node_Kind::expr_parentheses), expression(expression)
     {
     }
   };
