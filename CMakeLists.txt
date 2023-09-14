@@ -77,7 +77,6 @@ target_sources(vush
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_autogen/builtin_symbols.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_autogen/syntax_accessors.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_autogen/syntax_accessors.hpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_core/context.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_core/context.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_core/either.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_core/memory.hpp"

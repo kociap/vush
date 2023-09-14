@@ -446,6 +446,9 @@ namespace vush::ast {
 
   struct Expr: public Node {
     using Node::Node;
+
+    // The type of the result of the expression.
+    Type const* evaluated_type = nullptr;
   };
 
   struct Expr_If: public Expr {

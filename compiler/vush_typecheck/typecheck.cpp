@@ -24,7 +24,7 @@ namespace vush {
   // a cache within Context.
   //
   [[nodiscard]] static anton::Expected<ast::Type const*, Error>
-  evaluate_expression_type(Context& ctx, ast::Node* const node);
+  evaluate_expression_type(Context& ctx, ast::Expr* const node);
 
   // evaluate_vector_field
   //
@@ -319,62 +319,61 @@ namespace vush {
   }
 
   anton::Expected<ast::Type const*, Error> evaluate_expression_type(Context& ctx,
-                                                                    ast::Node* const node)
+                                                                    ast::Expr* const generic_expr)
   {
-    ast::Type const* const cached_type = ctx.find_node_type(node);
-    if(cached_type) {
-      return {anton::expected_value, cached_type};
+    if(generic_expr->evaluated_type) {
+      return {anton::expected_value, generic_expr->evaluated_type};
     }
 
-    switch(node->node_kind) {
+    switch(generic_expr->node_kind) {
     case ast::Node_Kind::lt_bool: {
       ast::Type const* const type = get_builtin_type(ast::Type_Builtin_Kind::e_bool);
-      ctx.add_node_type(node, type);
+      generic_expr->evaluated_type = type;
       return {anton::expected_value, type};
     } break;
 
     case ast::Node_Kind::lt_integer: {
-      ast::Lt_Integer const* const lt = static_cast<ast::Lt_Integer const*>(node);
+      ast::Lt_Integer const* const lt = static_cast<ast::Lt_Integer const*>(generic_expr);
       switch(lt->kind) {
       case ast::Lt_Integer_Kind::i32: {
         ast::Type const* const type = get_builtin_type(ast::Type_Builtin_Kind::e_int);
-        ctx.add_node_type(node, type);
+        generic_expr->evaluated_type = type;
         return {anton::expected_value, type};
       }
 
       case ast::Lt_Integer_Kind::u32: {
         ast::Type const* const type = get_builtin_type(ast::Type_Builtin_Kind::e_uint);
-        ctx.add_node_type(node, type);
+        generic_expr->evaluated_type = type;
         return {anton::expected_value, type};
       }
       }
     } break;
 
     case ast::Node_Kind::lt_float: {
-      ast::Lt_Float const* const lt = static_cast<ast::Lt_Float const*>(node);
+      ast::Lt_Float const* const lt = static_cast<ast::Lt_Float const*>(generic_expr);
       switch(lt->kind) {
       case ast::Lt_Float_Kind::f32: {
         ast::Type const* const type = get_builtin_type(ast::Type_Builtin_Kind::e_float);
-        ctx.add_node_type(node, type);
+        generic_expr->evaluated_type = type;
         return {anton::expected_value, type};
       }
 
       case ast::Lt_Float_Kind::f64: {
         ast::Type const* const type = get_builtin_type(ast::Type_Builtin_Kind::e_double);
-        ctx.add_node_type(node, type);
+        generic_expr->evaluated_type = type;
         return {anton::expected_value, type};
       }
       }
     } break;
 
     case ast::Node_Kind::expr_identifier: {
-      auto const expr = static_cast<ast::Expr_Identifier const*>(node);
+      auto const expr = static_cast<ast::Expr_Identifier const*>(generic_expr);
       ast::Node const* const definition = expr->definition;
       switch(definition->node_kind) {
       case ast::Node_Kind::variable: {
         ast::Variable const* const variable = static_cast<ast::Variable const*>(definition);
         ast::Type const* const type = variable->type;
-        ctx.add_node_type(node, type);
+        generic_expr->evaluated_type = type;
         return {anton::expected_value, type};
       }
 
@@ -382,7 +381,7 @@ namespace vush {
         ast::Fn_Parameter const* const parameter =
           static_cast<ast::Fn_Parameter const*>(definition);
         ast::Type const* const type = parameter->type;
-        ctx.add_node_type(node, type);
+        generic_expr->evaluated_type = type;
         return {anton::expected_value, type};
       }
 
@@ -394,7 +393,7 @@ namespace vush {
     } break;
 
     case ast::Node_Kind::expr_call: {
-      auto const expr = static_cast<ast::Expr_Call*>(node);
+      auto const expr = static_cast<ast::Expr_Call*>(generic_expr);
       ast::Overload_Group const* const group = expr->overload_group;
       ANTON_ASSERT(group != nullptr, "expr_call has no group");
       // Always evaluate all arguments before doing overload resolution. The types are cached, so there is no risk of
@@ -415,12 +414,12 @@ namespace vush {
       auto const fn = result.value();
       expr->function = fn;
       ast::Type const* const type = fn->return_type;
-      ctx.add_node_type(node, type);
+      generic_expr->evaluated_type = type;
       return {anton::expected_value, type};
     } break;
 
     case ast::Node_Kind::expr_init: {
-      ast::Expr_Init const* const expr = static_cast<ast::Expr_Init const*>(node);
+      ast::Expr_Init const* const expr = static_cast<ast::Expr_Init const*>(generic_expr);
 
       // TODO: Separate diagnostics for each type kind.
       ast::Type const* generic_type = expr->type;
@@ -489,18 +488,19 @@ namespace vush {
       } break;
 
       default:
-        ANTON_ASSERT(false, "invalid node kind");
+        ANTON_ASSERT(false, "invalid generic_expr kind");
         ANTON_UNREACHABLE();
       }
 
-      ctx.add_node_type(node, expr->type);
+      generic_expr->evaluated_type = expr->type;
       return {anton::expected_value, expr->type};
     } break;
 
     case ast::Node_Kind::expr_assignment: {
       // TODO: We have to verify that the type we are assigning to is not an opaque type
       //       or a struct with opaque types.
-      ast::Expr_Assignment const* const expr = static_cast<ast::Expr_Assignment const*>(node);
+      ast::Expr_Assignment const* const expr =
+        static_cast<ast::Expr_Assignment const*>(generic_expr);
       anton::Expected<ast::Type const*, Error> result_lhs =
         evaluate_expression_type(ctx, expr->lhs);
       if(!result_lhs) {
@@ -516,7 +516,7 @@ namespace vush {
       ast::Type const* const lhs_type = result_lhs.value();
       ast::Type const* const rhs_type = result_rhs.value();
       if(is_convertible(lhs_type, rhs_type)) {
-        ctx.add_node_type(node, lhs_type);
+        generic_expr->evaluated_type = lhs_type;
         return {anton::expected_value, lhs_type};
       } else {
         return {anton::expected_error, err_no_assignment_operator(ctx, rhs_type, lhs_type, expr)};
@@ -524,7 +524,7 @@ namespace vush {
     } break;
 
     case ast::Node_Kind::expr_if: {
-      ast::Expr_If const* const expr = static_cast<ast::Expr_If const*>(node);
+      ast::Expr_If const* const expr = static_cast<ast::Expr_If const*>(generic_expr);
       anton::Expected<ast::Type const*, Error> condition_result =
         evaluate_expression_type(ctx, expr->condition);
       if(!condition_result) {
@@ -559,12 +559,12 @@ namespace vush {
                                                      expr->else_branch)};
       }
 
-      ctx.add_node_type(node, then_type);
+      generic_expr->evaluated_type = then_type;
       return {anton::expected_value, then_type};
     } break;
 
     case ast::Node_Kind::expr_index: {
-      ast::Expr_Index const* const expr = static_cast<ast::Expr_Index const*>(node);
+      ast::Expr_Index const* const expr = static_cast<ast::Expr_Index const*>(generic_expr);
       anton::Expected<ast::Type const*, Error> base_result =
         evaluate_expression_type(ctx, expr->base);
       if(!base_result) {
@@ -589,12 +589,12 @@ namespace vush {
       }
 
       auto const base_type = static_cast<ast::Type_Array const*>(generic_base_type);
-      ctx.add_node_type(node, base_type->base);
+      generic_expr->evaluated_type = base_type->base;
       return {anton::expected_value, base_type->base};
     } break;
 
     case ast::Node_Kind::expr_field: {
-      ast::Expr_Field const* const expr = static_cast<ast::Expr_Field const*>(node);
+      ast::Expr_Field const* const expr = static_cast<ast::Expr_Field const*>(generic_expr);
       anton::Expected<ast::Type const*, Error> result = evaluate_expression_type(ctx, expr->base);
       if(!result) {
         return ANTON_MOV(result);
@@ -610,13 +610,13 @@ namespace vush {
         if(is_vector(*type)) {
           auto field_result = evaluate_vector_field(ctx, *type, expr->member);
           if(field_result) {
-            ctx.add_node_type(expr, field_result.value());
+            generic_expr->evaluated_type = field_result.value();
           }
           return ANTON_MOV(field_result);
         } else if(is_matrix(*type)) {
           auto field_result = evaluate_matrix_field(ctx, *type, expr->member);
           if(field_result) {
-            ctx.add_node_type(expr, field_result.value());
+            generic_expr->evaluated_type = field_result.value();
           }
           return ANTON_MOV(field_result);
         } else {
@@ -633,7 +633,7 @@ namespace vush {
             continue;
           }
 
-          ctx.add_node_type(node, member->type);
+          generic_expr->evaluated_type = member->type;
           return {anton::expected_value, member->type};
         }
 
@@ -647,7 +647,7 @@ namespace vush {
       } break;
 
       default:
-        ANTON_ASSERT(false, "invalid node kind");
+        ANTON_ASSERT(false, "invalid generic_expr kind");
         ANTON_UNREACHABLE();
       }
     } break;

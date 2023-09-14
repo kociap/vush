@@ -361,13 +361,15 @@ namespace vush {
     {
       Source_Registry registry(&allocator);
 
-      Context ctx(&allocator);
-      ctx.source_import_cb = callback;
-      ctx.source_import_user_data = user_data;
-      ctx.source_definition_cb = config.source_definition_cb;
-      ctx.source_definition_user_data = config.source_definition_user_data;
-      ctx.diagnostics = config.diagnostics;
-      ctx.source_registry = &registry;
+      Context ctx{
+        .allocator = &allocator,
+        .source_import_cb = callback,
+        .source_import_user_data = user_data,
+        .source_definition_cb = config.source_definition_cb,
+        .source_definition_user_data = config.source_definition_user_data,
+        .diagnostics = config.diagnostics,
+        .source_registry = &registry,
+      };
 
       // TODO: Fix constant defines.
       // Create symbols for the constant defines passed via config.

@@ -512,7 +512,7 @@ namespace vush {
       if(!first) {
         result += ", "_sv;
       }
-      result += stringify_type(ctx.allocator, parameter->type);
+      result += stringify_type(ctx, parameter->type);
       result += " "_sv;
       result += parameter->identifier.value;
 

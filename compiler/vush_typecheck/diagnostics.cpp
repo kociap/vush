@@ -15,7 +15,7 @@ namespace vush {
     anton::String result(ctx.allocator);
     result += "("_sv;
     for(bool first = true; ast::Expr const* const argument: arguments) {
-      ast::Type const* const type = ctx.find_node_type(argument);
+      ast::Type const* const type = argument->evaluated_type;
       ANTON_ASSERT(type != nullptr, "argument does not have type");
       if(!first) {
         result += ", "_sv;
@@ -41,7 +41,8 @@ namespace vush {
         anton::format("error: no matching function for call to '{}' with arguments '{}'"_sv,
                       call->identifier.value, arguments);
     }
-    anton::String_View const source = ctx.source_registry->find_source(call->source_info.source_path)->data;
+    anton::String_View const source =
+      ctx.source_registry->find_source(call->source_info.source_path)->data;
     print_source_snippet(ctx, error.extended_diagnostic, source, call->identifier.source_info);
     for(ast::Decl_Function const* const fn: overloads) {
       auto result = ctx.source_registry->find_source(fn->source_info.source_path);
@@ -83,7 +84,8 @@ namespace vush {
     anton::String arguments = stringify_call_argument_types(ctx, call->arguments);
     error.diagnostic = anton::format("error: ambiguous call to '{}' with arguments '{}'"_sv,
                                      call->identifier.value, arguments);
-    anton::String_View const source = ctx.source_registry->find_source(call->source_info.source_path)->data;
+    anton::String_View const source =
+      ctx.source_registry->find_source(call->source_info.source_path)->data;
     print_source_snippet(ctx, error.extended_diagnostic, source, call->source_info);
     for(ast::Decl_Function const* const fn: candidates) {
       error.extended_diagnostic += '\n';
@@ -134,7 +136,8 @@ namespace vush {
     anton::String to_string = stringify_type(ctx, to_type);
     error.diagnostic =
       anton::format("error: no viable assignment from '{}' to '{}'"_sv, from_string, to_string);
-    anton::String_View const source = ctx.source_registry->find_source(expr->source_info.source_path)->data;
+    anton::String_View const source =
+      ctx.source_registry->find_source(expr->source_info.source_path)->data;
     print_source_snippet(ctx, error.extended_diagnostic, source, expr->source_info);
     error.extended_diagnostic +=
       anton::format(" '{}' cannot be assigned to '{}'"_sv, from_string, to_string);
@@ -145,7 +148,8 @@ namespace vush {
   {
     Source_Info const source_info = field.source_info;
     Error error = error_from_source(ctx.allocator, source_info);
-    anton::String_View const source = ctx.source_registry->find_source(source_info.source_path)->data;
+    anton::String_View const source =
+      ctx.source_registry->find_source(source_info.source_path)->data;
     anton::String_View const field_code = get_source_bit(source, source_info);
     error.diagnostic = anton::format("error: invalid vector swizzle '{}'"_sv, field_code);
     print_source_snippet(ctx, error.extended_diagnostic, source, source_info);
@@ -159,7 +163,8 @@ namespace vush {
   {
     Source_Info const source_info = field.source_info;
     Error error = error_from_source(ctx.allocator, source_info);
-    anton::String_View const source = ctx.source_registry->find_source(source_info.source_path)->data;
+    anton::String_View const source =
+      ctx.source_registry->find_source(source_info.source_path)->data;
     anton::String_View const field_code = get_source_bit(source, source_info);
     error.diagnostic =
       anton::format("error: vector swizzle '{}' overlong for type '{}'"_sv, field_code, ""_sv);
@@ -181,9 +186,11 @@ namespace vush {
     Source_Info const field_source_info = field_identifier.source_info;
     Source_Info const type_source_info = type->source_info;
     Error error = error_from_source(ctx.allocator, field_source_info);
-    anton::String_View const type_source = ctx.source_registry->find_source(type_source_info.source_path)->data;
+    anton::String_View const type_source =
+      ctx.source_registry->find_source(type_source_info.source_path)->data;
     anton::String_View const type_value = get_source_bit(type_source, type_source_info);
-    anton::String_View const field_source = ctx.source_registry->find_source(field_source_info.source_path)->data;
+    anton::String_View const field_source =
+      ctx.source_registry->find_source(field_source_info.source_path)->data;
     anton::String_View const field_value = get_source_bit(field_source, field_source_info);
     error.diagnostic =
       anton::format("error: '{}' does not have field '{}'"_sv, type_value, field_value);
