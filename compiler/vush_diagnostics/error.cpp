@@ -14,9 +14,10 @@ namespace vush {
     anton::String error_message{anton::reserve, size, allocator};
     error_message += format_diagnostic_location(allocator, source, line, column);
     error_message += diagnostic;
+    error_message += "\n"_sv;
     if(include_extended_diagnostic && extended_diagnostic.size_bytes() > 0) {
-      error_message += "\n"_sv;
       error_message += extended_diagnostic;
+      error_message += "\n"_sv;
     }
     return error_message;
   }
