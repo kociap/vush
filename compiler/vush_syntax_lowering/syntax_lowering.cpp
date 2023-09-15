@@ -137,11 +137,10 @@ namespace vush {
                 allocate<ast::Type_Builtin>(ctx.allocator, qualifiers, enumified.value(),
                                             node.source_info)};
       } else {
-        // We allocate the String for the value as the syntax tokens are destroyed at a later stage.
-        anton::String const* const value =
-          allocate<anton::String>(ctx.allocator, value_token.value, ctx.allocator);
         return {anton::expected_value,
-                allocate<ast::Type_Struct>(ctx.allocator, qualifiers, *value, node.source_info)};
+                allocate<ast::Type_Struct>(ctx.allocator, qualifiers,
+                                           anton::String(value_token.value, ctx.allocator),
+                                           node.source_info)};
       }
     } break;
 
@@ -959,8 +958,8 @@ namespace vush {
       }
 
       members.push_back(allocate<ast::Struct_Field>(ctx.allocator, attribute_list.value(),
-                                                     identifier, type.value(), initializer,
-                                                     node.source_info));
+                                                    identifier, type.value(), initializer,
+                                                    node.source_info));
     }
 
     ast::Identifier const identifier = transform_identifier(ctx, get_decl_struct_identifier(node));

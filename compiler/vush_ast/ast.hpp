@@ -286,17 +286,16 @@ namespace vush::ast {
 
   struct Type_Struct: public Type {
     // The identifier value, that is the name of the type.
-    anton::String_View value;
+    anton::String value;
     Decl_Struct* definition = nullptr;
 
-    constexpr Type_Struct(anton::String_View value, Source_Info const& source_info)
-      : Type(source_info, Node_Kind::type_struct), value(value)
+    Type_Struct(anton::String&& value, Source_Info const& source_info)
+      : Type(source_info, Node_Kind::type_struct), value(ANTON_MOV(value))
     {
     }
 
-    constexpr Type_Struct(Qualifiers qualifiers, anton::String_View value,
-                          Source_Info const& source_info)
-      : Type(qualifiers, source_info, Node_Kind::type_struct), value(value)
+    Type_Struct(Qualifiers qualifiers, anton::String&& value, Source_Info const& source_info)
+      : Type(qualifiers, source_info, Node_Kind::type_struct), value(ANTON_MOV(value))
     {
     }
   };
