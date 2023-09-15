@@ -23,7 +23,7 @@ namespace vush::ast {
     variable,
 
     fn_parameter,
-    struct_member,
+    struct_field,
 
     decl_struct,
     decl_function,
@@ -351,16 +351,16 @@ namespace vush::ast {
     }
   };
 
-  struct Struct_Member: public Node {
+  struct Struct_Field: public Node {
     Attr_List attributes;
     Identifier identifier;
     Type* type;
-    // nullptr when the member does not have an initializer.
+    // nullptr when the field does not have an initializer.
     Expr* initializer;
 
-    constexpr Struct_Member(Attr_List attributes, Identifier identifier, Type* type,
-                            Expr* initializer, Source_Info const& source_info)
-      : Node(source_info, Node_Kind::struct_member), attributes(attributes), identifier(identifier),
+    constexpr Struct_Field(Attr_List attributes, Identifier identifier, Type* type,
+                           Expr* initializer, Source_Info const& source_info)
+      : Node(source_info, Node_Kind::struct_field), attributes(attributes), identifier(identifier),
         type(type), initializer(initializer)
     {
     }
@@ -368,11 +368,10 @@ namespace vush::ast {
 
   struct Decl_Struct: public Node {
     Identifier identifier;
-    Member_List members;
+    Field_List fields;
 
-    constexpr Decl_Struct(Identifier identifier, Member_List members,
-                          Source_Info const& source_info)
-      : Node(source_info, Node_Kind::decl_struct), identifier(identifier), members(members)
+    constexpr Decl_Struct(Identifier identifier, Field_List fields, Source_Info const& source_info)
+      : Node(source_info, Node_Kind::decl_struct), identifier(identifier), fields(fields)
     {
     }
   };
@@ -545,10 +544,10 @@ namespace vush::ast {
 
   struct Expr_Field: public Expr {
     Expr* base;
-    Identifier member;
+    Identifier field;
 
-    constexpr Expr_Field(Expr* base, Identifier member, Source_Info const& source_info)
-      : Expr(source_info, Node_Kind::expr_field), base(base), member(member)
+    constexpr Expr_Field(Expr* base, Identifier field, Source_Info const& source_info)
+      : Expr(source_info, Node_Kind::expr_field), base(base), field(field)
     {
     }
   };

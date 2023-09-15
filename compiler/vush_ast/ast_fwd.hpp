@@ -30,7 +30,7 @@ namespace vush::ast {
   struct Variable;
 
   struct Fn_Parameter;
-  struct Struct_Member;
+  struct Struct_Field;
 
   struct Decl_Struct;
   struct Decl_Function;
@@ -74,5 +74,5 @@ namespace vush::ast {
   using Expr_List = anton::Slice<Expr* const>;
   using Fn_Parameter_List = anton::Slice<Fn_Parameter* const>;
   using Initializer_List = anton::Slice<Initializer* const>;
-  using Member_List = anton::Slice<Struct_Member* const>;
+  using Field_List = anton::Slice<Struct_Field* const>;
 } // namespace vush::ast

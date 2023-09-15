@@ -448,19 +448,19 @@ namespace vush {
       case ast::Node_Kind::type_struct: {
         ast::Type_Struct const* const type = static_cast<ast::Type_Struct const*>(generic_type);
         ast::Decl_Struct const* const decl = type->definition;
-        ast::Member_List::iterator const members_begin = decl->members.begin();
-        ast::Member_List::iterator const members_end = decl->members.end();
+        ast::Field_List::iterator const fields_begin = decl->fields.begin();
+        ast::Field_List::iterator const fields_end = decl->fields.end();
         for(ast::Initializer const* const generic_initializer: expr->initializers) {
           ANTON_ASSERT(generic_initializer->node_kind == ast::Node_Kind::named_initializer,
                        "struct initializer is not named_initializer");
           ast::Named_Initializer const* const initializer =
             static_cast<ast::Named_Initializer const*>(generic_initializer);
           anton::String_View const identifier = initializer->identifier.value;
-          ast::Member_List::iterator const member = anton::find_if(
-            members_begin, members_end, [identifier](ast::Struct_Member const* const member) {
-              return member->identifier.value == identifier;
+          ast::Field_List::iterator const field = anton::find_if(
+            fields_begin, fields_end, [identifier](ast::Struct_Field const* const field) {
+              return field->identifier.value == identifier;
             });
-          if(member == members_end) {
+          if(field == fields_end) {
             return {anton::expected_error,
                     err_named_initializer_no_field_named(ctx, decl, initializer)};
           }
@@ -471,7 +471,7 @@ namespace vush {
             return ANTON_MOV(result);
           }
 
-          ast::Type const* const field_type = (*member)->type;
+          ast::Type const* const field_type = (*field)->type;
           ast::Type const* const initializer_type = result.value();
           if(!is_convertible(field_type, initializer_type)) {
             return {anton::expected_error,
@@ -608,42 +608,40 @@ namespace vush {
       case ast::Node_Kind::type_builtin: {
         auto const type = static_cast<ast::Type_Builtin const*>(generic_type);
         if(is_vector(*type)) {
-          auto field_result = evaluate_vector_field(ctx, *type, expr->member);
+          auto field_result = evaluate_vector_field(ctx, *type, expr->field);
           if(field_result) {
             generic_expr->evaluated_type = field_result.value();
           }
           return ANTON_MOV(field_result);
         } else if(is_matrix(*type)) {
-          auto field_result = evaluate_matrix_field(ctx, *type, expr->member);
+          auto field_result = evaluate_matrix_field(ctx, *type, expr->field);
           if(field_result) {
             generic_expr->evaluated_type = field_result.value();
           }
           return ANTON_MOV(field_result);
         } else {
           return {anton::expected_error,
-                  err_builtin_type_has_no_member_named(ctx, generic_type, expr->member)};
+                  err_builtin_type_has_no_member_named(ctx, generic_type, expr->field)};
         }
       } break;
 
       case ast::Node_Kind::type_struct: {
         ast::Type_Struct const* const type = static_cast<ast::Type_Struct const*>(generic_type);
         ast::Decl_Struct const* const decl = type->definition;
-        for(ast::Struct_Member const* const member: decl->members) {
-          if(member->identifier.value != expr->member.value) {
+        for(ast::Struct_Field const* const field: decl->fields) {
+          if(field->identifier.value != expr->field.value) {
             continue;
           }
 
-          generic_expr->evaluated_type = member->type;
-          return {anton::expected_value, member->type};
+          generic_expr->evaluated_type = field->type;
+          return {anton::expected_value, field->type};
         }
 
-        return {anton::expected_error,
-                err_type_has_no_field_named(ctx, generic_type, expr->member)};
+        return {anton::expected_error, err_type_has_no_field_named(ctx, generic_type, expr->field)};
       } break;
 
       case ast::Node_Kind::type_array: {
-        return {anton::expected_error,
-                err_type_has_no_field_named(ctx, generic_type, expr->member)};
+        return {anton::expected_error, err_type_has_no_field_named(ctx, generic_type, expr->field)};
       } break;
 
       default:

@@ -535,14 +535,14 @@ namespace vush {
   [[nodiscard]] static anton::Expected<void, Error>
   validate_struct(Context const& ctx, ast::Decl_Struct const* const dstruct)
   {
-    if(dstruct->members.size() == 0) {
+    if(dstruct->fields.size() == 0) {
       return {anton::expected_error, err_empty_struct(ctx, dstruct->identifier.source_info)};
     }
 
     // Member types must be complete types and must not be self.
-    for(ast::Struct_Member const* const member: dstruct->members) {
+    for(ast::Struct_Field const* const field: dstruct->fields) {
       anton::Expected<void, Error> result =
-        validate_struct_member_type(ctx, *member->type, dstruct->identifier);
+        validate_struct_member_type(ctx, *field->type, dstruct->identifier);
       if(!result) {
         return result;
       }
@@ -551,13 +551,13 @@ namespace vush {
     // Member names must be unique.
     {
       anton::Flat_Hash_Map<anton::String_View, ast::Identifier> member_identifiers;
-      for(ast::Struct_Member const* const member: dstruct->members) {
-        auto iter = member_identifiers.find(member->identifier.value);
+      for(ast::Struct_Field const* const field: dstruct->fields) {
+        auto iter = member_identifiers.find(field->identifier.value);
         if(iter != member_identifiers.end()) {
           return {anton::expected_error,
-                  err_duplicate_struct_member(ctx, iter->value.source_info, member->source_info)};
+                  err_duplicate_struct_member(ctx, iter->value.source_info, field->source_info)};
         } else {
-          member_identifiers.emplace(member->identifier.value, member->identifier);
+          member_identifiers.emplace(field->identifier.value, field->identifier);
         }
       }
     }

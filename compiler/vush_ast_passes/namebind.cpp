@@ -227,7 +227,7 @@ namespace vush {
         case ast::Node_Kind::named_initializer: {
           ast::Named_Initializer* const initializer =
             static_cast<ast::Named_Initializer*>(generic_initializer);
-          // Checking struct members is done at typecheck stage, hence we do not check the
+          // Checking struct fields is done at typecheck stage, hence we do not check the
           // identifier.
           anton::Expected<void, Error> result =
             defcheck_expression(ctx, symtable, initializer->expression);
@@ -473,8 +473,8 @@ namespace vush {
   [[nodiscard]] static anton::Expected<void, Error>
   defcheck_struct(Context& ctx, Symbol_Table& symtable, ast::Decl_Struct* const d)
   {
-    for(ast::Struct_Member* const member: d->members) {
-      anton::Expected<void, Error> result = namebind_type(ctx, symtable, member->type);
+    for(ast::Struct_Field* const field: d->fields) {
+      anton::Expected<void, Error> result = namebind_type(ctx, symtable, field->type);
       if(!result) {
         return ANTON_MOV(result);
       }

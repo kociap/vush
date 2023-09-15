@@ -926,7 +926,7 @@ namespace vush {
   [[nodiscard]] static anton::Expected<ast::Decl_Struct*, Error>
   transform_decl_struct(Context const& ctx, Syntax_Node const& node)
   {
-    auto& members = *allocate<Array<ast::Struct_Member*>>(ctx.allocator, ctx.allocator);
+    auto& members = *allocate<Array<ast::Struct_Field*>>(ctx.allocator, ctx.allocator);
     Syntax_Node const& members_node = get_decl_struct_members(node);
     for(SNOT const& member_snot: members_node.children) {
       if(!member_snot.is_left()) {
@@ -958,7 +958,7 @@ namespace vush {
         }
       }
 
-      members.push_back(allocate<ast::Struct_Member>(ctx.allocator, attribute_list.value(),
+      members.push_back(allocate<ast::Struct_Field>(ctx.allocator, attribute_list.value(),
                                                      identifier, type.value(), initializer,
                                                      node.source_info));
     }
