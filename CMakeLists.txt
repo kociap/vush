@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.18)
 include(FetchContent)
 
 project(vush CXX)
@@ -34,9 +34,17 @@ if(VUSH_COMPILER_CLANGPP)
     -Wno-invalid-unevaluated-string # Fires in asserts causing spam
     -Wno-missing-field-initializers # TODO: Temporarily because of spam from vush_diagnostics/diagnostics.hpp
   )
+
+  set(VUSH_BUILTINS_NO_OPTIMISATIONS
+    -O0
+  )
 elseif(MSVC)
   set(VUSH_COMPILE_FLAGS
     /GF # Kill duplicated strings
+  )
+
+  set(VUSH_BUILTINS_NO_OPTIMISATIONS
+    /Od
   )
 endif()
 
@@ -58,6 +66,12 @@ set_target_properties(vush PROPERTIES CXX_STANDARD 20 CXX_EXTENSIONS OFF)
 target_compile_options(vush PRIVATE ${VUSH_COMPILE_FLAGS})
 target_link_libraries(vush PUBLIC anton_core)
 target_include_directories(vush PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/compiler")
+# Disable optimisations in the builtins source file.
+set_source_files_properties(
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_autogen/builtin_functions.cpp"
+  PROPERTIES
+  COMPILE_OPTIONS ${VUSH_BUILTINS_NO_OPTIMISATIONS}
+)
 target_sources(vush
   PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush.cpp"
@@ -67,13 +81,16 @@ target_sources(vush
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast/ast.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast/ast.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast/ast_fwd.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast/type_layout.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast/type_layout.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast_passes/diagnostics.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast_passes/diagnostics.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast_passes/namebind.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast_passes/overload_group.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast_passes/passes.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast_passes/validation.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_autogen/builtin_symbols.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_autogen/builtin_functions.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_autogen/builtin_types.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_autogen/builtin_symbols.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_autogen/syntax_accessors.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_autogen/syntax_accessors.hpp"
@@ -82,6 +99,8 @@ target_sources(vush
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_core/memory.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_core/scoped_map.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_core/source_info.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_core/source_registry.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_core/source_registry.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_core/types.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_diagnostics/diagnostics.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_diagnostics/diagnostics.hpp"

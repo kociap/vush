@@ -133,14 +133,14 @@ namespace vush {
       anton::Optional<ast::Type_Builtin_Kind> enumified =
         ast::enumify_builtin_type_kind(value_token.value);
       if(enumified) {
-        return {anton::expected_value,
-                allocate<ast::Type_Builtin>(ctx.allocator, qualifiers, enumified.value(),
-                                            node.source_info)};
+        ast::Type_Builtin_Kind const kind = enumified.value();
+        Type_Layout const layout = get_builtin_type_layout(kind);
+        return {anton::expected_value, allocate<ast::Type_Builtin>(ctx.allocator, node.source_info,
+                                                                   qualifiers, kind, layout)};
       } else {
         return {anton::expected_value,
-                allocate<ast::Type_Struct>(ctx.allocator, qualifiers,
-                                           anton::String(value_token.value, ctx.allocator),
-                                           node.source_info)};
+                allocate<ast::Type_Struct>(ctx.allocator, node.source_info, qualifiers,
+                                           anton::String(value_token.value, ctx.allocator))};
       }
     } break;
 
@@ -166,9 +166,8 @@ namespace vush {
         }
       }
 
-      return {
-        anton::expected_value,
-        allocate<ast::Type_Array>(ctx.allocator, qualifiers, base.value(), size, node.source_info)};
+      return {anton::expected_value, allocate<ast::Type_Array>(ctx.allocator, node.source_info,
+                                                               qualifiers, base.value(), size)};
     } break;
 
     default:

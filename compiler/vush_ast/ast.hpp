@@ -5,6 +5,7 @@
 #include <anton/string.hpp>
 
 #include <vush_ast/ast_fwd.hpp>
+#include <vush_ast/type_layout.hpp>
 #include <vush_core/either.hpp>
 #include <vush_core/source_info.hpp>
 #include <vush_core/types.hpp>
@@ -77,14 +78,22 @@ namespace vush::ast {
   };
 
   struct Type: public Node {
+    Type_Layout layout = {};
     Qualifiers qualifiers;
 
     constexpr Type(Source_Info const& source_info, Node_Kind node_kind)
       : Node(source_info, node_kind)
     {
     }
-    constexpr Type(Qualifiers qualifiers, Source_Info const& source_info, Node_Kind node_kind)
-      : Node(source_info, node_kind), qualifiers(qualifiers)
+
+    constexpr Type(Source_Info const& source_info, Node_Kind node_kind, Type_Layout layout)
+      : Node(source_info, node_kind), layout(layout)
+    {
+    }
+
+    constexpr Type(Source_Info const& source_info, Node_Kind node_kind, Type_Layout layout,
+                   Qualifiers qualifiers)
+      : Node(source_info, node_kind), layout(layout), qualifiers(qualifiers)
     {
     }
   };
@@ -272,14 +281,20 @@ namespace vush::ast {
   struct Type_Builtin: public Type {
     Type_Builtin_Kind value;
 
-    constexpr Type_Builtin(Type_Builtin_Kind value, Source_Info const& source_info)
+    constexpr Type_Builtin(Source_Info const& source_info, Type_Builtin_Kind value)
       : Type(source_info, Node_Kind::type_builtin), value(value)
     {
     }
 
-    constexpr Type_Builtin(Qualifiers qualifiers, Type_Builtin_Kind value,
-                           Source_Info const& source_info)
-      : Type(qualifiers, source_info, Node_Kind::type_builtin), value(value)
+    constexpr Type_Builtin(Source_Info const& source_info, Type_Builtin_Kind value,
+                           Type_Layout layout)
+      : Type(source_info, Node_Kind::type_builtin, layout), value(value)
+    {
+    }
+
+    constexpr Type_Builtin(Source_Info const& source_info, Qualifiers qualifiers,
+                           Type_Builtin_Kind value, Type_Layout layout)
+      : Type(source_info, Node_Kind::type_builtin, layout, qualifiers), value(value)
     {
     }
   };
@@ -289,13 +304,13 @@ namespace vush::ast {
     anton::String value;
     Decl_Struct* definition = nullptr;
 
-    Type_Struct(anton::String&& value, Source_Info const& source_info)
+    Type_Struct(Source_Info const& source_info, anton::String&& value)
       : Type(source_info, Node_Kind::type_struct), value(ANTON_MOV(value))
     {
     }
 
-    Type_Struct(Qualifiers qualifiers, anton::String&& value, Source_Info const& source_info)
-      : Type(qualifiers, source_info, Node_Kind::type_struct), value(ANTON_MOV(value))
+    Type_Struct(Source_Info const& source_info, Qualifiers qualifiers, anton::String&& value)
+      : Type(source_info, Node_Kind::type_struct, {}, qualifiers), value(ANTON_MOV(value))
     {
     }
   };
@@ -305,14 +320,14 @@ namespace vush::ast {
     // nullptr when the array is unsized.
     Lt_Integer* size;
 
-    constexpr Type_Array(Type* base, Lt_Integer* size, Source_Info const& source_info)
+    constexpr Type_Array(Source_Info const& source_info, Type* base, Lt_Integer* size)
       : Type(source_info, Node_Kind::type_array), base(base), size(size)
     {
     }
 
-    constexpr Type_Array(Qualifiers qualifiers, Type* base, Lt_Integer* size,
-                         Source_Info const& source_info)
-      : Type(qualifiers, source_info, Node_Kind::type_array), base(base), size(size)
+    constexpr Type_Array(Source_Info const& source_info, Qualifiers qualifiers, Type* base,
+                         Lt_Integer* size)
+      : Type(source_info, Node_Kind::type_array, {}, qualifiers), base(base), size(size)
     {
     }
   };
@@ -356,6 +371,7 @@ namespace vush::ast {
     Type* type;
     // nullptr when the field does not have an initializer.
     Expr* initializer;
+    i64 offset = 0;
 
     constexpr Struct_Field(Attr_List attributes, Identifier identifier, Type* type,
                            Expr* initializer, Source_Info const& source_info)
@@ -368,6 +384,7 @@ namespace vush::ast {
   struct Decl_Struct: public Node {
     Identifier identifier;
     Field_List fields;
+    Type_Layout layout;
 
     constexpr Decl_Struct(Identifier identifier, Field_List fields, Source_Info const& source_info)
       : Node(source_info, Node_Kind::decl_struct), identifier(identifier), fields(fields)
