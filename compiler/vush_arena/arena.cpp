@@ -4,17 +4,12 @@
 #include <anton/memory/core.hpp>
 #include <anton/swap.hpp>
 
-#include <malloc.h>
+#include <vush_core/memory.hpp>
 
 namespace vush {
-  [[nodiscard]] static u64 roundup_to_alignment(u64 v, u64 alignment)
-  {
-    return (v + (alignment - 1)) & ~(alignment - 1);
-  }
-
   [[nodiscard]] static void* align(void* const p, i64 const alignment)
   {
-    return reinterpret_cast<void*>(roundup_to_alignment(reinterpret_cast<u64>(p), alignment));
+    return reinterpret_cast<void*>(align_address(reinterpret_cast<u64>(p), alignment));
   }
 
   [[nodiscard]] static i64 difference(void* const a, void* const b)
@@ -59,7 +54,7 @@ namespace vush {
   Arena_Allocator::Block* Arena_Allocator::allocate_block(i64 const size, i64 const alignment)
   {
     i64 const allocation_alignment = anton::math::max(alignment, default_block_alignment);
-    i64 const header = roundup_to_alignment(sizeof(Block), allocation_alignment);
+    i64 const header = align_address(sizeof(Block), allocation_alignment);
     i64 const allocation_size = anton::math::max(size + header, default_block_size);
     void* const memory = anton::allocate(allocation_size, allocation_alignment);
     Block* const block = reinterpret_cast<Block*>(memory);
