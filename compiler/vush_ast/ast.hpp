@@ -632,14 +632,34 @@ namespace vush::ast {
   [[nodiscard]] anton::Strong_Ordering compare_integer_literals(Lt_Integer const& lhs,
                                                                 Lt_Integer const& rhs);
 
-  enum struct Lt_Float_Kind { f32, f64 };
+  enum struct Lt_Float_Kind : u8 { f32, f64 };
+
+  namespace detail {
+    template<Lt_Float_Kind Value>
+    struct Lt_Float_Tag {
+      explicit constexpr Lt_Float_Tag() = default;
+    };
+  } // namespace detail
+
+  constexpr detail::Lt_Float_Tag<Lt_Float_Kind::f32> lt_float_f32;
+  constexpr detail::Lt_Float_Tag<Lt_Float_Kind::f64> lt_float_f64;
 
   struct Lt_Float: public Expr {
-    anton::String_View value;
+    union {
+      f32 f32_value;
+      f64 f64_value;
+    };
     Lt_Float_Kind kind;
 
-    constexpr Lt_Float(anton::String_View value, Lt_Float_Kind kind, Source_Info const& source_info)
-      : Expr(source_info, Node_Kind::lt_float), value(value), kind(kind)
+    constexpr Lt_Float(detail::Lt_Float_Tag<Lt_Float_Kind::f32>, f32 value,
+                       Source_Info const& source_info)
+      : Expr(source_info, Node_Kind::lt_float), f32_value(value), kind(Lt_Float_Kind::f32)
+    {
+    }
+
+    constexpr Lt_Float(detail::Lt_Float_Tag<Lt_Float_Kind::f64>, f64 value,
+                       Source_Info const& source_info)
+      : Expr(source_info, Node_Kind::lt_float), f32_value(value), kind(Lt_Float_Kind::f64)
     {
     }
   };

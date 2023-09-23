@@ -491,21 +491,22 @@ namespace vush {
 
     case Syntax_Node_Kind::expr_lt_float: {
       Syntax_Token const& value_token = get_expr_lt_float_value(node);
+      // TODO: Validate float string token.
       // The default float literal type is f32.
-      ast::Lt_Float_Kind kind = ast::Lt_Float_Kind::f32;
       if(anton::Optional<Syntax_Token const&> suffix_token = get_expr_lt_float_suffix(node)) {
         anton::String_View const suffix = suffix_token->value;
-        if(suffix == "d"_sv || suffix == "D"_sv) {
-          kind = ast::Lt_Float_Kind::f64;
-        } else {
+        if(suffix != "d"_sv && suffix != "D"_sv) {
           return {anton::expected_error, err_invalid_float_suffix(ctx, suffix_token->source_info)};
         }
-      }
 
-      anton::String const* const value =
-        allocate<anton::String>(ctx.allocator, value_token.value, ctx.allocator);
-      return {anton::expected_value,
-              allocate<ast::Lt_Float>(ctx.allocator, *value, kind, node.source_info)};
+        f64 const value = anton::str_to_f64(value_token.value);
+        return {anton::expected_value,
+                allocate<ast::Lt_Float>(ctx.allocator, ast::lt_float_f64, value, node.source_info)};
+      } else {
+        f32 const value = anton::str_to_f32(value_token.value);
+        return {anton::expected_value,
+                allocate<ast::Lt_Float>(ctx.allocator, ast::lt_float_f32, value, node.source_info)};
+      }
     } break;
 
     case Syntax_Node_Kind::expr_lt_integer: {
