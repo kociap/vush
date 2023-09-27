@@ -555,7 +555,8 @@ namespace vush {
         auto iter = member_identifiers.find(field->identifier.value);
         if(iter != member_identifiers.end()) {
           return {anton::expected_error,
-                  err_duplicate_struct_member(ctx, iter->value.source_info, field->source_info)};
+                  err_duplicate_struct_member(ctx, iter->value.source_info,
+                                              field->identifier.source_info)};
         } else {
           member_identifiers.emplace(field->identifier.value, field->identifier);
         }

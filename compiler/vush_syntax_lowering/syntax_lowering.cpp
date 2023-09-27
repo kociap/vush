@@ -668,7 +668,7 @@ namespace vush {
           }
 
           ast::Switch_Arm* const arm =
-            allocate<ast::Switch_Arm>(ctx.allocator, labels, statements.value(), node.source_info);
+            allocate<ast::Switch_Arm>(ctx.allocator, labels, statements.value());
           arm_list.push_back(arm);
         }
       }
@@ -958,8 +958,7 @@ namespace vush {
       }
 
       members.push_back(allocate<ast::Struct_Field>(ctx.allocator, attribute_list.value(),
-                                                    identifier, type.value(), initializer,
-                                                    node.source_info));
+                                                    identifier, type.value(), initializer));
     }
 
     ast::Identifier const identifier = transform_identifier(ctx, get_decl_struct_identifier(node));

@@ -50,7 +50,6 @@ namespace vush::ast {
   struct Expr_Call;
   struct Expr_Field;
   struct Expr_Index;
-  struct Expr_Parentheses;
   struct Expr_Reinterpret;
   struct Expr_Default;
   struct Lt_Bool;

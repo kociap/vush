@@ -24,7 +24,6 @@ namespace vush::ast {
     variable,
 
     fn_parameter,
-    struct_field,
 
     decl_struct,
     decl_function,
@@ -46,8 +45,6 @@ namespace vush::ast {
     lt_bool,
     lt_integer,
     lt_float,
-
-    switch_arm,
 
     stmt_block,
     stmt_if,
@@ -365,7 +362,7 @@ namespace vush::ast {
     }
   };
 
-  struct Struct_Field: public Node {
+  struct Struct_Field {
     Attr_List attributes;
     Identifier identifier;
     Type* type;
@@ -374,9 +371,8 @@ namespace vush::ast {
     i64 offset = 0;
 
     constexpr Struct_Field(Attr_List attributes, Identifier identifier, Type* type,
-                           Expr* initializer, Source_Info const& source_info)
-      : Node(source_info, Node_Kind::struct_field), attributes(attributes), identifier(identifier),
-        type(type), initializer(initializer)
+                           Expr* initializer)
+      : attributes(attributes), identifier(identifier), type(type), initializer(initializer)
     {
     }
   };
@@ -681,12 +677,12 @@ namespace vush::ast {
     }
   };
 
-  struct Switch_Arm: public Node {
+  struct Switch_Arm {
     Expr_List labels;
     Node_List statements;
 
-    constexpr Switch_Arm(Expr_List labels, Node_List statements, Source_Info const& source_info)
-      : Node(source_info, Node_Kind::switch_arm), labels(labels), statements(statements)
+    constexpr Switch_Arm(Expr_List labels, Node_List statements)
+      : labels(labels), statements(statements)
     {
     }
   };
