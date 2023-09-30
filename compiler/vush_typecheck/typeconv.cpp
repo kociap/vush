@@ -64,9 +64,9 @@ namespace vush {
 
   bool is_convertible(ast::Type const* const to, ast::Type const* const from)
   {
-    ast::Node_Kind const to_kind = to->node_kind;
-    ast::Node_Kind const from_kind = from->node_kind;
-    if(to_kind == ast::Node_Kind::type_builtin && from_kind == ast::Node_Kind::type_builtin) {
+    ast::Type_Kind const to_kind = to->type_kind;
+    ast::Type_Kind const from_kind = from->type_kind;
+    if(to_kind == ast::Type_Kind::type_builtin && from_kind == ast::Type_Kind::type_builtin) {
       auto const to_type = static_cast<ast::Type_Builtin const*>(to);
       auto const from_type = static_cast<ast::Type_Builtin const*>(from);
       return is_builtin_to_builtin_convertible(to_type, from_type);
@@ -225,9 +225,9 @@ namespace vush {
 
   anton::Optional<i64> rank_conversion(ast::Type const* const to, ast::Type const* const from)
   {
-    ast::Node_Kind const to_kind = to->node_kind;
-    ast::Node_Kind const from_kind = from->node_kind;
-    if(to_kind == ast::Node_Kind::type_builtin && from_kind == ast::Node_Kind::type_builtin) {
+    ast::Type_Kind const to_kind = to->type_kind;
+    ast::Type_Kind const from_kind = from->type_kind;
+    if(to_kind == ast::Type_Kind::type_builtin && from_kind == ast::Type_Kind::type_builtin) {
       auto const to_type = static_cast<ast::Type_Builtin const*>(to);
       auto const from_type = static_cast<ast::Type_Builtin const*>(from);
       return rank_builtin_to_builtin_conversion(to_type, from_type);

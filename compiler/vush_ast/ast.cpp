@@ -10,20 +10,26 @@ namespace vush::ast {
   bool is_integer(Type const& type)
   {
     Type_Builtin const& builtin = static_cast<Type_Builtin const&>(type);
-    return type.node_kind == Node_Kind::type_builtin &&
+    return type.type_kind == Type_Kind::type_builtin &&
            (builtin.value == Type_Builtin_Kind::e_int ||
             builtin.value == Type_Builtin_Kind::e_uint);
   }
 
-  bool is_void(Type const& type)
+  bool is_signed_integer(Type const& type)
   {
-    return type.node_kind == Node_Kind::type_builtin &&
-           static_cast<Type_Builtin const&>(type).value == Type_Builtin_Kind::e_void;
+    Type_Builtin const& builtin = static_cast<Type_Builtin const&>(type);
+    return type.type_kind == Type_Kind::type_builtin && builtin.value == Type_Builtin_Kind::e_int;
+  }
+
+  bool is_unsigned_integer(Type const& type)
+  {
+    Type_Builtin const& builtin = static_cast<Type_Builtin const&>(type);
+    return type.type_kind == Type_Kind::type_builtin && builtin.value == Type_Builtin_Kind::e_uint;
   }
 
   bool is_vector(Type const& type)
   {
-    if(type.node_kind != Node_Kind::type_builtin) {
+    if(type.type_kind != Type_Kind::type_builtin) {
       return false;
     }
 
@@ -37,7 +43,7 @@ namespace vush::ast {
 
   bool is_vector2(Type const& type)
   {
-    if(type.node_kind != Node_Kind::type_builtin) {
+    if(type.type_kind != Type_Kind::type_builtin) {
       return false;
     }
 
@@ -49,7 +55,7 @@ namespace vush::ast {
 
   bool is_vector3(Type const& type)
   {
-    if(type.node_kind != Node_Kind::type_builtin) {
+    if(type.type_kind != Type_Kind::type_builtin) {
       return false;
     }
 
@@ -61,7 +67,7 @@ namespace vush::ast {
 
   bool is_vector4(Type const& type)
   {
-    if(type.node_kind != Node_Kind::type_builtin) {
+    if(type.type_kind != Type_Kind::type_builtin) {
       return false;
     }
 
@@ -73,7 +79,7 @@ namespace vush::ast {
 
   bool is_bool_vector(Type const& type)
   {
-    if(type.node_kind != Node_Kind::type_builtin) {
+    if(type.type_kind != Type_Kind::type_builtin) {
       return false;
     }
 
@@ -82,9 +88,21 @@ namespace vush::ast {
     return v == Kind::e_bvec2 || v == Kind::e_bvec3 || v == Kind::e_bvec4;
   }
 
+  bool is_integer_vector(Type const& type)
+  {
+    if(type.type_kind != Type_Kind::type_builtin) {
+      return false;
+    }
+
+    using Kind = Type_Builtin_Kind;
+    Type_Builtin_Kind const v = static_cast<Type_Builtin const&>(type).value;
+    return v == Kind::e_ivec2 || v == Kind::e_ivec3 || v == Kind::e_ivec4 || v == Kind::e_uvec2 ||
+           v == Kind::e_uvec3 || v == Kind::e_uvec4;
+  }
+
   bool is_i32_vector(Type const& type)
   {
-    if(type.node_kind != Node_Kind::type_builtin) {
+    if(type.type_kind != Type_Kind::type_builtin) {
       return false;
     }
 
@@ -95,7 +113,7 @@ namespace vush::ast {
 
   bool is_u32_vector(Type const& type)
   {
-    if(type.node_kind != Node_Kind::type_builtin) {
+    if(type.type_kind != Type_Kind::type_builtin) {
       return false;
     }
 
@@ -106,7 +124,7 @@ namespace vush::ast {
 
   bool is_f32_vector(Type const& type)
   {
-    if(type.node_kind != Node_Kind::type_builtin) {
+    if(type.type_kind != Type_Kind::type_builtin) {
       return false;
     }
 
@@ -117,7 +135,7 @@ namespace vush::ast {
 
   bool is_f64_vector(Type const& type)
   {
-    if(type.node_kind != Node_Kind::type_builtin) {
+    if(type.type_kind != Type_Kind::type_builtin) {
       return false;
     }
 
@@ -128,7 +146,7 @@ namespace vush::ast {
 
   bool is_matrix(Type const& type)
   {
-    if(type.node_kind != Node_Kind::type_builtin) {
+    if(type.type_kind != Type_Kind::type_builtin) {
       return false;
     }
 
@@ -144,7 +162,7 @@ namespace vush::ast {
 
   bool is_f32_matrix(Type const& type)
   {
-    if(type.node_kind != Node_Kind::type_builtin) {
+    if(type.type_kind != Type_Kind::type_builtin) {
       return false;
     }
 
@@ -157,7 +175,7 @@ namespace vush::ast {
 
   bool is_f64_matrix(Type const& type)
   {
-    if(type.node_kind != Node_Kind::type_builtin) {
+    if(type.type_kind != Type_Kind::type_builtin) {
       return false;
     }
 
@@ -170,50 +188,42 @@ namespace vush::ast {
 
   bool is_opaque_type(Type const& type)
   {
-    ANTON_ASSERT(type.node_kind == Node_Kind::type_builtin ||
-                   type.node_kind == Node_Kind::type_struct ||
-                   type.node_kind == Node_Kind::type_array,
-                 u8"unknown ast node type");
-    switch(type.node_kind) {
-    case Node_Kind::type_builtin: {
+    switch(type.type_kind) {
+    case Type_Kind::type_builtin: {
       Type_Builtin_Kind const v = static_cast<Type_Builtin const&>(type).value;
       return static_cast<i32>(v) >= static_cast<i32>(Type_Builtin_Kind::e_sampler1D);
     }
 
-    case Node_Kind::type_struct: {
+    case Type_Kind::type_struct: {
       return false;
     }
 
-    case Node_Kind::type_array: {
+    case Type_Kind::type_array: {
       Type_Array const& array = static_cast<Type_Array const&>(type);
       return is_opaque_type(*array.base);
     }
-
-    default:
-      ANTON_ASSERT(false, "unknown ast node kind");
-      ANTON_UNREACHABLE();
     }
   }
 
   bool is_array(Type const& type)
   {
-    return type.node_kind == Node_Kind::type_array;
+    return type.type_kind == Type_Kind::type_array;
   }
 
   bool is_sized_array(Type const& type)
   {
-    return type.node_kind == Node_Kind::type_array && static_cast<Type_Array const&>(type).size;
+    return type.type_kind == Type_Kind::type_array && static_cast<Type_Array const&>(type).size;
   }
 
   bool is_unsized_array(Type const& type)
   {
-    return type.node_kind == Node_Kind::type_array && !static_cast<Type_Array const&>(type).size;
+    return type.type_kind == Type_Kind::type_array && !static_cast<Type_Array const&>(type).size;
   }
 
   bool is_image_type(Type const& type)
   {
-    switch(type.node_kind) {
-    case Node_Kind::type_builtin: {
+    switch(type.type_kind) {
+    case Type_Kind::type_builtin: {
       Type_Builtin_Kind const v = static_cast<Type_Builtin const&>(type).value;
       return v == Type_Builtin_Kind::e_image1D || v == Type_Builtin_Kind::e_image1DArray ||
              v == Type_Builtin_Kind::e_image2D || v == Type_Builtin_Kind::e_image2DArray ||
@@ -234,25 +244,20 @@ namespace vush::ast {
              v == Type_Builtin_Kind::e_uimageBuffer;
     }
 
-    case Node_Kind::type_struct: {
+    case Type_Kind::type_struct: {
       return false;
     }
 
-    case Node_Kind::type_array: {
+    case Type_Kind::type_array: {
       Type_Array const& array = static_cast<Type_Array const&>(type);
       return is_image_type(*array.base);
     }
-
-    default:
-      ANTON_ASSERT(false, u8"unknown ast node kind");
-      ANTON_UNREACHABLE();
     }
   }
 
   bool is_type(Node const& node)
   {
-    return node.node_kind == Node_Kind::type_builtin || node.node_kind == Node_Kind::type_struct ||
-           node.node_kind == Node_Kind::type_array;
+    return node.node_kind == Node_Kind::type;
   }
 
   bool is_sourced_parameter(Fn_Parameter const& parameter)
@@ -603,25 +608,25 @@ namespace vush::ast {
 
   bool compare_types_equal(Type const& lhs, Type const& rhs)
   {
-    if(lhs.node_kind != rhs.node_kind) {
+    if(lhs.type_kind != rhs.type_kind) {
       return false;
     }
 
-    Node_Kind const kind = lhs.node_kind;
+    Type_Kind const kind = lhs.type_kind;
     switch(kind) {
-    case Node_Kind::type_builtin: {
+    case Type_Kind::type_builtin: {
       Type_Builtin const& lhs_v = static_cast<Type_Builtin const&>(lhs);
       Type_Builtin const& rhs_v = static_cast<Type_Builtin const&>(rhs);
       return lhs_v.value == rhs_v.value;
     }
 
-    case Node_Kind::type_struct: {
+    case Type_Kind::type_struct: {
       Type_Struct const& lhs_v = static_cast<Type_Struct const&>(lhs);
       Type_Struct const& rhs_v = static_cast<Type_Struct const&>(rhs);
       return lhs_v.value == rhs_v.value;
     }
 
-    case Node_Kind::type_array: {
+    case Type_Kind::type_array: {
       Type_Array const& lhs_v = static_cast<Type_Array const&>(lhs);
       Type_Array const& rhs_v = static_cast<Type_Array const&>(rhs);
       if(!compare_types_equal(*lhs_v.base, *rhs_v.base)) {
@@ -641,9 +646,6 @@ namespace vush::ast {
       // Otherwise compare the sizes to determine whether types are equal.
       return compare_integer_literals(*lhs_v.size, *rhs_v.size) == anton::Strong_Ordering::equal;
     }
-
-    default:
-      ANTON_UNREACHABLE();
     }
   }
 

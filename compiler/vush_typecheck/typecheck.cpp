@@ -423,8 +423,8 @@ namespace vush {
 
       // TODO: Separate diagnostics for each type kind.
       ast::Type const* generic_type = expr->type;
-      switch(generic_type->node_kind) {
-      case ast::Node_Kind::type_builtin: {
+      switch(generic_type->type_kind) {
+      case ast::Type_Kind::type_builtin: {
         auto const type = static_cast<ast::Type_Builtin const*>(generic_type);
         if(is_vector(*type)) {
           for(ast::Initializer const* const initializer: expr->initializers) {
@@ -445,7 +445,7 @@ namespace vush {
         }
       } break;
 
-      case ast::Node_Kind::type_struct: {
+      case ast::Type_Kind::type_struct: {
         ast::Type_Struct const* const type = static_cast<ast::Type_Struct const*>(generic_type);
         ast::Decl_Struct const* const decl = type->definition;
         ast::Field_List::iterator const fields_begin = decl->fields.begin();
@@ -481,15 +481,11 @@ namespace vush {
         }
       } break;
 
-      case ast::Node_Kind::type_array: {
+      case ast::Type_Kind::type_array: {
         // TODO: Implement
         return {anton::expected_error,
                 err_unimplemented(ctx, expr->source_info, __FILE__, __LINE__)};
       } break;
-
-      default:
-        ANTON_ASSERT(false, "invalid generic_expr kind");
-        ANTON_UNREACHABLE();
       }
 
       generic_expr->evaluated_type = expr->type;
@@ -604,8 +600,8 @@ namespace vush {
       // have members.
       // TODO: Separate diagnostics for each type kind.
       ast::Type const* generic_type = result.value();
-      switch(generic_type->node_kind) {
-      case ast::Node_Kind::type_builtin: {
+      switch(generic_type->type_kind) {
+      case ast::Type_Kind::type_builtin: {
         auto const type = static_cast<ast::Type_Builtin const*>(generic_type);
         if(is_vector(*type)) {
           auto field_result = evaluate_vector_field(ctx, *type, expr->field);
@@ -625,7 +621,7 @@ namespace vush {
         }
       } break;
 
-      case ast::Node_Kind::type_struct: {
+      case ast::Type_Kind::type_struct: {
         ast::Type_Struct const* const type = static_cast<ast::Type_Struct const*>(generic_type);
         ast::Decl_Struct const* const decl = type->definition;
         for(ast::Struct_Field const* const field: decl->fields) {
@@ -640,13 +636,9 @@ namespace vush {
         return {anton::expected_error, err_type_has_no_field_named(ctx, generic_type, expr->field)};
       } break;
 
-      case ast::Node_Kind::type_array: {
+      case ast::Type_Kind::type_array: {
         return {anton::expected_error, err_type_has_no_field_named(ctx, generic_type, expr->field)};
       } break;
-
-      default:
-        ANTON_ASSERT(false, "invalid generic_expr kind");
-        ANTON_UNREACHABLE();
       }
     } break;
 

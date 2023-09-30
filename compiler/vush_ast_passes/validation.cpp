@@ -18,7 +18,7 @@ namespace vush {
       return {anton::expected_error, err_unsized_array_not_allowed(ctx, type.source_info)};
     }
 
-    if(type.node_kind == ast::Node_Kind::type_array) {
+    if(type.type_kind == ast::Type_Kind::type_array) {
       ast::Type_Array const& t = static_cast<ast::Type_Array const&>(type);
       return check_array_is_sized(ctx, *t.base);
     }
@@ -122,8 +122,8 @@ namespace vush {
       // order of appearance.
 
       ast::Expr_Init const* const expr = static_cast<ast::Expr_Init const*>(node);
-      switch(expr->type->node_kind) {
-      case ast::Node_Kind::type_builtin: {
+      switch(expr->type->type_kind) {
+      case ast::Type_Kind::type_builtin: {
         if(is_vector(*expr->type)) {
           anton::Expected<void, Error> result =
             validate_named_initializers(ctx, expr->initializers);
@@ -143,7 +143,7 @@ namespace vush {
         return anton::expected_value;
       } break;
 
-      case ast::Node_Kind::type_struct: {
+      case ast::Type_Kind::type_struct: {
         anton::Expected<void, Error> result = validate_named_initializers(ctx, expr->initializers);
         if(!result) {
           return ANTON_MOV(result);
@@ -152,7 +152,7 @@ namespace vush {
         return anton::expected_value;
       } break;
 
-      case ast::Node_Kind::type_array: {
+      case ast::Type_Kind::type_array: {
         Array<ast::Lt_Integer const*> indices{ctx.allocator};
         ast::Indexed_Initializer const* indexed_initializer = nullptr;
         ast::Basic_Initializer const* basic_initializer = nullptr;
@@ -224,10 +224,6 @@ namespace vush {
 
         return anton::expected_value;
       } break;
-
-      default:
-        ANTON_ASSERT(false, "invalid initializer type");
-        ANTON_UNREACHABLE();
       }
     } break;
 
@@ -502,8 +498,8 @@ namespace vush {
   validate_struct_member_type(Context const& ctx, ast::Type const& type,
                               ast::Identifier const& struct_identifier)
   {
-    switch(type.node_kind) {
-    case ast::Node_Kind::type_builtin: {
+    switch(type.type_kind) {
+    case ast::Type_Kind::type_builtin: {
       if(ast::is_opaque_type(type)) {
         return {anton::expected_error, err_opaque_type_in_struct(ctx, type.source_info)};
       }
@@ -511,7 +507,7 @@ namespace vush {
       return {anton::expected_value};
     } break;
 
-    case ast::Node_Kind::type_struct: {
+    case ast::Type_Kind::type_struct: {
       ast::Type_Struct const& t = static_cast<ast::Type_Struct const&>(type);
       if(t.value == struct_identifier.value) {
         return {anton::expected_error,
@@ -521,14 +517,10 @@ namespace vush {
       return anton::expected_value;
     } break;
 
-    case ast::Node_Kind::type_array: {
+    case ast::Type_Kind::type_array: {
       ast::Type_Array const& t = static_cast<ast::Type_Array const&>(type);
       return validate_struct_member_type(ctx, *t.base, struct_identifier);
     } break;
-
-    default:
-      ANTON_ASSERT(false, "unreachable");
-      ANTON_UNREACHABLE();
     }
   }
 
@@ -656,8 +648,8 @@ namespace vush {
     // - compute: must be void.
     {
       bool const void_return = ast::is_void(*fn->return_type);
-      bool const builtin_return = fn->return_type->node_kind == ast::Node_Kind::type_builtin;
-      bool const struct_return = fn->return_type->node_kind == ast::Node_Kind::type_struct;
+      bool const builtin_return = fn->return_type->type_kind == ast::Type_Kind::type_builtin;
+      bool const struct_return = fn->return_type->type_kind == ast::Type_Kind::type_struct;
       switch(fn->stage.value) {
       case Stage_Kind::vertex: {
         if(!builtin_return && !struct_return) {
@@ -695,8 +687,8 @@ namespace vush {
       bool first = true;
       for(ast::Fn_Parameter const* const p: fn->parameters) {
         {
-          bool const builtin_type = fn->return_type->node_kind == ast::Node_Kind::type_builtin;
-          bool const struct_type = fn->return_type->node_kind == ast::Node_Kind::type_struct;
+          bool const builtin_type = fn->return_type->type_kind == ast::Type_Kind::type_builtin;
+          bool const struct_type = fn->return_type->type_kind == ast::Type_Kind::type_struct;
           if(!builtin_type && !struct_type) {
             return {anton::expected_error,
                     err_stage_parameter_must_be_builtin_or_struct(ctx, p->type->source_info)};
@@ -716,7 +708,7 @@ namespace vush {
                       err_vertex_vin_must_not_be_opaque(ctx, p->type->source_info)};
             }
 
-            if(p->type->node_kind == ast::Node_Kind::type_array) {
+            if(p->type->type_kind == ast::Type_Kind::type_array) {
               return {anton::expected_error,
                       err_vertex_vin_must_not_be_array(ctx, p->type->source_info)};
             }

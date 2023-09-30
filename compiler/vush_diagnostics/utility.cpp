@@ -161,8 +161,8 @@ namespace vush {
 
   anton::String stringify_type(Context const& ctx, ast::Type const* const generic_type)
   {
-    switch(generic_type->node_kind) {
-    case ast::Node_Kind::type_builtin: {
+    switch(generic_type->type_kind) {
+    case ast::Type_Kind::type_builtin: {
       auto const type = static_cast<ast::Type_Builtin const*>(generic_type);
       switch(type->value) {
       case ast::Type_Builtin_Kind::e_void:
@@ -474,12 +474,12 @@ namespace vush {
       }
     } break;
 
-    case ast::Node_Kind::type_struct: {
+    case ast::Type_Kind::type_struct: {
       auto const type = static_cast<ast::Type_Struct const*>(generic_type);
       return anton::String(type->value, ctx.allocator);
     } break;
 
-    case ast::Node_Kind::type_array: {
+    case ast::Type_Kind::type_array: {
       auto const type = static_cast<ast::Type_Array const*>(generic_type);
       anton::String base = stringify_type(ctx, type->base);
       anton::String size;
@@ -496,10 +496,6 @@ namespace vush {
       }
       return anton::concat(ctx.allocator, "["_sv, base, ";"_sv, size, "]"_sv);
     } break;
-
-    default:
-      ANTON_ASSERT(false, "invalid type kind");
-      ANTON_UNREACHABLE();
     }
   }
 

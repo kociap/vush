@@ -102,12 +102,12 @@ namespace vush {
   [[nodiscard]] static anton::Expected<void, Error>
   namebind_type(Context& ctx, Symbol_Table const& symtable, ast::Type* const type)
   {
-    switch(type->node_kind) {
-    case ast::Node_Kind::type_builtin: {
+    switch(type->type_kind) {
+    case ast::Type_Kind::type_builtin: {
       return anton::expected_value;
     }
 
-    case ast::Node_Kind::type_struct: {
+    case ast::Type_Kind::type_struct: {
       auto const type_struct = static_cast<ast::Type_Struct*>(type);
       Symbol const* const symbol = symtable.find_entry(type_struct->value);
       if(symbol == nullptr) {
@@ -129,14 +129,10 @@ namespace vush {
       return anton::expected_value;
     }
 
-    case ast::Node_Kind::type_array: {
+    case ast::Type_Kind::type_array: {
       auto const array = static_cast<ast::Type_Array*>(type);
       return namebind_type(ctx, symtable, array->base);
     }
-
-    default:
-      ANTON_ASSERT(false, "unhandled type kind");
-      ANTON_UNREACHABLE();
     }
   }
 

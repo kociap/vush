@@ -16,9 +16,7 @@ namespace vush {
 
 namespace vush::ast {
   enum struct Node_Kind : u8 {
-    type_builtin,
-    type_struct,
-    type_array,
+    type,
 
     attribute,
     variable,
@@ -74,35 +72,47 @@ namespace vush::ast {
     bool mut = false;
   };
 
+  enum struct Type_Kind : u8 {
+    type_builtin,
+    type_struct,
+    type_array,
+  };
+
   struct Type: public Node {
     Type_Layout layout = {};
     Qualifiers qualifiers;
+    Type_Kind type_kind;
 
-    constexpr Type(Source_Info const& source_info, Node_Kind node_kind)
-      : Node(source_info, node_kind)
+    constexpr Type(Source_Info const& source_info, Type_Kind type_kind)
+      : Node(source_info, Node_Kind::type), type_kind(type_kind)
     {
     }
 
-    constexpr Type(Source_Info const& source_info, Node_Kind node_kind, Type_Layout layout)
-      : Node(source_info, node_kind), layout(layout)
+    constexpr Type(Source_Info const& source_info, Type_Kind type_kind, Type_Layout layout)
+      : Node(source_info, Node_Kind::type), layout(layout), type_kind(type_kind)
     {
     }
 
-    constexpr Type(Source_Info const& source_info, Node_Kind node_kind, Type_Layout layout,
+    constexpr Type(Source_Info const& source_info, Type_Kind type_kind, Type_Layout layout,
                    Qualifiers qualifiers)
-      : Node(source_info, node_kind), layout(layout), qualifiers(qualifiers)
+      : Node(source_info, Node_Kind::type), layout(layout), qualifiers(qualifiers),
+        type_kind(type_kind)
     {
     }
   };
 
   [[nodiscard]] bool compare_types_equal(Type const& lhs, Type const& rhs);
   [[nodiscard]] bool is_void(Type const& type);
+  [[nodiscard]] bool is_scalar(Type const& type);
   [[nodiscard]] bool is_integer(Type const& type);
+  [[nodiscard]] bool is_signed_integer(Type const& type);
+  [[nodiscard]] bool is_unsigned_integer(Type const& type);
   [[nodiscard]] bool is_vector(Type const& type);
   [[nodiscard]] bool is_vector2(Type const& type);
   [[nodiscard]] bool is_vector3(Type const& type);
   [[nodiscard]] bool is_vector4(Type const& type);
   [[nodiscard]] bool is_bool_vector(Type const& type);
+  [[nodiscard]] bool is_integer_vector(Type const& type);
   [[nodiscard]] bool is_i32_vector(Type const& type);
   [[nodiscard]] bool is_u32_vector(Type const& type);
   [[nodiscard]] bool is_f32_vector(Type const& type);
@@ -279,19 +289,19 @@ namespace vush::ast {
     Type_Builtin_Kind value;
 
     constexpr Type_Builtin(Source_Info const& source_info, Type_Builtin_Kind value)
-      : Type(source_info, Node_Kind::type_builtin), value(value)
+      : Type(source_info, Type_Kind::type_builtin), value(value)
     {
     }
 
     constexpr Type_Builtin(Source_Info const& source_info, Type_Builtin_Kind value,
                            Type_Layout layout)
-      : Type(source_info, Node_Kind::type_builtin, layout), value(value)
+      : Type(source_info, Type_Kind::type_builtin, layout), value(value)
     {
     }
 
     constexpr Type_Builtin(Source_Info const& source_info, Qualifiers qualifiers,
                            Type_Builtin_Kind value, Type_Layout layout)
-      : Type(source_info, Node_Kind::type_builtin, layout, qualifiers), value(value)
+      : Type(source_info, Type_Kind::type_builtin, layout, qualifiers), value(value)
     {
     }
   };
@@ -302,12 +312,12 @@ namespace vush::ast {
     Decl_Struct* definition = nullptr;
 
     Type_Struct(Source_Info const& source_info, anton::String&& value)
-      : Type(source_info, Node_Kind::type_struct), value(ANTON_MOV(value))
+      : Type(source_info, Type_Kind::type_struct), value(ANTON_MOV(value))
     {
     }
 
     Type_Struct(Source_Info const& source_info, Qualifiers qualifiers, anton::String&& value)
-      : Type(source_info, Node_Kind::type_struct, {}, qualifiers), value(ANTON_MOV(value))
+      : Type(source_info, Type_Kind::type_struct, {}, qualifiers), value(ANTON_MOV(value))
     {
     }
   };
@@ -318,13 +328,13 @@ namespace vush::ast {
     Lt_Integer* size;
 
     constexpr Type_Array(Source_Info const& source_info, Type* base, Lt_Integer* size)
-      : Type(source_info, Node_Kind::type_array), base(base), size(size)
+      : Type(source_info, Type_Kind::type_array), base(base), size(size)
     {
     }
 
     constexpr Type_Array(Source_Info const& source_info, Qualifiers qualifiers, Type* base,
                          Lt_Integer* size)
-      : Type(source_info, Node_Kind::type_array, {}, qualifiers), base(base), size(size)
+      : Type(source_info, Type_Kind::type_array, {}, qualifiers), base(base), size(size)
     {
     }
   };
