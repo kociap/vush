@@ -43,10 +43,10 @@ namespace vush {
                               ast::Initializer const& generic_initializer)
   {
     ANTON_ASSERT(is_vector(type), "type is not vector");
-    ANTON_ASSERT(generic_initializer.node_kind == ast::Node_Kind::named_initializer,
+    ANTON_ASSERT(generic_initializer.node_kind == ast::Node_Kind::field_initializer,
                  "vector initializer is not a field initializer");
     // Match the type of the swizzle initializer against the type of the expression.
-    auto const initializer = static_cast<ast::Named_Initializer const&>(generic_initializer);
+    auto const initializer = static_cast<ast::Field_Initializer const&>(generic_initializer);
     auto initializer_result = evaluate_expression_type(ctx, initializer.expression);
     if(!initializer_result) {
       return {anton::expected_error, ANTON_MOV(initializer_result.error())};
@@ -180,13 +180,13 @@ namespace vush {
                               ast::Initializer const& generic_initializer)
   {
     ANTON_ASSERT(is_matrix(type), "type is not matrix");
-    ANTON_ASSERT(generic_initializer.node_kind == ast::Node_Kind::named_initializer ||
-                   generic_initializer.node_kind == ast::Node_Kind::indexed_initializer,
+    ANTON_ASSERT(generic_initializer.node_kind == ast::Node_Kind::field_initializer ||
+                   generic_initializer.node_kind == ast::Node_Kind::index_initializer,
                  "matrix initializer is not a field or range initializer");
 
     switch(generic_initializer.node_kind) {
-    case ast::Node_Kind::named_initializer: {
-      auto initializer = static_cast<ast::Named_Initializer const&>(generic_initializer);
+    case ast::Node_Kind::field_initializer: {
+      auto initializer = static_cast<ast::Field_Initializer const&>(generic_initializer);
       auto initializer_result = evaluate_expression_type(ctx, initializer.expression);
       if(!initializer_result) {
         return {anton::expected_error, ANTON_MOV(initializer_result.error())};
@@ -208,7 +208,7 @@ namespace vush {
       }
     }
 
-    case ast::Node_Kind::indexed_initializer: {
+    case ast::Node_Kind::index_initializer: {
       return {anton::expected_error,
               err_unimplemented(ctx, generic_initializer.source_info, __FILE__, __LINE__)};
     }
@@ -451,10 +451,10 @@ namespace vush {
         ast::Field_List::iterator const fields_begin = decl->fields.begin();
         ast::Field_List::iterator const fields_end = decl->fields.end();
         for(ast::Initializer const* const generic_initializer: expr->initializers) {
-          ANTON_ASSERT(generic_initializer->node_kind == ast::Node_Kind::named_initializer,
-                       "struct initializer is not named_initializer");
-          ast::Named_Initializer const* const initializer =
-            static_cast<ast::Named_Initializer const*>(generic_initializer);
+          ANTON_ASSERT(generic_initializer->node_kind == ast::Node_Kind::field_initializer,
+                       "struct initializer is not field_initializer");
+          ast::Field_Initializer const* const initializer =
+            static_cast<ast::Field_Initializer const*>(generic_initializer);
           anton::String_View const identifier = initializer->identifier.value;
           ast::Field_List::iterator const field = anton::find_if(
             fields_begin, fields_end, [identifier](ast::Struct_Field const* const field) {
@@ -462,7 +462,7 @@ namespace vush {
             });
           if(field == fields_end) {
             return {anton::expected_error,
-                    err_named_initializer_no_field_named(ctx, decl, initializer)};
+                    err_field_initializer_no_field_named(ctx, decl, initializer)};
           }
 
           anton::Expected<ast::Type const*, Error> result =

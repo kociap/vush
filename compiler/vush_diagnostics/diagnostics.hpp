@@ -268,11 +268,11 @@ namespace vush {
                                         anton::String_View file, i64 line);
 
   [[nodiscard]] inline Error
-  err_named_initializer_no_field_named([[maybe_unused]] Context const& ctx,
+  err_field_initializer_no_field_named([[maybe_unused]] Context const& ctx,
                                        [[maybe_unused]] ast::Decl_Struct const* decl,
-                                       [[maybe_unused]] ast::Named_Initializer const* initializer)
+                                       [[maybe_unused]] ast::Field_Initializer const* initializer)
   {
-    return Error{.diagnostic = anton::String("err_named_initializer_no_field_named")};
+    return Error{.diagnostic = anton::String("err_field_initializer_no_field_named")};
   }
 
 } // namespace vush

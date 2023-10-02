@@ -30,17 +30,17 @@ namespace vush {
   validate_expression(Context const& ctx, ast::Node const* const node);
 
   [[nodiscard]] static anton::Expected<void, Error>
-  validate_named_initializers(Context const& ctx, ast::Initializer_List const initializers)
+  validate_field_initializers(Context const& ctx, ast::Initializer_List const initializers)
   {
     Array<ast::Identifier> identifiers{ctx.allocator};
     for(ast::Initializer const* const generic_initializer: initializers) {
-      if(generic_initializer->node_kind != ast::Node_Kind::named_initializer) {
+      if(generic_initializer->node_kind != ast::Node_Kind::field_initializer) {
         return {anton::expected_error,
                 err_init_invalid_struct_initializer_kind(ctx, generic_initializer)};
       }
 
-      ast::Named_Initializer const* const initializer =
-        static_cast<ast::Named_Initializer const*>(generic_initializer);
+      ast::Field_Initializer const* const initializer =
+        static_cast<ast::Field_Initializer const*>(generic_initializer);
       anton::Expected<void, Error> result = validate_expression(ctx, initializer->expression);
       if(!result) {
         return ANTON_MOV(result);
@@ -76,16 +76,16 @@ namespace vush {
   {
     for(ast::Initializer const* const generic_initializer: initializers) {
       switch(generic_initializer->node_kind) {
-      case ast::Node_Kind::named_initializer: {
-        auto const initializer = static_cast<ast::Named_Initializer const*>(generic_initializer);
+      case ast::Node_Kind::field_initializer: {
+        auto const initializer = static_cast<ast::Field_Initializer const*>(generic_initializer);
         anton::Expected<void, Error> result = validate_expression(ctx, initializer->expression);
         if(!result) {
           return ANTON_MOV(result);
         }
       } break;
 
-      case ast::Node_Kind::indexed_initializer: {
-        auto const initializer = static_cast<ast::Indexed_Initializer const*>(generic_initializer);
+      case ast::Node_Kind::index_initializer: {
+        auto const initializer = static_cast<ast::Index_Initializer const*>(generic_initializer);
         anton::Expected<void, Error> range_result = validate_expression(ctx, initializer->index);
         if(!range_result) {
           return ANTON_MOV(range_result);
@@ -126,7 +126,7 @@ namespace vush {
       case ast::Type_Kind::type_builtin: {
         if(is_vector(*expr->type)) {
           anton::Expected<void, Error> result =
-            validate_named_initializers(ctx, expr->initializers);
+            validate_field_initializers(ctx, expr->initializers);
           if(!result) {
             return ANTON_MOV(result);
           }
@@ -144,7 +144,7 @@ namespace vush {
       } break;
 
       case ast::Type_Kind::type_struct: {
-        anton::Expected<void, Error> result = validate_named_initializers(ctx, expr->initializers);
+        anton::Expected<void, Error> result = validate_field_initializers(ctx, expr->initializers);
         if(!result) {
           return ANTON_MOV(result);
         }
@@ -154,25 +154,25 @@ namespace vush {
 
       case ast::Type_Kind::type_array: {
         Array<ast::Lt_Integer const*> indices{ctx.allocator};
-        ast::Indexed_Initializer const* indexed_initializer = nullptr;
+        ast::Index_Initializer const* index_initializer = nullptr;
         ast::Basic_Initializer const* basic_initializer = nullptr;
         for(ast::Initializer const* const generic_initializer: expr->initializers) {
-          if(generic_initializer->node_kind != ast::Node_Kind::indexed_initializer &&
+          if(generic_initializer->node_kind != ast::Node_Kind::index_initializer &&
              generic_initializer->node_kind != ast::Node_Kind::basic_initializer) {
             return {anton::expected_error,
                     err_init_invalid_array_initializer_kind(ctx, generic_initializer)};
           }
 
-          if(generic_initializer->node_kind == ast::Node_Kind::indexed_initializer) {
-            ast::Indexed_Initializer const* const initializer =
-              static_cast<ast::Indexed_Initializer const*>(generic_initializer);
+          if(generic_initializer->node_kind == ast::Node_Kind::index_initializer) {
+            ast::Index_Initializer const* const initializer =
+              static_cast<ast::Index_Initializer const*>(generic_initializer);
             if(basic_initializer != nullptr) {
               return {anton::expected_error,
                       err_init_array_initialization_must_not_have_both_initializer_kinds(
                         ctx, basic_initializer, initializer)};
             }
 
-            indexed_initializer = initializer;
+            index_initializer = initializer;
 
             anton::Expected<void, Error> result = validate_expression(ctx, initializer->expression);
             if(!result) {
@@ -183,10 +183,10 @@ namespace vush {
           } else {
             ast::Basic_Initializer const* const initializer =
               static_cast<ast::Basic_Initializer const*>(generic_initializer);
-            if(indexed_initializer != nullptr) {
+            if(index_initializer != nullptr) {
               return {anton::expected_error,
                       err_init_array_initialization_must_not_have_both_initializer_kinds(
-                        ctx, indexed_initializer, initializer)};
+                        ctx, index_initializer, initializer)};
             }
 
             basic_initializer = initializer;

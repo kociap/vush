@@ -492,39 +492,36 @@ namespace vush {
     return node.children[1].left();
   }
 
-  Syntax_Token const& get_named_initializer_identifier(Syntax_Node const& node)
+  Syntax_Token const& get_field_initializer_identifier(Syntax_Node const& node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::named_initializer, "node is not named_initializer");
-    ANTON_ASSERT(node.children.size() > (1), "named_initializer has too few children");
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::field_initializer, "node is not field_initializer");
+    ANTON_ASSERT(node.children.size() > (1), "field_initializer has too few children");
     ANTON_ASSERT(node.children[1].is_right(),
-                 "identifier in named_initializer is not Syntax_Token");
+                 "identifier in field_initializer is not Syntax_Token");
     return node.children[1].right();
   }
 
-  Syntax_Node const& get_named_initializer_expression(Syntax_Node const& node)
+  Syntax_Node const& get_field_initializer_expression(Syntax_Node const& node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::named_initializer, "node is not named_initializer");
-    ANTON_ASSERT(node.children.size() > (3), "named_initializer has too few children");
-    ANTON_ASSERT(node.children[3].is_left(), "expression in named_initializer is not Syntax_Node");
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::field_initializer, "node is not field_initializer");
+    ANTON_ASSERT(node.children.size() > (3), "field_initializer has too few children");
+    ANTON_ASSERT(node.children[3].is_left(), "expression in field_initializer is not Syntax_Node");
     return node.children[3].left();
   }
 
-  Syntax_Node const& get_indexed_initializer_index(Syntax_Node const& node)
+  Syntax_Node const& get_index_initializer_index(Syntax_Node const& node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::indexed_initializer,
-                 "node is not indexed_initializer");
-    ANTON_ASSERT(node.children.size() > (0), "indexed_initializer has too few children");
-    ANTON_ASSERT(node.children[0].is_left(), "index in indexed_initializer is not Syntax_Node");
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::index_initializer, "node is not index_initializer");
+    ANTON_ASSERT(node.children.size() > (0), "index_initializer has too few children");
+    ANTON_ASSERT(node.children[0].is_left(), "index in index_initializer is not Syntax_Node");
     return node.children[0].left();
   }
 
-  Syntax_Node const& get_indexed_initializer_expression(Syntax_Node const& node)
+  Syntax_Node const& get_index_initializer_expression(Syntax_Node const& node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::indexed_initializer,
-                 "node is not indexed_initializer");
-    ANTON_ASSERT(node.children.size() > (2), "indexed_initializer has too few children");
-    ANTON_ASSERT(node.children[2].is_left(),
-                 "expression in indexed_initializer is not Syntax_Node");
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::index_initializer, "node is not index_initializer");
+    ANTON_ASSERT(node.children.size() > (2), "index_initializer has too few children");
+    ANTON_ASSERT(node.children[2].is_left(), "expression in index_initializer is not Syntax_Node");
     return node.children[2].left();
   }
 

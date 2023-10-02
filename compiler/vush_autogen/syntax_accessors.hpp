@@ -68,10 +68,10 @@ namespace vush {
   [[nodiscard]] Syntax_Node const& get_expr_index_expression(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const& get_expr_index_index(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const& get_expr_parentheses_expression(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Token const& get_named_initializer_identifier(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const& get_named_initializer_expression(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const& get_indexed_initializer_index(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const& get_indexed_initializer_expression(Syntax_Node const& node);
+  [[nodiscard]] Syntax_Token const& get_field_initializer_identifier(Syntax_Node const& node);
+  [[nodiscard]] Syntax_Node const& get_field_initializer_expression(Syntax_Node const& node);
+  [[nodiscard]] Syntax_Node const& get_index_initializer_index(Syntax_Node const& node);
+  [[nodiscard]] Syntax_Node const& get_index_initializer_expression(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const& get_basic_initializer_expression(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const& get_expr_init_type(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const& get_expr_init_initializers(Syntax_Node const& node);

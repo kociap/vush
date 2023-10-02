@@ -131,8 +131,8 @@ namespace vush {
     setting_block,
     setting_keyval,
 
-    named_initializer,
-    indexed_initializer,
+    field_initializer,
+    index_initializer,
     basic_initializer,
 
     init_initializer_list,

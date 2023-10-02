@@ -2536,7 +2536,7 @@ namespace vush {
       return Syntax_Node(Syntax_Node_Kind::expr_if, ANTON_MOV(snots), source);
     }
 
-    Optional<Syntax_Node> try_named_initializer()
+    Optional<Syntax_Node> try_field_initializer()
     {
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
@@ -2573,10 +2573,10 @@ namespace vush {
 
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return Syntax_Node(Syntax_Node_Kind::named_initializer, ANTON_MOV(snots), source);
+      return Syntax_Node(Syntax_Node_Kind::field_initializer, ANTON_MOV(snots), source);
     }
 
-    Optional<Syntax_Node> try_indexed_initializer()
+    Optional<Syntax_Node> try_index_initializer()
     {
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
@@ -2620,7 +2620,7 @@ namespace vush {
 
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return Syntax_Node(Syntax_Node_Kind::indexed_initializer, ANTON_MOV(snots), source);
+      return Syntax_Node(Syntax_Node_Kind::index_initializer, ANTON_MOV(snots), source);
     }
 
     Optional<Syntax_Node> try_basic_initializer()
@@ -2660,10 +2660,10 @@ namespace vush {
       }
 
       while(true) {
-        if(Optional named_initializer = try_named_initializer()) {
-          snots.push_back(ANTON_MOV(*named_initializer));
-        } else if(Optional indexed_initializer = try_indexed_initializer()) {
-          snots.push_back(ANTON_MOV(*indexed_initializer));
+        if(Optional field_initializer = try_field_initializer()) {
+          snots.push_back(ANTON_MOV(*field_initializer));
+        } else if(Optional index_initializer = try_index_initializer()) {
+          snots.push_back(ANTON_MOV(*index_initializer));
         } else if(Optional basic_initializer = try_basic_initializer()) {
           snots.push_back(ANTON_MOV(*basic_initializer));
         } else {

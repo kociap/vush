@@ -379,37 +379,37 @@ namespace vush {
         [](Context const& ctx,
            Syntax_Node const& node) -> anton::Expected<ast::Initializer*, Error> {
         switch(node.kind) {
-        case Syntax_Node_Kind::named_initializer: {
-          Syntax_Token const& identifier_token = get_named_initializer_identifier(node);
+        case Syntax_Node_Kind::field_initializer: {
+          Syntax_Token const& identifier_token = get_field_initializer_identifier(node);
           ast::Identifier const identifier = transform_identifier(ctx, identifier_token);
 
-          Syntax_Node const& expression_node = get_named_initializer_expression(node);
+          Syntax_Node const& expression_node = get_field_initializer_expression(node);
           anton::Expected<ast::Expr*, Error> expression = transform_expr(ctx, expression_node);
           if(!expression) {
             return {anton::expected_error, ANTON_MOV(expression.error())};
           }
 
           return {anton::expected_value,
-                  allocate<ast::Named_Initializer>(ctx.allocator, identifier, expression.value(),
+                  allocate<ast::Field_Initializer>(ctx.allocator, identifier, expression.value(),
                                                    node.source_info)};
         } break;
 
-        case Syntax_Node_Kind::indexed_initializer: {
-          Syntax_Node const& index_node = get_indexed_initializer_index(node);
+        case Syntax_Node_Kind::index_initializer: {
+          Syntax_Node const& index_node = get_index_initializer_index(node);
           anton::Expected<ast::Lt_Integer*, Error> index = lower_lt_integer(ctx, index_node);
           if(!index) {
             return {anton::expected_error, ANTON_MOV(index.error())};
           }
 
-          Syntax_Node const& expression_node = get_indexed_initializer_expression(node);
+          Syntax_Node const& expression_node = get_index_initializer_expression(node);
           anton::Expected<ast::Expr*, Error> expression = transform_expr(ctx, expression_node);
           if(!expression) {
             return {anton::expected_error, ANTON_MOV(expression.error())};
           }
 
           return {anton::expected_value,
-                  allocate<ast::Indexed_Initializer>(ctx.allocator, index.value(),
-                                                     expression.value(), node.source_info)};
+                  allocate<ast::Index_Initializer>(ctx.allocator, index.value(), expression.value(),
+                                                   node.source_info)};
         } break;
 
         case Syntax_Node_Kind::basic_initializer: {

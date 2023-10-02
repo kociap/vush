@@ -27,8 +27,8 @@ namespace vush::ast {
     decl_function,
     decl_stage_function,
 
-    named_initializer,
-    indexed_initializer,
+    field_initializer,
+    index_initializer,
     basic_initializer,
 
     expr_if,
@@ -509,26 +509,24 @@ namespace vush::ast {
     using Node::Node;
   };
 
-  struct Named_Initializer: public Initializer {
+  struct Field_Initializer: public Initializer {
     Identifier identifier;
     Expr* expression;
 
-    constexpr Named_Initializer(Identifier identifier, Expr* expression,
+    constexpr Field_Initializer(Identifier identifier, Expr* expression,
                                 Source_Info const& source_info)
-      : Initializer(source_info, Node_Kind::named_initializer), identifier(identifier),
+      : Initializer(source_info, Node_Kind::field_initializer), identifier(identifier),
         expression(expression)
     {
     }
   };
 
-  struct Indexed_Initializer: public Initializer {
+  struct Index_Initializer: public Initializer {
     Lt_Integer* index;
     Expr* expression;
 
-    constexpr Indexed_Initializer(Lt_Integer* index, Expr* expression,
-                                  Source_Info const& source_info)
-      : Initializer(source_info, Node_Kind::indexed_initializer), index(index),
-        expression(expression)
+    constexpr Index_Initializer(Lt_Integer* index, Expr* expression, Source_Info const& source_info)
+      : Initializer(source_info, Node_Kind::index_initializer), index(index), expression(expression)
     {
     }
   };

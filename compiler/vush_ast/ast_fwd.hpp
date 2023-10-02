@@ -38,8 +38,8 @@ namespace vush::ast {
   struct Decl_Stage_Function;
 
   struct Initializer;
-  struct Named_Initializer;
-  struct Indexed_Initializer;
+  struct Field_Initializer;
+  struct Index_Initializer;
   struct Basic_Initializer;
 
   struct Expr;

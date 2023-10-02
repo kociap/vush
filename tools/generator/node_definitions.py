@@ -178,14 +178,14 @@ syntax_nodes = [
         "members": [Syntax_Member(Node_Kind.node, "expression", Lookup_Kind.index, 1)]
     },
     {
-        "syntax_name": "named_initializer",
+        "syntax_name": "field_initializer",
         "members": [
             Syntax_Member(Node_Kind.token, "identifier", Lookup_Kind.index, 1),
             Syntax_Member(Node_Kind.node, "expression", Lookup_Kind.index, 3)
         ]
     },
     {
-        "syntax_name": "indexed_initializer",
+        "syntax_name": "index_initializer",
         "members": [
             Syntax_Member(Node_Kind.node, "index", Lookup_Kind.index, 0),
             Syntax_Member(Node_Kind.node, "expression", Lookup_Kind.index, 2)

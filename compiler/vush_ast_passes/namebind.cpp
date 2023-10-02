@@ -220,9 +220,9 @@ namespace vush {
 
       for(ast::Initializer* const generic_initializer: node->initializers) {
         switch(generic_initializer->node_kind) {
-        case ast::Node_Kind::named_initializer: {
-          ast::Named_Initializer* const initializer =
-            static_cast<ast::Named_Initializer*>(generic_initializer);
+        case ast::Node_Kind::field_initializer: {
+          ast::Field_Initializer* const initializer =
+            static_cast<ast::Field_Initializer*>(generic_initializer);
           // Checking struct fields is done at typecheck stage, hence we do not check the
           // identifier.
           anton::Expected<void, Error> result =
@@ -232,9 +232,9 @@ namespace vush {
           }
         } break;
 
-        case ast::Node_Kind::indexed_initializer: {
-          ast::Indexed_Initializer* const initializer =
-            static_cast<ast::Indexed_Initializer*>(generic_initializer);
+        case ast::Node_Kind::index_initializer: {
+          ast::Index_Initializer* const initializer =
+            static_cast<ast::Index_Initializer*>(generic_initializer);
           // Checking bounds is done at typecheck stage, hence we do not check the index.
           anton::Expected<void, Error> result =
             defcheck_expression(ctx, symtable, initializer->expression);
