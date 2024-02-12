@@ -89,8 +89,8 @@ namespace vush {
     } break;
 
     default:
-      ANTON_ASSERT(false, ""); // TODO: Error
-      ANTON_UNREACHABLE();
+      // TODO: Error
+      ANTON_UNREACHABLE("unreachable");
     }
 
     // The default integer literal type is i32.
@@ -171,8 +171,7 @@ namespace vush {
     } break;
 
     default:
-      ANTON_ASSERT(false, "invalid type");
-      ANTON_UNREACHABLE();
+      ANTON_UNREACHABLE("invalid type");
     }
   }
 
@@ -245,8 +244,7 @@ namespace vush {
       //     return ast::Expr_Binary_Kind::assign_shr;
 
     default:
-      ANTON_ASSERT(false, "invalid syntax node kind");
-      ANTON_UNREACHABLE();
+      ANTON_UNREACHABLE("invalid syntax node kind");
     }
   }
 
@@ -370,8 +368,7 @@ namespace vush {
 
     case Syntax_Node_Kind::expr_reinterpret: {
       // TODO: implement.
-      ANTON_ASSERT(false, "unimplemented");
-      ANTON_UNREACHABLE();
+      ANTON_UNREACHABLE("unimplemented");
     } break;
 
     case Syntax_Node_Kind::expr_init: {
@@ -424,8 +421,7 @@ namespace vush {
         } break;
 
         default:
-          ANTON_ASSERT(false, "invalid syntax node kind");
-          ANTON_UNREACHABLE();
+          ANTON_UNREACHABLE("invalid syntax node kind");
         }
       };
 
@@ -484,8 +480,7 @@ namespace vush {
     case Syntax_Node_Kind::expr_lt_string: {
       // There are no string literals in the language besides the ones used by decl_import which
       // we have special handling for in place, therefore we leave this unimplemented.
-      ANTON_ASSERT(false, "unimplemented");
-      ANTON_UNREACHABLE();
+      ANTON_UNREACHABLE("unimplemented");
     } break;
 
     case Syntax_Node_Kind::expr_lt_float: {
@@ -522,7 +517,7 @@ namespace vush {
     } break;
 
     default:
-      ANTON_UNREACHABLE();
+      ANTON_UNREACHABLE("unreachable");
     }
   }
 
@@ -822,7 +817,7 @@ namespace vush {
     } break;
 
     default:
-      ANTON_UNREACHABLE();
+      ANTON_UNREACHABLE("unreachable");
     }
   }
 
@@ -1001,8 +996,7 @@ namespace vush {
       }
     } else {
       // TODO: Error.
-      ANTON_ASSERT(false, "unreachable");
-      ANTON_UNREACHABLE();
+      ANTON_UNREACHABLE("unreachable");
     }
   }
 
@@ -1074,8 +1068,7 @@ namespace vush {
         return {Stage_Kind::compute, token.source_info};
       } else {
         // TODO: Error
-        ANTON_ASSERT(false, "unreachable");
-        ANTON_UNREACHABLE();
+        ANTON_UNREACHABLE("unreachable");
       }
     };
 
@@ -1189,7 +1182,7 @@ namespace vush {
       } break;
 
       default:
-        ANTON_UNREACHABLE();
+        ANTON_UNREACHABLE("unreachable");
       }
     }
     return {anton::expected_value, abstract};

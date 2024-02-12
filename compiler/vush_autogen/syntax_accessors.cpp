@@ -24,8 +24,7 @@ namespace vush {
         return snot.right();
       }
     }
-    ANTON_ASSERT(false, "identifier not present in type_named");
-    ANTON_UNREACHABLE();
+    ANTON_UNREACHABLE("identifier not present in type_named");
   };
 
   anton::Optional<Syntax_Token const&> get_type_array_mut(Syntax_Node const& node)
@@ -47,8 +46,7 @@ namespace vush {
         return snot.left().children[0].left();
       }
     }
-    ANTON_ASSERT(false, "type_array_base not present in type_array");
-    ANTON_UNREACHABLE();
+    ANTON_UNREACHABLE("type_array_base not present in type_array");
   };
 
   anton::Optional<Syntax_Node const&> get_type_array_size(Syntax_Node const& node)
@@ -670,8 +668,7 @@ namespace vush {
         return snot.left();
       }
     }
-    ANTON_ASSERT(false, "stmt_block not present in switch_arm");
-    ANTON_UNREACHABLE();
+    ANTON_UNREACHABLE("stmt_block not present in switch_arm");
   };
 
   Syntax_Node const& get_stmt_while_condition(Syntax_Node const& node)
@@ -731,8 +728,7 @@ namespace vush {
         return snot.left();
       }
     }
-    ANTON_ASSERT(false, "stmt_block not present in stmt_for");
-    ANTON_UNREACHABLE();
+    ANTON_UNREACHABLE("stmt_block not present in stmt_for");
   };
 
   Syntax_Node const& get_stmt_do_while_body(Syntax_Node const& node)

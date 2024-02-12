@@ -24,8 +24,7 @@ Syntax_Node const& get_{syntax_name}_{member.name}(Syntax_Node const& node) {{
             return snot.left(){".children[0].left()" if member.unwrap else ""};
         }}
     }}
-    ANTON_ASSERT(false, "{member.index} not present in {syntax_name}");
-    ANTON_UNREACHABLE();
+    ANTON_UNREACHABLE("{member.index} not present in {syntax_name}");
 }};'''
 
     def create_index_accessor(syntax_name, member):
@@ -78,8 +77,7 @@ Syntax_Token const& get_{syntax_name}_{member.name}(Syntax_Node const& node) {{
             return snot.right();
         }}
     }}
-    ANTON_ASSERT(false, "{member.index} not present in {syntax_name}");
-    ANTON_UNREACHABLE();
+    ANTON_UNREACHABLE("{member.index} not present in {syntax_name}");
 }};'''
 
 

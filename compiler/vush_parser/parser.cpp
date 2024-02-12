@@ -4,6 +4,7 @@
 #include <anton/intrinsics.hpp>
 #include <anton/memory.hpp>
 #include <anton/optional.hpp>
+#include <anton/ranges.hpp>
 #include <anton/string.hpp>
 #include <anton/string7_stream.hpp>
 #include <anton/string7_view.hpp>
@@ -1413,8 +1414,7 @@ namespace vush {
             return 4;
 
           default:
-            ANTON_ASSERT(false, "invalid operator type");
-            ANTON_UNREACHABLE();
+            ANTON_UNREACHABLE("invalid operator type");
           }
         };
 

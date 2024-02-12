@@ -1,7 +1,8 @@
 #include <vush_ast_passes/passes.hpp>
 
-#include <anton/algorithm/sort.hpp>
 #include <anton/flat_hash_map.hpp>
+#include <anton/ranges.hpp>
+#include <anton/sort.hpp>
 
 #include <vush_ast/ast.hpp>
 #include <vush_ast_passes/diagnostics.hpp>
@@ -313,8 +314,7 @@ namespace vush {
       return anton::expected_value;
 
     default:
-      ANTON_ASSERT(false, "invalid expression type");
-      ANTON_UNREACHABLE();
+      ANTON_UNREACHABLE("invalid expression type");
     }
   }
 
@@ -768,9 +768,7 @@ namespace vush {
         }
 
         bool identical = true;
-        anton::Zip_Iterator begin{overload1->parameters.begin(), overload2->parameters.begin()};
-        anton::Zip_Iterator end{overload1->parameters.end(), overload2->parameters.end()};
-        for(auto const [p1, p2]: anton::Range(ANTON_MOV(begin), ANTON_MOV(end))) {
+        for(auto const [p1, p2]: anton::zip(overload1->parameters, overload2->parameters)) {
           if(!ast::compare_types_equal(*p1->type, *p2->type)) {
             identical = false;
             break;

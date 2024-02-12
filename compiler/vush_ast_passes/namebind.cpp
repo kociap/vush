@@ -166,8 +166,7 @@ namespace vush {
         }
 
         default:
-          ANTON_FAIL(false, "unknown symbol type");
-          ANTON_UNREACHABLE();
+          ANTON_UNREACHABLE("unknown symbol type");
         }
       };
 
@@ -254,8 +253,7 @@ namespace vush {
         } break;
 
         default:
-          ANTON_ASSERT(false, "invalid initializer node kind");
-          ANTON_UNREACHABLE();
+          ANTON_UNREACHABLE("invalid initializer node kind");
         }
       }
 

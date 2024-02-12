@@ -2,6 +2,7 @@
 
 #include <anton/algorithm.hpp>
 #include <anton/pair.hpp>
+#include <anton/ranges.hpp>
 
 #include <vush_ast/ast.hpp>
 #include <vush_autogen/builtin_symbols.hpp>
@@ -276,9 +277,7 @@ namespace vush {
 
       bool viable = true;
       i64 overload_rank = 0;
-      anton::Zip_Iterator begin{call->arguments.begin(), fn->parameters.begin()};
-      anton::Zip_Iterator end{call->arguments.end(), fn->parameters.end()};
-      for(auto const [argument, parameter]: anton::Range(ANTON_MOV(begin), ANTON_MOV(end))) {
+      for(auto const [argument, parameter]: anton::zip(call->arguments, fn->parameters)) {
         anton::Expected<ast::Type const*, Error> eval_result =
           evaluate_expression_type(ctx, argument);
         if(!eval_result) {
@@ -387,8 +386,7 @@ namespace vush {
 
       default:
         // Validated in the validation pass.
-        ANTON_ASSERT(false, "invalid identifier definition kind");
-        ANTON_UNREACHABLE();
+        ANTON_UNREACHABLE("invalid identifier definition kind");
       }
     } break;
 
@@ -644,14 +642,12 @@ namespace vush {
 
     case ast::Node_Kind::expr_reinterpret: {
       // TODO: Implement once transform for reinterpret is implemented.
-      ANTON_ASSERT(false, "unimplemented");
-      ANTON_UNREACHABLE();
+      ANTON_UNREACHABLE("unimplemented");
     } break;
 
     // TODO: Should we handle expr_default here?
     default:
-      ANTON_ASSERT(false, "invalid expression kind");
-      ANTON_UNREACHABLE();
+      ANTON_UNREACHABLE("invalid expression kind");
     }
   }
 

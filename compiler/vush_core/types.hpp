@@ -27,8 +27,7 @@ namespace vush {
 
   using nullptr_t = anton::nullptr_t;
 
-  template<typename T>
-  using Array = anton::Array<T, anton::Polymorphic_Allocator>;
+  using anton::Array;
 
   using Allocator = anton::Memory_Allocator;
 

@@ -148,8 +148,8 @@ namespace vush {
   anton::Expected<Lexed_Source, Error>
   lex_source(Context const& ctx, anton::String_View const source_path, anton::String7_View source)
   {
-    Array<Token> tokens(anton::reserve, 4096, ctx.allocator);
-    Array<Token_Source_Info> token_sources(anton::reserve, 4096, ctx.allocator);
+    Array<Token> tokens(ctx.allocator, anton::reserve, 4096);
+    Array<Token_Source_Info> token_sources(ctx.allocator, anton::reserve, 4096);
     char8 const* const source_begin = source.begin();
     char8 const* current = source.begin();
     char8 const* const end = source.end();
@@ -295,7 +295,7 @@ namespace vush {
           } break;
 
           default:
-            ANTON_UNREACHABLE();
+            ANTON_UNREACHABLE("unreachable");
           }
         } else {
           // We haven't found a prefixed integer. Match integer or float.
