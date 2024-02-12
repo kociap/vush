@@ -69,11 +69,8 @@ namespace vush {
   };
 
   struct Token {
-    Token_Kind type;
+    Token_Kind kind;
     anton::String7_View value;
-  };
-
-  struct Token_Source_Info {
     i64 offset;
     i64 line;
     i64 column;
@@ -82,25 +79,6 @@ namespace vush {
     i64 end_column;
   };
 
-  struct Lexed_Source {
-  public:
-    Array<Token> tokens;
-    Array<Token_Source_Info> token_sources;
-
-  public:
-    Lexed_Source(Array<Token> tokens, Array<Token_Source_Info> token_sources);
-
-    using token_iterator = anton::Zip_Iterator<Token*, Token_Source_Info*>;
-    using const_token_iterator = anton::Zip_Iterator<Token const*, Token_Source_Info const*>;
-
-    token_iterator begin();
-    token_iterator end();
-    const_token_iterator begin() const;
-    const_token_iterator end() const;
-    const_token_iterator cbegin() const;
-    const_token_iterator cend() const;
-  };
-
-  [[nodiscard]] anton::Expected<Lexed_Source, Error>
+  [[nodiscard]] anton::Expected<Array<Token>, Error>
   lex_source(Context const& ctx, anton::String_View source_path, anton::String7_View source);
 } // namespace vush
