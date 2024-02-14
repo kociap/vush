@@ -6,7 +6,6 @@
 #include <anton/string.hpp>
 #include <anton/string_view.hpp>
 
-#include <vush_arena/arena.hpp>
 #include <vush_core/types.hpp>
 #include <vush_diagnostics/error.hpp>
 

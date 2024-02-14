@@ -76,8 +76,6 @@ target_sources(vush
   PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush.hpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_arena/arena.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_arena/arena.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast/ast.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast/ast.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast/ast_fwd.hpp"

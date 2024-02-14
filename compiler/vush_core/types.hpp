@@ -30,6 +30,7 @@ namespace vush {
   using anton::Array;
 
   using Allocator = anton::Memory_Allocator;
+  using Arena_Allocator = anton::Arena_Allocator;
 
   enum struct Stage_Kind : u8 {
     vertex,
