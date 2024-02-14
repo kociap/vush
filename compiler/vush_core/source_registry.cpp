@@ -3,7 +3,8 @@
 namespace vush {
   Source_Registry::Source_Registry(Allocator* allocator): sources(allocator) {}
 
-  Source_Data const* Source_Registry::find_source(anton::String_View const name) const
+  Source_Data const*
+  Source_Registry::find_source(anton::String_View const name) const
   {
     auto result = sources.find(name);
     if(result != sources.end()) {

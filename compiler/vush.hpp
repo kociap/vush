@@ -69,15 +69,17 @@ namespace vush {
   //
   // Parameters:
   //     context - the definition context of a source.
-  // definitions - output parameter for per-stage source definitions. The slice is always presized
-  //               to stage_kind_count.
+  // definitions - output parameter for per-stage source definitions. The slice
+  //               is always presized to stage_kind_count.
   //
   using source_definition_callback = anton::Expected<void, anton::String> (*)(
-    Source_Definition_Context const& context, anton::Slice<Source_Definition> definitions);
+    Source_Definition_Context const& context,
+    anton::Slice<Source_Definition> definitions);
 
   struct Diagnostics_Options {
-    // Whether to provide extended diagnostic messages that include more thorough explanation of the
-    // error and source code snippets with the exact location highlighted.
+    // Whether to provide extended diagnostic messages that include more
+    // thorough explanation of the error and source code snippets with the exact
+    // location highlighted.
     bool extended = true;
     // Whether to display line numbers on the left side of code snippets.
     bool display_line_numbers = true;
@@ -97,8 +99,9 @@ namespace vush {
     anton::String data;
   };
 
-  using source_import_callback = anton::Expected<Source_Import_Result, anton::String> (*)(
-    Allocator& allocator, anton::String_View path, void* user_data);
+  using source_import_callback =
+    anton::Expected<Source_Import_Result, anton::String> (*)(
+      Allocator& allocator, anton::String_View path, void* user_data);
 
   namespace spirv {
     struct Shader {
@@ -117,17 +120,20 @@ namespace vush {
     };
 
     // compile
-    // Compiles given vush shader to a spirv shader. Uses the callback to import sources.
+    // Compiles given vush shader to a spirv shader. Uses the callback to import
+    // sources.
     //
     // Returns:
     // Compiled spirv files or an error.
     //
-    anton::Expected<Build_Result, Error> compile(Configuration const& config, Allocator& allocator,
-                                                 source_import_callback callback, void* user_data);
+    anton::Expected<Build_Result, Error>
+    compile(Configuration const& config, Allocator& allocator,
+            source_import_callback callback, void* user_data);
 
     // compile
-    // Compiles given vush shader to a spirv shader. Reads the source files from the disk. Uses the
-    // import paths provided in import_directories to resolve import directives.
+    // Compiles given vush shader to a spirv shader. Reads the source files from
+    // the disk. Uses the import paths provided in import_directories to resolve
+    // import directives.
     //
     // Returns:
     // Compiled spirv files or an error.

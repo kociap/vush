@@ -9,7 +9,8 @@
 namespace vush {
   [[nodiscard]] static void* align(void* const p, i64 const alignment)
   {
-    return reinterpret_cast<void*>(align_address(reinterpret_cast<u64>(p), alignment));
+    return reinterpret_cast<void*>(
+      align_address(reinterpret_cast<u64>(p), alignment));
   }
 
   [[nodiscard]] static i64 difference(void* const a, void* const b)
@@ -22,9 +23,11 @@ namespace vush {
     return static_cast<char*>(p) + a;
   }
 
-  Arena_Allocator::Arena_Allocator(i64 const default_block_size, i64 const default_block_alignment)
+  Arena_Allocator::Arena_Allocator(i64 const default_block_size,
+                                   i64 const default_block_alignment)
     : default_block_size(default_block_size),
-      default_block_alignment(anton::math::max(default_block_alignment, (i64)alignof(Block)))
+      default_block_alignment(
+        anton::math::max(default_block_alignment, (i64)alignof(Block)))
   {
   }
 
@@ -51,11 +54,14 @@ namespace vush {
     return *this;
   }
 
-  Arena_Allocator::Block* Arena_Allocator::allocate_block(i64 const size, i64 const alignment)
+  Arena_Allocator::Block* Arena_Allocator::allocate_block(i64 const size,
+                                                          i64 const alignment)
   {
-    i64 const allocation_alignment = anton::math::max(alignment, default_block_alignment);
+    i64 const allocation_alignment =
+      anton::math::max(alignment, default_block_alignment);
     i64 const header = align_address(sizeof(Block), allocation_alignment);
-    i64 const allocation_size = anton::math::max(size + header, default_block_size);
+    i64 const allocation_size =
+      anton::math::max(size + header, default_block_size);
     void* const memory = anton::allocate(allocation_size, allocation_alignment);
     Block* const block = reinterpret_cast<Block*>(memory);
     block->next = nullptr;

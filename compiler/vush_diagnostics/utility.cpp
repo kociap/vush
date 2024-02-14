@@ -17,8 +17,9 @@ namespace vush {
                  .extended_diagnostic = anton::String(allocator)};
   }
 
-  Error error_from_source(Allocator* const allocator, anton::String_View const source_path,
-                          i64 const line, i64 const column)
+  Error error_from_source(Allocator* const allocator,
+                          anton::String_View const source_path, i64 const line,
+                          i64 const column)
   {
     return Error{.line = line,
                  .column = column,
@@ -30,31 +31,37 @@ namespace vush {
   }
 
   anton::String format_diagnostic_location(Allocator* const allocator,
-                                           anton::String_View const source_path, i64 const line,
-                                           i64 const column)
+                                           anton::String_View const source_path,
+                                           i64 const line, i64 const column)
   {
-    return anton::concat(allocator, source_path, u8":"_sv, anton::to_string(allocator, line),
-                         u8":"_sv, anton::to_string(allocator, column), u8": "_sv);
+    return anton::concat(allocator, source_path, u8":"_sv,
+                         anton::to_string(allocator, line), u8":"_sv,
+                         anton::to_string(allocator, column), u8": "_sv);
   }
 
-  anton::String format_diagnostic_location(Allocator* const allocator, Source_Info const& info)
+  anton::String format_diagnostic_location(Allocator* const allocator,
+                                           Source_Info const& info)
   {
-    return format_diagnostic_location(allocator, info.source_path, info.line, info.column);
+    return format_diagnostic_location(allocator, info.source_path, info.line,
+                                      info.column);
   }
 
-  anton::String_View get_source_bit(anton::String_View const source, i64 const offset,
-                                    i64 const end_offset)
+  anton::String_View get_source_bit(anton::String_View const source,
+                                    i64 const offset, i64 const end_offset)
   {
-    anton::String_View const source_bit{source.data() + offset, source.data() + end_offset};
+    anton::String_View const source_bit{source.data() + offset,
+                                        source.data() + end_offset};
     return source_bit;
   }
 
-  anton::String_View get_source_bit(anton::String_View const source, Source_Info const& src_info)
+  anton::String_View get_source_bit(anton::String_View const source,
+                                    Source_Info const& src_info)
   {
     return get_source_bit(source, src_info.offset, src_info.end_offset);
   }
 
-  static void print_underline(anton::String& out, i64 const padding, i64 const underline_length)
+  static void print_underline(anton::String& out, i64 const padding,
+                              i64 const underline_length)
   {
     for(i64 i = 0; i < padding; ++i) {
       out += U' ';
@@ -70,14 +77,15 @@ namespace vush {
     i64 end;
   };
 
-  [[nodiscard]] static Line_Limits find_line_limits(anton::String_View const source,
-                                                    i64 const start_pos)
+  [[nodiscard]] static Line_Limits
+  find_line_limits(anton::String_View const source, i64 const start_pos)
   {
     Line_Limits limits{start_pos, start_pos};
     char8 const* const begin = source.bytes_begin() - 1;
     char8 const* const end = source.bytes_end();
     // Search backwards
-    for(char8 const* data = source.data() + start_pos - 1; data != begin; --data) {
+    for(char8 const* data = source.data() + start_pos - 1; data != begin;
+        --data) {
       if(*data == '\n') {
         break;
       }
@@ -85,7 +93,8 @@ namespace vush {
       limits.start -= 1;
     }
     // Search forward
-    for(char8 const* data = source.data() + start_pos + 1; data != end; ++data) {
+    for(char8 const* data = source.data() + start_pos + 1; data != end;
+        ++data) {
       if(*data == '\n') {
         break;
       }
@@ -112,8 +121,8 @@ namespace vush {
     return length;
   }
 
-  void print_left_margin(Allocator* const allocator, anton::String& out, i64 const width,
-                         anton::Optional<i64> const number)
+  void print_left_margin(Allocator* const allocator, anton::String& out,
+                         i64 const width, anton::Optional<i64> const number)
   {
     if(number) {
       out += ' ';
@@ -127,11 +136,13 @@ namespace vush {
     }
   }
 
-  void print_source_snippet(Context const& ctx, anton::String& out, anton::String_View const source,
-                            i64 const offset, i64 const end_offset, i64 const line)
+  void print_source_snippet(Context const& ctx, anton::String& out,
+                            anton::String_View const source, i64 const offset,
+                            i64 const end_offset, i64 const line)
   {
     Line_Limits const limits = find_line_limits(source, offset);
-    anton::String_View const source_bit{source.data() + limits.start, source.data() + limits.end};
+    anton::String_View const source_bit{source.data() + limits.start,
+                                        source.data() + limits.end};
     if(ctx.diagnostics.display_line_numbers) {
       i64 const line_number = line;
       i64 const line_number_width = calculate_integer_length(line_number);
@@ -153,13 +164,16 @@ namespace vush {
     }
   }
 
-  void print_source_snippet(Context const& ctx, anton::String& out, anton::String_View const source,
+  void print_source_snippet(Context const& ctx, anton::String& out,
+                            anton::String_View const source,
                             Source_Info const& src_info)
   {
-    print_source_snippet(ctx, out, source, src_info.offset, src_info.end_offset, src_info.line);
+    print_source_snippet(ctx, out, source, src_info.offset, src_info.end_offset,
+                         src_info.line);
   }
 
-  anton::String stringify_type(Context const& ctx, ast::Type const* const generic_type)
+  anton::String stringify_type(Context const& ctx,
+                               ast::Type const* const generic_type)
   {
     switch(generic_type->type_kind) {
     case ast::Type_Kind::type_builtin: {
@@ -499,12 +513,14 @@ namespace vush {
     }
   }
 
-  anton::String stringify_builtin_function(Context const& ctx, ast::Decl_Function const* const fn)
+  anton::String stringify_builtin_function(Context const& ctx,
+                                           ast::Decl_Function const* const fn)
   {
     anton::String return_type = stringify_type(ctx, fn->return_type);
-    anton::String result =
-      anton::concat(ctx.allocator, return_type, " "_sv, fn->identifier.value, "("_sv);
-    for(bool first = true; ast::Fn_Parameter const* const parameter: fn->parameters) {
+    anton::String result = anton::concat(ctx.allocator, return_type, " "_sv,
+                                         fn->identifier.value, "("_sv);
+    for(bool first = true;
+        ast::Fn_Parameter const* const parameter: fn->parameters) {
       if(!first) {
         result += ", "_sv;
       }

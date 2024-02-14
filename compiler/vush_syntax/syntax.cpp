@@ -7,7 +7,8 @@ namespace vush {
   {
   }
 
-  Syntax_Node::Syntax_Node(Syntax_Node_Kind kind, Array<SNOT> array, Source_Info const& source_info)
+  Syntax_Node::Syntax_Node(Syntax_Node_Kind kind, Array<SNOT> array,
+                           Source_Info const& source_info)
     : children(ANTON_MOV(array)), source_info(source_info), kind(kind)
   {
   }

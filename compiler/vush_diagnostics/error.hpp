@@ -10,8 +10,8 @@ namespace vush {
     anton::String source;
     // The diagnostic message.
     anton::String diagnostic;
-    // A more thorough explanation of the error that contains source code snippets with the exact
-    // locations highlighted.
+    // A more thorough explanation of the error that contains source code
+    // snippets with the exact locations highlighted.
     anton::String extended_diagnostic;
     i64 line;
     i64 column;
@@ -21,13 +21,15 @@ namespace vush {
     // format
     // Format diagnostic message with source, line and column.
     //   <source>:<line>:<column>: error: <diagnostic>
-    // The extended diagnostic will be included if include_extended_diagnostic is true.
+    // The extended diagnostic will be included if include_extended_diagnostic
+    // is true.
     //   <source>:<line>:<column>: error: <diagnostic>
     //   <extended_diagnostic>
     //
     // Parameters:
     //                   allocator - allocator to use for allocating the string.
-    // include_extended_diagnostic - whether to include the extended diagnostic message.
+    // include_extended_diagnostic - whether to include the extended diagnostic
+    //                               message.
     //
     // Returns:
     // Formatted diagnostic message.

@@ -6,7 +6,8 @@ namespace vush {
   // Arena_Allocator
   //
   struct Arena_Allocator: public Allocator {
-    Arena_Allocator(i64 default_block_size = 65536, i64 default_block_alignment = 8);
+    Arena_Allocator(i64 default_block_size = 65536,
+                    i64 default_block_alignment = 8);
     Arena_Allocator(Arena_Allocator const& allocator) = delete;
     Arena_Allocator(Arena_Allocator&& allocator);
     ~Arena_Allocator();
@@ -15,7 +16,8 @@ namespace vush {
 
     // allocate
     //
-    [[nodiscard]] ANTON_DECLSPEC_ALLOCATOR virtual void* allocate(i64 size, i64 alignment) override;
+    [[nodiscard]] ANTON_DECLSPEC_ALLOCATOR virtual void*
+    allocate(i64 size, i64 alignment) override;
 
     // deallocate
     // Does nothing.
@@ -29,7 +31,8 @@ namespace vush {
     // Returns:
     // true if allocator is the same object as *this.
     //
-    [[nodiscard]] virtual bool is_equal(Memory_Allocator const& allocator) const override;
+    [[nodiscard]] virtual bool
+    is_equal(Memory_Allocator const& allocator) const override;
 
     // reset
     // Frees all memory owned by the allocator without calling destructors and restores the

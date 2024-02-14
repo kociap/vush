@@ -20,19 +20,22 @@ namespace vush {
 
   template<typename Left, typename Right>
   struct Either {
-    static_assert(!anton::is_same<Left, Right>, "Left and Right must not be the same types");
+    static_assert(!anton::is_same<Left, Right>,
+                  "Left and Right must not be the same types");
 
   public:
     using left_type = Left;
     using right_type = Right;
 
     template<typename... Args>
-    Either(Either_Left_Tag, Args&&... args): left_value{ANTON_FWD(args)...}, holds_left(true)
+    Either(Either_Left_Tag, Args&&... args)
+      : left_value{ANTON_FWD(args)...}, holds_left(true)
     {
     }
 
     template<typename... Args>
-    Either(Either_Right_Tag, Args&&... args): right_value{ANTON_FWD(args)...}, holds_left(false)
+    Either(Either_Right_Tag, Args&&... args)
+      : right_value{ANTON_FWD(args)...}, holds_left(false)
     {
     }
 
@@ -53,9 +56,11 @@ namespace vush {
     Either(Either&& other): null_state(), holds_left(other.holds_left)
     {
       if(other.holds_left) {
-        anton::construct(anton::addressof(left_value), ANTON_MOV(other.left_value));
+        anton::construct(anton::addressof(left_value),
+                         ANTON_MOV(other.left_value));
       } else {
-        anton::construct(anton::addressof(right_value), ANTON_MOV(other.right_value));
+        anton::construct(anton::addressof(right_value),
+                         ANTON_MOV(other.right_value));
       }
     }
 
@@ -89,13 +94,15 @@ namespace vush {
           left_value = ANTON_MOV(other.left_value);
         } else {
           anton::destruct(anton::addressof(left_value));
-          anton::construct(anton::addressof(right_value), ANTON_MOV(other.right_value));
+          anton::construct(anton::addressof(right_value),
+                           ANTON_MOV(other.right_value));
           holds_left = false;
         }
       } else {
         if(other.holds_left) {
           anton::destruct(anton::addressof(right_value));
-          anton::construct(anton::addressof(left_value), ANTON_MOV(other.left_value));
+          anton::construct(anton::addressof(left_value),
+                           ANTON_MOV(other.left_value));
           holds_left = true;
         } else {
           right_value = ANTON_MOV(other.right_value);
@@ -126,49 +133,65 @@ namespace vush {
 
     [[nodiscard]] Left& left() &
     {
-      ANTON_ASSERT(holds_left, u8"cannot call left() on Either that does not hold a left value");
+      ANTON_ASSERT(
+        holds_left,
+        u8"cannot call left() on Either that does not hold a left value");
       return left_value;
     }
 
     [[nodiscard]] Left const& left() const&
     {
-      ANTON_ASSERT(holds_left, u8"cannot call left() on Either that does not hold a left value");
+      ANTON_ASSERT(
+        holds_left,
+        u8"cannot call left() on Either that does not hold a left value");
       return left_value;
     }
 
     [[nodiscard]] Left&& left() &&
     {
-      ANTON_ASSERT(holds_left, u8"cannot call left() on Either that does not hold a left value");
+      ANTON_ASSERT(
+        holds_left,
+        u8"cannot call left() on Either that does not hold a left value");
       return left_value;
     }
 
     [[nodiscard]] Left const&& left() const&&
     {
-      ANTON_ASSERT(holds_left, u8"cannot call left() on Either that does not hold a left value");
+      ANTON_ASSERT(
+        holds_left,
+        u8"cannot call left() on Either that does not hold a left value");
       return left_value;
     }
 
     [[nodiscard]] Right& right() &
     {
-      ANTON_ASSERT(!holds_left, u8"cannot call right() on Either that does not hold a right value");
+      ANTON_ASSERT(
+        !holds_left,
+        u8"cannot call right() on Either that does not hold a right value");
       return right_value;
     }
 
     [[nodiscard]] Right const& right() const&
     {
-      ANTON_ASSERT(!holds_left, u8"cannot call right() on Either that does not hold a right value");
+      ANTON_ASSERT(
+        !holds_left,
+        u8"cannot call right() on Either that does not hold a right value");
       return right_value;
     }
 
     [[nodiscard]] Right&& right() &&
     {
-      ANTON_ASSERT(!holds_left, u8"cannot call right() on Either that does not hold a right value");
+      ANTON_ASSERT(
+        !holds_left,
+        u8"cannot call right() on Either that does not hold a right value");
       return right_value;
     }
 
     [[nodiscard]] Right const&& right() const&&
     {
-      ANTON_ASSERT(!holds_left, u8"cannot call right() on Either that does not hold a right value");
+      ANTON_ASSERT(
+        !holds_left,
+        u8"cannot call right() on Either that does not hold a right value");
       return right_value;
     }
 
@@ -179,17 +202,21 @@ namespace vush {
         if(rhs.holds_left) {
           swap(lhs.left_value, rhs.left_value);
         } else {
-          anton::construct(anton::addressof(rhs.left_value), ANTON_MOV(lhs.left_value));
+          anton::construct(anton::addressof(rhs.left_value),
+                           ANTON_MOV(lhs.left_value));
           anton::destruct(anton::addressof(lhs.left_value));
-          anton::construct(anton::addressof(lhs.right_value), ANTON_MOV(rhs.right_value));
+          anton::construct(anton::addressof(lhs.right_value),
+                           ANTON_MOV(rhs.right_value));
           anton::destruct(anton::addressof(rhs.right_value));
           anton::swap(lhs.holds_left, rhs.holds_left);
         }
       } else {
         if(rhs.holds_left) {
-          anton::construct(anton::addressof(rhs.right_value), ANTON_MOV(lhs.right_value));
+          anton::construct(anton::addressof(rhs.right_value),
+                           ANTON_MOV(lhs.right_value));
           anton::destruct(anton::addressof(lhs.right_value));
-          anton::construct(anton::addressof(lhs.left_value), ANTON_MOV(rhs.left_value));
+          anton::construct(anton::addressof(lhs.left_value),
+                           ANTON_MOV(rhs.left_value));
           anton::destruct(anton::addressof(rhs.left_value));
           anton::swap(lhs.holds_left, rhs.holds_left);
         } else {

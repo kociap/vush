@@ -88,15 +88,16 @@ namespace vush::ast {
     {
     }
 
-    constexpr Type(Source_Info const& source_info, Type_Kind type_kind, Type_Layout layout)
+    constexpr Type(Source_Info const& source_info, Type_Kind type_kind,
+                   Type_Layout layout)
       : Node(source_info, Node_Kind::type), layout(layout), type_kind(type_kind)
     {
     }
 
-    constexpr Type(Source_Info const& source_info, Type_Kind type_kind, Type_Layout layout,
-                   Qualifiers qualifiers)
-      : Node(source_info, Node_Kind::type), layout(layout), qualifiers(qualifiers),
-        type_kind(type_kind)
+    constexpr Type(Source_Info const& source_info, Type_Kind type_kind,
+                   Type_Layout layout, Qualifiers qualifiers)
+      : Node(source_info, Node_Kind::type), layout(layout),
+        qualifiers(qualifiers), type_kind(type_kind)
     {
     }
   };
@@ -288,20 +289,23 @@ namespace vush::ast {
   struct Type_Builtin: public Type {
     Type_Builtin_Kind value;
 
-    constexpr Type_Builtin(Source_Info const& source_info, Type_Builtin_Kind value)
+    constexpr Type_Builtin(Source_Info const& source_info,
+                           Type_Builtin_Kind value)
       : Type(source_info, Type_Kind::type_builtin), value(value)
     {
     }
 
-    constexpr Type_Builtin(Source_Info const& source_info, Type_Builtin_Kind value,
-                           Type_Layout layout)
+    constexpr Type_Builtin(Source_Info const& source_info,
+                           Type_Builtin_Kind value, Type_Layout layout)
       : Type(source_info, Type_Kind::type_builtin, layout), value(value)
     {
     }
 
-    constexpr Type_Builtin(Source_Info const& source_info, Qualifiers qualifiers,
-                           Type_Builtin_Kind value, Type_Layout layout)
-      : Type(source_info, Type_Kind::type_builtin, layout, qualifiers), value(value)
+    constexpr Type_Builtin(Source_Info const& source_info,
+                           Qualifiers qualifiers, Type_Builtin_Kind value,
+                           Type_Layout layout)
+      : Type(source_info, Type_Kind::type_builtin, layout, qualifiers),
+        value(value)
     {
     }
   };
@@ -316,8 +320,10 @@ namespace vush::ast {
     {
     }
 
-    Type_Struct(Source_Info const& source_info, Qualifiers qualifiers, anton::String&& value)
-      : Type(source_info, Type_Kind::type_struct, {}, qualifiers), value(ANTON_MOV(value))
+    Type_Struct(Source_Info const& source_info, Qualifiers qualifiers,
+                anton::String&& value)
+      : Type(source_info, Type_Kind::type_struct, {}, qualifiers),
+        value(ANTON_MOV(value))
     {
     }
   };
@@ -327,14 +333,16 @@ namespace vush::ast {
     // nullptr when the array is unsized.
     Lt_Integer* size;
 
-    constexpr Type_Array(Source_Info const& source_info, Type* base, Lt_Integer* size)
+    constexpr Type_Array(Source_Info const& source_info, Type* base,
+                         Lt_Integer* size)
       : Type(source_info, Type_Kind::type_array), base(base), size(size)
     {
     }
 
-    constexpr Type_Array(Source_Info const& source_info, Qualifiers qualifiers, Type* base,
-                         Lt_Integer* size)
-      : Type(source_info, Type_Kind::type_array, {}, qualifiers), base(base), size(size)
+    constexpr Type_Array(Source_Info const& source_info, Qualifiers qualifiers,
+                         Type* base, Lt_Integer* size)
+      : Type(source_info, Type_Kind::type_array, {}, qualifiers), base(base),
+        size(size)
     {
     }
   };
@@ -351,9 +359,11 @@ namespace vush::ast {
     Identifier identifier;
     anton::Slice<Attribute_Parameter> parameters;
 
-    constexpr Attribute(Identifier identifier, anton::Slice<Attribute_Parameter> parameters,
+    constexpr Attribute(Identifier identifier,
+                        anton::Slice<Attribute_Parameter> parameters,
                         Source_Info const& source_info)
-      : Node(source_info, Node_Kind::attribute), identifier(identifier), parameters(parameters)
+      : Node(source_info, Node_Kind::attribute), identifier(identifier),
+        parameters(parameters)
     {
     }
   };
@@ -366,8 +376,8 @@ namespace vush::ast {
 
     constexpr Variable(Type* type, Identifier identifier, Expr* initializer,
                        Source_Info const& source_info)
-      : Node(source_info, Node_Kind::variable), type(type), identifier(identifier),
-        initializer(initializer)
+      : Node(source_info, Node_Kind::variable), type(type),
+        identifier(identifier), initializer(initializer)
     {
     }
   };
@@ -380,9 +390,10 @@ namespace vush::ast {
     Expr* initializer;
     i64 offset = 0;
 
-    constexpr Struct_Field(Attr_List attributes, Identifier identifier, Type* type,
-                           Expr* initializer)
-      : attributes(attributes), identifier(identifier), type(type), initializer(initializer)
+    constexpr Struct_Field(Attr_List attributes, Identifier identifier,
+                           Type* type, Expr* initializer)
+      : attributes(attributes), identifier(identifier), type(type),
+        initializer(initializer)
     {
     }
   };
@@ -392,8 +403,10 @@ namespace vush::ast {
     Field_List fields;
     Type_Layout layout;
 
-    constexpr Decl_Struct(Identifier identifier, Field_List fields, Source_Info const& source_info)
-      : Node(source_info, Node_Kind::decl_struct), identifier(identifier), fields(fields)
+    constexpr Decl_Struct(Identifier identifier, Field_List fields,
+                          Source_Info const& source_info)
+      : Node(source_info, Node_Kind::decl_struct), identifier(identifier),
+        fields(fields)
     {
     }
   };
@@ -407,8 +420,8 @@ namespace vush::ast {
 
     constexpr Fn_Parameter(Identifier identifier, Type* type, Identifier source,
                            Source_Info const& source_info)
-      : Node(source_info, Node_Kind::fn_parameter), identifier(identifier), type(type),
-        source(source)
+      : Node(source_info, Node_Kind::fn_parameter), identifier(identifier),
+        type(type), source(source)
     {
     }
   };
@@ -427,10 +440,12 @@ namespace vush::ast {
     Overload_Group* overload_group = nullptr;
 
     constexpr Decl_Function(Attr_List attributes, Identifier identifier,
-                            Fn_Parameter_List parameters, Type* return_type, Node_List body,
-                            bool builtin, Source_Info const& source_info)
-      : Node(source_info, Node_Kind::decl_function), attributes(attributes), identifier(identifier),
-        parameters(parameters), return_type(return_type), body(body), builtin(builtin)
+                            Fn_Parameter_List parameters, Type* return_type,
+                            Node_List body, bool builtin,
+                            Source_Info const& source_info)
+      : Node(source_info, Node_Kind::decl_function), attributes(attributes),
+        identifier(identifier), parameters(parameters),
+        return_type(return_type), body(body), builtin(builtin)
     {
     }
   };
@@ -457,10 +472,13 @@ namespace vush::ast {
     Node_List body;
 
     constexpr Decl_Stage_Function(Attr_List attributes, Identifier pass,
-                                  With_Source<Stage_Kind> stage, Fn_Parameter_List parameters,
-                                  Type* return_type, Node_List body, Source_Info const& source_info)
-      : Node(source_info, Node_Kind::decl_stage_function), attributes(attributes), pass(pass),
-        stage(stage), parameters(parameters), return_type(return_type), body(body)
+                                  With_Source<Stage_Kind> stage,
+                                  Fn_Parameter_List parameters,
+                                  Type* return_type, Node_List body,
+                                  Source_Info const& source_info)
+      : Node(source_info, Node_Kind::decl_stage_function),
+        attributes(attributes), pass(pass), stage(stage),
+        parameters(parameters), return_type(return_type), body(body)
     {
     }
   };
@@ -479,8 +497,8 @@ namespace vush::ast {
 
     constexpr Expr_If(Expr* condition, Expr* then_branch, Expr* else_branch,
                       Source_Info const& source_info)
-      : Expr(source_info, Node_Kind::expr_if), condition(condition), then_branch(then_branch),
-        else_branch(else_branch)
+      : Expr(source_info, Node_Kind::expr_if), condition(condition),
+        then_branch(then_branch), else_branch(else_branch)
     {
     }
   };
@@ -489,7 +507,8 @@ namespace vush::ast {
     anton::String_View value;
     Node* definition = nullptr;
 
-    constexpr Expr_Identifier(anton::String_View value, Source_Info const& source_info)
+    constexpr Expr_Identifier(anton::String_View value,
+                              Source_Info const& source_info)
       : Expr(source_info, Node_Kind::expr_identifier), value(value)
     {
     }
@@ -499,7 +518,8 @@ namespace vush::ast {
     Expr* lhs;
     Expr* rhs;
 
-    constexpr Expr_Assignment(Expr* lhs, Expr* rhs, Source_Info const& source_info)
+    constexpr Expr_Assignment(Expr* lhs, Expr* rhs,
+                              Source_Info const& source_info)
       : Expr(source_info, Node_Kind::expr_assignment), lhs(lhs), rhs(rhs)
     {
     }
@@ -515,8 +535,8 @@ namespace vush::ast {
 
     constexpr Field_Initializer(Identifier identifier, Expr* expression,
                                 Source_Info const& source_info)
-      : Initializer(source_info, Node_Kind::field_initializer), identifier(identifier),
-        expression(expression)
+      : Initializer(source_info, Node_Kind::field_initializer),
+        identifier(identifier), expression(expression)
     {
     }
   };
@@ -525,8 +545,10 @@ namespace vush::ast {
     Lt_Integer* index;
     Expr* expression;
 
-    constexpr Index_Initializer(Lt_Integer* index, Expr* expression, Source_Info const& source_info)
-      : Initializer(source_info, Node_Kind::index_initializer), index(index), expression(expression)
+    constexpr Index_Initializer(Lt_Integer* index, Expr* expression,
+                                Source_Info const& source_info)
+      : Initializer(source_info, Node_Kind::index_initializer), index(index),
+        expression(expression)
     {
     }
   };
@@ -534,8 +556,10 @@ namespace vush::ast {
   struct Basic_Initializer: public Initializer {
     Expr* expression;
 
-    constexpr Basic_Initializer(Expr* expression, Source_Info const& source_info)
-      : Initializer(source_info, Node_Kind::basic_initializer), expression(expression)
+    constexpr Basic_Initializer(Expr* expression,
+                                Source_Info const& source_info)
+      : Initializer(source_info, Node_Kind::basic_initializer),
+        expression(expression)
     {
     }
   };
@@ -544,8 +568,10 @@ namespace vush::ast {
     Type* type;
     Initializer_List initializers;
 
-    constexpr Expr_Init(Type* type, Initializer_List initializers, Source_Info const& source_info)
-      : Expr(source_info, Node_Kind::expr_init), type(type), initializers(initializers)
+    constexpr Expr_Init(Type* type, Initializer_List initializers,
+                        Source_Info const& source_info)
+      : Expr(source_info, Node_Kind::expr_init), type(type),
+        initializers(initializers)
     {
     }
   };
@@ -556,8 +582,10 @@ namespace vush::ast {
     Overload_Group* overload_group = nullptr;
     Decl_Function* function = nullptr;
 
-    constexpr Expr_Call(Identifier identifier, Expr_List arguments, Source_Info const& source_info)
-      : Expr(source_info, Node_Kind::expr_call), identifier(identifier), arguments(arguments)
+    constexpr Expr_Call(Identifier identifier, Expr_List arguments,
+                        Source_Info const& source_info)
+      : Expr(source_info, Node_Kind::expr_call), identifier(identifier),
+        arguments(arguments)
     {
     }
   };
@@ -566,7 +594,8 @@ namespace vush::ast {
     Expr* base;
     Identifier field;
 
-    constexpr Expr_Field(Expr* base, Identifier field, Source_Info const& source_info)
+    constexpr Expr_Field(Expr* base, Identifier field,
+                         Source_Info const& source_info)
       : Expr(source_info, Node_Kind::expr_field), base(base), field(field)
     {
     }
@@ -576,7 +605,8 @@ namespace vush::ast {
     Expr* base;
     Expr* index;
 
-    constexpr Expr_Index(Expr* base, Expr* index, Source_Info const& source_info)
+    constexpr Expr_Index(Expr* base, Expr* index,
+                         Source_Info const& source_info)
       : Expr(source_info, Node_Kind::expr_index), base(base), index(index)
     {
     }
@@ -589,8 +619,8 @@ namespace vush::ast {
 
     constexpr Expr_Reinterpret(Type* target_type, Expr* source, Expr* index,
                                Source_Info const& source_info)
-      : Expr(source_info, Node_Kind::expr_reinterpret), target_type(target_type), source(source),
-        index(index)
+      : Expr(source_info, Node_Kind::expr_reinterpret),
+        target_type(target_type), source(source), index(index)
     {
     }
   };
@@ -630,28 +660,30 @@ namespace vush::ast {
     };
     Lt_Integer_Kind kind;
 
-    constexpr Lt_Integer(detail::Lt_Integer_Tag<Lt_Integer_Kind::i32>, i32 value,
-                         Source_Info const& source_info)
-      : Expr(source_info, Node_Kind::lt_integer), i32_value(value), kind(Lt_Integer_Kind::i32)
+    constexpr Lt_Integer(detail::Lt_Integer_Tag<Lt_Integer_Kind::i32>,
+                         i32 value, Source_Info const& source_info)
+      : Expr(source_info, Node_Kind::lt_integer), i32_value(value),
+        kind(Lt_Integer_Kind::i32)
     {
     }
 
-    constexpr Lt_Integer(detail::Lt_Integer_Tag<Lt_Integer_Kind::u32>, u32 value,
-                         Source_Info const& source_info)
-      : Expr(source_info, Node_Kind::lt_integer), u32_value(value), kind(Lt_Integer_Kind::u32)
+    constexpr Lt_Integer(detail::Lt_Integer_Tag<Lt_Integer_Kind::u32>,
+                         u32 value, Source_Info const& source_info)
+      : Expr(source_info, Node_Kind::lt_integer), u32_value(value),
+        kind(Lt_Integer_Kind::u32)
     {
     }
   };
 
   // compare_integer_literals
-  // Three-way compare integer literals' value regardless of their base. The literal values must be
-  // trimmed to contain only plus or minus and digits.
+  // Three-way compare integer literals' value regardless of their base. The
+  // literal values must be trimmed to contain only plus or minus and digits.
   //
   // Returns:
   // Ordering of the numeric values of the literals.
   //
-  [[nodiscard]] anton::Strong_Ordering compare_integer_literals(Lt_Integer const& lhs,
-                                                                Lt_Integer const& rhs);
+  [[nodiscard]] anton::Strong_Ordering
+  compare_integer_literals(Lt_Integer const& lhs, Lt_Integer const& rhs);
 
   enum struct Lt_Float_Kind : u8 { f32, f64 };
 
@@ -674,13 +706,15 @@ namespace vush::ast {
 
     constexpr Lt_Float(detail::Lt_Float_Tag<Lt_Float_Kind::f32>, f32 value,
                        Source_Info const& source_info)
-      : Expr(source_info, Node_Kind::lt_float), f32_value(value), kind(Lt_Float_Kind::f32)
+      : Expr(source_info, Node_Kind::lt_float), f32_value(value),
+        kind(Lt_Float_Kind::f32)
     {
     }
 
     constexpr Lt_Float(detail::Lt_Float_Tag<Lt_Float_Kind::f64>, f64 value,
                        Source_Info const& source_info)
-      : Expr(source_info, Node_Kind::lt_float), f32_value(value), kind(Lt_Float_Kind::f64)
+      : Expr(source_info, Node_Kind::lt_float), f32_value(value),
+        kind(Lt_Float_Kind::f64)
     {
     }
   };
@@ -709,10 +743,10 @@ namespace vush::ast {
     Node_List then_branch;
     Node_List else_branch;
 
-    constexpr Stmt_If(Expr* condition, Node_List then_branch, Node_List else_branch,
-                      Source_Info const& source_info)
-      : Node(source_info, Node_Kind::stmt_if), condition(condition), then_branch(then_branch),
-        else_branch(else_branch)
+    constexpr Stmt_If(Expr* condition, Node_List then_branch,
+                      Node_List else_branch, Source_Info const& source_info)
+      : Node(source_info, Node_Kind::stmt_if), condition(condition),
+        then_branch(then_branch), else_branch(else_branch)
     {
     }
   };
@@ -721,9 +755,11 @@ namespace vush::ast {
     Expr* expression;
     anton::Slice<Switch_Arm* const> arms;
 
-    constexpr Stmt_Switch(Expr* const expression, anton::Slice<Switch_Arm* const> arms,
+    constexpr Stmt_Switch(Expr* const expression,
+                          anton::Slice<Switch_Arm* const> arms,
                           Source_Info const& source_info)
-      : Node(source_info, Node_Kind::stmt_switch), expression(expression), arms(arms)
+      : Node(source_info, Node_Kind::stmt_switch), expression(expression),
+        arms(arms)
     {
     }
   };
@@ -735,10 +771,10 @@ namespace vush::ast {
     Node_List continuation;
     Node_List statements;
 
-    constexpr Stmt_Loop(Expr* condition, Node_List continuation, Node_List statements,
-                        Source_Info const& source_info)
-      : Node(source_info, Node_Kind::stmt_loop), condition(condition), continuation(continuation),
-        statements(statements)
+    constexpr Stmt_Loop(Expr* condition, Node_List continuation,
+                        Node_List statements, Source_Info const& source_info)
+      : Node(source_info, Node_Kind::stmt_loop), condition(condition),
+        continuation(continuation), statements(statements)
     {
     }
   };
@@ -754,7 +790,8 @@ namespace vush::ast {
   };
 
   struct Stmt_Break: public Node {
-    constexpr Stmt_Break(Source_Info const& source_info): Node(source_info, Node_Kind::stmt_break)
+    constexpr Stmt_Break(Source_Info const& source_info)
+      : Node(source_info, Node_Kind::stmt_break)
     {
     }
   };

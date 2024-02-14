@@ -11,9 +11,10 @@ namespace vush {
   struct Context;
 
   // import_source_code
-  // Imports, parses and transforms source code into abstract syntax tree (AST). Resolves
-  // declaration ifs. Recursively imports sources required by any imported sources and splices them
-  // into the AST.
+  //
+  // Imports, parses and transforms source code into abstract syntax tree (AST).
+  // Resolves declaration ifs. Recursively imports sources required by any
+  // imported sources and splices them into the AST.
   //
   // Parameters:
   //         ctx - vush context.
@@ -21,12 +22,12 @@ namespace vush {
   // source_info - source information of the import declaration.
   //
   // Returns:
-  // ast::Node_List containing ast::Node's of the source or Error.
-  // The list will be empty if the source has already been imported before.
+  // ast::Node_List containing ast::Node's of the source or Error. The list will
+  // be empty if the source has already been imported before.
   //
-  [[nodiscard]] anton::Expected<ast::Node_List, Error>
-  import_source_code(Context& ctx, anton::String_View const source_name,
-                     anton::Optional<Source_Info> source_info = anton::null_optional);
+  [[nodiscard]] anton::Expected<ast::Node_List, Error> import_source_code(
+    Context& ctx, anton::String_View const source_name,
+    anton::Optional<Source_Info> source_info = anton::null_optional);
 
   // lower_syntax_to_ast
   //

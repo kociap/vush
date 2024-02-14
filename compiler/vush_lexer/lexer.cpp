@@ -50,7 +50,8 @@ namespace vush {
     return (c == 'b') | (c == 'B') | (c == 'x') | (c == 'X');
   }
 
-  [[nodiscard]] static anton::Optional<Token_Kind> is_keyword(anton::String7_View string)
+  [[nodiscard]] static anton::Optional<Token_Kind>
+  is_keyword(anton::String7_View string)
   {
     u64 const h = anton::hash(string);
     switch(h) {
@@ -95,7 +96,8 @@ namespace vush {
     }
   }
 
-  [[nodiscard]] static char8 get_lookahead(char8 const* current, char8 const* const end)
+  [[nodiscard]] static char8 get_lookahead(char8 const* current,
+                                           char8 const* const end)
   {
     if(current + 1 != end) {
       return *(current + 1);
@@ -111,7 +113,8 @@ namespace vush {
   };
 
   anton::Expected<Array<Token>, Error>
-  lex_source(Context const& ctx, anton::String_View const source_path, anton::String7_View source)
+  lex_source(Context const& ctx, anton::String_View const source_path,
+             anton::String7_View source)
   {
     Array<Token> tokens(ctx.allocator, anton::reserve, 4096);
     char8 const* const source_begin = source.begin();
@@ -135,9 +138,10 @@ namespace vush {
           }
           ++current;
         } while(current != end && is_whitespace(*current));
-        tokens.push_back(Token{Token_Kind::whitespace, anton::String7_View{begin, current},
-                               state.offset, state.line, state.column, current - source_begin, line,
-                               column});
+        tokens.push_back(Token{Token_Kind::whitespace,
+                               anton::String7_View{begin, current},
+                               state.offset, state.line, state.column,
+                               current - source_begin, line, column});
       } else if(c == '/' && (la == '/' || la == '*')) {
         // Handle line and block comments.
         Source_State const state{current - source_begin, line, column};
@@ -155,9 +159,10 @@ namespace vush {
           column += 2;
           while(true) {
             if(current == end) {
-              return {
-                anton::expected_error,
-                err_lexer_unexpected_eof(ctx, source_path, current - source_begin, line, column)};
+              return {anton::expected_error,
+                      err_lexer_unexpected_eof(ctx, source_path,
+                                               current - source_begin, line,
+                                               column)};
             }
 
             char8 const c1 = *current;
@@ -179,9 +184,10 @@ namespace vush {
           current += 2;
         }
 
-        tokens.push_back(Token{Token_Kind::comment, anton::String7_View{begin, current},
-                               state.offset, state.line, state.column, current - source_begin, line,
-                               column});
+        tokens.push_back(Token{Token_Kind::comment,
+                               anton::String7_View{begin, current},
+                               state.offset, state.line, state.column,
+                               current - source_begin, line, column});
       } else if(is_first_identifier_character(c)) {
         // Handle identifier.
         Source_State const state{current - source_begin, line, column};
@@ -199,17 +205,20 @@ namespace vush {
         } else {
           anton::Optional<Token_Kind> keyword = is_keyword(identifier);
           if(keyword) {
-            tokens.push_back(Token{keyword.value(), identifier, state.offset, state.line,
-                                   state.column, current - source_begin, line, column});
+            tokens.push_back(Token{keyword.value(), identifier, state.offset,
+                                   state.line, state.column,
+                                   current - source_begin, line, column});
           } else {
-            tokens.push_back(Token{Token_Kind::identifier, identifier, state.offset, state.line,
-                                   state.column, current - source_begin, line, column});
+            tokens.push_back(Token{Token_Kind::identifier, identifier,
+                                   state.offset, state.line, state.column,
+                                   current - source_begin, line, column});
           }
         }
       } else if(is_digit(c) || (c == '.' && is_digit(la))) {
-        // Handle integer and float literals. We begin by matching the prefix. If we're unable to
-        // find one, then we match the integral part. If a period or exponent follows, we match the
-        // fractional part and exponent.
+        // Handle integer and float literals. We begin by matching the prefix.
+        // If we're unable to find one, then we match the integral part. If a
+        // period or exponent follows, we match the fractional part and
+        // exponent.
         //
         // The plus and minus signs are not a part of the literals.
 
@@ -225,17 +234,19 @@ namespace vush {
               ++column;
             }
 
-            // We have to verify that no digits follow a binary literal because otherwise those
-            // would be tokenised as a separate integer literal.
+            // We have to verify that no digits follow a binary literal because
+            // otherwise those would be tokenised as a separate integer literal.
             if(is_digit(*current)) {
-              return {anton::expected_error,
-                      err_lexer_invalid_digit_in_binary_literal(
-                        ctx, source_path, current - source_begin, line, column)};
+              return {
+                anton::expected_error,
+                err_lexer_invalid_digit_in_binary_literal(
+                  ctx, source_path, current - source_begin, line, column)};
             }
 
-            tokens.push_back(Token{Token_Kind::lt_bin_integer, anton::String7_View{begin, current},
-                                   state.offset, state.line, state.column, current - source_begin,
-                                   line, column});
+            tokens.push_back(Token{Token_Kind::lt_bin_integer,
+                                   anton::String7_View{begin, current},
+                                   state.offset, state.line, state.column,
+                                   current - source_begin, line, column});
           } break;
 
           case 'x':
@@ -246,12 +257,13 @@ namespace vush {
               ++column;
             }
 
-            // We do not do any verification here of what follows
-            // a hexadecimal literal because it might be a suffix.
+            // We do not do any verification here of what follows a hexadecimal
+            // literal because it might be a suffix.
 
-            tokens.push_back(Token{Token_Kind::lt_hex_integer, anton::String7_View{begin, current},
-                                   state.offset, state.line, state.column, current - source_begin,
-                                   line, column});
+            tokens.push_back(Token{Token_Kind::lt_hex_integer,
+                                   anton::String7_View{begin, current},
+                                   state.offset, state.line, state.column,
+                                   current - source_begin, line, column});
           } break;
 
           default:
@@ -266,13 +278,16 @@ namespace vush {
             ++column;
           }
           anton::String7_View const integer{integer_begin, current};
-          // Check whether the integer part is not followed by a period or exponent in which case
-          // we've found an integer. Otherwise we have encountered a float.
+          // Check whether the integer part is not followed by a period or
+          // exponent in which case we've found an integer. Otherwise we have
+          // encountered a float.
           bool const end_or_not_float =
-            current == end || (*current != '.' && *current != 'e' && *current != 'E');
+            current == end ||
+            (*current != '.' && *current != 'e' && *current != 'E');
           if(end_or_not_float) {
-            tokens.push_back(Token{Token_Kind::lt_dec_integer, integer, state.offset, state.line,
-                                   state.column, current - source_begin, line, column});
+            tokens.push_back(Token{Token_Kind::lt_dec_integer, integer,
+                                   state.offset, state.line, state.column,
+                                   current - source_begin, line, column});
           } else {
             // Match float literal.
             bool has_period = false;
@@ -287,11 +302,13 @@ namespace vush {
               }
             }
             anton::String7_View const fraction{fraction_begin, current};
-            // The grammar requires that integer, fraction or both contain at least one digit.
+            // The grammar requires that integer, fraction or both contain at
+            // least one digit.
             if(integer.size() == 0 && fraction.size() == 0) {
               return {anton::expected_error,
-                      err_lexer_not_fp_constant(ctx, source_path, float_begin - source_begin,
-                                                current - source_begin, line, column)};
+                      err_lexer_not_fp_constant(
+                        ctx, source_path, float_begin - source_begin,
+                        current - source_begin, line, column)};
             }
 
             bool has_e = false;
@@ -311,21 +328,24 @@ namespace vush {
               }
 
               if(current - exponent == 0) {
-                return {anton::expected_error,
-                        err_lexer_missing_exponent_digits(ctx, source_path, current - source_begin,
-                                                          line, column)};
+                return {
+                  anton::expected_error,
+                  err_lexer_missing_exponent_digits(
+                    ctx, source_path, current - source_begin, line, column)};
               }
             }
 
             if(!has_e && !has_period) {
               return {anton::expected_error,
-                      err_lexer_not_fp_constant(ctx, source_path, float_begin - source_begin,
-                                                current - source_begin, line, column)};
+                      err_lexer_not_fp_constant(
+                        ctx, source_path, float_begin - source_begin,
+                        current - source_begin, line, column)};
             }
 
             anton::String7_View const float_literal{float_begin, current};
-            tokens.push_back(Token{Token_Kind::lt_float, float_literal, state.offset, state.line,
-                                   state.column, current - source_begin, line, column});
+            tokens.push_back(Token{Token_Kind::lt_float, float_literal,
+                                   state.offset, state.line, state.column,
+                                   current - source_begin, line, column});
           }
         }
       } else if(c == '\"') {
@@ -355,18 +375,21 @@ namespace vush {
 
         if(!complete) {
           return {anton::expected_error,
-                  err_lexer_unexpected_eof(ctx, source_path, current - source_begin, line, column)};
+                  err_lexer_unexpected_eof(
+                    ctx, source_path, current - source_begin, line, column)};
         }
 
         if(newline) {
           // We disallow newlines inside string literals.
-          return {anton::expected_error, err_lexer_newline_in_string_literal(
-                                           ctx, source_path, current - source_begin, line, column)};
+          return {anton::expected_error,
+                  err_lexer_newline_in_string_literal(
+                    ctx, source_path, current - source_begin, line, column)};
         }
 
-        tokens.push_back(Token{Token_Kind::lt_string, anton::String7_View{begin, current},
-                               state.offset, state.line, state.column, current - source_begin, line,
-                               column});
+        tokens.push_back(Token{Token_Kind::lt_string,
+                               anton::String7_View{begin, current},
+                               state.offset, state.line, state.column,
+                               current - source_begin, line, column});
       } else {
         // Handle tokens.
         Source_State const state{current - source_begin, line, column};
@@ -449,13 +472,15 @@ namespace vush {
           token_kind = Token_Kind::tk_equals;
           break;
         default:
-          return {anton::expected_error, err_lexer_unrecognised_token(
-                                           ctx, source_path, current - source_begin, line, column)};
+          return {anton::expected_error,
+                  err_lexer_unrecognised_token(
+                    ctx, source_path, current - source_begin, line, column)};
         }
         ++current;
         ++column;
-        tokens.push_back(Token{token_kind, anton::String7_View{begin, current}, state.offset,
-                               state.line, state.column, current - source_begin, line, column});
+        tokens.push_back(Token{token_kind, anton::String7_View{begin, current},
+                               state.offset, state.line, state.column,
+                               current - source_begin, line, column});
       }
     }
     return {anton::expected_value, ANTON_MOV(tokens)};

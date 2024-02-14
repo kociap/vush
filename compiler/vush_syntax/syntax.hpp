@@ -191,7 +191,8 @@ namespace vush {
     Source_Info source_info;
     Syntax_Node_Kind kind;
 
-    Syntax_Token(Syntax_Node_Kind kind, anton::String value, Source_Info const& source_info);
+    Syntax_Token(Syntax_Node_Kind kind, anton::String value,
+                 Source_Info const& source_info);
   };
 
   // Syntax_Node
@@ -202,6 +203,7 @@ namespace vush {
     Source_Info source_info;
     Syntax_Node_Kind kind;
 
-    Syntax_Node(Syntax_Node_Kind kind, Array<SNOT> array, Source_Info const& source_info);
+    Syntax_Node(Syntax_Node_Kind kind, Array<SNOT> array,
+                Source_Info const& source_info);
   };
 } // namespace vush

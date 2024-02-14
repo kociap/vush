@@ -355,8 +355,9 @@ namespace vush {
   // }
 
   namespace spirv {
-    anton::Expected<Build_Result, Error> compile(Configuration const& config, Allocator& allocator,
-                                                 source_import_callback callback, void* user_data)
+    anton::Expected<Build_Result, Error>
+    compile(Configuration const& config, Allocator& allocator,
+            source_import_callback callback, void* user_data)
     {
       Source_Registry registry(&allocator);
 
@@ -398,20 +399,23 @@ namespace vush {
         }
       }
       {
-        anton::Expected<void, Error> result = run_ast_validation_pass(ctx, ast_nodes);
+        anton::Expected<void, Error> result =
+          run_ast_validation_pass(ctx, ast_nodes);
         if(!result) {
           return {anton::expected_error, ANTON_MOV(result.error())};
         }
       }
       {
-        anton::Expected<void, Error> result = run_ast_typecheck_pass(ctx, ast_nodes);
+        anton::Expected<void, Error> result =
+          run_ast_typecheck_pass(ctx, ast_nodes);
         if(!result) {
           return {anton::expected_error, ANTON_MOV(result.error())};
         }
       }
 
       return {anton::expected_error,
-              Error{.diagnostic = anton::String("end of compiler reached", &allocator)}};
+              Error{.diagnostic =
+                      anton::String("end of compiler reached", &allocator)}};
 
       // gather_settings(ctx.allocator, result.settings, settings);
 
@@ -466,22 +470,26 @@ namespace vush {
     }
 
     [[nodiscard]] static anton::Expected<anton::String, anton::String>
-    resolve_import_path(Allocator& allocator, anton::String_View const source_name,
-                        anton::Slice<anton::String const> const import_directories)
+    resolve_import_path(
+      Allocator& allocator, anton::String_View const source_name,
+      anton::Slice<anton::String const> const import_directories)
     {
       bool found = false;
       anton::String out_path(&allocator);
       for(anton::String const& path: import_directories) {
-        anton::String resolved_path = anton::fs::concat_paths(&allocator, path, source_name);
+        anton::String resolved_path =
+          anton::fs::concat_paths(&allocator, path, source_name);
         bool const exists = anton::fs::exists(resolved_path);
         if(exists) {
           if(!found) {
             found = true;
             out_path = ANTON_MOV(resolved_path);
           } else {
-            return {anton::expected_error,
-                    anton::format(&allocator, u8"ambiguous source '{}' matches '{}' and '{}'",
-                                  source_name, out_path, resolved_path)};
+            return {
+              anton::expected_error,
+              anton::format(&allocator,
+                            u8"ambiguous source '{}' matches '{}' and '{}'",
+                            source_name, out_path, resolved_path)};
           }
         }
       }
@@ -490,12 +498,15 @@ namespace vush {
         return {anton::expected_value, ANTON_MOV(out_path)};
       } else {
         return {anton::expected_error,
-                anton::format(&allocator, u8"could not find the source file '{}'", source_name)};
+                anton::format(&allocator,
+                              u8"could not find the source file '{}'",
+                              source_name)};
       }
     }
 
     [[nodiscard]] static anton::Expected<Source_Import_Result, anton::String>
-    file_read_callback(Allocator& allocator, anton::String_View const source_name, void* user_data)
+    file_read_callback(Allocator& allocator,
+                       anton::String_View const source_name, void* user_data)
     {
       anton::Slice<anton::String const> const& import_directories =
         *(anton::Slice<anton::String const> const*)user_data;
@@ -508,8 +519,9 @@ namespace vush {
       anton::String const& path = res.value();
       anton::fs::Input_File_Stream file;
       if(!file.open(path)) {
-        return {anton::expected_error,
-                anton::format(&allocator, u8"could not open '{}' for reading", path)};
+        return {
+          anton::expected_error,
+          anton::format(&allocator, u8"could not open '{}' for reading", path)};
       }
 
       file.seek(anton::Seek_Dir::end, 0);
@@ -518,15 +530,17 @@ namespace vush {
       anton::String file_contents{anton::reserve, size, &allocator};
       file_contents.force_size(size);
       file.read(file_contents.data(), size);
-      return {anton::expected_value,
-              Source_Import_Result{ANTON_MOV(res.value()), ANTON_MOV(file_contents)}};
+      return {
+        anton::expected_value,
+        Source_Import_Result{ANTON_MOV(res.value()), ANTON_MOV(file_contents)}};
     }
 
     anton::Expected<Build_Result, Error>
     compile(Configuration const& config, Allocator& allocator,
             anton::Slice<anton::String const> const& import_directories)
     {
-      return compile(config, allocator, file_read_callback, (void*)&import_directories);
+      return compile(config, allocator, file_read_callback,
+                     (void*)&import_directories);
     }
   } // namespace spirv
 } // namespace vush

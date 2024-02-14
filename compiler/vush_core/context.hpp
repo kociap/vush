@@ -18,9 +18,10 @@ namespace vush {
     void* source_import_user_data = nullptr;
     Allocator* allocator = nullptr;
     Source_Registry* source_registry = nullptr;
-    // We do not initialize overload_groups with allocator in the constructor since this will be
-    // assigned a proper object at a later time.
-    anton::Flat_Hash_Map<anton::String_View, ast::Overload_Group*> overload_groups;
+    // We do not initialize overload_groups with allocator in the constructor
+    // since this will be assigned a proper object at a later time.
+    anton::Flat_Hash_Map<anton::String_View, ast::Overload_Group*>
+      overload_groups;
     Diagnostics_Options diagnostics = {};
   };
 } // namespace vush

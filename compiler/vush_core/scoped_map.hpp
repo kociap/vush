@@ -21,12 +21,11 @@ namespace vush {
     }
 
     // find_entry
-    // Looks up an entry with the given key in the scopes starting from the innermost and
-    // progressing towards the outermost.
+    // Looks up an entry with the given key in the scopes starting from the
+    // innermost and progressing towards the outermost.
     //
     // Returns:
     // Pointer to the value of the entry or nullptr if not found.
-    // Adding a new entry to the scope might invalidate the pointer.
     //
     [[nodiscard]] Value const* find_entry(Key const& name) const
     {
@@ -41,8 +40,8 @@ namespace vush {
     }
 
     // add_entry
-    // Adds an entry to the current scope.
-    // Adding an entry might invalidate pointers previously returned by find_entry.
+    // Adds an entry to the current scope. Adding an entry might invalidate
+    // pointers previously returned by find_entry.
     //
     void add_entry(Key const& key, Value const& value)
     {

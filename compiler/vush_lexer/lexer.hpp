@@ -80,5 +80,6 @@ namespace vush {
   };
 
   [[nodiscard]] anton::Expected<Array<Token>, Error>
-  lex_source(Context const& ctx, anton::String_View source_path, anton::String7_View source);
+  lex_source(Context const& ctx, anton::String_View source_path,
+             anton::String7_View source);
 } // namespace vush

@@ -8,6 +8,6 @@
 namespace vush {
   struct Context;
 
-  [[nodiscard]] anton::Expected<void, Error> run_ast_typecheck_pass(Context& ctx,
-                                                                    ast::Node_List ast);
+  [[nodiscard]] anton::Expected<void, Error>
+  run_ast_typecheck_pass(Context& ctx, ast::Node_List ast);
 } // namespace vush

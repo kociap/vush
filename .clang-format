@@ -23,7 +23,7 @@ BreakBeforeTernaryOperators: true
 BreakConstructorInitializers: BeforeColon
 BreakInheritanceList: BeforeColon
 #BreakStringLiterals: true
-ColumnLimit: 100
+ColumnLimit: 80
 CommentPragmas:  '^[^ ]'
 ConstructorInitializerAllOnOneLineOrOnePerLine: false
 ConstructorInitializerIndentWidth: 2

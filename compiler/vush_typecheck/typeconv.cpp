@@ -3,8 +3,9 @@
 #include <vush_ast/ast.hpp>
 
 namespace vush {
-  [[nodiscard]] static bool is_builtin_to_builtin_convertible(ast::Type_Builtin const* const to,
-                                                              ast::Type_Builtin const* const from)
+  [[nodiscard]] static bool
+  is_builtin_to_builtin_convertible(ast::Type_Builtin const* const to,
+                                    ast::Type_Builtin const* const from)
   {
     using Kind = ast::Type_Builtin_Kind;
     Kind const tv = to->value;
@@ -66,13 +67,15 @@ namespace vush {
   {
     ast::Type_Kind const to_kind = to->type_kind;
     ast::Type_Kind const from_kind = from->type_kind;
-    if(to_kind == ast::Type_Kind::type_builtin && from_kind == ast::Type_Kind::type_builtin) {
+    if(to_kind == ast::Type_Kind::type_builtin &&
+       from_kind == ast::Type_Kind::type_builtin) {
       auto const to_type = static_cast<ast::Type_Builtin const*>(to);
       auto const from_type = static_cast<ast::Type_Builtin const*>(from);
       return is_builtin_to_builtin_convertible(to_type, from_type);
     }
 
-    // If the at least one of the types is not a builtin, then no conversions apply and the types must be equal.
+    // If the at least one of the types is not a builtin, then no conversions
+    // apply and the types must be equal.
     return compare_types_equal(*to, *from);
   }
 
@@ -223,11 +226,13 @@ namespace vush {
     }
   }
 
-  anton::Optional<i64> rank_conversion(ast::Type const* const to, ast::Type const* const from)
+  anton::Optional<i64> rank_conversion(ast::Type const* const to,
+                                       ast::Type const* const from)
   {
     ast::Type_Kind const to_kind = to->type_kind;
     ast::Type_Kind const from_kind = from->type_kind;
-    if(to_kind == ast::Type_Kind::type_builtin && from_kind == ast::Type_Kind::type_builtin) {
+    if(to_kind == ast::Type_Kind::type_builtin &&
+       from_kind == ast::Type_Kind::type_builtin) {
       auto const to_type = static_cast<ast::Type_Builtin const*>(to);
       auto const from_type = static_cast<ast::Type_Builtin const*>(from);
       return rank_builtin_to_builtin_conversion(to_type, from_type);

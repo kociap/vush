@@ -29,7 +29,8 @@ namespace vush {
   // Returns:
   // Address aligned to alignment.
   //
-  [[nodiscard]] constexpr u64 align_address(u64 const address, u64 const alignment)
+  [[nodiscard]] constexpr u64 align_address(u64 const address,
+                                            u64 const alignment)
   {
     return (address + (alignment - 1)) & ~(alignment - 1);
   }

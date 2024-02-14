@@ -18,13 +18,15 @@ namespace vush::ast {
   bool is_signed_integer(Type const& type)
   {
     Type_Builtin const& builtin = static_cast<Type_Builtin const&>(type);
-    return type.type_kind == Type_Kind::type_builtin && builtin.value == Type_Builtin_Kind::e_int;
+    return type.type_kind == Type_Kind::type_builtin &&
+           builtin.value == Type_Builtin_Kind::e_int;
   }
 
   bool is_unsigned_integer(Type const& type)
   {
     Type_Builtin const& builtin = static_cast<Type_Builtin const&>(type);
-    return type.type_kind == Type_Kind::type_builtin && builtin.value == Type_Builtin_Kind::e_uint;
+    return type.type_kind == Type_Kind::type_builtin &&
+           builtin.value == Type_Builtin_Kind::e_uint;
   }
 
   bool is_vector(Type const& type)
@@ -35,9 +37,10 @@ namespace vush::ast {
 
     using Kind = Type_Builtin_Kind;
     Kind const v = static_cast<Type_Builtin const&>(type).value;
-    return v == Kind::e_vec2 || v == Kind::e_vec3 || v == Kind::e_vec4 || v == Kind::e_dvec2 ||
-           v == Kind::e_dvec3 || v == Kind::e_dvec4 || v == Kind::e_bvec2 || v == Kind::e_bvec3 ||
-           v == Kind::e_bvec4 || v == Kind::e_ivec2 || v == Kind::e_ivec3 || v == Kind::e_ivec4 ||
+    return v == Kind::e_vec2 || v == Kind::e_vec3 || v == Kind::e_vec4 ||
+           v == Kind::e_dvec2 || v == Kind::e_dvec3 || v == Kind::e_dvec4 ||
+           v == Kind::e_bvec2 || v == Kind::e_bvec3 || v == Kind::e_bvec4 ||
+           v == Kind::e_ivec2 || v == Kind::e_ivec3 || v == Kind::e_ivec4 ||
            v == Kind::e_uvec2 || v == Kind::e_uvec3 || v == Kind::e_uvec4;
   }
 
@@ -49,8 +52,8 @@ namespace vush::ast {
 
     using Kind = Type_Builtin_Kind;
     Kind const v = static_cast<Type_Builtin const&>(type).value;
-    return v == Kind::e_vec2 || v == Kind::e_dvec2 || v == Kind::e_bvec2 || v == Kind::e_ivec2 ||
-           v == Kind::e_uvec2;
+    return v == Kind::e_vec2 || v == Kind::e_dvec2 || v == Kind::e_bvec2 ||
+           v == Kind::e_ivec2 || v == Kind::e_uvec2;
   }
 
   bool is_vector3(Type const& type)
@@ -61,8 +64,8 @@ namespace vush::ast {
 
     using Kind = Type_Builtin_Kind;
     Kind const v = static_cast<Type_Builtin const&>(type).value;
-    return v == Kind::e_vec3 || v == Kind::e_dvec3 || v == Kind::e_bvec3 || v == Kind::e_ivec3 ||
-           v == Kind::e_uvec3;
+    return v == Kind::e_vec3 || v == Kind::e_dvec3 || v == Kind::e_bvec3 ||
+           v == Kind::e_ivec3 || v == Kind::e_uvec3;
   }
 
   bool is_vector4(Type const& type)
@@ -73,8 +76,8 @@ namespace vush::ast {
 
     using Kind = Type_Builtin_Kind;
     Kind const v = static_cast<Type_Builtin const&>(type).value;
-    return v == Kind::e_vec4 || v == Kind::e_dvec4 || v == Kind::e_bvec4 || v == Kind::e_ivec4 ||
-           v == Kind::e_uvec4;
+    return v == Kind::e_vec4 || v == Kind::e_dvec4 || v == Kind::e_bvec4 ||
+           v == Kind::e_ivec4 || v == Kind::e_uvec4;
   }
 
   bool is_bool_vector(Type const& type)
@@ -96,8 +99,8 @@ namespace vush::ast {
 
     using Kind = Type_Builtin_Kind;
     Type_Builtin_Kind const v = static_cast<Type_Builtin const&>(type).value;
-    return v == Kind::e_ivec2 || v == Kind::e_ivec3 || v == Kind::e_ivec4 || v == Kind::e_uvec2 ||
-           v == Kind::e_uvec3 || v == Kind::e_uvec4;
+    return v == Kind::e_ivec2 || v == Kind::e_ivec3 || v == Kind::e_ivec4 ||
+           v == Kind::e_uvec2 || v == Kind::e_uvec3 || v == Kind::e_uvec4;
   }
 
   bool is_i32_vector(Type const& type)
@@ -152,12 +155,13 @@ namespace vush::ast {
 
     using Kind = Type_Builtin_Kind;
     Kind const v = static_cast<Type_Builtin const&>(type).value;
-    return v == Kind::e_mat2 || v == Kind::e_mat3 || v == Kind::e_mat4 || v == Kind::e_mat2x3 ||
-           v == Kind::e_mat2x4 || v == Kind::e_mat3x2 || v == Kind::e_mat3x4 ||
-           v == Kind::e_mat4x2 || v == Kind::e_mat4x3 || v == Kind::e_dmat2 || v == Kind::e_dmat3 ||
-           v == Kind::e_dmat4 || v == Kind::e_dmat2x3 || v == Kind::e_dmat2x4 ||
-           v == Kind::e_dmat3x2 || v == Kind::e_dmat3x4 || v == Kind::e_dmat4x2 ||
-           v == Kind::e_dmat4x3;
+    return v == Kind::e_mat2 || v == Kind::e_mat3 || v == Kind::e_mat4 ||
+           v == Kind::e_mat2x3 || v == Kind::e_mat2x4 || v == Kind::e_mat3x2 ||
+           v == Kind::e_mat3x4 || v == Kind::e_mat4x2 || v == Kind::e_mat4x3 ||
+           v == Kind::e_dmat2 || v == Kind::e_dmat3 || v == Kind::e_dmat4 ||
+           v == Kind::e_dmat2x3 || v == Kind::e_dmat2x4 ||
+           v == Kind::e_dmat3x2 || v == Kind::e_dmat3x4 ||
+           v == Kind::e_dmat4x2 || v == Kind::e_dmat4x3;
   }
 
   bool is_f32_matrix(Type const& type)
@@ -168,9 +172,9 @@ namespace vush::ast {
 
     using Kind = Type_Builtin_Kind;
     Kind const v = static_cast<Type_Builtin const&>(type).value;
-    return v == Kind::e_mat2 || v == Kind::e_mat3 || v == Kind::e_mat4 || v == Kind::e_mat2x3 ||
-           v == Kind::e_mat2x4 || v == Kind::e_mat3x2 || v == Kind::e_mat3x4 ||
-           v == Kind::e_mat4x2 || v == Kind::e_mat4x3;
+    return v == Kind::e_mat2 || v == Kind::e_mat3 || v == Kind::e_mat4 ||
+           v == Kind::e_mat2x3 || v == Kind::e_mat2x4 || v == Kind::e_mat3x2 ||
+           v == Kind::e_mat3x4 || v == Kind::e_mat4x2 || v == Kind::e_mat4x3;
   }
 
   bool is_f64_matrix(Type const& type)
@@ -181,8 +185,9 @@ namespace vush::ast {
 
     using Kind = Type_Builtin_Kind;
     Kind const v = static_cast<Type_Builtin const&>(type).value;
-    return v == Kind::e_dmat2 || v == Kind::e_dmat3 || v == Kind::e_dmat4 || v == Kind::e_dmat2x3 ||
-           v == Kind::e_dmat2x4 || v == Kind::e_dmat3x2 || v == Kind::e_dmat3x4 ||
+    return v == Kind::e_dmat2 || v == Kind::e_dmat3 || v == Kind::e_dmat4 ||
+           v == Kind::e_dmat2x3 || v == Kind::e_dmat2x4 ||
+           v == Kind::e_dmat3x2 || v == Kind::e_dmat3x4 ||
            v == Kind::e_dmat4x2 || v == Kind::e_dmat4x3;
   }
 
@@ -191,7 +196,8 @@ namespace vush::ast {
     switch(type.type_kind) {
     case Type_Kind::type_builtin: {
       Type_Builtin_Kind const v = static_cast<Type_Builtin const&>(type).value;
-      return static_cast<i32>(v) >= static_cast<i32>(Type_Builtin_Kind::e_sampler1D);
+      return static_cast<i32>(v) >=
+             static_cast<i32>(Type_Builtin_Kind::e_sampler1D);
     }
 
     case Type_Kind::type_struct: {
@@ -212,12 +218,14 @@ namespace vush::ast {
 
   bool is_sized_array(Type const& type)
   {
-    return type.type_kind == Type_Kind::type_array && static_cast<Type_Array const&>(type).size;
+    return type.type_kind == Type_Kind::type_array &&
+           static_cast<Type_Array const&>(type).size;
   }
 
   bool is_unsized_array(Type const& type)
   {
-    return type.type_kind == Type_Kind::type_array && !static_cast<Type_Array const&>(type).size;
+    return type.type_kind == Type_Kind::type_array &&
+           !static_cast<Type_Array const&>(type).size;
   }
 
   bool is_image_type(Type const& type)
@@ -225,22 +233,38 @@ namespace vush::ast {
     switch(type.type_kind) {
     case Type_Kind::type_builtin: {
       Type_Builtin_Kind const v = static_cast<Type_Builtin const&>(type).value;
-      return v == Type_Builtin_Kind::e_image1D || v == Type_Builtin_Kind::e_image1DArray ||
-             v == Type_Builtin_Kind::e_image2D || v == Type_Builtin_Kind::e_image2DArray ||
-             v == Type_Builtin_Kind::e_image2DMS || v == Type_Builtin_Kind::e_image2DMSArray ||
-             v == Type_Builtin_Kind::e_image2DRect || v == Type_Builtin_Kind::e_image3D ||
-             v == Type_Builtin_Kind::e_imageCube || v == Type_Builtin_Kind::e_imageCubeArray ||
-             v == Type_Builtin_Kind::e_imageBuffer || v == Type_Builtin_Kind::e_iimage1D ||
-             v == Type_Builtin_Kind::e_iimage1DArray || v == Type_Builtin_Kind::e_iimage2D ||
-             v == Type_Builtin_Kind::e_iimage2DArray || v == Type_Builtin_Kind::e_iimage2DMS ||
-             v == Type_Builtin_Kind::e_iimage2DMSArray || v == Type_Builtin_Kind::e_iimage2DRect ||
-             v == Type_Builtin_Kind::e_iimage3D || v == Type_Builtin_Kind::e_iimageCube ||
-             v == Type_Builtin_Kind::e_iimageCubeArray || v == Type_Builtin_Kind::e_iimageBuffer ||
-             v == Type_Builtin_Kind::e_uimage1D || v == Type_Builtin_Kind::e_uimage1DArray ||
-             v == Type_Builtin_Kind::e_uimage2D || v == Type_Builtin_Kind::e_uimage2DArray ||
-             v == Type_Builtin_Kind::e_uimage2DMS || v == Type_Builtin_Kind::e_uimage2DMSArray ||
-             v == Type_Builtin_Kind::e_uimage2DRect || v == Type_Builtin_Kind::e_uimage3D ||
-             v == Type_Builtin_Kind::e_uimageCube || v == Type_Builtin_Kind::e_uimageCubeArray ||
+      return v == Type_Builtin_Kind::e_image1D ||
+             v == Type_Builtin_Kind::e_image1DArray ||
+             v == Type_Builtin_Kind::e_image2D ||
+             v == Type_Builtin_Kind::e_image2DArray ||
+             v == Type_Builtin_Kind::e_image2DMS ||
+             v == Type_Builtin_Kind::e_image2DMSArray ||
+             v == Type_Builtin_Kind::e_image2DRect ||
+             v == Type_Builtin_Kind::e_image3D ||
+             v == Type_Builtin_Kind::e_imageCube ||
+             v == Type_Builtin_Kind::e_imageCubeArray ||
+             v == Type_Builtin_Kind::e_imageBuffer ||
+             v == Type_Builtin_Kind::e_iimage1D ||
+             v == Type_Builtin_Kind::e_iimage1DArray ||
+             v == Type_Builtin_Kind::e_iimage2D ||
+             v == Type_Builtin_Kind::e_iimage2DArray ||
+             v == Type_Builtin_Kind::e_iimage2DMS ||
+             v == Type_Builtin_Kind::e_iimage2DMSArray ||
+             v == Type_Builtin_Kind::e_iimage2DRect ||
+             v == Type_Builtin_Kind::e_iimage3D ||
+             v == Type_Builtin_Kind::e_iimageCube ||
+             v == Type_Builtin_Kind::e_iimageCubeArray ||
+             v == Type_Builtin_Kind::e_iimageBuffer ||
+             v == Type_Builtin_Kind::e_uimage1D ||
+             v == Type_Builtin_Kind::e_uimage1DArray ||
+             v == Type_Builtin_Kind::e_uimage2D ||
+             v == Type_Builtin_Kind::e_uimage2DArray ||
+             v == Type_Builtin_Kind::e_uimage2DMS ||
+             v == Type_Builtin_Kind::e_uimage2DMSArray ||
+             v == Type_Builtin_Kind::e_uimage2DRect ||
+             v == Type_Builtin_Kind::e_uimage3D ||
+             v == Type_Builtin_Kind::e_uimageCube ||
+             v == Type_Builtin_Kind::e_uimageCubeArray ||
              v == Type_Builtin_Kind::e_uimageBuffer;
     }
 
@@ -270,7 +294,8 @@ namespace vush::ast {
     return parameter.source.value == u8"in";
   }
 
-  anton::Optional<Type_Builtin_Kind> enumify_builtin_type_kind(anton::String_View const type)
+  anton::Optional<Type_Builtin_Kind>
+  enumify_builtin_type_kind(anton::String_View const type)
   {
     static constexpr anton::String_View builtin_types_strings[] = {
       "void",
@@ -596,7 +621,8 @@ namespace vush::ast {
       Type_Builtin_Kind::e_samplerShadow,
     };
 
-    constexpr i64 array_size = sizeof(builtin_types_strings) / sizeof(anton::String_View);
+    constexpr i64 array_size =
+      sizeof(builtin_types_strings) / sizeof(anton::String_View);
     for(i64 i = 0; i < array_size; ++i) {
       if(type == builtin_types_strings[i]) {
         return builtin_types[i];
@@ -644,12 +670,14 @@ namespace vush::ast {
       }
 
       // Otherwise compare the sizes to determine whether types are equal.
-      return compare_integer_literals(*lhs_v.size, *rhs_v.size) == anton::Strong_Ordering::equal;
+      return compare_integer_literals(*lhs_v.size, *rhs_v.size) ==
+             anton::Strong_Ordering::equal;
     }
     }
   }
 
-  [[nodiscard]] static u32 get_lt_integer_value_as_u32(Lt_Integer const& integer)
+  [[nodiscard]] static u32
+  get_lt_integer_value_as_u32(Lt_Integer const& integer)
   {
     switch(integer.kind) {
     case Lt_Integer_Kind::i32:
@@ -660,7 +688,8 @@ namespace vush::ast {
     }
   }
 
-  [[nodiscard]] static anton::Strong_Ordering compare_integers_strong(u32 const lhs, u32 const rhs)
+  [[nodiscard]] static anton::Strong_Ordering
+  compare_integers_strong(u32 const lhs, u32 const rhs)
   {
     if(lhs < rhs) {
       return anton::Strong_Ordering::less;
@@ -671,7 +700,8 @@ namespace vush::ast {
     }
   }
 
-  anton::Strong_Ordering compare_integer_literals(Lt_Integer const& lhs, Lt_Integer const& rhs)
+  anton::Strong_Ordering compare_integer_literals(Lt_Integer const& lhs,
+                                                  Lt_Integer const& rhs)
   {
     u32 const lhs_value = get_lt_integer_value_as_u32(lhs);
     u32 const rhs_value = get_lt_integer_value_as_u32(rhs);

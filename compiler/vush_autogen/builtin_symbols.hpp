@@ -6,11 +6,12 @@
 
 namespace vush {
   // get_builtin_functions_declarations
-  // Allocate ASTs of builtin functions. The functions are organised into overload groups.
-  // Includes both normal functions and operators.
+  // Allocate ASTs of builtin functions. The functions are organised into
+  // overload groups. Includes both normal functions and operators.
   //
   // IMPORTANT!
-  // This function is compiled without optimisations, hence calling it is quite expensive.
+  // This function is compiled without optimisations, hence calling it is quite
+  // expensive.
   //
   // Returns:
   // A map of names to overload groups.
@@ -21,5 +22,6 @@ namespace vush {
   // get_builtin_type
   // Get an immutable builtin type.
   //
-  [[nodiscard]] ast::Type_Builtin const* get_builtin_type(ast::Type_Builtin_Kind type);
+  [[nodiscard]] ast::Type_Builtin const*
+  get_builtin_type(ast::Type_Builtin_Kind type);
 } // namespace vush

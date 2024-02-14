@@ -19,8 +19,8 @@ namespace vush {
       auto const fn = static_cast<ast::Decl_Function*>(node);
       auto i = groups.find(fn->identifier.value);
       if(i == groups.end()) {
-        auto const group =
-          allocate<ast::Overload_Group>(allocator, allocator, fn->identifier.value);
+        auto const group = allocate<ast::Overload_Group>(allocator, allocator,
+                                                         fn->identifier.value);
         i = groups.emplace(fn->identifier.value, group);
       }
 
