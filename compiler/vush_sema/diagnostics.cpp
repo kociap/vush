@@ -1,4 +1,4 @@
-#include <vush_typecheck/diagnostics.hpp>
+#include <vush_sema/diagnostics.hpp>
 
 #include <anton/format.hpp>
 
@@ -8,6 +8,77 @@
 
 namespace vush {
   using namespace anton::literals;
+
+  Error err_undefined_symbol(Context const& ctx, Source_Info const& symbol)
+  {
+    Error error = error_from_source(ctx.allocator, symbol);
+    anton::String_View const source =
+      ctx.source_registry->find_source(symbol.source_path)->data;
+    anton::String_View const name = get_source_bit(source, symbol);
+    error.diagnostic =
+      anton::format(ctx.allocator, u8"error: undefined symbol '{}'"_sv, name);
+    print_source_snippet(ctx, error.extended_diagnostic, source, symbol);
+    error.extended_diagnostic +=
+      anton::format(ctx.allocator, u8" '{}' used, but not defined"_sv, name);
+    return error;
+  }
+
+  Error err_symbol_redefinition(Context const& ctx,
+                                Source_Info const& old_symbol,
+                                Source_Info const& new_symbol)
+  {
+    Error error = error_from_source(ctx.allocator, new_symbol);
+    anton::String_View const new_source =
+      ctx.source_registry->find_source(new_symbol.source_path)->data;
+    anton::String_View const old_source =
+      ctx.source_registry->find_source(old_symbol.source_path)->data;
+    anton::String_View const name = get_source_bit(new_source, new_symbol);
+    error.diagnostic = anton::format(
+      ctx.allocator, u8"error: symbol '{}' is defined multiple times"_sv, name);
+    error.extended_diagnostic =
+      format_diagnostic_location(ctx.allocator, old_symbol);
+    error.extended_diagnostic += '\n';
+    print_source_snippet(ctx, error.extended_diagnostic, old_source,
+                         old_symbol);
+    error.extended_diagnostic +=
+      anton::format(ctx.allocator, u8" definition of '{}' here\n"_sv, name);
+    error.extended_diagnostic +=
+      format_diagnostic_location(ctx.allocator, new_symbol);
+    error.extended_diagnostic += '\n';
+    print_source_snippet(ctx, error.extended_diagnostic, new_source,
+                         new_symbol);
+    error.extended_diagnostic += u8" redefined here"_sv;
+    return error;
+  }
+
+  Error err_init_invalid_matrix_initializer_kind(
+    Context const& ctx, ast::Initializer const* const initializer)
+  {
+    Source_Info const source_info = initializer->source_info;
+    Error error = error_from_source(ctx.allocator, source_info);
+    anton::String_View const source =
+      ctx.source_registry->find_source(source_info.source_path)->data;
+    error.diagnostic =
+      "error: matrix initializer is not a field or range initializer"_sv;
+    print_source_snippet(ctx, error.extended_diagnostic, source, source_info);
+    error.extended_diagnostic +=
+      " matrix initializers must be field or range initializers"_sv;
+    return error;
+  }
+
+  Error err_init_invalid_struct_initializer_kind(
+    Context const& ctx, ast::Initializer const* const initializer)
+  {
+    Source_Info const source_info = initializer->source_info;
+    Error error = error_from_source(ctx.allocator, source_info);
+    anton::String_View const source =
+      ctx.source_registry->find_source(source_info.source_path)->data;
+    error.diagnostic = "error: initializer is not field initializer"_sv;
+    print_source_snippet(ctx, error.extended_diagnostic, source, source_info);
+    error.extended_diagnostic +=
+      " struct initializers must be field initializers"_sv;
+    return error;
+  }
 
   [[nodiscard]] static anton::String
   stringify_call_argument_types(Context const& ctx,

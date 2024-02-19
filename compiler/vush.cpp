@@ -17,8 +17,8 @@
 #include <vush_core/source_registry.hpp>
 #include <vush_diagnostics/diagnostics.hpp>
 #include <vush_parser/parser.hpp>
+#include <vush_sema/sema.hpp>
 #include <vush_syntax_lowering/syntax_lowering.hpp>
-#include <vush_typecheck/typecheck.hpp>
 
 namespace vush {
   using namespace anton::literals;
@@ -391,23 +391,8 @@ namespace vush {
       }
 
       ast::Node_List const ast_nodes = import_result.value();
-      ctx.overload_groups = run_overload_group_pass(ctx.allocator, ast_nodes);
       {
-        anton::Expected<void, Error> result = run_namebind_pass(ctx, ast_nodes);
-        if(!result) {
-          return {anton::expected_error, ANTON_MOV(result.error())};
-        }
-      }
-      {
-        anton::Expected<void, Error> result =
-          run_ast_validation_pass(ctx, ast_nodes);
-        if(!result) {
-          return {anton::expected_error, ANTON_MOV(result.error())};
-        }
-      }
-      {
-        anton::Expected<void, Error> result =
-          run_ast_typecheck_pass(ctx, ast_nodes);
+        anton::Expected<void, Error> result = run_sema(ctx, ast_nodes);
         if(!result) {
           return {anton::expected_error, ANTON_MOV(result.error())};
         }

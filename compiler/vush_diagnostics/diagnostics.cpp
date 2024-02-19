@@ -25,48 +25,6 @@ namespace vush {
     return message;
   }
 
-  Error err_undefined_symbol(Context const& ctx, Source_Info const& symbol)
-  {
-    Error error = error_from_source(ctx.allocator, symbol);
-    anton::String_View const source =
-      ctx.source_registry->find_source(symbol.source_path)->data;
-    anton::String_View const name = get_source_bit(source, symbol);
-    error.diagnostic =
-      anton::format(ctx.allocator, u8"error: undefined symbol '{}'"_sv, name);
-    print_source_snippet(ctx, error.extended_diagnostic, source, symbol);
-    error.extended_diagnostic +=
-      anton::format(ctx.allocator, u8" '{}' used, but not defined"_sv, name);
-    return error;
-  }
-
-  Error err_symbol_redefinition(Context const& ctx,
-                                Source_Info const& old_symbol,
-                                Source_Info const& new_symbol)
-  {
-    Error error = error_from_source(ctx.allocator, new_symbol);
-    anton::String_View const new_source =
-      ctx.source_registry->find_source(new_symbol.source_path)->data;
-    anton::String_View const old_source =
-      ctx.source_registry->find_source(old_symbol.source_path)->data;
-    anton::String_View const name = get_source_bit(new_source, new_symbol);
-    error.diagnostic = anton::format(
-      ctx.allocator, u8"error: symbol '{}' is defined multiple times"_sv, name);
-    error.extended_diagnostic =
-      format_diagnostic_location(ctx.allocator, old_symbol);
-    error.extended_diagnostic += '\n';
-    print_source_snippet(ctx, error.extended_diagnostic, old_source,
-                         old_symbol);
-    error.extended_diagnostic +=
-      anton::format(ctx.allocator, u8" definition of '{}' here\n"_sv, name);
-    error.extended_diagnostic +=
-      format_diagnostic_location(ctx.allocator, new_symbol);
-    error.extended_diagnostic += '\n';
-    print_source_snippet(ctx, error.extended_diagnostic, new_source,
-                         new_symbol);
-    error.extended_diagnostic += u8" redefined here"_sv;
-    return error;
-  }
-
   // anton::String format_called_symbol_does_not_name_function(Context const& ctx, Source_Info const& symbol) {
   //     anton::String_View const source = ctx.source_registry->find_source(symbol.source_path)->data;
   //     anton::String message = format_diagnostic_location(ctx.allocator, symbol);

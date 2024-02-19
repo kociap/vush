@@ -878,7 +878,8 @@ namespace vush {
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::kw_settings, "expected 'settings'"_sv, snots);
       // pass
-      EXPECT_TOKEN(Token_Kind::identifier, "expected identifier"_sv, snots);
+      EXPECT_TOKEN_SKIP(Token_Kind::identifier, "expected identifier"_sv,
+                        snots);
       EXPECT_NODE(try_setting_block, snots);
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);

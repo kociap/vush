@@ -675,6 +675,8 @@ namespace vush::ast {
     }
   };
 
+  u32 get_lt_integer_value_as_u32(Lt_Integer const& integer);
+
   // compare_integer_literals
   // Three-way compare integer literals' value regardless of their base. The
   // literal values must be trimmed to contain only plus or minus and digits.

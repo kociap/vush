@@ -7,6 +7,43 @@
 namespace vush {
   struct Context;
 
+  [[nodiscard]] Error err_undefined_symbol(Context const& ctx,
+                                           Source_Info const& symbol);
+  [[nodiscard]] Error err_symbol_redefinition(Context const& ctx,
+                                              Source_Info const& old_symbol,
+                                              Source_Info const& new_symbol);
+
+  [[nodiscard]] Error
+  err_init_invalid_matrix_initializer_kind(Context const& ctx,
+                                           ast::Initializer const* initializer);
+
+  [[nodiscard]] Error
+  err_init_invalid_struct_initializer_kind(Context const& ctx,
+                                           ast::Initializer const* initializer);
+
+  [[nodiscard]] inline Error
+  err_discard_outside_fragment([[maybe_unused]] Context const& ctx,
+                               [[maybe_unused]] Source_Info const& discard)
+  {
+    return Error{.diagnostic = anton::String("err_discard_outside_fragment")};
+  }
+
+  // TODO: Implement.
+  [[nodiscard]] inline Error
+  err_unsized_array_not_allowed([[maybe_unused]] Context const& ctx,
+                                [[maybe_unused]] Source_Info const& array)
+  {
+    return Error{.diagnostic = anton::String("err_unsized_array_not_allowed")};
+  }
+
+  [[nodiscard]] inline Error err_identifier_names_a_function_but_is_not_called(
+    [[maybe_unused]] Context const& ctx,
+    [[maybe_unused]] Source_Info const& identifier)
+  {
+    return Error{.diagnostic = anton::String(
+                   "err_identifier_names_a_function_but_is_not_called")};
+  }
+
   [[nodiscard]] Error err_no_matching_overload(
     Context const& ctx, ast::Expr_Call const* call,
     anton::Slice<ast::Decl_Function const* const> overloads);

@@ -27,11 +27,7 @@ namespace vush {
 
   [[deprecated("use err_undefined_symbol instead")]] [[nodiscard]] anton::String
   format_undefined_symbol(Context const& ctx, Source_Info const& symbol);
-  [[nodiscard]] Error err_undefined_symbol(Context const& ctx,
-                                           Source_Info const& symbol);
-  [[nodiscard]] Error err_symbol_redefinition(Context const& ctx,
-                                              Source_Info const& old_symbol,
-                                              Source_Info const& new_symbol);
+
   // TODO: Implement.
   [[nodiscard]] inline Error err_called_symbol_does_not_name_function(
     [[maybe_unused]] Context const& ctx,
@@ -160,13 +156,6 @@ namespace vush {
   err_expression_is_not_constant_evaluable(Context const& ctx,
                                            Source_Info const& expression);
 
-  // TODO: Implement.
-  [[nodiscard]] inline Error
-  err_unsized_array_not_allowed([[maybe_unused]] Context const& ctx,
-                                [[maybe_unused]] Source_Info const& array)
-  {
-    return Error{.diagnostic = anton::String("err_unsized_array_not_allowed")};
-  }
   [[nodiscard]] inline Error err_fn_sourced_parameter_not_allowed(
     [[maybe_unused]] Context const& ctx,
     [[maybe_unused]] Source_Info const& parameter)

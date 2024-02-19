@@ -7,6 +7,22 @@
 namespace vush::ast {
   using namespace anton::literals;
 
+  bool is_void(Type const& type)
+  {
+    return type.type_kind == Type_Kind::type_builtin &&
+           static_cast<Type_Builtin const&>(type).value == Type_Builtin_Kind::e_void;
+  }
+
+  bool is_scalar(Type const& type)
+  {
+    Type_Builtin const& builtin = static_cast<Type_Builtin const&>(type);
+    using Kind = Type_Builtin_Kind;
+    return type.type_kind == Type_Kind::type_builtin &&
+           (builtin.value == Kind::e_bool || builtin.value == Kind::e_int ||
+            builtin.value == Kind::e_uint || builtin.value == Kind::e_float ||
+            builtin.value == Kind::e_double);
+  }
+
   bool is_integer(Type const& type)
   {
     Type_Builtin const& builtin = static_cast<Type_Builtin const&>(type);
@@ -676,8 +692,7 @@ namespace vush::ast {
     }
   }
 
-  [[nodiscard]] static u32
-  get_lt_integer_value_as_u32(Lt_Integer const& integer)
+  u32 get_lt_integer_value_as_u32(Lt_Integer const& integer)
   {
     switch(integer.kind) {
     case Lt_Integer_Kind::i32:
