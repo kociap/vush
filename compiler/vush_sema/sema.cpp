@@ -1500,8 +1500,9 @@ namespace vush {
         } else {
           // A group does not exist, hence we have to create it and check its
           // symbol for redefinition.
-          auto const group = allocate<ast::Overload_Group>(
-            ctx.allocator, ctx.allocator, node->identifier.value);
+          auto const group =
+            VUSH_ALLOCATE(ast::Overload_Group, ctx.allocator, ctx.allocator,
+                          node->identifier.value);
           group->overloads.push_back(node);
           groups.emplace(node->identifier.value, group);
           RETURN_ON_FAIL(add_symbol, ctx, symtable,

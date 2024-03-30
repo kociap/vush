@@ -8,11 +8,11 @@ def generate_alloc_identifier(value):
     return f"ast::Identifier{{\"{value}\"_sv, {{}}}}"
 
 def generate_alloc_lt_integer(size):
-    return f"allocate<ast::Lt_Integer>(allocator, ast::lt_integer_i32, {size}, Source_Info{{}})"
+    return f"VUSH_ALLOCATE(ast::Lt_Integer, allocator, ast::lt_integer_i32, {size}, Source_Info{{}})"
 
 def generate_alloc_type(t):
     if isinstance(t, Array_Type):
-        return f"allocate<ast::Type_Array>(allocator, Source_Info{{}}, {generate_alloc_type(t.base)}, {generate_alloc_lt_integer(t.size)})"
+        return f"VUSH_ALLOCATE(ast::Type_Array, allocator, Source_Info{{}}, {generate_alloc_type(t.base)}, {generate_alloc_lt_integer(t.size)})"
     elif isinstance(t, Builtin_Type):
         return f"ALLOC_BUILTIN(e_{stringify_builtin_type(t)})"
     else:
@@ -94,7 +94,7 @@ def write_get_builtin_functions_declarations(file, functions):
 
     for i, (name, group) in enumerate(functions.items()):
         identifier = f"\"{name}\"_sv"
-        file.write(f"auto group_{i} = allocate<ast::Overload_Group>(allocator, allocator, {identifier});\n")
+        file.write(f"auto group_{i} = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, {identifier});\n")
         for fn in group:
             file.write(f"group_{i}->overloads.push_back({fn});\n")
         file.write(f"groups.emplace({identifier}, group_{i});\n")
@@ -134,12 +134,12 @@ def write_preamble_builtin_functions(file):
 #include <vush_core/memory.hpp>
 
 #define ALLOC_BUILTIN(value) \\
-    allocate<ast::Type_Builtin>(allocator, Source_Info{}, ast::Type_Builtin_Kind::value, \\
+    VUSH_ALLOCATE(ast::Type_Builtin, allocator, Source_Info{}, ast::Type_Builtin_Kind::value, \\
                                 get_builtin_type_layout(ast::Type_Builtin_Kind::value))
-#define ALLOC_PARAM(name, type) allocate<ast::Fn_Parameter>(allocator, ast::Identifier{name, {}}, type, ast::Identifier{""_sv, {}}, Source_Info{})
-#define ALLOC_ARRAY_PARAM(...) allocate<Array<ast::Fn_Parameter*>>(allocator, allocator, anton::variadic_construct __VA_OPT__(,) __VA_ARGS__)
+#define ALLOC_PARAM(name, type) VUSH_ALLOCATE(ast::Fn_Parameter, allocator, ast::Identifier{name, {}}, type, ast::Identifier{""_sv, {}}, Source_Info{})
+#define ALLOC_ARRAY_PARAM(...) VUSH_ALLOCATE(Array<ast::Fn_Parameter*>, allocator, allocator, anton::variadic_construct __VA_OPT__(,) __VA_ARGS__)
 #define ALLOC_FUNCTION(identifier, return_type, parameter_array) \\
-    allocate<ast::Decl_Function>(allocator, ast::Attr_List{}, ast::Identifier{identifier, {}}, \\
+    VUSH_ALLOCATE(ast::Decl_Function, allocator, ast::Attr_List{}, ast::Identifier{identifier, {}}, \\
         parameter_array, return_type, ast::Node_List{}, true, Source_Info{})
 
 namespace vush {

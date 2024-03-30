@@ -9,20 +9,19 @@
 #include <vush_core/memory.hpp>
 
 #define ALLOC_BUILTIN(value)                                 \
-  allocate<ast::Type_Builtin>(                               \
-    allocator, Source_Info{}, ast::Type_Builtin_Kind::value, \
-    get_builtin_type_layout(ast::Type_Builtin_Kind::value))
-#define ALLOC_PARAM(name, type)                                           \
-  allocate<ast::Fn_Parameter>(allocator, ast::Identifier{name, {}}, type, \
-                              ast::Identifier{""_sv, {}}, Source_Info{})
-#define ALLOC_ARRAY_PARAM(...)                                                 \
-  allocate<Array<ast::Fn_Parameter*>>(allocator, allocator,                    \
-                                      anton::variadic_construct __VA_OPT__(, ) \
-                                        __VA_ARGS__)
-#define ALLOC_FUNCTION(identifier, return_type, parameter_array)  \
-  allocate<ast::Decl_Function>(                                   \
-    allocator, ast::Attr_List{}, ast::Identifier{identifier, {}}, \
-    parameter_array, return_type, ast::Node_List{}, true, Source_Info{})
+  VUSH_ALLOCATE(ast::Type_Builtin, allocator, Source_Info{}, \
+                ast::Type_Builtin_Kind::value,               \
+                get_builtin_type_layout(ast::Type_Builtin_Kind::value))
+#define ALLOC_PARAM(name, type)                                                \
+  VUSH_ALLOCATE(ast::Fn_Parameter, allocator, ast::Identifier{name, {}}, type, \
+                ast::Identifier{""_sv, {}}, Source_Info{})
+#define ALLOC_ARRAY_PARAM(...)                                   \
+  VUSH_ALLOCATE(Array<ast::Fn_Parameter*>, allocator, allocator, \
+                anton::variadic_construct __VA_OPT__(, ) __VA_ARGS__)
+#define ALLOC_FUNCTION(identifier, return_type, parameter_array)               \
+  VUSH_ALLOCATE(ast::Decl_Function, allocator, ast::Attr_List{},               \
+                ast::Identifier{identifier, {}}, parameter_array, return_type, \
+                ast::Node_List{}, true, Source_Info{})
 
 namespace vush {
   using namespace anton::literals;
@@ -34,7 +33,7 @@ namespace vush {
     anton::Flat_Hash_Map<anton::String_View, ast::Overload_Group*> groups(
       anton::reserve, 324, allocator);
     auto group_0 =
-      allocate<ast::Overload_Group>(allocator, allocator, "radians"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "radians"_sv);
     group_0->overloads.push_back(ALLOC_FUNCTION(
       "radians"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("pdegrees"_sv, ALLOC_BUILTIN(e_float)))));
@@ -49,7 +48,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("pdegrees"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("radians"_sv, group_0);
     auto group_1 =
-      allocate<ast::Overload_Group>(allocator, allocator, "degrees"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "degrees"_sv);
     group_1->overloads.push_back(ALLOC_FUNCTION(
       "degrees"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("pradians"_sv, ALLOC_BUILTIN(e_float)))));
@@ -64,7 +63,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("pradians"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("degrees"_sv, group_1);
     auto group_2 =
-      allocate<ast::Overload_Group>(allocator, allocator, "sin"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "sin"_sv);
     group_2->overloads.push_back(ALLOC_FUNCTION(
       "sin"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("angle"_sv, ALLOC_BUILTIN(e_float)))));
@@ -79,7 +78,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("angle"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("sin"_sv, group_2);
     auto group_3 =
-      allocate<ast::Overload_Group>(allocator, allocator, "cos"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "cos"_sv);
     group_3->overloads.push_back(ALLOC_FUNCTION(
       "cos"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("angle"_sv, ALLOC_BUILTIN(e_float)))));
@@ -94,7 +93,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("angle"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("cos"_sv, group_3);
     auto group_4 =
-      allocate<ast::Overload_Group>(allocator, allocator, "tan"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "tan"_sv);
     group_4->overloads.push_back(ALLOC_FUNCTION(
       "tan"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("angle"_sv, ALLOC_BUILTIN(e_float)))));
@@ -109,7 +108,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("angle"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("tan"_sv, group_4);
     auto group_5 =
-      allocate<ast::Overload_Group>(allocator, allocator, "asin"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "asin"_sv);
     group_5->overloads.push_back(ALLOC_FUNCTION(
       "asin"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_float)))));
@@ -124,7 +123,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("asin"_sv, group_5);
     auto group_6 =
-      allocate<ast::Overload_Group>(allocator, allocator, "acos"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "acos"_sv);
     group_6->overloads.push_back(ALLOC_FUNCTION(
       "acos"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_float)))));
@@ -139,7 +138,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("acos"_sv, group_6);
     auto group_7 =
-      allocate<ast::Overload_Group>(allocator, allocator, "atan"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "atan"_sv);
     group_7->overloads.push_back(ALLOC_FUNCTION(
       "atan"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("y"_sv, ALLOC_BUILTIN(e_float)),
@@ -170,7 +169,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("y_over_x"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("atan"_sv, group_7);
     auto group_8 =
-      allocate<ast::Overload_Group>(allocator, allocator, "sinh"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "sinh"_sv);
     group_8->overloads.push_back(ALLOC_FUNCTION(
       "sinh"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_float)))));
@@ -185,7 +184,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("sinh"_sv, group_8);
     auto group_9 =
-      allocate<ast::Overload_Group>(allocator, allocator, "cosh"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "cosh"_sv);
     group_9->overloads.push_back(ALLOC_FUNCTION(
       "cosh"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_float)))));
@@ -200,7 +199,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("cosh"_sv, group_9);
     auto group_10 =
-      allocate<ast::Overload_Group>(allocator, allocator, "tanh"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "tanh"_sv);
     group_10->overloads.push_back(ALLOC_FUNCTION(
       "tanh"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_float)))));
@@ -215,7 +214,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("tanh"_sv, group_10);
     auto group_11 =
-      allocate<ast::Overload_Group>(allocator, allocator, "asinh"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "asinh"_sv);
     group_11->overloads.push_back(ALLOC_FUNCTION(
       "asinh"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_float)))));
@@ -230,7 +229,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("asinh"_sv, group_11);
     auto group_12 =
-      allocate<ast::Overload_Group>(allocator, allocator, "acosh"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "acosh"_sv);
     group_12->overloads.push_back(ALLOC_FUNCTION(
       "acosh"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_float)))));
@@ -245,7 +244,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("acosh"_sv, group_12);
     auto group_13 =
-      allocate<ast::Overload_Group>(allocator, allocator, "atanh"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "atanh"_sv);
     group_13->overloads.push_back(ALLOC_FUNCTION(
       "atanh"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_float)))));
@@ -260,7 +259,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("atanh"_sv, group_13);
     auto group_14 =
-      allocate<ast::Overload_Group>(allocator, allocator, "pow"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "pow"_sv);
     group_14->overloads.push_back(ALLOC_FUNCTION(
       "pow"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_float)),
@@ -279,7 +278,7 @@ namespace vush {
                          ALLOC_PARAM("y"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("pow"_sv, group_14);
     auto group_15 =
-      allocate<ast::Overload_Group>(allocator, allocator, "exp"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "exp"_sv);
     group_15->overloads.push_back(ALLOC_FUNCTION(
       "exp"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_float)))));
@@ -294,7 +293,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("exp"_sv, group_15);
     auto group_16 =
-      allocate<ast::Overload_Group>(allocator, allocator, "log"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "log"_sv);
     group_16->overloads.push_back(ALLOC_FUNCTION(
       "log"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_float)))));
@@ -309,7 +308,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("log"_sv, group_16);
     auto group_17 =
-      allocate<ast::Overload_Group>(allocator, allocator, "exp2"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "exp2"_sv);
     group_17->overloads.push_back(ALLOC_FUNCTION(
       "exp2"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_float)))));
@@ -324,7 +323,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("exp2"_sv, group_17);
     auto group_18 =
-      allocate<ast::Overload_Group>(allocator, allocator, "log2"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "log2"_sv);
     group_18->overloads.push_back(ALLOC_FUNCTION(
       "log2"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_float)))));
@@ -339,7 +338,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("log2"_sv, group_18);
     auto group_19 =
-      allocate<ast::Overload_Group>(allocator, allocator, "sqrt"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "sqrt"_sv);
     group_19->overloads.push_back(ALLOC_FUNCTION(
       "sqrt"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_float)))));
@@ -365,8 +364,8 @@ namespace vush {
       "sqrt"_sv, ALLOC_BUILTIN(e_dvec4),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_dvec4)))));
     groups.emplace("sqrt"_sv, group_19);
-    auto group_20 =
-      allocate<ast::Overload_Group>(allocator, allocator, "inversesqrt"_sv);
+    auto group_20 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "inversesqrt"_sv);
     group_20->overloads.push_back(ALLOC_FUNCTION(
       "inversesqrt"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_float)))));
@@ -393,7 +392,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_dvec4)))));
     groups.emplace("inversesqrt"_sv, group_20);
     auto group_21 =
-      allocate<ast::Overload_Group>(allocator, allocator, "abs"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "abs"_sv);
     group_21->overloads.push_back(ALLOC_FUNCTION(
       "abs"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_float)))));
@@ -432,7 +431,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_ivec4)))));
     groups.emplace("abs"_sv, group_21);
     auto group_22 =
-      allocate<ast::Overload_Group>(allocator, allocator, "sign"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "sign"_sv);
     group_22->overloads.push_back(ALLOC_FUNCTION(
       "sign"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_float)))));
@@ -471,7 +470,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_ivec4)))));
     groups.emplace("sign"_sv, group_22);
     auto group_23 =
-      allocate<ast::Overload_Group>(allocator, allocator, "floor"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "floor"_sv);
     group_23->overloads.push_back(ALLOC_FUNCTION(
       "floor"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_float)))));
@@ -498,7 +497,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_dvec4)))));
     groups.emplace("floor"_sv, group_23);
     auto group_24 =
-      allocate<ast::Overload_Group>(allocator, allocator, "trunc"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "trunc"_sv);
     group_24->overloads.push_back(ALLOC_FUNCTION(
       "trunc"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_float)))));
@@ -525,7 +524,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_dvec4)))));
     groups.emplace("trunc"_sv, group_24);
     auto group_25 =
-      allocate<ast::Overload_Group>(allocator, allocator, "round"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "round"_sv);
     group_25->overloads.push_back(ALLOC_FUNCTION(
       "round"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_float)))));
@@ -552,7 +551,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_dvec4)))));
     groups.emplace("round"_sv, group_25);
     auto group_26 =
-      allocate<ast::Overload_Group>(allocator, allocator, "roundEven"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "roundEven"_sv);
     group_26->overloads.push_back(ALLOC_FUNCTION(
       "roundEven"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_float)))));
@@ -579,7 +578,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_dvec4)))));
     groups.emplace("roundEven"_sv, group_26);
     auto group_27 =
-      allocate<ast::Overload_Group>(allocator, allocator, "ceil"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "ceil"_sv);
     group_27->overloads.push_back(ALLOC_FUNCTION(
       "ceil"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_float)))));
@@ -606,7 +605,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_dvec4)))));
     groups.emplace("ceil"_sv, group_27);
     auto group_28 =
-      allocate<ast::Overload_Group>(allocator, allocator, "fract"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "fract"_sv);
     group_28->overloads.push_back(ALLOC_FUNCTION(
       "fract"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_float)))));
@@ -633,7 +632,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_dvec4)))));
     groups.emplace("fract"_sv, group_28);
     auto group_29 =
-      allocate<ast::Overload_Group>(allocator, allocator, "mod"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "mod"_sv);
     group_29->overloads.push_back(ALLOC_FUNCTION(
       "mod"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_float)),
@@ -692,7 +691,7 @@ namespace vush {
                          ALLOC_PARAM("y"_sv, ALLOC_BUILTIN(e_dvec4)))));
     groups.emplace("mod"_sv, group_29);
     auto group_30 =
-      allocate<ast::Overload_Group>(allocator, allocator, "modf"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "modf"_sv);
     group_30->overloads.push_back(ALLOC_FUNCTION(
       "modf"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_float)),
@@ -727,7 +726,7 @@ namespace vush {
                          ALLOC_PARAM("y"_sv, ALLOC_BUILTIN(e_dvec4)))));
     groups.emplace("modf"_sv, group_30);
     auto group_31 =
-      allocate<ast::Overload_Group>(allocator, allocator, "min"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "min"_sv);
     group_31->overloads.push_back(ALLOC_FUNCTION(
       "min"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_float)),
@@ -842,7 +841,7 @@ namespace vush {
                          ALLOC_PARAM("y"_sv, ALLOC_BUILTIN(e_uvec4)))));
     groups.emplace("min"_sv, group_31);
     auto group_32 =
-      allocate<ast::Overload_Group>(allocator, allocator, "max"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "max"_sv);
     group_32->overloads.push_back(ALLOC_FUNCTION(
       "max"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_float)),
@@ -957,7 +956,7 @@ namespace vush {
                          ALLOC_PARAM("y"_sv, ALLOC_BUILTIN(e_uvec4)))));
     groups.emplace("max"_sv, group_32);
     auto group_33 =
-      allocate<ast::Overload_Group>(allocator, allocator, "clamp"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "clamp"_sv);
     group_33->overloads.push_back(ALLOC_FUNCTION(
       "clamp"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_float)),
@@ -1039,80 +1038,80 @@ namespace vush {
                          ALLOC_PARAM("min_val"_sv, ALLOC_BUILTIN(e_uint)),
                          ALLOC_PARAM("max_val"_sv, ALLOC_BUILTIN(e_uint)))));
     groups.emplace("clamp"_sv, group_33);
-    auto group_34 =
-      allocate<ast::Overload_Group>(allocator, allocator, "packUnorm2x16"_sv);
+    auto group_34 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "packUnorm2x16"_sv);
     group_34->overloads.push_back(ALLOC_FUNCTION(
       "packUnorm2x16"_sv, ALLOC_BUILTIN(e_uint),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("v"_sv, ALLOC_BUILTIN(e_vec2)))));
     groups.emplace("packUnorm2x16"_sv, group_34);
-    auto group_35 =
-      allocate<ast::Overload_Group>(allocator, allocator, "packSnorm2x16"_sv);
+    auto group_35 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "packSnorm2x16"_sv);
     group_35->overloads.push_back(ALLOC_FUNCTION(
       "packSnorm2x16"_sv, ALLOC_BUILTIN(e_uint),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("v"_sv, ALLOC_BUILTIN(e_vec2)))));
     groups.emplace("packSnorm2x16"_sv, group_35);
-    auto group_36 =
-      allocate<ast::Overload_Group>(allocator, allocator, "packUnorm4x8"_sv);
+    auto group_36 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "packUnorm4x8"_sv);
     group_36->overloads.push_back(ALLOC_FUNCTION(
       "packUnorm4x8"_sv, ALLOC_BUILTIN(e_uint),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("v"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("packUnorm4x8"_sv, group_36);
-    auto group_37 =
-      allocate<ast::Overload_Group>(allocator, allocator, "packSnorm4x8"_sv);
+    auto group_37 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "packSnorm4x8"_sv);
     group_37->overloads.push_back(ALLOC_FUNCTION(
       "packSnorm4x8"_sv, ALLOC_BUILTIN(e_uint),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("v"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("packSnorm4x8"_sv, group_37);
-    auto group_38 =
-      allocate<ast::Overload_Group>(allocator, allocator, "unpackUnorm2x16"_sv);
+    auto group_38 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "unpackUnorm2x16"_sv);
     group_38->overloads.push_back(ALLOC_FUNCTION(
       "unpackUnorm2x16"_sv, ALLOC_BUILTIN(e_vec2),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_uint)))));
     groups.emplace("unpackUnorm2x16"_sv, group_38);
-    auto group_39 =
-      allocate<ast::Overload_Group>(allocator, allocator, "unpackSnorm2x16"_sv);
+    auto group_39 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "unpackSnorm2x16"_sv);
     group_39->overloads.push_back(ALLOC_FUNCTION(
       "unpackSnorm2x16"_sv, ALLOC_BUILTIN(e_vec2),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_uint)))));
     groups.emplace("unpackSnorm2x16"_sv, group_39);
-    auto group_40 =
-      allocate<ast::Overload_Group>(allocator, allocator, "unpackUnorm4x8"_sv);
+    auto group_40 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "unpackUnorm4x8"_sv);
     group_40->overloads.push_back(ALLOC_FUNCTION(
       "unpackUnorm4x8"_sv, ALLOC_BUILTIN(e_vec4),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_uint)))));
     groups.emplace("unpackUnorm4x8"_sv, group_40);
-    auto group_41 =
-      allocate<ast::Overload_Group>(allocator, allocator, "unpackSnorm4x8"_sv);
+    auto group_41 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "unpackSnorm4x8"_sv);
     group_41->overloads.push_back(ALLOC_FUNCTION(
       "unpackSnorm4x8"_sv, ALLOC_BUILTIN(e_vec4),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_uint)))));
     groups.emplace("unpackSnorm4x8"_sv, group_41);
-    auto group_42 =
-      allocate<ast::Overload_Group>(allocator, allocator, "packHalf2x16"_sv);
+    auto group_42 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "packHalf2x16"_sv);
     group_42->overloads.push_back(ALLOC_FUNCTION(
       "packHalf2x16"_sv, ALLOC_BUILTIN(e_uint),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("v"_sv, ALLOC_BUILTIN(e_vec2)))));
     groups.emplace("packHalf2x16"_sv, group_42);
-    auto group_43 =
-      allocate<ast::Overload_Group>(allocator, allocator, "unpackHalf2x16"_sv);
+    auto group_43 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "unpackHalf2x16"_sv);
     group_43->overloads.push_back(ALLOC_FUNCTION(
       "unpackHalf2x16"_sv, ALLOC_BUILTIN(e_vec2),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("v"_sv, ALLOC_BUILTIN(e_uint)))));
     groups.emplace("unpackHalf2x16"_sv, group_43);
-    auto group_44 =
-      allocate<ast::Overload_Group>(allocator, allocator, "packDouble2x32"_sv);
+    auto group_44 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "packDouble2x32"_sv);
     group_44->overloads.push_back(ALLOC_FUNCTION(
       "packDouble2x32"_sv, ALLOC_BUILTIN(e_double),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("v"_sv, ALLOC_BUILTIN(e_uvec2)))));
     groups.emplace("packDouble2x32"_sv, group_44);
-    auto group_45 = allocate<ast::Overload_Group>(allocator, allocator,
-                                                  "unpackDouble2x32"_sv);
+    auto group_45 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "unpackDouble2x32"_sv);
     group_45->overloads.push_back(ALLOC_FUNCTION(
       "unpackDouble2x32"_sv, ALLOC_BUILTIN(e_uvec2),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("v"_sv, ALLOC_BUILTIN(e_double)))));
     groups.emplace("unpackDouble2x32"_sv, group_45);
     auto group_46 =
-      allocate<ast::Overload_Group>(allocator, allocator, "length"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "length"_sv);
     group_46->overloads.push_back(ALLOC_FUNCTION(
       "length"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_float)))));
@@ -1139,7 +1138,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_dvec4)))));
     groups.emplace("length"_sv, group_46);
     auto group_47 =
-      allocate<ast::Overload_Group>(allocator, allocator, "distance"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "distance"_sv);
     group_47->overloads.push_back(ALLOC_FUNCTION(
       "distance"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("p0"_sv, ALLOC_BUILTIN(e_float)),
@@ -1174,7 +1173,7 @@ namespace vush {
                          ALLOC_PARAM("p1"_sv, ALLOC_BUILTIN(e_dvec4)))));
     groups.emplace("distance"_sv, group_47);
     auto group_48 =
-      allocate<ast::Overload_Group>(allocator, allocator, "dot"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "dot"_sv);
     group_48->overloads.push_back(ALLOC_FUNCTION(
       "dot"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_float)),
@@ -1209,7 +1208,7 @@ namespace vush {
                          ALLOC_PARAM("y"_sv, ALLOC_BUILTIN(e_dvec4)))));
     groups.emplace("dot"_sv, group_48);
     auto group_49 =
-      allocate<ast::Overload_Group>(allocator, allocator, "cross"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "cross"_sv);
     group_49->overloads.push_back(ALLOC_FUNCTION(
       "cross"_sv, ALLOC_BUILTIN(e_vec3),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_vec3)),
@@ -1220,7 +1219,7 @@ namespace vush {
                          ALLOC_PARAM("y"_sv, ALLOC_BUILTIN(e_dvec3)))));
     groups.emplace("cross"_sv, group_49);
     auto group_50 =
-      allocate<ast::Overload_Group>(allocator, allocator, "normalize"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "normalize"_sv);
     group_50->overloads.push_back(ALLOC_FUNCTION(
       "normalize"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_float)))));
@@ -1246,8 +1245,8 @@ namespace vush {
       "normalize"_sv, ALLOC_BUILTIN(e_dvec4),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_dvec4)))));
     groups.emplace("normalize"_sv, group_50);
-    auto group_51 =
-      allocate<ast::Overload_Group>(allocator, allocator, "faceforward"_sv);
+    auto group_51 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "faceforward"_sv);
     group_51->overloads.push_back(ALLOC_FUNCTION(
       "faceforward"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("N"_sv, ALLOC_BUILTIN(e_float)),
@@ -1290,7 +1289,7 @@ namespace vush {
                          ALLOC_PARAM("Nref"_sv, ALLOC_BUILTIN(e_dvec4)))));
     groups.emplace("faceforward"_sv, group_51);
     auto group_52 =
-      allocate<ast::Overload_Group>(allocator, allocator, "reflect"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "reflect"_sv);
     group_52->overloads.push_back(ALLOC_FUNCTION(
       "reflect"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("I"_sv, ALLOC_BUILTIN(e_float)),
@@ -1325,7 +1324,7 @@ namespace vush {
                          ALLOC_PARAM("N"_sv, ALLOC_BUILTIN(e_dvec4)))));
     groups.emplace("reflect"_sv, group_52);
     auto group_53 =
-      allocate<ast::Overload_Group>(allocator, allocator, "refract"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "refract"_sv);
     group_53->overloads.push_back(ALLOC_FUNCTION(
       "refract"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("I"_sv, ALLOC_BUILTIN(e_float)),
@@ -1367,8 +1366,8 @@ namespace vush {
                          ALLOC_PARAM("N"_sv, ALLOC_BUILTIN(e_dvec4)),
                          ALLOC_PARAM("eta"_sv, ALLOC_BUILTIN(e_double)))));
     groups.emplace("refract"_sv, group_53);
-    auto group_54 =
-      allocate<ast::Overload_Group>(allocator, allocator, "matrixCompMult"_sv);
+    auto group_54 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "matrixCompMult"_sv);
     group_54->overloads.push_back(ALLOC_FUNCTION(
       "matrixCompMult"_sv, ALLOC_BUILTIN(e_mat2),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_mat2)),
@@ -1406,8 +1405,8 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_mat4x3)),
                          ALLOC_PARAM("y"_sv, ALLOC_BUILTIN(e_mat4x3)))));
     groups.emplace("matrixCompMult"_sv, group_54);
-    auto group_55 =
-      allocate<ast::Overload_Group>(allocator, allocator, "outerProduct"_sv);
+    auto group_55 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "outerProduct"_sv);
     group_55->overloads.push_back(ALLOC_FUNCTION(
       "outerProduct"_sv, ALLOC_BUILTIN(e_mat2),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("c"_sv, ALLOC_BUILTIN(e_vec2)),
@@ -1446,7 +1445,7 @@ namespace vush {
                          ALLOC_PARAM("r"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("outerProduct"_sv, group_55);
     auto group_56 =
-      allocate<ast::Overload_Group>(allocator, allocator, "transpose"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "transpose"_sv);
     group_56->overloads.push_back(ALLOC_FUNCTION(
       "transpose"_sv, ALLOC_BUILTIN(e_mat2),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("m"_sv, ALLOC_BUILTIN(e_mat2)))));
@@ -1475,8 +1474,8 @@ namespace vush {
       "transpose"_sv, ALLOC_BUILTIN(e_mat4x3),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("m"_sv, ALLOC_BUILTIN(e_mat3x4)))));
     groups.emplace("transpose"_sv, group_56);
-    auto group_57 =
-      allocate<ast::Overload_Group>(allocator, allocator, "determinant"_sv);
+    auto group_57 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "determinant"_sv);
     group_57->overloads.push_back(ALLOC_FUNCTION(
       "determinant"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("m"_sv, ALLOC_BUILTIN(e_mat2)))));
@@ -1488,7 +1487,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("m"_sv, ALLOC_BUILTIN(e_mat4)))));
     groups.emplace("determinant"_sv, group_57);
     auto group_58 =
-      allocate<ast::Overload_Group>(allocator, allocator, "inverse"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "inverse"_sv);
     group_58->overloads.push_back(ALLOC_FUNCTION(
       "inverse"_sv, ALLOC_BUILTIN(e_mat2),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("m"_sv, ALLOC_BUILTIN(e_mat2)))));
@@ -1500,7 +1499,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("m"_sv, ALLOC_BUILTIN(e_mat4)))));
     groups.emplace("inverse"_sv, group_58);
     auto group_59 =
-      allocate<ast::Overload_Group>(allocator, allocator, "lessThan"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "lessThan"_sv);
     group_59->overloads.push_back(ALLOC_FUNCTION(
       "lessThan"_sv, ALLOC_BUILTIN(e_bvec2),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_vec2)),
@@ -1550,8 +1549,8 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_uvec4)),
                          ALLOC_PARAM("y"_sv, ALLOC_BUILTIN(e_uvec4)))));
     groups.emplace("lessThan"_sv, group_59);
-    auto group_60 =
-      allocate<ast::Overload_Group>(allocator, allocator, "lessThanEqual"_sv);
+    auto group_60 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "lessThanEqual"_sv);
     group_60->overloads.push_back(ALLOC_FUNCTION(
       "lessThanEqual"_sv, ALLOC_BUILTIN(e_bvec2),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_vec2)),
@@ -1601,8 +1600,8 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_uvec4)),
                          ALLOC_PARAM("y"_sv, ALLOC_BUILTIN(e_uvec4)))));
     groups.emplace("lessThanEqual"_sv, group_60);
-    auto group_61 =
-      allocate<ast::Overload_Group>(allocator, allocator, "greaterThan"_sv);
+    auto group_61 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "greaterThan"_sv);
     group_61->overloads.push_back(ALLOC_FUNCTION(
       "greaterThan"_sv, ALLOC_BUILTIN(e_bvec2),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_vec2)),
@@ -1652,8 +1651,8 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_uvec4)),
                          ALLOC_PARAM("y"_sv, ALLOC_BUILTIN(e_uvec4)))));
     groups.emplace("greaterThan"_sv, group_61);
-    auto group_62 = allocate<ast::Overload_Group>(allocator, allocator,
-                                                  "greaterThanEqual"_sv);
+    auto group_62 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "greaterThanEqual"_sv);
     group_62->overloads.push_back(ALLOC_FUNCTION(
       "greaterThanEqual"_sv, ALLOC_BUILTIN(e_bvec2),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_vec2)),
@@ -1704,7 +1703,7 @@ namespace vush {
                          ALLOC_PARAM("y"_sv, ALLOC_BUILTIN(e_uvec4)))));
     groups.emplace("greaterThanEqual"_sv, group_62);
     auto group_63 =
-      allocate<ast::Overload_Group>(allocator, allocator, "equal"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "equal"_sv);
     group_63->overloads.push_back(ALLOC_FUNCTION(
       "equal"_sv, ALLOC_BUILTIN(e_bvec2),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_vec2)),
@@ -1755,7 +1754,7 @@ namespace vush {
                          ALLOC_PARAM("y"_sv, ALLOC_BUILTIN(e_uvec4)))));
     groups.emplace("equal"_sv, group_63);
     auto group_64 =
-      allocate<ast::Overload_Group>(allocator, allocator, "notEqual"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "notEqual"_sv);
     group_64->overloads.push_back(ALLOC_FUNCTION(
       "notEqual"_sv, ALLOC_BUILTIN(e_bvec2),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_vec2)),
@@ -1806,7 +1805,7 @@ namespace vush {
                          ALLOC_PARAM("y"_sv, ALLOC_BUILTIN(e_uvec4)))));
     groups.emplace("notEqual"_sv, group_64);
     auto group_65 =
-      allocate<ast::Overload_Group>(allocator, allocator, "any"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "any"_sv);
     group_65->overloads.push_back(ALLOC_FUNCTION(
       "any"_sv, ALLOC_BUILTIN(e_bool),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_bvec2)))));
@@ -1818,7 +1817,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_bvec4)))));
     groups.emplace("any"_sv, group_65);
     auto group_66 =
-      allocate<ast::Overload_Group>(allocator, allocator, "all"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "all"_sv);
     group_66->overloads.push_back(ALLOC_FUNCTION(
       "all"_sv, ALLOC_BUILTIN(e_bool),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_bvec2)))));
@@ -1830,7 +1829,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_bvec4)))));
     groups.emplace("all"_sv, group_66);
     auto group_67 =
-      allocate<ast::Overload_Group>(allocator, allocator, "not"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "not"_sv);
     group_67->overloads.push_back(ALLOC_FUNCTION(
       "not"_sv, ALLOC_BUILTIN(e_bvec2),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_bvec2)))));
@@ -1842,7 +1841,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_bvec4)))));
     groups.emplace("not"_sv, group_67);
     auto group_68 =
-      allocate<ast::Overload_Group>(allocator, allocator, "uaddCarry"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "uaddCarry"_sv);
     group_68->overloads.push_back(ALLOC_FUNCTION(
       "uaddCarry"_sv, ALLOC_BUILTIN(e_uint),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_uint)),
@@ -1865,7 +1864,7 @@ namespace vush {
                          ALLOC_PARAM("carry"_sv, ALLOC_BUILTIN(e_uvec4)))));
     groups.emplace("uaddCarry"_sv, group_68);
     auto group_69 =
-      allocate<ast::Overload_Group>(allocator, allocator, "usubBorrow"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "usubBorrow"_sv);
     group_69->overloads.push_back(ALLOC_FUNCTION(
       "usubBorrow"_sv, ALLOC_BUILTIN(e_uint),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_uint)),
@@ -1887,8 +1886,8 @@ namespace vush {
                          ALLOC_PARAM("y"_sv, ALLOC_BUILTIN(e_uvec4)),
                          ALLOC_PARAM("borrow"_sv, ALLOC_BUILTIN(e_uvec4)))));
     groups.emplace("usubBorrow"_sv, group_69);
-    auto group_70 =
-      allocate<ast::Overload_Group>(allocator, allocator, "umulExtended"_sv);
+    auto group_70 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "umulExtended"_sv);
     group_70->overloads.push_back(ALLOC_FUNCTION(
       "umulExtended"_sv, ALLOC_BUILTIN(e_void),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_uint)),
@@ -1914,8 +1913,8 @@ namespace vush {
                          ALLOC_PARAM("msb"_sv, ALLOC_BUILTIN(e_uvec4)),
                          ALLOC_PARAM("lsb"_sv, ALLOC_BUILTIN(e_uvec4)))));
     groups.emplace("umulExtended"_sv, group_70);
-    auto group_71 =
-      allocate<ast::Overload_Group>(allocator, allocator, "imulExtended"_sv);
+    auto group_71 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "imulExtended"_sv);
     group_71->overloads.push_back(ALLOC_FUNCTION(
       "imulExtended"_sv, ALLOC_BUILTIN(e_void),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("x"_sv, ALLOC_BUILTIN(e_int)),
@@ -1941,8 +1940,8 @@ namespace vush {
                          ALLOC_PARAM("msb"_sv, ALLOC_BUILTIN(e_ivec4)),
                          ALLOC_PARAM("lsb"_sv, ALLOC_BUILTIN(e_ivec4)))));
     groups.emplace("imulExtended"_sv, group_71);
-    auto group_72 =
-      allocate<ast::Overload_Group>(allocator, allocator, "bitfieldExtract"_sv);
+    auto group_72 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "bitfieldExtract"_sv);
     group_72->overloads.push_back(ALLOC_FUNCTION(
       "bitfieldExtract"_sv, ALLOC_BUILTIN(e_void),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("value"_sv, ALLOC_BUILTIN(e_int)),
@@ -1984,8 +1983,8 @@ namespace vush {
                          ALLOC_PARAM("offset"_sv, ALLOC_BUILTIN(e_int)),
                          ALLOC_PARAM("bits"_sv, ALLOC_BUILTIN(e_int)))));
     groups.emplace("bitfieldExtract"_sv, group_72);
-    auto group_73 =
-      allocate<ast::Overload_Group>(allocator, allocator, "bitfieldInsert"_sv);
+    auto group_73 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "bitfieldInsert"_sv);
     group_73->overloads.push_back(ALLOC_FUNCTION(
       "bitfieldInsert"_sv, ALLOC_BUILTIN(e_void),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("base"_sv, ALLOC_BUILTIN(e_int)),
@@ -2035,8 +2034,8 @@ namespace vush {
                          ALLOC_PARAM("offset"_sv, ALLOC_BUILTIN(e_int)),
                          ALLOC_PARAM("bits"_sv, ALLOC_BUILTIN(e_int)))));
     groups.emplace("bitfieldInsert"_sv, group_73);
-    auto group_74 =
-      allocate<ast::Overload_Group>(allocator, allocator, "bitfieldReverse"_sv);
+    auto group_74 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "bitfieldReverse"_sv);
     group_74->overloads.push_back(ALLOC_FUNCTION(
       "bitfieldReverse"_sv, ALLOC_BUILTIN(e_void),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("base"_sv, ALLOC_BUILTIN(e_int)))));
@@ -2063,7 +2062,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("base"_sv, ALLOC_BUILTIN(e_uvec4)))));
     groups.emplace("bitfieldReverse"_sv, group_74);
     auto group_75 =
-      allocate<ast::Overload_Group>(allocator, allocator, "bitCount"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "bitCount"_sv);
     group_75->overloads.push_back(ALLOC_FUNCTION(
       "bitCount"_sv, ALLOC_BUILTIN(e_void),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("base"_sv, ALLOC_BUILTIN(e_int)))));
@@ -2090,7 +2089,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("base"_sv, ALLOC_BUILTIN(e_uvec4)))));
     groups.emplace("bitCount"_sv, group_75);
     auto group_76 =
-      allocate<ast::Overload_Group>(allocator, allocator, "findLSB"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "findLSB"_sv);
     group_76->overloads.push_back(ALLOC_FUNCTION(
       "findLSB"_sv, ALLOC_BUILTIN(e_void),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("base"_sv, ALLOC_BUILTIN(e_int)))));
@@ -2117,7 +2116,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("base"_sv, ALLOC_BUILTIN(e_uvec4)))));
     groups.emplace("findLSB"_sv, group_76);
     auto group_77 =
-      allocate<ast::Overload_Group>(allocator, allocator, "findMSB"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "findMSB"_sv);
     group_77->overloads.push_back(ALLOC_FUNCTION(
       "findMSB"_sv, ALLOC_BUILTIN(e_void),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("base"_sv, ALLOC_BUILTIN(e_int)))));
@@ -2143,8 +2142,8 @@ namespace vush {
       "findMSB"_sv, ALLOC_BUILTIN(e_void),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("base"_sv, ALLOC_BUILTIN(e_uvec4)))));
     groups.emplace("findMSB"_sv, group_77);
-    auto group_78 =
-      allocate<ast::Overload_Group>(allocator, allocator, "textureSize"_sv);
+    auto group_78 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "textureSize"_sv);
     group_78->overloads.push_back(ALLOC_FUNCTION(
       "textureSize"_sv, ALLOC_BUILTIN(e_int),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_sampler1D)),
@@ -2324,8 +2323,8 @@ namespace vush {
                      *ALLOC_ARRAY_PARAM(ALLOC_PARAM(
                        "sampler"_sv, ALLOC_BUILTIN(e_usampler2DMSArray)))));
     groups.emplace("textureSize"_sv, group_78);
-    auto group_79 =
-      allocate<ast::Overload_Group>(allocator, allocator, "textureQueryLod"_sv);
+    auto group_79 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "textureQueryLod"_sv);
     group_79->overloads.push_back(ALLOC_FUNCTION(
       "textureQueryLod"_sv, ALLOC_BUILTIN(e_vec2),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_sampler1D)),
@@ -2453,8 +2452,8 @@ namespace vush {
         ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_samplerCubeArrayShadow)),
         ALLOC_PARAM("P"_sv, ALLOC_BUILTIN(e_vec3)))));
     groups.emplace("textureQueryLod"_sv, group_79);
-    auto group_80 = allocate<ast::Overload_Group>(allocator, allocator,
-                                                  "textureQueryLevels"_sv);
+    auto group_80 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "textureQueryLevels"_sv);
     group_80->overloads.push_back(
       ALLOC_FUNCTION("textureQueryLevels"_sv, ALLOC_BUILTIN(e_int),
                      *ALLOC_ARRAY_PARAM(
@@ -2564,8 +2563,8 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(
         ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_samplerCubeArrayShadow)))));
     groups.emplace("textureQueryLevels"_sv, group_80);
-    auto group_81 =
-      allocate<ast::Overload_Group>(allocator, allocator, "textureSamples"_sv);
+    auto group_81 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "textureSamples"_sv);
     group_81->overloads.push_back(
       ALLOC_FUNCTION("textureSamples"_sv, ALLOC_BUILTIN(e_int),
                      *ALLOC_ARRAY_PARAM(ALLOC_PARAM(
@@ -2592,7 +2591,7 @@ namespace vush {
                        "sampler"_sv, ALLOC_BUILTIN(e_usampler2DMSArray)))));
     groups.emplace("textureSamples"_sv, group_81);
     auto group_82 =
-      allocate<ast::Overload_Group>(allocator, allocator, "texture"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "texture"_sv);
     group_82->overloads.push_back(ALLOC_FUNCTION(
       "texture"_sv, ALLOC_BUILTIN(e_vec4),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_sampler1D)),
@@ -2882,8 +2881,8 @@ namespace vush {
         ALLOC_PARAM("P"_sv, ALLOC_BUILTIN(e_vec4)),
         ALLOC_PARAM("compare"_sv, ALLOC_BUILTIN(e_float)))));
     groups.emplace("texture"_sv, group_82);
-    auto group_83 =
-      allocate<ast::Overload_Group>(allocator, allocator, "textureProj"_sv);
+    auto group_83 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "textureProj"_sv);
     group_83->overloads.push_back(ALLOC_FUNCTION(
       "textureProj"_sv, ALLOC_BUILTIN(e_vec4),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_sampler1D)),
@@ -3078,7 +3077,7 @@ namespace vush {
         ALLOC_PARAM("P"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("textureProj"_sv, group_83);
     auto group_84 =
-      allocate<ast::Overload_Group>(allocator, allocator, "textureLod"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "textureLod"_sv);
     group_84->overloads.push_back(ALLOC_FUNCTION(
       "textureLod"_sv, ALLOC_BUILTIN(e_vec4),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_sampler1D)),
@@ -3215,8 +3214,8 @@ namespace vush {
         ALLOC_PARAM("P"_sv, ALLOC_BUILTIN(e_vec4)),
         ALLOC_PARAM("lod"_sv, ALLOC_BUILTIN(e_float)))));
     groups.emplace("textureLod"_sv, group_84);
-    auto group_85 =
-      allocate<ast::Overload_Group>(allocator, allocator, "textureOffset"_sv);
+    auto group_85 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "textureOffset"_sv);
     group_85->overloads.push_back(ALLOC_FUNCTION(
       "textureOffset"_sv, ALLOC_BUILTIN(e_vec4),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_sampler1D)),
@@ -3465,7 +3464,7 @@ namespace vush {
         ALLOC_PARAM("offset"_sv, ALLOC_BUILTIN(e_ivec2)))));
     groups.emplace("textureOffset"_sv, group_85);
     auto group_86 =
-      allocate<ast::Overload_Group>(allocator, allocator, "texelFetch"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "texelFetch"_sv);
     group_86->overloads.push_back(ALLOC_FUNCTION(
       "texelFetch"_sv, ALLOC_BUILTIN(e_vec4),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_sampler1D)),
@@ -3605,8 +3604,8 @@ namespace vush {
         ALLOC_PARAM("P"_sv, ALLOC_BUILTIN(e_ivec3)),
         ALLOC_PARAM("sample"_sv, ALLOC_BUILTIN(e_int)))));
     groups.emplace("texelFetch"_sv, group_86);
-    auto group_87 = allocate<ast::Overload_Group>(allocator, allocator,
-                                                  "texelFetchOffset"_sv);
+    auto group_87 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "texelFetchOffset"_sv);
     group_87->overloads.push_back(ALLOC_FUNCTION(
       "texelFetchOffset"_sv, ALLOC_BUILTIN(e_vec4),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_sampler1D)),
@@ -3722,8 +3721,8 @@ namespace vush {
         ALLOC_PARAM("P"_sv, ALLOC_BUILTIN(e_ivec2)),
         ALLOC_PARAM("offset"_sv, ALLOC_BUILTIN(e_ivec2)))));
     groups.emplace("texelFetchOffset"_sv, group_87);
-    auto group_88 = allocate<ast::Overload_Group>(allocator, allocator,
-                                                  "textureProjOffset"_sv);
+    auto group_88 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "textureProjOffset"_sv);
     group_88->overloads.push_back(ALLOC_FUNCTION(
       "textureProjOffset"_sv, ALLOC_BUILTIN(e_vec4),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_sampler1D)),
@@ -3958,8 +3957,8 @@ namespace vush {
         ALLOC_PARAM("P"_sv, ALLOC_BUILTIN(e_vec4)),
         ALLOC_PARAM("offset"_sv, ALLOC_BUILTIN(e_ivec2)))));
     groups.emplace("textureProjOffset"_sv, group_88);
-    auto group_89 = allocate<ast::Overload_Group>(allocator, allocator,
-                                                  "textureLodOffset"_sv);
+    auto group_89 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "textureLodOffset"_sv);
     group_89->overloads.push_back(ALLOC_FUNCTION(
       "textureLodOffset"_sv, ALLOC_BUILTIN(e_vec4),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_sampler1D)),
@@ -4078,8 +4077,8 @@ namespace vush {
         ALLOC_PARAM("lod"_sv, ALLOC_BUILTIN(e_float)),
         ALLOC_PARAM("offset"_sv, ALLOC_BUILTIN(e_int)))));
     groups.emplace("textureLodOffset"_sv, group_89);
-    auto group_90 =
-      allocate<ast::Overload_Group>(allocator, allocator, "textureProjLod"_sv);
+    auto group_90 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "textureProjLod"_sv);
     group_90->overloads.push_back(ALLOC_FUNCTION(
       "textureProjLod"_sv, ALLOC_BUILTIN(e_vec4),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_sampler1D)),
@@ -4168,8 +4167,8 @@ namespace vush {
         ALLOC_PARAM("P"_sv, ALLOC_BUILTIN(e_vec4)),
         ALLOC_PARAM("lod"_sv, ALLOC_BUILTIN(e_float)))));
     groups.emplace("textureProjLod"_sv, group_90);
-    auto group_91 = allocate<ast::Overload_Group>(allocator, allocator,
-                                                  "textureProjLodOffset"_sv);
+    auto group_91 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "textureProjLodOffset"_sv);
     group_91->overloads.push_back(ALLOC_FUNCTION(
       "textureProjLodOffset"_sv, ALLOC_BUILTIN(e_vec4),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_sampler1D)),
@@ -4275,8 +4274,8 @@ namespace vush {
         ALLOC_PARAM("lod"_sv, ALLOC_BUILTIN(e_float)),
         ALLOC_PARAM("offset"_sv, ALLOC_BUILTIN(e_ivec2)))));
     groups.emplace("textureProjLodOffset"_sv, group_91);
-    auto group_92 =
-      allocate<ast::Overload_Group>(allocator, allocator, "textureGrad"_sv);
+    auto group_92 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "textureGrad"_sv);
     group_92->overloads.push_back(ALLOC_FUNCTION(
       "textureGrad"_sv, ALLOC_BUILTIN(e_vec4),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_sampler1D)),
@@ -4479,8 +4478,8 @@ namespace vush {
         ALLOC_PARAM("dPdx"_sv, ALLOC_BUILTIN(e_vec2)),
         ALLOC_PARAM("dPdy"_sv, ALLOC_BUILTIN(e_vec2)))));
     groups.emplace("textureGrad"_sv, group_92);
-    auto group_93 = allocate<ast::Overload_Group>(allocator, allocator,
-                                                  "textureGradOffset"_sv);
+    auto group_93 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "textureGradOffset"_sv);
     group_93->overloads.push_back(ALLOC_FUNCTION(
       "textureGradOffset"_sv, ALLOC_BUILTIN(e_vec4),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_sampler1D)),
@@ -4657,8 +4656,8 @@ namespace vush {
         ALLOC_PARAM("dPdy"_sv, ALLOC_BUILTIN(e_vec2)),
         ALLOC_PARAM("offset"_sv, ALLOC_BUILTIN(e_ivec2)))));
     groups.emplace("textureGradOffset"_sv, group_93);
-    auto group_94 =
-      allocate<ast::Overload_Group>(allocator, allocator, "textureProjGrad"_sv);
+    auto group_94 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "textureProjGrad"_sv);
     group_94->overloads.push_back(ALLOC_FUNCTION(
       "textureProjGrad"_sv, ALLOC_BUILTIN(e_vec4),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_sampler1D)),
@@ -4813,8 +4812,8 @@ namespace vush {
         ALLOC_PARAM("dPdx"_sv, ALLOC_BUILTIN(e_vec2)),
         ALLOC_PARAM("dPdy"_sv, ALLOC_BUILTIN(e_vec2)))));
     groups.emplace("textureProjGrad"_sv, group_94);
-    auto group_95 = allocate<ast::Overload_Group>(allocator, allocator,
-                                                  "textureProjGradOffset"_sv);
+    auto group_95 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "textureProjGradOffset"_sv);
     group_95->overloads.push_back(ALLOC_FUNCTION(
       "textureProjGradOffset"_sv, ALLOC_BUILTIN(e_vec4),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_sampler1D)),
@@ -4993,8 +4992,8 @@ namespace vush {
         ALLOC_PARAM("dPdy"_sv, ALLOC_BUILTIN(e_vec2)),
         ALLOC_PARAM("offset"_sv, ALLOC_BUILTIN(e_ivec2)))));
     groups.emplace("textureProjGradOffset"_sv, group_95);
-    auto group_96 =
-      allocate<ast::Overload_Group>(allocator, allocator, "textureGather"_sv);
+    auto group_96 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "textureGather"_sv);
     group_96->overloads.push_back(ALLOC_FUNCTION(
       "textureGather"_sv, ALLOC_BUILTIN(e_vec4),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_sampler2D)),
@@ -5185,8 +5184,8 @@ namespace vush {
         ALLOC_PARAM("P"_sv, ALLOC_BUILTIN(e_vec2)),
         ALLOC_PARAM("refZ"_sv, ALLOC_BUILTIN(e_float)))));
     groups.emplace("textureGather"_sv, group_96);
-    auto group_97 = allocate<ast::Overload_Group>(allocator, allocator,
-                                                  "textureGatherOffset"_sv);
+    auto group_97 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "textureGatherOffset"_sv);
     group_97->overloads.push_back(ALLOC_FUNCTION(
       "textureGatherOffset"_sv, ALLOC_BUILTIN(e_vec4),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_sampler2D)),
@@ -5320,70 +5319,76 @@ namespace vush {
         ALLOC_PARAM("refZ"_sv, ALLOC_BUILTIN(e_float)),
         ALLOC_PARAM("offset"_sv, ALLOC_BUILTIN(e_ivec2)))));
     groups.emplace("textureGatherOffset"_sv, group_97);
-    auto group_98 = allocate<ast::Overload_Group>(allocator, allocator,
-                                                  "textureGatherOffsets"_sv);
+    auto group_98 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                  "textureGatherOffsets"_sv);
     group_98->overloads.push_back(ALLOC_FUNCTION(
       "textureGatherOffsets"_sv, ALLOC_BUILTIN(e_vec4),
       *ALLOC_ARRAY_PARAM(
         ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_sampler2D)),
         ALLOC_PARAM("P"_sv, ALLOC_BUILTIN(e_vec2)),
         ALLOC_PARAM("offsets"_sv,
-                    allocate<ast::Type_Array>(
-                      allocator, Source_Info{}, ALLOC_BUILTIN(e_ivec2),
-                      allocate<ast::Lt_Integer>(allocator, ast::lt_integer_i32,
-                                                4, Source_Info{}))))));
+                    VUSH_ALLOCATE(ast::Type_Array, allocator, Source_Info{},
+                                  ALLOC_BUILTIN(e_ivec2),
+                                  VUSH_ALLOCATE(ast::Lt_Integer, allocator,
+                                                ast::lt_integer_i32, 4,
+                                                Source_Info{}))))));
     group_98->overloads.push_back(ALLOC_FUNCTION(
       "textureGatherOffsets"_sv, ALLOC_BUILTIN(e_ivec4),
       *ALLOC_ARRAY_PARAM(
         ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_isampler2D)),
         ALLOC_PARAM("P"_sv, ALLOC_BUILTIN(e_vec2)),
         ALLOC_PARAM("offsets"_sv,
-                    allocate<ast::Type_Array>(
-                      allocator, Source_Info{}, ALLOC_BUILTIN(e_ivec2),
-                      allocate<ast::Lt_Integer>(allocator, ast::lt_integer_i32,
-                                                4, Source_Info{}))))));
+                    VUSH_ALLOCATE(ast::Type_Array, allocator, Source_Info{},
+                                  ALLOC_BUILTIN(e_ivec2),
+                                  VUSH_ALLOCATE(ast::Lt_Integer, allocator,
+                                                ast::lt_integer_i32, 4,
+                                                Source_Info{}))))));
     group_98->overloads.push_back(ALLOC_FUNCTION(
       "textureGatherOffsets"_sv, ALLOC_BUILTIN(e_uvec4),
       *ALLOC_ARRAY_PARAM(
         ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_usampler2D)),
         ALLOC_PARAM("P"_sv, ALLOC_BUILTIN(e_vec2)),
         ALLOC_PARAM("offsets"_sv,
-                    allocate<ast::Type_Array>(
-                      allocator, Source_Info{}, ALLOC_BUILTIN(e_ivec2),
-                      allocate<ast::Lt_Integer>(allocator, ast::lt_integer_i32,
-                                                4, Source_Info{}))))));
+                    VUSH_ALLOCATE(ast::Type_Array, allocator, Source_Info{},
+                                  ALLOC_BUILTIN(e_ivec2),
+                                  VUSH_ALLOCATE(ast::Lt_Integer, allocator,
+                                                ast::lt_integer_i32, 4,
+                                                Source_Info{}))))));
     group_98->overloads.push_back(ALLOC_FUNCTION(
       "textureGatherOffsets"_sv, ALLOC_BUILTIN(e_vec4),
       *ALLOC_ARRAY_PARAM(
         ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_sampler2D)),
         ALLOC_PARAM("P"_sv, ALLOC_BUILTIN(e_vec2)),
-        ALLOC_PARAM("offsets"_sv,
-                    allocate<ast::Type_Array>(
-                      allocator, Source_Info{}, ALLOC_BUILTIN(e_ivec2),
-                      allocate<ast::Lt_Integer>(allocator, ast::lt_integer_i32,
-                                                4, Source_Info{}))),
+        ALLOC_PARAM(
+          "offsets"_sv,
+          VUSH_ALLOCATE(ast::Type_Array, allocator, Source_Info{},
+                        ALLOC_BUILTIN(e_ivec2),
+                        VUSH_ALLOCATE(ast::Lt_Integer, allocator,
+                                      ast::lt_integer_i32, 4, Source_Info{}))),
         ALLOC_PARAM("comp"_sv, ALLOC_BUILTIN(e_int)))));
     group_98->overloads.push_back(ALLOC_FUNCTION(
       "textureGatherOffsets"_sv, ALLOC_BUILTIN(e_ivec4),
       *ALLOC_ARRAY_PARAM(
         ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_isampler2D)),
         ALLOC_PARAM("P"_sv, ALLOC_BUILTIN(e_vec2)),
-        ALLOC_PARAM("offsets"_sv,
-                    allocate<ast::Type_Array>(
-                      allocator, Source_Info{}, ALLOC_BUILTIN(e_ivec2),
-                      allocate<ast::Lt_Integer>(allocator, ast::lt_integer_i32,
-                                                4, Source_Info{}))),
+        ALLOC_PARAM(
+          "offsets"_sv,
+          VUSH_ALLOCATE(ast::Type_Array, allocator, Source_Info{},
+                        ALLOC_BUILTIN(e_ivec2),
+                        VUSH_ALLOCATE(ast::Lt_Integer, allocator,
+                                      ast::lt_integer_i32, 4, Source_Info{}))),
         ALLOC_PARAM("comp"_sv, ALLOC_BUILTIN(e_int)))));
     group_98->overloads.push_back(ALLOC_FUNCTION(
       "textureGatherOffsets"_sv, ALLOC_BUILTIN(e_uvec4),
       *ALLOC_ARRAY_PARAM(
         ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_usampler2D)),
         ALLOC_PARAM("P"_sv, ALLOC_BUILTIN(e_vec2)),
-        ALLOC_PARAM("offsets"_sv,
-                    allocate<ast::Type_Array>(
-                      allocator, Source_Info{}, ALLOC_BUILTIN(e_ivec2),
-                      allocate<ast::Lt_Integer>(allocator, ast::lt_integer_i32,
-                                                4, Source_Info{}))),
+        ALLOC_PARAM(
+          "offsets"_sv,
+          VUSH_ALLOCATE(ast::Type_Array, allocator, Source_Info{},
+                        ALLOC_BUILTIN(e_ivec2),
+                        VUSH_ALLOCATE(ast::Lt_Integer, allocator,
+                                      ast::lt_integer_i32, 4, Source_Info{}))),
         ALLOC_PARAM("comp"_sv, ALLOC_BUILTIN(e_int)))));
     group_98->overloads.push_back(ALLOC_FUNCTION(
       "textureGatherOffsets"_sv, ALLOC_BUILTIN(e_vec4),
@@ -5391,62 +5396,68 @@ namespace vush {
         ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_sampler2DArray)),
         ALLOC_PARAM("P"_sv, ALLOC_BUILTIN(e_vec3)),
         ALLOC_PARAM("offsets"_sv,
-                    allocate<ast::Type_Array>(
-                      allocator, Source_Info{}, ALLOC_BUILTIN(e_ivec2),
-                      allocate<ast::Lt_Integer>(allocator, ast::lt_integer_i32,
-                                                4, Source_Info{}))))));
+                    VUSH_ALLOCATE(ast::Type_Array, allocator, Source_Info{},
+                                  ALLOC_BUILTIN(e_ivec2),
+                                  VUSH_ALLOCATE(ast::Lt_Integer, allocator,
+                                                ast::lt_integer_i32, 4,
+                                                Source_Info{}))))));
     group_98->overloads.push_back(ALLOC_FUNCTION(
       "textureGatherOffsets"_sv, ALLOC_BUILTIN(e_ivec4),
       *ALLOC_ARRAY_PARAM(
         ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_isampler2DArray)),
         ALLOC_PARAM("P"_sv, ALLOC_BUILTIN(e_vec3)),
         ALLOC_PARAM("offsets"_sv,
-                    allocate<ast::Type_Array>(
-                      allocator, Source_Info{}, ALLOC_BUILTIN(e_ivec2),
-                      allocate<ast::Lt_Integer>(allocator, ast::lt_integer_i32,
-                                                4, Source_Info{}))))));
+                    VUSH_ALLOCATE(ast::Type_Array, allocator, Source_Info{},
+                                  ALLOC_BUILTIN(e_ivec2),
+                                  VUSH_ALLOCATE(ast::Lt_Integer, allocator,
+                                                ast::lt_integer_i32, 4,
+                                                Source_Info{}))))));
     group_98->overloads.push_back(ALLOC_FUNCTION(
       "textureGatherOffsets"_sv, ALLOC_BUILTIN(e_uvec4),
       *ALLOC_ARRAY_PARAM(
         ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_usampler2DArray)),
         ALLOC_PARAM("P"_sv, ALLOC_BUILTIN(e_vec3)),
         ALLOC_PARAM("offsets"_sv,
-                    allocate<ast::Type_Array>(
-                      allocator, Source_Info{}, ALLOC_BUILTIN(e_ivec2),
-                      allocate<ast::Lt_Integer>(allocator, ast::lt_integer_i32,
-                                                4, Source_Info{}))))));
+                    VUSH_ALLOCATE(ast::Type_Array, allocator, Source_Info{},
+                                  ALLOC_BUILTIN(e_ivec2),
+                                  VUSH_ALLOCATE(ast::Lt_Integer, allocator,
+                                                ast::lt_integer_i32, 4,
+                                                Source_Info{}))))));
     group_98->overloads.push_back(ALLOC_FUNCTION(
       "textureGatherOffsets"_sv, ALLOC_BUILTIN(e_vec4),
       *ALLOC_ARRAY_PARAM(
         ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_sampler2DArray)),
         ALLOC_PARAM("P"_sv, ALLOC_BUILTIN(e_vec3)),
-        ALLOC_PARAM("offsets"_sv,
-                    allocate<ast::Type_Array>(
-                      allocator, Source_Info{}, ALLOC_BUILTIN(e_ivec2),
-                      allocate<ast::Lt_Integer>(allocator, ast::lt_integer_i32,
-                                                4, Source_Info{}))),
+        ALLOC_PARAM(
+          "offsets"_sv,
+          VUSH_ALLOCATE(ast::Type_Array, allocator, Source_Info{},
+                        ALLOC_BUILTIN(e_ivec2),
+                        VUSH_ALLOCATE(ast::Lt_Integer, allocator,
+                                      ast::lt_integer_i32, 4, Source_Info{}))),
         ALLOC_PARAM("comp"_sv, ALLOC_BUILTIN(e_int)))));
     group_98->overloads.push_back(ALLOC_FUNCTION(
       "textureGatherOffsets"_sv, ALLOC_BUILTIN(e_ivec4),
       *ALLOC_ARRAY_PARAM(
         ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_isampler2DArray)),
         ALLOC_PARAM("P"_sv, ALLOC_BUILTIN(e_vec3)),
-        ALLOC_PARAM("offsets"_sv,
-                    allocate<ast::Type_Array>(
-                      allocator, Source_Info{}, ALLOC_BUILTIN(e_ivec2),
-                      allocate<ast::Lt_Integer>(allocator, ast::lt_integer_i32,
-                                                4, Source_Info{}))),
+        ALLOC_PARAM(
+          "offsets"_sv,
+          VUSH_ALLOCATE(ast::Type_Array, allocator, Source_Info{},
+                        ALLOC_BUILTIN(e_ivec2),
+                        VUSH_ALLOCATE(ast::Lt_Integer, allocator,
+                                      ast::lt_integer_i32, 4, Source_Info{}))),
         ALLOC_PARAM("comp"_sv, ALLOC_BUILTIN(e_int)))));
     group_98->overloads.push_back(ALLOC_FUNCTION(
       "textureGatherOffsets"_sv, ALLOC_BUILTIN(e_uvec4),
       *ALLOC_ARRAY_PARAM(
         ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_usampler2DArray)),
         ALLOC_PARAM("P"_sv, ALLOC_BUILTIN(e_vec3)),
-        ALLOC_PARAM("offsets"_sv,
-                    allocate<ast::Type_Array>(
-                      allocator, Source_Info{}, ALLOC_BUILTIN(e_ivec2),
-                      allocate<ast::Lt_Integer>(allocator, ast::lt_integer_i32,
-                                                4, Source_Info{}))),
+        ALLOC_PARAM(
+          "offsets"_sv,
+          VUSH_ALLOCATE(ast::Type_Array, allocator, Source_Info{},
+                        ALLOC_BUILTIN(e_ivec2),
+                        VUSH_ALLOCATE(ast::Lt_Integer, allocator,
+                                      ast::lt_integer_i32, 4, Source_Info{}))),
         ALLOC_PARAM("comp"_sv, ALLOC_BUILTIN(e_int)))));
     group_98->overloads.push_back(ALLOC_FUNCTION(
       "textureGatherOffsets"_sv, ALLOC_BUILTIN(e_vec4),
@@ -5454,62 +5465,68 @@ namespace vush {
         ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_sampler2DRect)),
         ALLOC_PARAM("P"_sv, ALLOC_BUILTIN(e_vec2)),
         ALLOC_PARAM("offsets"_sv,
-                    allocate<ast::Type_Array>(
-                      allocator, Source_Info{}, ALLOC_BUILTIN(e_ivec2),
-                      allocate<ast::Lt_Integer>(allocator, ast::lt_integer_i32,
-                                                4, Source_Info{}))))));
+                    VUSH_ALLOCATE(ast::Type_Array, allocator, Source_Info{},
+                                  ALLOC_BUILTIN(e_ivec2),
+                                  VUSH_ALLOCATE(ast::Lt_Integer, allocator,
+                                                ast::lt_integer_i32, 4,
+                                                Source_Info{}))))));
     group_98->overloads.push_back(ALLOC_FUNCTION(
       "textureGatherOffsets"_sv, ALLOC_BUILTIN(e_ivec4),
       *ALLOC_ARRAY_PARAM(
         ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_isampler2DRect)),
         ALLOC_PARAM("P"_sv, ALLOC_BUILTIN(e_vec2)),
         ALLOC_PARAM("offsets"_sv,
-                    allocate<ast::Type_Array>(
-                      allocator, Source_Info{}, ALLOC_BUILTIN(e_ivec2),
-                      allocate<ast::Lt_Integer>(allocator, ast::lt_integer_i32,
-                                                4, Source_Info{}))))));
+                    VUSH_ALLOCATE(ast::Type_Array, allocator, Source_Info{},
+                                  ALLOC_BUILTIN(e_ivec2),
+                                  VUSH_ALLOCATE(ast::Lt_Integer, allocator,
+                                                ast::lt_integer_i32, 4,
+                                                Source_Info{}))))));
     group_98->overloads.push_back(ALLOC_FUNCTION(
       "textureGatherOffsets"_sv, ALLOC_BUILTIN(e_uvec4),
       *ALLOC_ARRAY_PARAM(
         ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_usampler2DRect)),
         ALLOC_PARAM("P"_sv, ALLOC_BUILTIN(e_vec2)),
         ALLOC_PARAM("offsets"_sv,
-                    allocate<ast::Type_Array>(
-                      allocator, Source_Info{}, ALLOC_BUILTIN(e_ivec2),
-                      allocate<ast::Lt_Integer>(allocator, ast::lt_integer_i32,
-                                                4, Source_Info{}))))));
+                    VUSH_ALLOCATE(ast::Type_Array, allocator, Source_Info{},
+                                  ALLOC_BUILTIN(e_ivec2),
+                                  VUSH_ALLOCATE(ast::Lt_Integer, allocator,
+                                                ast::lt_integer_i32, 4,
+                                                Source_Info{}))))));
     group_98->overloads.push_back(ALLOC_FUNCTION(
       "textureGatherOffsets"_sv, ALLOC_BUILTIN(e_vec4),
       *ALLOC_ARRAY_PARAM(
         ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_sampler2DRect)),
         ALLOC_PARAM("P"_sv, ALLOC_BUILTIN(e_vec2)),
-        ALLOC_PARAM("offsets"_sv,
-                    allocate<ast::Type_Array>(
-                      allocator, Source_Info{}, ALLOC_BUILTIN(e_ivec2),
-                      allocate<ast::Lt_Integer>(allocator, ast::lt_integer_i32,
-                                                4, Source_Info{}))),
+        ALLOC_PARAM(
+          "offsets"_sv,
+          VUSH_ALLOCATE(ast::Type_Array, allocator, Source_Info{},
+                        ALLOC_BUILTIN(e_ivec2),
+                        VUSH_ALLOCATE(ast::Lt_Integer, allocator,
+                                      ast::lt_integer_i32, 4, Source_Info{}))),
         ALLOC_PARAM("comp"_sv, ALLOC_BUILTIN(e_int)))));
     group_98->overloads.push_back(ALLOC_FUNCTION(
       "textureGatherOffsets"_sv, ALLOC_BUILTIN(e_ivec4),
       *ALLOC_ARRAY_PARAM(
         ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_isampler2DRect)),
         ALLOC_PARAM("P"_sv, ALLOC_BUILTIN(e_vec2)),
-        ALLOC_PARAM("offsets"_sv,
-                    allocate<ast::Type_Array>(
-                      allocator, Source_Info{}, ALLOC_BUILTIN(e_ivec2),
-                      allocate<ast::Lt_Integer>(allocator, ast::lt_integer_i32,
-                                                4, Source_Info{}))),
+        ALLOC_PARAM(
+          "offsets"_sv,
+          VUSH_ALLOCATE(ast::Type_Array, allocator, Source_Info{},
+                        ALLOC_BUILTIN(e_ivec2),
+                        VUSH_ALLOCATE(ast::Lt_Integer, allocator,
+                                      ast::lt_integer_i32, 4, Source_Info{}))),
         ALLOC_PARAM("comp"_sv, ALLOC_BUILTIN(e_int)))));
     group_98->overloads.push_back(ALLOC_FUNCTION(
       "textureGatherOffsets"_sv, ALLOC_BUILTIN(e_uvec4),
       *ALLOC_ARRAY_PARAM(
         ALLOC_PARAM("sampler"_sv, ALLOC_BUILTIN(e_usampler2DRect)),
         ALLOC_PARAM("P"_sv, ALLOC_BUILTIN(e_vec2)),
-        ALLOC_PARAM("offsets"_sv,
-                    allocate<ast::Type_Array>(
-                      allocator, Source_Info{}, ALLOC_BUILTIN(e_ivec2),
-                      allocate<ast::Lt_Integer>(allocator, ast::lt_integer_i32,
-                                                4, Source_Info{}))),
+        ALLOC_PARAM(
+          "offsets"_sv,
+          VUSH_ALLOCATE(ast::Type_Array, allocator, Source_Info{},
+                        ALLOC_BUILTIN(e_ivec2),
+                        VUSH_ALLOCATE(ast::Lt_Integer, allocator,
+                                      ast::lt_integer_i32, 4, Source_Info{}))),
         ALLOC_PARAM("comp"_sv, ALLOC_BUILTIN(e_int)))));
     group_98->overloads.push_back(ALLOC_FUNCTION(
       "textureGatherOffsets"_sv, ALLOC_BUILTIN(e_vec4),
@@ -5518,10 +5535,11 @@ namespace vush {
         ALLOC_PARAM("P"_sv, ALLOC_BUILTIN(e_vec2)),
         ALLOC_PARAM("refZ"_sv, ALLOC_BUILTIN(e_float)),
         ALLOC_PARAM("offsets"_sv,
-                    allocate<ast::Type_Array>(
-                      allocator, Source_Info{}, ALLOC_BUILTIN(e_ivec2),
-                      allocate<ast::Lt_Integer>(allocator, ast::lt_integer_i32,
-                                                4, Source_Info{}))))));
+                    VUSH_ALLOCATE(ast::Type_Array, allocator, Source_Info{},
+                                  ALLOC_BUILTIN(e_ivec2),
+                                  VUSH_ALLOCATE(ast::Lt_Integer, allocator,
+                                                ast::lt_integer_i32, 4,
+                                                Source_Info{}))))));
     group_98->overloads.push_back(ALLOC_FUNCTION(
       "textureGatherOffsets"_sv, ALLOC_BUILTIN(e_vec4),
       *ALLOC_ARRAY_PARAM(
@@ -5529,10 +5547,11 @@ namespace vush {
         ALLOC_PARAM("P"_sv, ALLOC_BUILTIN(e_vec3)),
         ALLOC_PARAM("refZ"_sv, ALLOC_BUILTIN(e_float)),
         ALLOC_PARAM("offsets"_sv,
-                    allocate<ast::Type_Array>(
-                      allocator, Source_Info{}, ALLOC_BUILTIN(e_ivec2),
-                      allocate<ast::Lt_Integer>(allocator, ast::lt_integer_i32,
-                                                4, Source_Info{}))))));
+                    VUSH_ALLOCATE(ast::Type_Array, allocator, Source_Info{},
+                                  ALLOC_BUILTIN(e_ivec2),
+                                  VUSH_ALLOCATE(ast::Lt_Integer, allocator,
+                                                ast::lt_integer_i32, 4,
+                                                Source_Info{}))))));
     group_98->overloads.push_back(ALLOC_FUNCTION(
       "textureGatherOffsets"_sv, ALLOC_BUILTIN(e_vec4),
       *ALLOC_ARRAY_PARAM(
@@ -5540,13 +5559,14 @@ namespace vush {
         ALLOC_PARAM("P"_sv, ALLOC_BUILTIN(e_vec2)),
         ALLOC_PARAM("refZ"_sv, ALLOC_BUILTIN(e_float)),
         ALLOC_PARAM("offsets"_sv,
-                    allocate<ast::Type_Array>(
-                      allocator, Source_Info{}, ALLOC_BUILTIN(e_ivec2),
-                      allocate<ast::Lt_Integer>(allocator, ast::lt_integer_i32,
-                                                4, Source_Info{}))))));
+                    VUSH_ALLOCATE(ast::Type_Array, allocator, Source_Info{},
+                                  ALLOC_BUILTIN(e_ivec2),
+                                  VUSH_ALLOCATE(ast::Lt_Integer, allocator,
+                                                ast::lt_integer_i32, 4,
+                                                Source_Info{}))))));
     groups.emplace("textureGatherOffsets"_sv, group_98);
     auto group_99 =
-      allocate<ast::Overload_Group>(allocator, allocator, "atomicAdd"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "atomicAdd"_sv);
     group_99->overloads.push_back(ALLOC_FUNCTION(
       "atomicAdd"_sv, ALLOC_BUILTIN(e_int),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("mem"_sv, ALLOC_BUILTIN(e_int)),
@@ -5557,7 +5577,7 @@ namespace vush {
                          ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_uint)))));
     groups.emplace("atomicAdd"_sv, group_99);
     auto group_100 =
-      allocate<ast::Overload_Group>(allocator, allocator, "atomicMin"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "atomicMin"_sv);
     group_100->overloads.push_back(ALLOC_FUNCTION(
       "atomicMin"_sv, ALLOC_BUILTIN(e_int),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("mem"_sv, ALLOC_BUILTIN(e_int)),
@@ -5568,7 +5588,7 @@ namespace vush {
                          ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_uint)))));
     groups.emplace("atomicMin"_sv, group_100);
     auto group_101 =
-      allocate<ast::Overload_Group>(allocator, allocator, "atomicMax"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "atomicMax"_sv);
     group_101->overloads.push_back(ALLOC_FUNCTION(
       "atomicMax"_sv, ALLOC_BUILTIN(e_int),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("mem"_sv, ALLOC_BUILTIN(e_int)),
@@ -5579,7 +5599,7 @@ namespace vush {
                          ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_uint)))));
     groups.emplace("atomicMax"_sv, group_101);
     auto group_102 =
-      allocate<ast::Overload_Group>(allocator, allocator, "atomicAnd"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "atomicAnd"_sv);
     group_102->overloads.push_back(ALLOC_FUNCTION(
       "atomicAnd"_sv, ALLOC_BUILTIN(e_int),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("mem"_sv, ALLOC_BUILTIN(e_int)),
@@ -5590,7 +5610,7 @@ namespace vush {
                          ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_uint)))));
     groups.emplace("atomicAnd"_sv, group_102);
     auto group_103 =
-      allocate<ast::Overload_Group>(allocator, allocator, "atomicOr"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "atomicOr"_sv);
     group_103->overloads.push_back(ALLOC_FUNCTION(
       "atomicOr"_sv, ALLOC_BUILTIN(e_int),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("mem"_sv, ALLOC_BUILTIN(e_int)),
@@ -5601,7 +5621,7 @@ namespace vush {
                          ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_uint)))));
     groups.emplace("atomicOr"_sv, group_103);
     auto group_104 =
-      allocate<ast::Overload_Group>(allocator, allocator, "atomicXor"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "atomicXor"_sv);
     group_104->overloads.push_back(ALLOC_FUNCTION(
       "atomicXor"_sv, ALLOC_BUILTIN(e_int),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("mem"_sv, ALLOC_BUILTIN(e_int)),
@@ -5611,8 +5631,8 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("mem"_sv, ALLOC_BUILTIN(e_uint)),
                          ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_uint)))));
     groups.emplace("atomicXor"_sv, group_104);
-    auto group_105 =
-      allocate<ast::Overload_Group>(allocator, allocator, "atomicExchange"_sv);
+    auto group_105 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                   "atomicExchange"_sv);
     group_105->overloads.push_back(ALLOC_FUNCTION(
       "atomicExchange"_sv, ALLOC_BUILTIN(e_int),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("mem"_sv, ALLOC_BUILTIN(e_int)),
@@ -5622,8 +5642,8 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("mem"_sv, ALLOC_BUILTIN(e_uint)),
                          ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_uint)))));
     groups.emplace("atomicExchange"_sv, group_105);
-    auto group_106 =
-      allocate<ast::Overload_Group>(allocator, allocator, "atomicCompSwap"_sv);
+    auto group_106 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                   "atomicCompSwap"_sv);
     group_106->overloads.push_back(ALLOC_FUNCTION(
       "atomicCompSwap"_sv, ALLOC_BUILTIN(e_int),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("mem"_sv, ALLOC_BUILTIN(e_int)),
@@ -5636,7 +5656,7 @@ namespace vush {
                          ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_uint)))));
     groups.emplace("atomicCompSwap"_sv, group_106);
     auto group_107 =
-      allocate<ast::Overload_Group>(allocator, allocator, "imageSize"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "imageSize"_sv);
     group_107->overloads.push_back(ALLOC_FUNCTION(
       "imageSize"_sv, ALLOC_BUILTIN(e_int),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("image"_sv, ALLOC_BUILTIN(e_image1D)))));
@@ -5747,8 +5767,8 @@ namespace vush {
                      *ALLOC_ARRAY_PARAM(ALLOC_PARAM(
                        "image"_sv, ALLOC_BUILTIN(e_uimageBuffer)))));
     groups.emplace("imageSize"_sv, group_107);
-    auto group_108 =
-      allocate<ast::Overload_Group>(allocator, allocator, "imageSamples"_sv);
+    auto group_108 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                   "imageSamples"_sv);
     group_108->overloads.push_back(ALLOC_FUNCTION(
       "imageSamples"_sv, ALLOC_BUILTIN(e_int),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("image"_sv, ALLOC_BUILTIN(e_image2DMS)))));
@@ -5774,7 +5794,7 @@ namespace vush {
                        "image"_sv, ALLOC_BUILTIN(e_uimage2DMSArray)))));
     groups.emplace("imageSamples"_sv, group_108);
     auto group_109 =
-      allocate<ast::Overload_Group>(allocator, allocator, "imageLoad"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "imageLoad"_sv);
     group_109->overloads.push_back(ALLOC_FUNCTION(
       "imageLoad"_sv, ALLOC_BUILTIN(e_vec4),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("image"_sv, ALLOC_BUILTIN(e_image2D)),
@@ -5913,7 +5933,7 @@ namespace vush {
         ALLOC_PARAM("sample"_sv, ALLOC_BUILTIN(e_int)))));
     groups.emplace("imageLoad"_sv, group_109);
     auto group_110 =
-      allocate<ast::Overload_Group>(allocator, allocator, "imageStore"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "imageStore"_sv);
     group_110->overloads.push_back(ALLOC_FUNCTION(
       "imageStore"_sv, ALLOC_BUILTIN(e_void),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("image"_sv, ALLOC_BUILTIN(e_image2D)),
@@ -6081,8 +6101,8 @@ namespace vush {
         ALLOC_PARAM("sample"_sv, ALLOC_BUILTIN(e_ivec3)),
         ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_uvec4)))));
     groups.emplace("imageStore"_sv, group_110);
-    auto group_111 =
-      allocate<ast::Overload_Group>(allocator, allocator, "imageAtomicAdd"_sv);
+    auto group_111 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                   "imageAtomicAdd"_sv);
     group_111->overloads.push_back(ALLOC_FUNCTION(
       "imageAtomicAdd"_sv, ALLOC_BUILTIN(e_uint),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("image"_sv, ALLOC_BUILTIN(e_image2D)),
@@ -6416,8 +6436,8 @@ namespace vush {
         ALLOC_PARAM("sample"_sv, ALLOC_BUILTIN(e_int)),
         ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_int)))));
     groups.emplace("imageAtomicAdd"_sv, group_111);
-    auto group_112 =
-      allocate<ast::Overload_Group>(allocator, allocator, "imageAtomicMin"_sv);
+    auto group_112 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                   "imageAtomicMin"_sv);
     group_112->overloads.push_back(ALLOC_FUNCTION(
       "imageAtomicMin"_sv, ALLOC_BUILTIN(e_uint),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("image"_sv, ALLOC_BUILTIN(e_image2D)),
@@ -6751,8 +6771,8 @@ namespace vush {
         ALLOC_PARAM("sample"_sv, ALLOC_BUILTIN(e_int)),
         ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_int)))));
     groups.emplace("imageAtomicMin"_sv, group_112);
-    auto group_113 =
-      allocate<ast::Overload_Group>(allocator, allocator, "imageAtomicMax"_sv);
+    auto group_113 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                   "imageAtomicMax"_sv);
     group_113->overloads.push_back(ALLOC_FUNCTION(
       "imageAtomicMax"_sv, ALLOC_BUILTIN(e_uint),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("image"_sv, ALLOC_BUILTIN(e_image2D)),
@@ -7086,8 +7106,8 @@ namespace vush {
         ALLOC_PARAM("sample"_sv, ALLOC_BUILTIN(e_int)),
         ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_int)))));
     groups.emplace("imageAtomicMax"_sv, group_113);
-    auto group_114 =
-      allocate<ast::Overload_Group>(allocator, allocator, "imageAtomicAnd"_sv);
+    auto group_114 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                   "imageAtomicAnd"_sv);
     group_114->overloads.push_back(ALLOC_FUNCTION(
       "imageAtomicAnd"_sv, ALLOC_BUILTIN(e_uint),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("image"_sv, ALLOC_BUILTIN(e_image2D)),
@@ -7421,8 +7441,8 @@ namespace vush {
         ALLOC_PARAM("sample"_sv, ALLOC_BUILTIN(e_int)),
         ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_int)))));
     groups.emplace("imageAtomicAnd"_sv, group_114);
-    auto group_115 =
-      allocate<ast::Overload_Group>(allocator, allocator, "imageAtomicOr"_sv);
+    auto group_115 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                   "imageAtomicOr"_sv);
     group_115->overloads.push_back(ALLOC_FUNCTION(
       "imageAtomicOr"_sv, ALLOC_BUILTIN(e_uint),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("image"_sv, ALLOC_BUILTIN(e_image2D)),
@@ -7756,8 +7776,8 @@ namespace vush {
         ALLOC_PARAM("sample"_sv, ALLOC_BUILTIN(e_int)),
         ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_int)))));
     groups.emplace("imageAtomicOr"_sv, group_115);
-    auto group_116 =
-      allocate<ast::Overload_Group>(allocator, allocator, "imageAtomicXor"_sv);
+    auto group_116 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                   "imageAtomicXor"_sv);
     group_116->overloads.push_back(ALLOC_FUNCTION(
       "imageAtomicXor"_sv, ALLOC_BUILTIN(e_uint),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("image"_sv, ALLOC_BUILTIN(e_image2D)),
@@ -8091,8 +8111,8 @@ namespace vush {
         ALLOC_PARAM("sample"_sv, ALLOC_BUILTIN(e_int)),
         ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_int)))));
     groups.emplace("imageAtomicXor"_sv, group_116);
-    auto group_117 = allocate<ast::Overload_Group>(allocator, allocator,
-                                                   "imageAtomicExchange"_sv);
+    auto group_117 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                   "imageAtomicExchange"_sv);
     group_117->overloads.push_back(ALLOC_FUNCTION(
       "imageAtomicExchange"_sv, ALLOC_BUILTIN(e_uint),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("image"_sv, ALLOC_BUILTIN(e_image2D)),
@@ -8592,8 +8612,8 @@ namespace vush {
         ALLOC_PARAM("sample"_sv, ALLOC_BUILTIN(e_int)),
         ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_float)))));
     groups.emplace("imageAtomicExchange"_sv, group_117);
-    auto group_118 = allocate<ast::Overload_Group>(allocator, allocator,
-                                                   "imageAtomicCompSwap"_sv);
+    auto group_118 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                   "imageAtomicCompSwap"_sv);
     group_118->overloads.push_back(ALLOC_FUNCTION(
       "imageAtomicCompSwap"_sv, ALLOC_BUILTIN(e_uint),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("image"_sv, ALLOC_BUILTIN(e_image2D)),
@@ -8988,7 +9008,7 @@ namespace vush {
         ALLOC_PARAM("data"_sv, ALLOC_BUILTIN(e_int)))));
     groups.emplace("imageAtomicCompSwap"_sv, group_118);
     auto group_119 =
-      allocate<ast::Overload_Group>(allocator, allocator, "dFdx"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "dFdx"_sv);
     group_119->overloads.push_back(ALLOC_FUNCTION(
       "dFdx"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_float)))));
@@ -9003,7 +9023,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("dFdx"_sv, group_119);
     auto group_120 =
-      allocate<ast::Overload_Group>(allocator, allocator, "dFdy"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "dFdy"_sv);
     group_120->overloads.push_back(ALLOC_FUNCTION(
       "dFdy"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_float)))));
@@ -9018,7 +9038,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("dFdy"_sv, group_120);
     auto group_121 =
-      allocate<ast::Overload_Group>(allocator, allocator, "dFdxFine"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "dFdxFine"_sv);
     group_121->overloads.push_back(ALLOC_FUNCTION(
       "dFdxFine"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_float)))));
@@ -9033,7 +9053,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("dFdxFine"_sv, group_121);
     auto group_122 =
-      allocate<ast::Overload_Group>(allocator, allocator, "dFdyFine"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "dFdyFine"_sv);
     group_122->overloads.push_back(ALLOC_FUNCTION(
       "dFdyFine"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_float)))));
@@ -9048,7 +9068,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("dFdyFine"_sv, group_122);
     auto group_123 =
-      allocate<ast::Overload_Group>(allocator, allocator, "dFdxCoarse"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "dFdxCoarse"_sv);
     group_123->overloads.push_back(ALLOC_FUNCTION(
       "dFdxCoarse"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_float)))));
@@ -9063,7 +9083,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("dFdxCoarse"_sv, group_123);
     auto group_124 =
-      allocate<ast::Overload_Group>(allocator, allocator, "dFdyCoarse"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "dFdyCoarse"_sv);
     group_124->overloads.push_back(ALLOC_FUNCTION(
       "dFdyCoarse"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_float)))));
@@ -9078,7 +9098,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("dFdyCoarse"_sv, group_124);
     auto group_125 =
-      allocate<ast::Overload_Group>(allocator, allocator, "fwidth"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "fwidth"_sv);
     group_125->overloads.push_back(ALLOC_FUNCTION(
       "fwidth"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_float)))));
@@ -9093,7 +9113,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("fwidth"_sv, group_125);
     auto group_126 =
-      allocate<ast::Overload_Group>(allocator, allocator, "fwidthFine"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "fwidthFine"_sv);
     group_126->overloads.push_back(ALLOC_FUNCTION(
       "fwidthFine"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_float)))));
@@ -9107,8 +9127,8 @@ namespace vush {
       "fwidthFine"_sv, ALLOC_BUILTIN(e_vec4),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("fwidthFine"_sv, group_126);
-    auto group_127 =
-      allocate<ast::Overload_Group>(allocator, allocator, "fwidthCoarse"_sv);
+    auto group_127 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                   "fwidthCoarse"_sv);
     group_127->overloads.push_back(ALLOC_FUNCTION(
       "fwidthCoarse"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_float)))));
@@ -9122,8 +9142,8 @@ namespace vush {
       "fwidthCoarse"_sv, ALLOC_BUILTIN(e_vec4),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("p"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("fwidthCoarse"_sv, group_127);
-    auto group_128 = allocate<ast::Overload_Group>(allocator, allocator,
-                                                   "interpolateAtCentroid"_sv);
+    auto group_128 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                   "interpolateAtCentroid"_sv);
     group_128->overloads.push_back(
       ALLOC_FUNCTION("interpolateAtCentroid"_sv, ALLOC_BUILTIN(e_float),
                      *ALLOC_ARRAY_PARAM(
@@ -9141,8 +9161,8 @@ namespace vush {
                      *ALLOC_ARRAY_PARAM(
                        ALLOC_PARAM("interpolant"_sv, ALLOC_BUILTIN(e_vec4)))));
     groups.emplace("interpolateAtCentroid"_sv, group_128);
-    auto group_129 = allocate<ast::Overload_Group>(allocator, allocator,
-                                                   "interpolateAtSample"_sv);
+    auto group_129 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                   "interpolateAtSample"_sv);
     group_129->overloads.push_back(ALLOC_FUNCTION(
       "interpolateAtSample"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("interpolant"_sv, ALLOC_BUILTIN(e_float)),
@@ -9160,8 +9180,8 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("interpolant"_sv, ALLOC_BUILTIN(e_vec4)),
                          ALLOC_PARAM("sample"_sv, ALLOC_BUILTIN(e_int)))));
     groups.emplace("interpolateAtSample"_sv, group_129);
-    auto group_130 = allocate<ast::Overload_Group>(allocator, allocator,
-                                                   "interpolateAtOffset"_sv);
+    auto group_130 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                   "interpolateAtOffset"_sv);
     group_130->overloads.push_back(ALLOC_FUNCTION(
       "interpolateAtOffset"_sv, ALLOC_BUILTIN(e_float),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("interpolant"_sv, ALLOC_BUILTIN(e_float)),
@@ -9180,43 +9200,43 @@ namespace vush {
                          ALLOC_PARAM("offset"_sv, ALLOC_BUILTIN(e_vec2)))));
     groups.emplace("interpolateAtOffset"_sv, group_130);
     auto group_131 =
-      allocate<ast::Overload_Group>(allocator, allocator, "barrier"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "barrier"_sv);
     group_131->overloads.push_back(ALLOC_FUNCTION(
       "barrier"_sv, ALLOC_BUILTIN(e_void), *ALLOC_ARRAY_PARAM()));
     groups.emplace("barrier"_sv, group_131);
-    auto group_132 =
-      allocate<ast::Overload_Group>(allocator, allocator, "memoryBarrier"_sv);
+    auto group_132 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                   "memoryBarrier"_sv);
     group_132->overloads.push_back(ALLOC_FUNCTION(
       "memoryBarrier"_sv, ALLOC_BUILTIN(e_void), *ALLOC_ARRAY_PARAM()));
     groups.emplace("memoryBarrier"_sv, group_132);
-    auto group_133 = allocate<ast::Overload_Group>(
-      allocator, allocator, "memoryBarrierAtomicCounter"_sv);
+    auto group_133 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                   "memoryBarrierAtomicCounter"_sv);
     group_133->overloads.push_back(
       ALLOC_FUNCTION("memoryBarrierAtomicCounter"_sv, ALLOC_BUILTIN(e_void),
                      *ALLOC_ARRAY_PARAM()));
     groups.emplace("memoryBarrierAtomicCounter"_sv, group_133);
-    auto group_134 = allocate<ast::Overload_Group>(allocator, allocator,
-                                                   "memoryBarrierBuffer"_sv);
+    auto group_134 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                   "memoryBarrierBuffer"_sv);
     group_134->overloads.push_back(ALLOC_FUNCTION(
       "memoryBarrierBuffer"_sv, ALLOC_BUILTIN(e_void), *ALLOC_ARRAY_PARAM()));
     groups.emplace("memoryBarrierBuffer"_sv, group_134);
-    auto group_135 = allocate<ast::Overload_Group>(allocator, allocator,
-                                                   "memoryBarrierShared"_sv);
+    auto group_135 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                   "memoryBarrierShared"_sv);
     group_135->overloads.push_back(ALLOC_FUNCTION(
       "memoryBarrierShared"_sv, ALLOC_BUILTIN(e_void), *ALLOC_ARRAY_PARAM()));
     groups.emplace("memoryBarrierShared"_sv, group_135);
-    auto group_136 = allocate<ast::Overload_Group>(allocator, allocator,
-                                                   "memoryBarrierImage"_sv);
+    auto group_136 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                   "memoryBarrierImage"_sv);
     group_136->overloads.push_back(ALLOC_FUNCTION(
       "memoryBarrierImage"_sv, ALLOC_BUILTIN(e_void), *ALLOC_ARRAY_PARAM()));
     groups.emplace("memoryBarrierImage"_sv, group_136);
-    auto group_137 = allocate<ast::Overload_Group>(allocator, allocator,
-                                                   "groupMemoryBarrier"_sv);
+    auto group_137 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                   "groupMemoryBarrier"_sv);
     group_137->overloads.push_back(ALLOC_FUNCTION(
       "groupMemoryBarrier"_sv, ALLOC_BUILTIN(e_void), *ALLOC_ARRAY_PARAM()));
     groups.emplace("groupMemoryBarrier"_sv, group_137);
-    auto group_138 =
-      allocate<ast::Overload_Group>(allocator, allocator, "subpassLoad"_sv);
+    auto group_138 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                   "subpassLoad"_sv);
     group_138->overloads.push_back(
       ALLOC_FUNCTION("subpassLoad"_sv, ALLOC_BUILTIN(e_vec4),
                      *ALLOC_ARRAY_PARAM(ALLOC_PARAM(
@@ -9245,26 +9265,26 @@ namespace vush {
         ALLOC_PARAM("subpass"_sv, ALLOC_BUILTIN(e_usubpassInputMS)),
         ALLOC_PARAM("sample"_sv, ALLOC_BUILTIN(e_int)))));
     groups.emplace("subpassLoad"_sv, group_138);
-    auto group_139 =
-      allocate<ast::Overload_Group>(allocator, allocator, "anyInvocation"_sv);
+    auto group_139 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                   "anyInvocation"_sv);
     group_139->overloads.push_back(ALLOC_FUNCTION(
       "anyInvocation"_sv, ALLOC_BUILTIN(e_bool),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("value"_sv, ALLOC_BUILTIN(e_bool)))));
     groups.emplace("anyInvocation"_sv, group_139);
-    auto group_140 =
-      allocate<ast::Overload_Group>(allocator, allocator, "allInvocations"_sv);
+    auto group_140 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                   "allInvocations"_sv);
     group_140->overloads.push_back(ALLOC_FUNCTION(
       "allInvocations"_sv, ALLOC_BUILTIN(e_bool),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("value"_sv, ALLOC_BUILTIN(e_bool)))));
     groups.emplace("allInvocations"_sv, group_140);
-    auto group_141 = allocate<ast::Overload_Group>(allocator, allocator,
-                                                   "allInvocationsEqual"_sv);
+    auto group_141 = VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator,
+                                   "allInvocationsEqual"_sv);
     group_141->overloads.push_back(ALLOC_FUNCTION(
       "allInvocationsEqual"_sv, ALLOC_BUILTIN(e_bool),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("value"_sv, ALLOC_BUILTIN(e_bool)))));
     groups.emplace("allInvocationsEqual"_sv, group_141);
     auto group_142 =
-      allocate<ast::Overload_Group>(allocator, allocator, "operator+"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "operator+"_sv);
     group_142->overloads.push_back(ALLOC_FUNCTION(
       "operator+"_sv, ALLOC_BUILTIN(e_int),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("lhs"_sv, ALLOC_BUILTIN(e_int)),
@@ -9619,7 +9639,7 @@ namespace vush {
                          ALLOC_PARAM("rhs"_sv, ALLOC_BUILTIN(e_dmat4x3)))));
     groups.emplace("operator+"_sv, group_142);
     auto group_143 =
-      allocate<ast::Overload_Group>(allocator, allocator, "operator-"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "operator-"_sv);
     group_143->overloads.push_back(ALLOC_FUNCTION(
       "operator-"_sv, ALLOC_BUILTIN(e_int),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("lhs"_sv, ALLOC_BUILTIN(e_int)),
@@ -10076,7 +10096,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("value"_sv, ALLOC_BUILTIN(e_dmat4x3)))));
     groups.emplace("operator-"_sv, group_143);
     auto group_144 =
-      allocate<ast::Overload_Group>(allocator, allocator, "operator*"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "operator*"_sv);
     group_144->overloads.push_back(ALLOC_FUNCTION(
       "operator*"_sv, ALLOC_BUILTIN(e_int),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("lhs"_sv, ALLOC_BUILTIN(e_int)),
@@ -10539,7 +10559,7 @@ namespace vush {
                          ALLOC_PARAM("rhs"_sv, ALLOC_BUILTIN(e_mat4)))));
     groups.emplace("operator*"_sv, group_144);
     auto group_145 =
-      allocate<ast::Overload_Group>(allocator, allocator, "operator/"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "operator/"_sv);
     group_145->overloads.push_back(ALLOC_FUNCTION(
       "operator/"_sv, ALLOC_BUILTIN(e_int),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("lhs"_sv, ALLOC_BUILTIN(e_int)),
@@ -10894,7 +10914,7 @@ namespace vush {
                          ALLOC_PARAM("rhs"_sv, ALLOC_BUILTIN(e_dmat4x3)))));
     groups.emplace("operator/"_sv, group_145);
     auto group_146 =
-      allocate<ast::Overload_Group>(allocator, allocator, "operator%"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "operator%"_sv);
     group_146->overloads.push_back(ALLOC_FUNCTION(
       "operator%"_sv, ALLOC_BUILTIN(e_int),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("lhs"_sv, ALLOC_BUILTIN(e_int)),
@@ -10929,7 +10949,7 @@ namespace vush {
                          ALLOC_PARAM("rhs"_sv, ALLOC_BUILTIN(e_uvec4)))));
     groups.emplace("operator%"_sv, group_146);
     auto group_147 =
-      allocate<ast::Overload_Group>(allocator, allocator, "operator>"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "operator>"_sv);
     group_147->overloads.push_back(ALLOC_FUNCTION(
       "operator>"_sv, ALLOC_BUILTIN(e_bool),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("lhs"_sv, ALLOC_BUILTIN(e_int)),
@@ -10948,7 +10968,7 @@ namespace vush {
                          ALLOC_PARAM("rhs"_sv, ALLOC_BUILTIN(e_double)))));
     groups.emplace("operator>"_sv, group_147);
     auto group_148 =
-      allocate<ast::Overload_Group>(allocator, allocator, "operator>="_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "operator>="_sv);
     group_148->overloads.push_back(ALLOC_FUNCTION(
       "operator>="_sv, ALLOC_BUILTIN(e_bool),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("lhs"_sv, ALLOC_BUILTIN(e_int)),
@@ -10967,7 +10987,7 @@ namespace vush {
                          ALLOC_PARAM("rhs"_sv, ALLOC_BUILTIN(e_double)))));
     groups.emplace("operator>="_sv, group_148);
     auto group_149 =
-      allocate<ast::Overload_Group>(allocator, allocator, "operator<"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "operator<"_sv);
     group_149->overloads.push_back(ALLOC_FUNCTION(
       "operator<"_sv, ALLOC_BUILTIN(e_bool),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("lhs"_sv, ALLOC_BUILTIN(e_int)),
@@ -10986,7 +11006,7 @@ namespace vush {
                          ALLOC_PARAM("rhs"_sv, ALLOC_BUILTIN(e_double)))));
     groups.emplace("operator<"_sv, group_149);
     auto group_150 =
-      allocate<ast::Overload_Group>(allocator, allocator, "operator<="_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "operator<="_sv);
     group_150->overloads.push_back(ALLOC_FUNCTION(
       "operator<="_sv, ALLOC_BUILTIN(e_bool),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("lhs"_sv, ALLOC_BUILTIN(e_int)),
@@ -11005,7 +11025,7 @@ namespace vush {
                          ALLOC_PARAM("rhs"_sv, ALLOC_BUILTIN(e_double)))));
     groups.emplace("operator<="_sv, group_150);
     auto group_151 =
-      allocate<ast::Overload_Group>(allocator, allocator, "operator=="_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "operator=="_sv);
     group_151->overloads.push_back(ALLOC_FUNCTION(
       "operator=="_sv, ALLOC_BUILTIN(e_bool),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("lhs"_sv, ALLOC_BUILTIN(e_bool)),
@@ -11160,7 +11180,7 @@ namespace vush {
                          ALLOC_PARAM("rhs"_sv, ALLOC_BUILTIN(e_dmat4x3)))));
     groups.emplace("operator=="_sv, group_151);
     auto group_152 =
-      allocate<ast::Overload_Group>(allocator, allocator, "operator!="_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "operator!="_sv);
     group_152->overloads.push_back(ALLOC_FUNCTION(
       "operator!="_sv, ALLOC_BUILTIN(e_bool),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("lhs"_sv, ALLOC_BUILTIN(e_bool)),
@@ -11315,34 +11335,34 @@ namespace vush {
                          ALLOC_PARAM("rhs"_sv, ALLOC_BUILTIN(e_dmat4x3)))));
     groups.emplace("operator!="_sv, group_152);
     auto group_153 =
-      allocate<ast::Overload_Group>(allocator, allocator, "operator&&"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "operator&&"_sv);
     group_153->overloads.push_back(ALLOC_FUNCTION(
       "operator&&"_sv, ALLOC_BUILTIN(e_bool),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("lhs"_sv, ALLOC_BUILTIN(e_bool)),
                          ALLOC_PARAM("rhs"_sv, ALLOC_BUILTIN(e_bool)))));
     groups.emplace("operator&&"_sv, group_153);
     auto group_154 =
-      allocate<ast::Overload_Group>(allocator, allocator, "operator||"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "operator||"_sv);
     group_154->overloads.push_back(ALLOC_FUNCTION(
       "operator||"_sv, ALLOC_BUILTIN(e_bool),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("lhs"_sv, ALLOC_BUILTIN(e_bool)),
                          ALLOC_PARAM("rhs"_sv, ALLOC_BUILTIN(e_bool)))));
     groups.emplace("operator||"_sv, group_154);
     auto group_155 =
-      allocate<ast::Overload_Group>(allocator, allocator, "operator^^"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "operator^^"_sv);
     group_155->overloads.push_back(ALLOC_FUNCTION(
       "operator^^"_sv, ALLOC_BUILTIN(e_bool),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("lhs"_sv, ALLOC_BUILTIN(e_bool)),
                          ALLOC_PARAM("rhs"_sv, ALLOC_BUILTIN(e_bool)))));
     groups.emplace("operator^^"_sv, group_155);
     auto group_156 =
-      allocate<ast::Overload_Group>(allocator, allocator, "operator!"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "operator!"_sv);
     group_156->overloads.push_back(ALLOC_FUNCTION(
       "operator!"_sv, ALLOC_BUILTIN(e_bool),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("value"_sv, ALLOC_BUILTIN(e_bool)))));
     groups.emplace("operator!"_sv, group_156);
     auto group_157 =
-      allocate<ast::Overload_Group>(allocator, allocator, "operator~"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "operator~"_sv);
     group_157->overloads.push_back(ALLOC_FUNCTION(
       "operator~"_sv, ALLOC_BUILTIN(e_int),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("value"_sv, ALLOC_BUILTIN(e_int)))));
@@ -11369,7 +11389,7 @@ namespace vush {
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("value"_sv, ALLOC_BUILTIN(e_uvec4)))));
     groups.emplace("operator~"_sv, group_157);
     auto group_158 =
-      allocate<ast::Overload_Group>(allocator, allocator, "operator<<"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "operator<<"_sv);
     group_158->overloads.push_back(ALLOC_FUNCTION(
       "operator<<"_sv, ALLOC_BUILTIN(e_int),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("lhs"_sv, ALLOC_BUILTIN(e_int)),
@@ -11484,7 +11504,7 @@ namespace vush {
                          ALLOC_PARAM("rhs"_sv, ALLOC_BUILTIN(e_uint)))));
     groups.emplace("operator<<"_sv, group_158);
     auto group_159 =
-      allocate<ast::Overload_Group>(allocator, allocator, "operator&"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "operator&"_sv);
     group_159->overloads.push_back(ALLOC_FUNCTION(
       "operator&"_sv, ALLOC_BUILTIN(e_int),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("lhs"_sv, ALLOC_BUILTIN(e_int)),
@@ -11567,7 +11587,7 @@ namespace vush {
                          ALLOC_PARAM("rhs"_sv, ALLOC_BUILTIN(e_uvec4)))));
     groups.emplace("operator&"_sv, group_159);
     auto group_160 =
-      allocate<ast::Overload_Group>(allocator, allocator, "operator|"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "operator|"_sv);
     group_160->overloads.push_back(ALLOC_FUNCTION(
       "operator|"_sv, ALLOC_BUILTIN(e_int),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("lhs"_sv, ALLOC_BUILTIN(e_int)),
@@ -11650,7 +11670,7 @@ namespace vush {
                          ALLOC_PARAM("rhs"_sv, ALLOC_BUILTIN(e_uvec4)))));
     groups.emplace("operator|"_sv, group_160);
     auto group_161 =
-      allocate<ast::Overload_Group>(allocator, allocator, "operator^"_sv);
+      VUSH_ALLOCATE(ast::Overload_Group, allocator, allocator, "operator^"_sv);
     group_161->overloads.push_back(ALLOC_FUNCTION(
       "operator^"_sv, ALLOC_BUILTIN(e_int),
       *ALLOC_ARRAY_PARAM(ALLOC_PARAM("lhs"_sv, ALLOC_BUILTIN(e_int)),

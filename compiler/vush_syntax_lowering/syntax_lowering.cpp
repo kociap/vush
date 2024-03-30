@@ -65,7 +65,7 @@ namespace vush {
   transform_identifier(Context const& ctx, Syntax_Token const& token)
   {
     anton::String const* const value =
-      allocate<anton::String>(ctx.allocator, token.value, ctx.allocator);
+      VUSH_ALLOCATE(anton::String, ctx.allocator, token.value, ctx.allocator);
     return ast::Identifier{*value, token.source_info};
   }
 
@@ -113,15 +113,15 @@ namespace vush {
     case ast::Lt_Integer_Kind::i32: {
       i32 const value = anton::str_to_i64(value_token.value, base);
       return {anton::expected_value,
-              allocate<ast::Lt_Integer>(ctx.allocator, ast::lt_integer_i32,
-                                        value, node.source_info)};
+              VUSH_ALLOCATE(ast::Lt_Integer, ctx.allocator, ast::lt_integer_i32,
+                            value, node.source_info)};
     }
 
     case ast::Lt_Integer_Kind::u32: {
       u32 const value = anton::str_to_u64(value_token.value, base);
       return {anton::expected_value,
-              allocate<ast::Lt_Integer>(ctx.allocator, ast::lt_integer_u32,
-                                        value, node.source_info)};
+              VUSH_ALLOCATE(ast::Lt_Integer, ctx.allocator, ast::lt_integer_u32,
+                            value, node.source_info)};
     }
     }
   }
@@ -143,13 +143,13 @@ namespace vush {
         ast::Type_Builtin_Kind const kind = enumified.value();
         Type_Layout const layout = get_builtin_type_layout(kind);
         return {anton::expected_value,
-                allocate<ast::Type_Builtin>(ctx.allocator, node.source_info,
-                                            qualifiers, kind, layout)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator,
+                              node.source_info, qualifiers, kind, layout)};
       } else {
         return {anton::expected_value,
-                allocate<ast::Type_Struct>(
-                  ctx.allocator, node.source_info, qualifiers,
-                  anton::String(value_token.value, ctx.allocator))};
+                VUSH_ALLOCATE(ast::Type_Struct, ctx.allocator, node.source_info,
+                              qualifiers,
+                              anton::String(value_token.value, ctx.allocator))};
       }
     } break;
 
@@ -177,8 +177,8 @@ namespace vush {
       }
 
       return {anton::expected_value,
-              allocate<ast::Type_Array>(ctx.allocator, node.source_info,
-                                        qualifiers, base.value(), size)};
+              VUSH_ALLOCATE(ast::Type_Array, ctx.allocator, node.source_info,
+                            qualifiers, base.value(), size)};
     } break;
 
     default:
@@ -266,18 +266,18 @@ namespace vush {
       }
 
       return {anton::expected_value,
-              allocate<ast::Expr_If>(ctx.allocator, condition.value(),
-                                     then_branch.value(), else_branch.value(),
-                                     node.source_info)};
+              VUSH_ALLOCATE(ast::Expr_If, ctx.allocator, condition.value(),
+                            then_branch.value(), else_branch.value(),
+                            node.source_info)};
     } break;
 
     case Syntax_Node_Kind::expr_identifier: {
       Syntax_Token const& value_token = get_expr_identifier_value(node);
-      anton::String const* const value = allocate<anton::String>(
-        ctx.allocator, value_token.value, ctx.allocator);
+      anton::String const* const value = VUSH_ALLOCATE(
+        anton::String, ctx.allocator, value_token.value, ctx.allocator);
       return {anton::expected_value,
-              allocate<ast::Expr_Identifier>(ctx.allocator, *value,
-                                             node.source_info)};
+              VUSH_ALLOCATE(ast::Expr_Identifier, ctx.allocator, *value,
+                            node.source_info)};
     } break;
 
     case Syntax_Node_Kind::expr_binary: {
@@ -299,12 +299,12 @@ namespace vush {
       ast::Identifier const identifier{identifier_string,
                                        operator_token.source_info};
       auto& arguments =
-        *allocate<Array<ast::Expr*>>(ctx.allocator, ctx.allocator);
+        *VUSH_ALLOCATE(Array<ast::Expr*>, ctx.allocator, ctx.allocator);
       arguments.push_back(lhs.value());
       arguments.push_back(rhs.value());
       return {anton::expected_value,
-              allocate<ast::Expr_Call>(ctx.allocator, identifier, arguments,
-                                       node.source_info)};
+              VUSH_ALLOCATE(ast::Expr_Call, ctx.allocator, identifier,
+                            arguments, node.source_info)};
     } break;
 
     case Syntax_Node_Kind::expr_prefix: {
@@ -321,11 +321,11 @@ namespace vush {
       ast::Identifier const identifier{identifier_string,
                                        operator_token.source_info};
       auto& arguments =
-        *allocate<Array<ast::Expr*>>(ctx.allocator, ctx.allocator);
+        *VUSH_ALLOCATE(Array<ast::Expr*>, ctx.allocator, ctx.allocator);
       arguments.push_back(expression.value());
       return {anton::expected_value,
-              allocate<ast::Expr_Call>(ctx.allocator, identifier, arguments,
-                                       node.source_info)};
+              VUSH_ALLOCATE(ast::Expr_Call, ctx.allocator, identifier,
+                            arguments, node.source_info)};
     } break;
 
     case Syntax_Node_Kind::expr_field: {
@@ -340,8 +340,8 @@ namespace vush {
       ast::Identifier const identifier =
         transform_identifier(ctx, identifier_token);
       return {anton::expected_value,
-              allocate<ast::Expr_Field>(ctx.allocator, expression.value(),
-                                        identifier, node.source_info)};
+              VUSH_ALLOCATE(ast::Expr_Field, ctx.allocator, expression.value(),
+                            identifier, node.source_info)};
     } break;
 
     case Syntax_Node_Kind::expr_index: {
@@ -360,8 +360,8 @@ namespace vush {
       }
 
       return {anton::expected_value,
-              allocate<ast::Expr_Index>(ctx.allocator, expression.value(),
-                                        index.value(), node.source_info)};
+              VUSH_ALLOCATE(ast::Expr_Index, ctx.allocator, expression.value(),
+                            index.value(), node.source_info)};
     } break;
 
     case Syntax_Node_Kind::expr_parentheses: {
@@ -395,9 +395,9 @@ namespace vush {
           }
 
           return {anton::expected_value,
-                  allocate<ast::Field_Initializer>(ctx.allocator, identifier,
-                                                   expression.value(),
-                                                   node.source_info)};
+                  VUSH_ALLOCATE(ast::Field_Initializer, ctx.allocator,
+                                identifier, expression.value(),
+                                node.source_info)};
         } break;
 
         case Syntax_Node_Kind::index_initializer: {
@@ -417,9 +417,9 @@ namespace vush {
           }
 
           return {anton::expected_value,
-                  allocate<ast::Index_Initializer>(ctx.allocator, index.value(),
-                                                   expression.value(),
-                                                   node.source_info)};
+                  VUSH_ALLOCATE(ast::Index_Initializer, ctx.allocator,
+                                index.value(), expression.value(),
+                                node.source_info)};
         } break;
 
         case Syntax_Node_Kind::basic_initializer: {
@@ -432,8 +432,8 @@ namespace vush {
           }
 
           return {anton::expected_value,
-                  allocate<ast::Basic_Initializer>(
-                    ctx.allocator, expression.value(), node.source_info)};
+                  VUSH_ALLOCATE(ast::Basic_Initializer, ctx.allocator,
+                                expression.value(), node.source_info)};
         } break;
 
         default:
@@ -449,7 +449,7 @@ namespace vush {
 
       Syntax_Node const& initializers_node = get_expr_init_initializers(node);
       auto& initializers =
-        *allocate<Array<ast::Initializer*>>(ctx.allocator, ctx.allocator);
+        *VUSH_ALLOCATE(Array<ast::Initializer*>, ctx.allocator, ctx.allocator);
       for(SNOT const& snot: initializers_node.children) {
         if(snot.is_left()) {
           anton::Expected<ast::Initializer*, Error> initializer =
@@ -463,8 +463,8 @@ namespace vush {
       }
 
       return {anton::expected_value,
-              allocate<ast::Expr_Init>(ctx.allocator, type.value(),
-                                       initializers, node.source_info)};
+              VUSH_ALLOCATE(ast::Expr_Init, ctx.allocator, type.value(),
+                            initializers, node.source_info)};
     } break;
 
     case Syntax_Node_Kind::expr_call: {
@@ -474,7 +474,7 @@ namespace vush {
 
       Syntax_Node const& arguments_node = get_expr_call_arguments(node);
       auto& arguments =
-        *allocate<Array<ast::Expr*>>(ctx.allocator, ctx.allocator);
+        *VUSH_ALLOCATE(Array<ast::Expr*>, ctx.allocator, ctx.allocator);
       for(SNOT const& snot: arguments_node.children) {
         if(snot.is_left()) {
           anton::Expected<ast::Expr*, Error> expression =
@@ -488,15 +488,15 @@ namespace vush {
       }
 
       return {anton::expected_value,
-              allocate<ast::Expr_Call>(ctx.allocator, identifier, arguments,
-                                       node.source_info)};
+              VUSH_ALLOCATE(ast::Expr_Call, ctx.allocator, identifier,
+                            arguments, node.source_info)};
     } break;
 
     case Syntax_Node_Kind::expr_lt_bool: {
       Syntax_Token const& value_token = get_expr_lt_bool_value(node);
       bool const value = value_token.value == "true"_sv;
-      return {anton::expected_value,
-              allocate<ast::Lt_Bool>(ctx.allocator, value, node.source_info)};
+      return {anton::expected_value, VUSH_ALLOCATE(ast::Lt_Bool, ctx.allocator,
+                                                   value, node.source_info)};
     } break;
 
     case Syntax_Node_Kind::expr_lt_string: {
@@ -519,13 +519,13 @@ namespace vush {
 
         f64 const value = anton::str_to_f64(value_token.value);
         return {anton::expected_value,
-                allocate<ast::Lt_Float>(ctx.allocator, ast::lt_float_f64, value,
-                                        node.source_info)};
+                VUSH_ALLOCATE(ast::Lt_Float, ctx.allocator, ast::lt_float_f64,
+                              value, node.source_info)};
       } else {
         f32 const value = anton::str_to_f32(value_token.value);
         return {anton::expected_value,
-                allocate<ast::Lt_Float>(ctx.allocator, ast::lt_float_f32, value,
-                                        node.source_info)};
+                VUSH_ALLOCATE(ast::Lt_Float, ctx.allocator, ast::lt_float_f32,
+                              value, node.source_info)};
       }
     } break;
 
@@ -540,8 +540,9 @@ namespace vush {
     } break;
 
     case Syntax_Node_Kind::expr_default: {
-      return {anton::expected_value,
-              allocate<ast::Expr_Default>(ctx.allocator, node.source_info)};
+      return {
+        anton::expected_value,
+        VUSH_ALLOCATE(ast::Expr_Default, ctx.allocator, node.source_info)};
     } break;
 
     default:
@@ -596,7 +597,7 @@ namespace vush {
     ANTON_ASSERT(node.kind == Syntax_Node_Kind::stmt_block,
                  "Syntax_Node is not stmt_block");
     auto& statements =
-      *allocate<Array<ast::Node*>>(ctx.allocator, ctx.allocator);
+      *VUSH_ALLOCATE(Array<ast::Node*>, ctx.allocator, ctx.allocator);
     for(SNOT const& snot: node.children) {
       if(!snot.is_left()) {
         continue;
@@ -637,8 +638,8 @@ namespace vush {
       }
     }
     return {anton::expected_value,
-            allocate<ast::Variable>(ctx.allocator, type.value(), identifier,
-                                    initializer, node.source_info)};
+            VUSH_ALLOCATE(ast::Variable, ctx.allocator, type.value(),
+                          identifier, initializer, node.source_info)};
   }
 
   anton::Expected<ast::Node*, Error> transform_stmt(Context const& ctx,
@@ -663,8 +664,8 @@ namespace vush {
       }
 
       return {anton::expected_value,
-              allocate<ast::Stmt_Block>(ctx.allocator, result.value(),
-                                        node.source_info)};
+              VUSH_ALLOCATE(ast::Stmt_Block, ctx.allocator, result.value(),
+                            node.source_info)};
     } break;
 
     case Syntax_Node_Kind::stmt_assignment: {
@@ -684,8 +685,8 @@ namespace vush {
       ast::Assignment_Kind const kind =
         map_token_to_assignment_kind(operator_token.kind);
       return {anton::expected_value,
-              allocate<ast::Stmt_Assignment>(ctx.allocator, kind, lhs.value(),
-                                             rhs.value(), node.source_info)};
+              VUSH_ALLOCATE(ast::Stmt_Assignment, ctx.allocator, kind,
+                            lhs.value(), rhs.value(), node.source_info)};
     } break;
 
     case Syntax_Node_Kind::stmt_if: {
@@ -714,9 +715,9 @@ namespace vush {
       }
 
       return {anton::expected_value,
-              allocate<ast::Stmt_If>(ctx.allocator, condition.value(),
-                                     then_branch.value(), else_branch,
-                                     node.source_info)};
+              VUSH_ALLOCATE(ast::Stmt_If, ctx.allocator, condition.value(),
+                            then_branch.value(), else_branch,
+                            node.source_info)};
     } break;
 
     case Syntax_Node_Kind::stmt_switch: {
@@ -727,7 +728,7 @@ namespace vush {
       }
 
       auto& arm_list =
-        *allocate<Array<ast::Switch_Arm*>>(ctx.allocator, ctx.allocator);
+        *VUSH_ALLOCATE(Array<ast::Switch_Arm*>, ctx.allocator, ctx.allocator);
       {
         Syntax_Node const& arm_list_node = get_stmt_switch_arm_list(node);
         for(SNOT const& snot: arm_list_node.children) {
@@ -737,7 +738,7 @@ namespace vush {
 
           Syntax_Node const& arm_node = snot.left();
           auto& labels =
-            *allocate<Array<ast::Expr*>>(ctx.allocator, ctx.allocator);
+            *VUSH_ALLOCATE(Array<ast::Expr*>, ctx.allocator, ctx.allocator);
           for(SNOT const& snot: arm_node.children) {
             if(snot.is_left() &&
                snot.left().kind == Syntax_Node_Kind::switch_arm_label) {
@@ -760,22 +761,22 @@ namespace vush {
             return {anton::expected_error, ANTON_MOV(statements.error())};
           }
 
-          ast::Switch_Arm* const arm = allocate<ast::Switch_Arm>(
-            ctx.allocator, labels, statements.value());
+          ast::Switch_Arm* const arm = VUSH_ALLOCATE(
+            ast::Switch_Arm, ctx.allocator, labels, statements.value());
           arm_list.push_back(arm);
         }
       }
 
       return {anton::expected_value,
-              allocate<ast::Stmt_Switch>(ctx.allocator, expression.value(),
-                                         arm_list, node.source_info)};
+              VUSH_ALLOCATE(ast::Stmt_Switch, ctx.allocator, expression.value(),
+                            arm_list, node.source_info)};
     } break;
 
     case Syntax_Node_Kind::stmt_for: {
       // We transform the for loop into a block statement that contains the definition of the
       // variable and the loop itself in order to limit scope.
       auto& statements =
-        *allocate<Array<ast::Node*>>(ctx.allocator, ctx.allocator);
+        *VUSH_ALLOCATE(Array<ast::Node*>, ctx.allocator, ctx.allocator);
       if(anton::Optional variable_node = get_stmt_for_variable(node)) {
         anton::Expected<ast::Variable*, Error> variable =
           transform_variable(ctx, variable_node.value());
@@ -807,9 +808,10 @@ namespace vush {
           }
 
           auto& continuation_statements =
-            *allocate<Array<ast::Node*>>(ctx.allocator, ctx.allocator);
-          ast::Stmt_Expression* const stmt = allocate<ast::Stmt_Expression>(
-            ctx.allocator, expression.value(), expression.value()->source_info);
+            *VUSH_ALLOCATE(Array<ast::Node*>, ctx.allocator, ctx.allocator);
+          ast::Stmt_Expression* const stmt =
+            VUSH_ALLOCATE(ast::Stmt_Expression, ctx.allocator,
+                          expression.value(), expression.value()->source_info);
           continuation_statements.push_back(stmt);
           continuation = continuation_statements;
         }
@@ -821,14 +823,14 @@ namespace vush {
         }
 
         ast::Stmt_Loop* const loop =
-          allocate<ast::Stmt_Loop>(ctx.allocator, condition, continuation,
-                                   body.value(), node.source_info);
+          VUSH_ALLOCATE(ast::Stmt_Loop, ctx.allocator, condition, continuation,
+                        body.value(), node.source_info);
         statements.push_back(loop);
       }
 
-      return {
-        anton::expected_value,
-        allocate<ast::Stmt_Block>(ctx.allocator, statements, Source_Info{})};
+      return {anton::expected_value,
+              VUSH_ALLOCATE(ast::Stmt_Block, ctx.allocator, statements,
+                            Source_Info{})};
     } break;
 
     case Syntax_Node_Kind::stmt_while: {
@@ -845,9 +847,9 @@ namespace vush {
       }
 
       return {anton::expected_value,
-              allocate<ast::Stmt_Loop>(ctx.allocator, condition.value(),
-                                       ast::Node_List{}, statements.value(),
-                                       node.source_info)};
+              VUSH_ALLOCATE(ast::Stmt_Loop, ctx.allocator, condition.value(),
+                            ast::Node_List{}, statements.value(),
+                            node.source_info)};
     } break;
 
     case Syntax_Node_Kind::stmt_do_while: {
@@ -860,7 +862,7 @@ namespace vush {
       // We want to place the condition in the continuation block,
       // therefore we transform it into 'if condition { } else { break }'.
       auto& continuation =
-        *allocate<Array<ast::Node*>>(ctx.allocator, ctx.allocator);
+        *VUSH_ALLOCATE(Array<ast::Node*>, ctx.allocator, ctx.allocator);
       {
         anton::Expected<ast::Expr*, Error> condition =
           transform_expr(ctx, get_stmt_do_while_condition(node));
@@ -869,18 +871,19 @@ namespace vush {
         }
 
         auto& else_block =
-          *allocate<Array<ast::Node*>>(ctx.allocator, ctx.allocator);
+          *VUSH_ALLOCATE(Array<ast::Node*>, ctx.allocator, ctx.allocator);
         else_block.push_back(
-          allocate<ast::Stmt_Break>(ctx.allocator, Source_Info{}));
+          VUSH_ALLOCATE(ast::Stmt_Break, ctx.allocator, Source_Info{}));
         ast::Stmt_If* const stmt_if =
-          allocate<ast::Stmt_If>(ctx.allocator, condition.value(),
-                                 ast::Node_List{}, else_block, Source_Info{});
+          VUSH_ALLOCATE(ast::Stmt_If, ctx.allocator, condition.value(),
+                        ast::Node_List{}, else_block, Source_Info{});
         continuation.push_back(stmt_if);
       }
 
       return {anton::expected_value,
-              allocate<ast::Stmt_Loop>(ctx.allocator, nullptr, continuation,
-                                       statements.value(), node.source_info)};
+              VUSH_ALLOCATE(ast::Stmt_Loop, ctx.allocator, nullptr,
+                            continuation, statements.value(),
+                            node.source_info)};
     } break;
 
     case Syntax_Node_Kind::stmt_return: {
@@ -895,23 +898,25 @@ namespace vush {
         }
       }
       return {anton::expected_value,
-              allocate<ast::Stmt_Return>(ctx.allocator, expression,
-                                         node.source_info)};
+              VUSH_ALLOCATE(ast::Stmt_Return, ctx.allocator, expression,
+                            node.source_info)};
     } break;
 
     case Syntax_Node_Kind::stmt_break: {
       return {anton::expected_value,
-              allocate<ast::Stmt_Break>(ctx.allocator, node.source_info)};
+              VUSH_ALLOCATE(ast::Stmt_Break, ctx.allocator, node.source_info)};
     } break;
 
     case Syntax_Node_Kind::stmt_continue: {
-      return {anton::expected_value,
-              allocate<ast::Stmt_Continue>(ctx.allocator, node.source_info)};
+      return {
+        anton::expected_value,
+        VUSH_ALLOCATE(ast::Stmt_Continue, ctx.allocator, node.source_info)};
     } break;
 
     case Syntax_Node_Kind::stmt_discard: {
-      return {anton::expected_value,
-              allocate<ast::Stmt_Discard>(ctx.allocator, node.source_info)};
+      return {
+        anton::expected_value,
+        VUSH_ALLOCATE(ast::Stmt_Discard, ctx.allocator, node.source_info)};
     } break;
 
     case Syntax_Node_Kind::stmt_expression: {
@@ -922,8 +927,8 @@ namespace vush {
       }
 
       return {anton::expected_value,
-              allocate<ast::Stmt_Expression>(ctx.allocator, expression.value(),
-                                             node.source_info)};
+              VUSH_ALLOCATE(ast::Stmt_Expression, ctx.allocator,
+                            expression.value(), node.source_info)};
     } break;
 
     case Syntax_Node_Kind::stmt_empty: {
@@ -943,14 +948,14 @@ namespace vush {
     }
 
     auto& attributes =
-      *allocate<Array<ast::Attribute*>>(ctx.allocator, ctx.allocator);
+      *VUSH_ALLOCATE(Array<ast::Attribute*>, ctx.allocator, ctx.allocator);
     for(SNOT const& attribute_snot: node.children) {
       Syntax_Node const& attribute_node = attribute_snot.left();
       anton::Slice<ast::Attribute_Parameter> parameters;
       if(anton::Optional const parameter_list_node =
            get_attribute_parameter_list(attribute_node)) {
-        auto& parameters_array = *allocate<Array<ast::Attribute_Parameter>>(
-          ctx.allocator, ctx.allocator);
+        auto& parameters_array = *VUSH_ALLOCATE(Array<ast::Attribute_Parameter>,
+                                                ctx.allocator, ctx.allocator);
         for(SNOT const& snot: parameter_list_node->children) {
           if(!snot.is_left()) {
             continue;
@@ -994,8 +999,9 @@ namespace vush {
 
       ast::Identifier const identifier =
         transform_identifier(ctx, get_attribute_identifier(attribute_node));
-      attributes.push_back(allocate<ast::Attribute>(
-        ctx.allocator, identifier, parameters, attribute_node.source_info));
+      attributes.push_back(VUSH_ALLOCATE(ast::Attribute, ctx.allocator,
+                                         identifier, parameters,
+                                         attribute_node.source_info));
     }
     return {anton::expected_value, attributes};
   }
@@ -1045,7 +1051,7 @@ namespace vush {
   transform_decl_struct(Context const& ctx, Syntax_Node const& node)
   {
     auto& members =
-      *allocate<Array<ast::Struct_Field*>>(ctx.allocator, ctx.allocator);
+      *VUSH_ALLOCATE(Array<ast::Struct_Field*>, ctx.allocator, ctx.allocator);
     Syntax_Node const& members_node = get_decl_struct_members(node);
     for(SNOT const& member_snot: members_node.children) {
       if(!member_snot.is_left()) {
@@ -1080,16 +1086,16 @@ namespace vush {
         }
       }
 
-      members.push_back(
-        allocate<ast::Struct_Field>(ctx.allocator, attribute_list.value(),
-                                    identifier, type.value(), initializer));
+      members.push_back(VUSH_ALLOCATE(ast::Struct_Field, ctx.allocator,
+                                      attribute_list.value(), identifier,
+                                      type.value(), initializer));
     }
 
     ast::Identifier const identifier =
       transform_identifier(ctx, get_decl_struct_identifier(node));
     return {anton::expected_value,
-            allocate<ast::Decl_Struct>(ctx.allocator, identifier, members,
-                                       node.source_info)};
+            VUSH_ALLOCATE(ast::Decl_Struct, ctx.allocator, identifier, members,
+                          node.source_info)};
   }
 
   [[nodiscard]] static anton::Expected<ast::Fn_Parameter*, Error>
@@ -1109,9 +1115,9 @@ namespace vush {
         source = transform_identifier(ctx, result.value());
       }
 
-      return {anton::expected_value, allocate<ast::Fn_Parameter>(
-                                       ctx.allocator, identifier, type.value(),
-                                       source, node.source_info)};
+      return {anton::expected_value,
+              VUSH_ALLOCATE(ast::Fn_Parameter, ctx.allocator, identifier,
+                            type.value(), source, node.source_info)};
     } else if(node.kind == Syntax_Node_Kind::fn_parameter_if) {
       anton::Expected<bool, Error> condition =
         evaluate_constant_expression(ctx, get_fn_parameter_if_condition(node));
@@ -1136,7 +1142,7 @@ namespace vush {
   transform_parameter_list(Context const& ctx, Syntax_Node const& node)
   {
     auto& parameters =
-      *allocate<Array<ast::Fn_Parameter*>>(ctx.allocator, ctx.allocator);
+      *VUSH_ALLOCATE(Array<ast::Fn_Parameter*>, ctx.allocator, ctx.allocator);
     for(SNOT const& snot: node.children) {
       if(!snot.is_left()) {
         continue;
@@ -1184,10 +1190,10 @@ namespace vush {
     }
 
     return {anton::expected_value,
-            allocate<ast::Decl_Function>(ctx.allocator, attribute_list.value(),
-                                         identifier, parameters.value(),
-                                         return_type.value(), body.value(),
-                                         false, node.source_info)};
+            VUSH_ALLOCATE(ast::Decl_Function, ctx.allocator,
+                          attribute_list.value(), identifier,
+                          parameters.value(), return_type.value(), body.value(),
+                          false, node.source_info)};
   }
 
   [[nodiscard]] static anton::Expected<ast::Decl_Stage_Function*, Error>
@@ -1238,16 +1244,17 @@ namespace vush {
     }
 
     return {anton::expected_value,
-            allocate<ast::Decl_Stage_Function>(
-              ctx.allocator, attribute_list.value(), pass, stage,
-              parameters.value(), return_type.value(), body.value(),
-              node.source_info)};
+            VUSH_ALLOCATE(ast::Decl_Stage_Function, ctx.allocator,
+                          attribute_list.value(), pass, stage,
+                          parameters.value(), return_type.value(), body.value(),
+                          node.source_info)};
   }
 
   anton::Expected<ast::Node_List, Error>
   lower_syntax_to_ast(Context& ctx, Array<SNOT> const& syntax)
   {
-    auto& abstract = *allocate<Array<ast::Node*>>(ctx.allocator, ctx.allocator);
+    auto& abstract =
+      *VUSH_ALLOCATE(Array<ast::Node*>, ctx.allocator, ctx.allocator);
     for(SNOT const& snot: syntax) {
       if(!snot.is_left()) {
         continue;

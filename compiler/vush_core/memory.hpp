@@ -5,13 +5,8 @@
 #include <vush_core/types.hpp>
 
 namespace vush {
-  template<typename T, typename... Args>
-  T* allocate(Allocator* allocator, Args&&... args)
-  {
-    T* const p = static_cast<T*>(allocator->allocate(sizeof(T), alignof(T)));
-    anton::construct(p, ANTON_FWD(args)...);
-    return p;
-  }
+#define VUSH_ALLOCATE(T, allocator, ...) \
+  (::new(allocator->allocate(sizeof(T), alignof(T))) T{__VA_ARGS__})
 
   template<typename T>
   void deallocate(Allocator* allocator, T* v)
