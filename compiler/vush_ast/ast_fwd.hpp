@@ -58,6 +58,7 @@ namespace vush::ast {
   struct Switch_Arm;
 
   struct Stmt_Block;
+  struct Stmt_Assignment;
   struct Stmt_If;
   struct Stmt_Switch;
   struct Stmt_Loop;
