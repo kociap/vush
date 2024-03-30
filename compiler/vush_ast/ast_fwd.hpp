@@ -45,7 +45,6 @@ namespace vush::ast {
   struct Expr;
   struct Expr_If;
   struct Expr_Identifier;
-  struct Expr_Assignment;
   struct Expr_Init;
   struct Expr_Call;
   struct Expr_Field;

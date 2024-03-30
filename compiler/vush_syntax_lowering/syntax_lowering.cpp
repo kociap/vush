@@ -232,28 +232,6 @@ namespace vush {
       return "operator!"_sv;
     case Syntax_Node_Kind::tk_tilde:
       return "operator~"_sv;
-      // TODO: Reintroduce.
-      // case Syntax_Node_Kind::tk_pluseq:
-      //     return ast::Expr_Binary_Kind::assign_add;
-      // case Syntax_Node_Kind::tk_minuseq:
-      //     return ast::Expr_Binary_Kind::assign_sub;
-      // case Syntax_Node_Kind::tk_asteriskeq:
-      //     return ast::Expr_Binary_Kind::assign_mul;
-      // case Syntax_Node_Kind::tk_slasheq:
-      //     return ast::Expr_Binary_Kind::assign_div;
-      // case Syntax_Node_Kind::tk_percenteq:
-      //     return ast::Expr_Binary_Kind::assign_mod;
-      // case Syntax_Node_Kind::tk_ampeq:
-      //     return ast::Expr_Binary_Kind::assign_bit_and;
-      // case Syntax_Node_Kind::tk_pipeeq:
-      //     return ast::Expr_Binary_Kind::assign_bit_or;
-      // case Syntax_Node_Kind::tk_hateq:
-      //     return ast::Expr_Binary_Kind::assign_bit_xor;
-      // case Syntax_Node_Kind::tk_shleq:
-      //     return ast::Expr_Binary_Kind::assign_shl;
-      // case Syntax_Node_Kind::tk_shreq:
-      //     return ast::Expr_Binary_Kind::assign_shr;
-
     default:
       ANTON_UNREACHABLE("invalid syntax node kind");
     }
@@ -316,23 +294,17 @@ namespace vush {
       }
 
       Syntax_Token const& operator_token = get_expr_binary_operator(node);
-      if(operator_token.kind == Syntax_Node_Kind::tk_equals) {
-        return {anton::expected_value,
-                allocate<ast::Expr_Assignment>(ctx.allocator, lhs.value(),
-                                               rhs.value(), node.source_info)};
-      } else {
-        anton::String_View const identifier_string =
-          get_operator_identifier_string(operator_token.kind);
-        ast::Identifier const identifier{identifier_string,
-                                         operator_token.source_info};
-        auto& arguments =
-          *allocate<Array<ast::Expr*>>(ctx.allocator, ctx.allocator);
-        arguments.push_back(lhs.value());
-        arguments.push_back(rhs.value());
-        return {anton::expected_value,
-                allocate<ast::Expr_Call>(ctx.allocator, identifier, arguments,
-                                         node.source_info)};
-      }
+      anton::String_View const identifier_string =
+        get_operator_identifier_string(operator_token.kind);
+      ast::Identifier const identifier{identifier_string,
+                                       operator_token.source_info};
+      auto& arguments =
+        *allocate<Array<ast::Expr*>>(ctx.allocator, ctx.allocator);
+      arguments.push_back(lhs.value());
+      arguments.push_back(rhs.value());
+      return {anton::expected_value,
+              allocate<ast::Expr_Call>(ctx.allocator, identifier, arguments,
+                                       node.source_info)};
     } break;
 
     case Syntax_Node_Kind::expr_prefix: {
@@ -577,6 +549,37 @@ namespace vush {
     }
   }
 
+  [[nodiscard]] static ast::Assignment_Kind
+  map_token_to_assignment_kind(Syntax_Node_Kind const kind)
+  {
+    switch(kind) {
+    case Syntax_Node_Kind::tk_equals:
+      return ast::Assignment_Kind::e_assign;
+    case Syntax_Node_Kind::tk_pluseq:
+      return ast::Assignment_Kind::e_add;
+    case Syntax_Node_Kind::tk_minuseq:
+      return ast::Assignment_Kind::e_sub;
+    case Syntax_Node_Kind::tk_asteriskeq:
+      return ast::Assignment_Kind::e_mul;
+    case Syntax_Node_Kind::tk_slasheq:
+      return ast::Assignment_Kind::e_div;
+    case Syntax_Node_Kind::tk_percenteq:
+      return ast::Assignment_Kind::e_mod;
+    case Syntax_Node_Kind::tk_ampeq:
+      return ast::Assignment_Kind::e_and;
+    case Syntax_Node_Kind::tk_pipeeq:
+      return ast::Assignment_Kind::e_or;
+    case Syntax_Node_Kind::tk_hateq:
+      return ast::Assignment_Kind::e_xor;
+    case Syntax_Node_Kind::tk_shleq:
+      return ast::Assignment_Kind::e_shl;
+    case Syntax_Node_Kind::tk_shreq:
+      return ast::Assignment_Kind::e_shr;
+    default:
+      ANTON_UNREACHABLE("invalid token kind");
+    }
+  }
+
   // transform_stmt
   //
   // Returns:
@@ -662,6 +665,27 @@ namespace vush {
       return {anton::expected_value,
               allocate<ast::Stmt_Block>(ctx.allocator, result.value(),
                                         node.source_info)};
+    } break;
+
+    case Syntax_Node_Kind::stmt_assignment: {
+      anton::Expected<ast::Expr*, Error> lhs =
+        transform_expr(ctx, get_stmt_assignment_lhs(node));
+      if(!lhs) {
+        return {anton::expected_error, ANTON_MOV(lhs.error())};
+      }
+
+      anton::Expected<ast::Expr*, Error> rhs =
+        transform_expr(ctx, get_stmt_assignment_rhs(node));
+      if(!rhs) {
+        return {anton::expected_error, ANTON_MOV(rhs.error())};
+      }
+
+      Syntax_Token const& operator_token = get_stmt_assignment_operator(node);
+      ast::Assignment_Kind const kind =
+        map_token_to_assignment_kind(operator_token.kind);
+      return {anton::expected_value,
+              allocate<ast::Stmt_Assignment>(ctx.allocator, kind, lhs.value(),
+                                             rhs.value(), node.source_info)};
     } break;
 
     case Syntax_Node_Kind::stmt_if: {

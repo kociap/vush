@@ -484,26 +484,6 @@ namespace vush {
   }
 
   [[nodiscard]] static anton::Expected<void, Error>
-  analyse_expr_assignment(Context& ctx, Symbol_Table& symtable,
-                          ast::Expr_Assignment* const expr)
-  {
-    RETURN_ON_FAIL(analyse_expression, ctx, symtable, expr->lhs);
-    RETURN_ON_FAIL(analyse_expression, ctx, symtable, expr->rhs);
-
-    // TODO: We have to verify that the type we are assigning to is not an
-    //       opaque type or a struct with opaque types.
-    ast::Type const* const lhs_type = expr->lhs->evaluated_type;
-    ast::Type const* const rhs_type = expr->rhs->evaluated_type;
-    if(is_convertible(lhs_type, rhs_type)) {
-      expr->evaluated_type = lhs_type;
-      return anton::expected_value;
-    } else {
-      return {anton::expected_error,
-              err_no_assignment_operator(ctx, rhs_type, lhs_type, expr)};
-    }
-  }
-
-  [[nodiscard]] static anton::Expected<void, Error>
   analyse_expr_index(Context& ctx, Symbol_Table& symtable,
                      ast::Expr_Index* const expr)
   {
@@ -895,11 +875,6 @@ namespace vush {
       return analyse_expr_index(ctx, symtable, expr);
     }
 
-    case ast::Node_Kind::expr_assignment: {
-      auto const expr = static_cast<ast::Expr_Assignment*>(expression);
-      return analyse_expr_assignment(ctx, symtable, expr);
-    }
-
     case ast::Node_Kind::expr_if: {
       auto const expr = static_cast<ast::Expr_If*>(expression);
       return analyse_expr_if(ctx, symtable, expr);
@@ -949,6 +924,25 @@ namespace vush {
                    Symbol(node->identifier.value, node));
 
     return anton::expected_value;
+  }
+
+  [[nodiscard]] static anton::Expected<void, Error>
+  analyse_stmt_assignment(Context& ctx, Symbol_Table& symtable,
+                          ast::Stmt_Assignment* const node)
+  {
+    RETURN_ON_FAIL(analyse_expression, ctx, symtable, node->lhs);
+    RETURN_ON_FAIL(analyse_expression, ctx, symtable, node->rhs);
+
+    // TODO: We have to verify that the type we are assigning to is not an
+    //       opaque type or a struct with opaque types.
+    ast::Type const* const lhs_type = node->lhs->evaluated_type;
+    ast::Type const* const rhs_type = node->rhs->evaluated_type;
+    if(is_convertible(lhs_type, rhs_type)) {
+      return anton::expected_value;
+    } else {
+      return {anton::expected_error,
+              err_no_assignment_operator(ctx, rhs_type, lhs_type, node)};
+    }
   }
 
   [[nodiscard]] static anton::Expected<void, Error>
@@ -1081,6 +1075,11 @@ namespace vush {
         auto const node = static_cast<ast::Stmt_Block*>(stmt);
         RETURN_ON_FAIL(analyse_statements, ctx, symtable, node->statements,
                        semactx);
+      } break;
+
+      case ast::Node_Kind::stmt_assignment: {
+        auto const node = static_cast<ast::Stmt_Assignment*>(stmt);
+        RETURN_ON_FAIL(analyse_stmt_assignment, ctx, symtable, node);
       } break;
 
       case ast::Node_Kind::stmt_if: {

@@ -788,6 +788,39 @@ namespace vush {
     return node.children[0].right();
   }
 
+  Syntax_Node const& get_stmt_assignment_lhs(Syntax_Node const& node)
+  {
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::stmt_assignment,
+                 "node is not stmt_assignment");
+    ANTON_ASSERT(node.children.size() > (0),
+                 "stmt_assignment has too few children");
+    ANTON_ASSERT(node.children[0].is_left(),
+                 "lhs in stmt_assignment is not Syntax_Node");
+    return node.children[0].left();
+  }
+
+  Syntax_Token const& get_stmt_assignment_operator(Syntax_Node const& node)
+  {
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::stmt_assignment,
+                 "node is not stmt_assignment");
+    ANTON_ASSERT(node.children.size() > (1),
+                 "stmt_assignment has too few children");
+    ANTON_ASSERT(node.children[1].is_right(),
+                 "operator in stmt_assignment is not Syntax_Token");
+    return node.children[1].right();
+  }
+
+  Syntax_Node const& get_stmt_assignment_rhs(Syntax_Node const& node)
+  {
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::stmt_assignment,
+                 "node is not stmt_assignment");
+    ANTON_ASSERT(node.children.size() > (2),
+                 "stmt_assignment has too few children");
+    ANTON_ASSERT(node.children[2].is_left(),
+                 "rhs in stmt_assignment is not Syntax_Node");
+    return node.children[2].left();
+  }
+
   Syntax_Node const& get_stmt_if_condition(Syntax_Node const& node)
   {
     ANTON_ASSERT(node.kind == Syntax_Node_Kind::stmt_if, "node is not stmt_if");

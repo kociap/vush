@@ -33,7 +33,6 @@ namespace vush::ast {
 
     expr_if,
     expr_identifier,
-    expr_assignment,
     expr_init,
     expr_call,
     expr_field,
@@ -45,6 +44,7 @@ namespace vush::ast {
     lt_float,
 
     stmt_block,
+    stmt_assignment,
     stmt_if,
     stmt_switch,
     stmt_loop,
@@ -514,17 +514,6 @@ namespace vush::ast {
     }
   };
 
-  struct Expr_Assignment: public Expr {
-    Expr* lhs;
-    Expr* rhs;
-
-    constexpr Expr_Assignment(Expr* lhs, Expr* rhs,
-                              Source_Info const& source_info)
-      : Expr(source_info, Node_Kind::expr_assignment), lhs(lhs), rhs(rhs)
-    {
-    }
-  };
-
   struct Initializer: public Node {
     using Node::Node;
   };
@@ -736,6 +725,33 @@ namespace vush::ast {
 
     constexpr Stmt_Block(Node_List statements, Source_Info const& source_info)
       : Node(source_info, Node_Kind::stmt_block), statements(statements)
+    {
+    }
+  };
+
+  enum struct Assignment_Kind {
+    e_assign,
+    e_add,
+    e_sub,
+    e_mul,
+    e_div,
+    e_mod,
+    e_and,
+    e_or,
+    e_xor,
+    e_shl,
+    e_shr,
+  };
+
+  struct Stmt_Assignment: public Node {
+    Expr* lhs;
+    Expr* rhs;
+    Assignment_Kind kind;
+
+    constexpr Stmt_Assignment(Assignment_Kind kind, Expr* lhs, Expr* rhs,
+                              Source_Info const& source_info)
+      : Node(source_info, Node_Kind::stmt_assignment), lhs(lhs), rhs(rhs),
+        kind(kind)
     {
     }
   };

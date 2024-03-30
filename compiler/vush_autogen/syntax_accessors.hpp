@@ -143,6 +143,12 @@ namespace vush {
   [[nodiscard]] Syntax_Token const&
   get_expr_lt_string_value(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const&
+  get_stmt_assignment_lhs(Syntax_Node const& node);
+  [[nodiscard]] Syntax_Token const&
+  get_stmt_assignment_operator(Syntax_Node const& node);
+  [[nodiscard]] Syntax_Node const&
+  get_stmt_assignment_rhs(Syntax_Node const& node);
+  [[nodiscard]] Syntax_Node const&
   get_stmt_if_condition(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const&
   get_stmt_if_then_branch(Syntax_Node const& node);

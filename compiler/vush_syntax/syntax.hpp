@@ -77,17 +77,16 @@ namespace vush {
     tk_neq, // !=
     tk_lteq, // <=
     tk_gteq, // >=
-    // TODO: Reintroduce.
-    // tk_pluseq, // +=
-    // tk_minuseq, // -=
-    // tk_asteriskeq, // *=
-    // tk_slasheq, // /=
-    // tk_percenteq, // %=
-    // tk_ampeq, // &=
-    // tk_pipeeq, // |=
-    // tk_hateq, // ^=
-    // tk_shleq, // <<=
-    // tk_shreq, // >>=
+    tk_pluseq, // +=
+    tk_minuseq, // -=
+    tk_asteriskeq, // *=
+    tk_slasheq, // /=
+    tk_percenteq, // %=
+    tk_ampeq, // &=
+    tk_pipeeq, // |=
+    tk_hateq, // ^=
+    tk_shleq, // <<=
+    tk_shreq, // >>=
     tk_thick_arrow, // =>
     tk_thin_arrow, // ->
     tk_colon2, // ::
@@ -169,6 +168,7 @@ namespace vush {
     stmt_continue,
     stmt_discard,
     stmt_expression,
+    stmt_assignment,
     stmt_empty,
 
     switch_arm_list,

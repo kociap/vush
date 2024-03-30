@@ -222,18 +222,19 @@ namespace vush {
   Error err_no_assignment_operator(Context const& ctx,
                                    ast::Type const* const from_type,
                                    ast::Type const* const to_type,
-                                   ast::Expr_Assignment const* const expr)
+                                   ast::Stmt_Assignment const* const assignment)
   {
-    Error error = error_from_source(ctx.allocator, expr->source_info);
+    Error error = error_from_source(ctx.allocator, assignment->source_info);
     anton::String from_string = stringify_type(ctx, from_type);
     anton::String to_string = stringify_type(ctx, to_type);
     error.diagnostic =
       anton::format("error: no viable assignment from '{}' to '{}'"_sv,
                     from_string, to_string);
     anton::String_View const source =
-      ctx.source_registry->find_source(expr->source_info.source_path)->data;
+      ctx.source_registry->find_source(assignment->source_info.source_path)
+        ->data;
     print_source_snippet(ctx, error.extended_diagnostic, source,
-                         expr->source_info);
+                         assignment->source_info);
     error.extended_diagnostic += anton::format(
       " '{}' cannot be assigned to '{}'"_sv, from_string, to_string);
     return error;
