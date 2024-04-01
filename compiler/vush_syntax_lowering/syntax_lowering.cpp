@@ -15,6 +15,12 @@
 namespace vush {
   using namespace anton::literals;
 
+#define RETURN_ON_FAIL(variable, fn, ...)                        \
+  auto variable = fn(__VA_ARGS__);                               \
+  if(!variable) {                                                \
+    return {anton::expected_error, ANTON_MOV(variable.error())}; \
+  }
+
   anton::Expected<ast::Node_List, Error>
   import_source_code(Context& ctx, anton::String_View const source_name,
                      anton::Optional<Source_Info> const source_info)
@@ -43,18 +49,10 @@ namespace vush {
       ctx.source_registry->add_source(ANTON_MOV(source));
 
       Parse_Syntax_Options options{.include_whitespace_and_comments = false};
-      anton::Expected<Array<SNOT>, Error> parse_result =
-        parse_source_to_syntax_tree(ctx, source_name, source_data, options);
-      if(!parse_result) {
-        return {anton::expected_error, ANTON_MOV(parse_result.error())};
-      }
-
-      anton::Expected<ast::Node_List, Error> transform_result =
-        lower_syntax_to_ast(ctx, parse_result.value());
-      if(!transform_result) {
-        return {anton::expected_error, ANTON_MOV(transform_result.error())};
-      }
-
+      RETURN_ON_FAIL(parse_result, parse_source_to_syntax_tree, ctx,
+                     source_name, source_data, options);
+      RETURN_ON_FAIL(transform_result, lower_syntax_to_ast, ctx,
+                     parse_result.value());
       return {anton::expected_value, ANTON_MOV(transform_result.value())};
     } else {
       return {anton::expected_value, ast::Node_List{}};
@@ -160,20 +158,11 @@ namespace vush {
       }
 
       Syntax_Node const& base_node = get_type_array_base(node);
-      anton::Expected<ast::Type*, Error> base = transform_type(ctx, base_node);
-      if(!base) {
-        return {anton::expected_error, ANTON_MOV(base.error())};
-      }
-
+      RETURN_ON_FAIL(base, transform_type, ctx, base_node);
       ast::Lt_Integer* size = nullptr;
       if(anton::Optional size_node = get_type_array_size(node)) {
-        anton::Expected<ast::Lt_Integer*, Error> size_result =
-          lower_lt_integer(ctx, *size_node);
-        if(size_result) {
-          size = size_result.value();
-        } else {
-          return {anton::expected_error, ANTON_MOV(size_result.error())};
-        }
+        RETURN_ON_FAIL(size_result, lower_lt_integer, ctx, size_node.value());
+        size = size_result.value();
       }
 
       return {anton::expected_value,
@@ -243,20 +232,10 @@ namespace vush {
     switch(node.kind) {
     case Syntax_Node_Kind::expr_if: {
       Syntax_Node const& condition_node = get_expr_if_condition(node);
-      anton::Expected<ast::Expr*, Error> condition =
-        transform_expr(ctx, condition_node);
-      if(!condition) {
-        return {anton::expected_error, ANTON_MOV(condition.error())};
-      }
-
+      RETURN_ON_FAIL(condition, transform_expr, ctx, condition_node);
       Syntax_Node const& then_expr_node =
         get_expr_block_expression(get_expr_if_then_branch(node));
-      anton::Expected<ast::Expr*, Error> then_branch =
-        transform_expr(ctx, then_expr_node);
-      if(!then_branch) {
-        return {anton::expected_error, ANTON_MOV(then_branch.error())};
-      }
-
+      RETURN_ON_FAIL(then_branch, transform_expr, ctx, then_expr_node);
       Syntax_Node const& else_expr_node =
         get_expr_block_expression(get_expr_if_else_branch(node));
       anton::Expected<ast::Expr*, Error> else_branch =
@@ -282,16 +261,9 @@ namespace vush {
 
     case Syntax_Node_Kind::expr_binary: {
       Syntax_Node const& lhs_node = get_expr_binary_lhs(node);
-      anton::Expected<ast::Expr*, Error> lhs = transform_expr(ctx, lhs_node);
-      if(!lhs) {
-        return ANTON_MOV(lhs);
-      }
-
+      RETURN_ON_FAIL(lhs, transform_expr, ctx, lhs_node);
       Syntax_Node const& rhs_node = get_expr_binary_rhs(node);
-      anton::Expected<ast::Expr*, Error> rhs = transform_expr(ctx, rhs_node);
-      if(!rhs) {
-        return ANTON_MOV(rhs);
-      }
+      RETURN_ON_FAIL(rhs, transform_expr, ctx, rhs_node);
 
       Syntax_Token const& operator_token = get_expr_binary_operator(node);
       anton::String_View const identifier_string =
@@ -309,12 +281,7 @@ namespace vush {
 
     case Syntax_Node_Kind::expr_prefix: {
       Syntax_Node const& expression_node = get_expr_prefix_expression(node);
-      anton::Expected<ast::Expr*, Error> expression =
-        transform_expr(ctx, expression_node);
-      if(!expression) {
-        return ANTON_MOV(expression);
-      }
-
+      RETURN_ON_FAIL(expression, transform_expr, ctx, expression_node);
       Syntax_Token const& operator_token = get_expr_prefix_operator(node);
       anton::String_View const identifier_string =
         get_operator_identifier_string(operator_token.kind);
@@ -330,12 +297,7 @@ namespace vush {
 
     case Syntax_Node_Kind::expr_field: {
       Syntax_Node const& expression_node = get_expr_field_expression(node);
-      anton::Expected<ast::Expr*, Error> expression =
-        transform_expr(ctx, expression_node);
-      if(!expression) {
-        return ANTON_MOV(expression);
-      }
-
+      RETURN_ON_FAIL(expression, transform_expr, ctx, expression_node);
       Syntax_Token const& identifier_token = get_expr_field_identifier(node);
       ast::Identifier const identifier =
         transform_identifier(ctx, identifier_token);
@@ -346,19 +308,9 @@ namespace vush {
 
     case Syntax_Node_Kind::expr_index: {
       Syntax_Node const& expression_node = get_expr_index_expression(node);
-      anton::Expected<ast::Expr*, Error> expression =
-        transform_expr(ctx, expression_node);
-      if(!expression) {
-        return ANTON_MOV(expression);
-      }
-
+      RETURN_ON_FAIL(expression, transform_expr, ctx, expression_node);
       Syntax_Node const& index_node = get_expr_index_index(node);
-      anton::Expected<ast::Expr*, Error> index =
-        transform_expr(ctx, index_node);
-      if(!index) {
-        return ANTON_MOV(index);
-      }
-
+      RETURN_ON_FAIL(index, transform_expr, ctx, index_node);
       return {anton::expected_value,
               VUSH_ALLOCATE(ast::Expr_Index, ctx.allocator, expression.value(),
                             index.value(), node.source_info)};
@@ -388,12 +340,7 @@ namespace vush {
 
           Syntax_Node const& expression_node =
             get_field_initializer_expression(node);
-          anton::Expected<ast::Expr*, Error> expression =
-            transform_expr(ctx, expression_node);
-          if(!expression) {
-            return {anton::expected_error, ANTON_MOV(expression.error())};
-          }
-
+          RETURN_ON_FAIL(expression, transform_expr, ctx, expression_node);
           return {anton::expected_value,
                   VUSH_ALLOCATE(ast::Field_Initializer, ctx.allocator,
                                 identifier, expression.value(),
@@ -402,20 +349,10 @@ namespace vush {
 
         case Syntax_Node_Kind::index_initializer: {
           Syntax_Node const& index_node = get_index_initializer_index(node);
-          anton::Expected<ast::Lt_Integer*, Error> index =
-            lower_lt_integer(ctx, index_node);
-          if(!index) {
-            return {anton::expected_error, ANTON_MOV(index.error())};
-          }
-
+          RETURN_ON_FAIL(index, lower_lt_integer, ctx, index_node);
           Syntax_Node const& expression_node =
             get_index_initializer_expression(node);
-          anton::Expected<ast::Expr*, Error> expression =
-            transform_expr(ctx, expression_node);
-          if(!expression) {
-            return {anton::expected_error, ANTON_MOV(expression.error())};
-          }
-
+          RETURN_ON_FAIL(expression, transform_expr, ctx, expression_node);
           return {anton::expected_value,
                   VUSH_ALLOCATE(ast::Index_Initializer, ctx.allocator,
                                 index.value(), expression.value(),
@@ -425,12 +362,7 @@ namespace vush {
         case Syntax_Node_Kind::basic_initializer: {
           Syntax_Node const& expression_node =
             get_basic_initializer_expression(node);
-          anton::Expected<ast::Expr*, Error> expression =
-            transform_expr(ctx, expression_node);
-          if(!expression) {
-            return {anton::expected_error, ANTON_MOV(expression.error())};
-          }
-
+          RETURN_ON_FAIL(expression, transform_expr, ctx, expression_node);
           return {anton::expected_value,
                   VUSH_ALLOCATE(ast::Basic_Initializer, ctx.allocator,
                                 expression.value(), node.source_info)};
@@ -530,13 +462,8 @@ namespace vush {
     } break;
 
     case Syntax_Node_Kind::expr_lt_integer: {
-      anton::Expected<ast::Lt_Integer*, Error> result =
-        lower_lt_integer(ctx, node);
-      if(result) {
-        return {anton::expected_value, result.value()};
-      } else {
-        return {anton::expected_error, result.error()};
-      }
+      RETURN_ON_FAIL(result, lower_lt_integer, ctx, node);
+      return {anton::expected_value, result.value()};
     } break;
 
     case Syntax_Node_Kind::expr_default: {
@@ -604,13 +531,9 @@ namespace vush {
       }
 
       Syntax_Node const& stmt_node = snot.left();
-      anton::Expected<ast::Node*, Error> stmt = transform_stmt(ctx, stmt_node);
-      if(stmt) {
-        if(stmt.value() != nullptr) {
-          statements.push_back(stmt.value());
-        }
-      } else {
-        return {anton::expected_error, ANTON_MOV(stmt.error())};
+      RETURN_ON_FAIL(stmt, transform_stmt, ctx, stmt_node);
+      if(stmt.value() != nullptr) {
+        statements.push_back(stmt.value());
       }
     }
     return {anton::expected_value, statements};
@@ -621,21 +544,12 @@ namespace vush {
   {
     ast::Identifier const identifier =
       transform_identifier(ctx, get_variable_identifier(node));
-    anton::Expected<ast::Type*, Error> type =
-      transform_type(ctx, get_variable_type(node));
-    if(!type) {
-      return {anton::expected_error, ANTON_MOV(type.error())};
-    }
+    RETURN_ON_FAIL(type, transform_type, ctx, get_variable_type(node));
 
     ast::Expr* initializer = nullptr;
     if(anton::Optional initializer_node = get_variable_initializer(node)) {
-      anton::Expected<ast::Expr*, Error> result =
-        transform_expr(ctx, initializer_node.value());
-      if(result) {
-        initializer = result.value();
-      } else {
-        return {anton::expected_error, ANTON_MOV(result.error())};
-      }
+      RETURN_ON_FAIL(result, transform_expr, ctx, initializer_node.value());
+      initializer = result.value();
     }
     return {anton::expected_value,
             VUSH_ALLOCATE(ast::Variable, ctx.allocator, type.value(),
@@ -647,40 +561,20 @@ namespace vush {
   {
     switch(node.kind) {
     case Syntax_Node_Kind::variable: {
-      anton::Expected<ast::Variable*, Error> variable =
-        transform_variable(ctx, node);
-      if(variable) {
-        return {anton::expected_value, variable.value()};
-      } else {
-        return {anton::expected_error, ANTON_MOV(variable.error())};
-      }
+      RETURN_ON_FAIL(variable, transform_variable, ctx, node);
+      return {anton::expected_value, variable.value()};
     } break;
 
     case Syntax_Node_Kind::stmt_block: {
-      anton::Expected<ast::Node_List, Error> result =
-        transform_stmt_block_child_stmts(ctx, node);
-      if(!result) {
-        return {anton::expected_error, ANTON_MOV(result.error())};
-      }
-
+      RETURN_ON_FAIL(result, transform_stmt_block_child_stmts, ctx, node);
       return {anton::expected_value,
               VUSH_ALLOCATE(ast::Stmt_Block, ctx.allocator, result.value(),
                             node.source_info)};
     } break;
 
     case Syntax_Node_Kind::stmt_assignment: {
-      anton::Expected<ast::Expr*, Error> lhs =
-        transform_expr(ctx, get_stmt_assignment_lhs(node));
-      if(!lhs) {
-        return {anton::expected_error, ANTON_MOV(lhs.error())};
-      }
-
-      anton::Expected<ast::Expr*, Error> rhs =
-        transform_expr(ctx, get_stmt_assignment_rhs(node));
-      if(!rhs) {
-        return {anton::expected_error, ANTON_MOV(rhs.error())};
-      }
-
+      RETURN_ON_FAIL(lhs, transform_expr, ctx, get_stmt_assignment_lhs(node));
+      RETURN_ON_FAIL(rhs, transform_expr, ctx, get_stmt_assignment_rhs(node));
       Syntax_Token const& operator_token = get_stmt_assignment_operator(node);
       ast::Assignment_Kind const kind =
         map_token_to_assignment_kind(operator_token.kind);
@@ -690,28 +584,16 @@ namespace vush {
     } break;
 
     case Syntax_Node_Kind::stmt_if: {
-      anton::Expected<ast::Expr*, Error> condition =
-        transform_expr(ctx, get_stmt_if_condition(node));
-      if(!condition) {
-        return {anton::expected_error, ANTON_MOV(condition.error())};
-      }
-
-      anton::Expected<ast::Node_List, Error> then_branch =
-        transform_stmt_block_child_stmts(ctx, get_stmt_if_then_branch(node));
-      if(!then_branch) {
-        return {anton::expected_error, ANTON_MOV(then_branch.error())};
-      }
-
+      RETURN_ON_FAIL(condition, transform_expr, ctx,
+                     get_stmt_if_condition(node));
+      RETURN_ON_FAIL(then_branch, transform_stmt_block_child_stmts, ctx,
+                     get_stmt_if_then_branch(node));
       ast::Node_List else_branch;
       if(anton::Optional<Syntax_Node const&> else_node =
            get_stmt_if_else_branch(node)) {
-        anton::Expected<ast::Node_List, Error> result =
-          transform_stmt_block_child_stmts(ctx, else_node.value());
-        if(result) {
-          else_branch = result.value();
-        } else {
-          return {anton::expected_error, ANTON_MOV(result.error())};
-        }
+        RETURN_ON_FAIL(result, transform_stmt_block_child_stmts, ctx,
+                       else_node.value());
+        else_branch = result.value();
       }
 
       return {anton::expected_value,
@@ -721,12 +603,8 @@ namespace vush {
     } break;
 
     case Syntax_Node_Kind::stmt_switch: {
-      anton::Expected<ast::Expr*, Error> expression =
-        transform_expr(ctx, get_stmt_switch_expression(node));
-      if(!expression) {
-        return {anton::expected_error, ANTON_MOV(expression.error())};
-      }
-
+      RETURN_ON_FAIL(expression, transform_expr, ctx,
+                     get_stmt_switch_expression(node));
       auto& arm_list =
         *VUSH_ALLOCATE(Array<ast::Switch_Arm*>, ctx.allocator, ctx.allocator);
       {
@@ -744,23 +622,13 @@ namespace vush {
                snot.left().kind == Syntax_Node_Kind::switch_arm_label) {
               Syntax_Node const& expression_node =
                 snot.left().children[0].left();
-              anton::Expected<ast::Expr*, Error> expression =
-                transform_expr(ctx, expression_node);
-              if(expression) {
-                labels.push_back(expression.value());
-              } else {
-                return {anton::expected_error, ANTON_MOV(expression.error())};
-              }
+              RETURN_ON_FAIL(expression, transform_expr, ctx, expression_node);
+              labels.push_back(expression.value());
             }
           }
 
-          anton::Expected<ast::Node_List, Error> statements =
-            transform_stmt_block_child_stmts(ctx,
-                                             get_switch_arm_body(arm_node));
-          if(!statements) {
-            return {anton::expected_error, ANTON_MOV(statements.error())};
-          }
-
+          RETURN_ON_FAIL(statements, transform_stmt_block_child_stmts, ctx,
+                         get_switch_arm_body(arm_node));
           ast::Switch_Arm* const arm = VUSH_ALLOCATE(
             ast::Switch_Arm, ctx.allocator, labels, statements.value());
           arm_list.push_back(arm);
@@ -778,34 +646,22 @@ namespace vush {
       auto& statements =
         *VUSH_ALLOCATE(Array<ast::Node*>, ctx.allocator, ctx.allocator);
       if(anton::Optional variable_node = get_stmt_for_variable(node)) {
-        anton::Expected<ast::Variable*, Error> variable =
-          transform_variable(ctx, variable_node.value());
-        if(variable) {
-          statements.push_back(variable.value());
-        } else {
-          return {anton::expected_error, ANTON_MOV(variable.error())};
-        }
+        RETURN_ON_FAIL(variable, transform_variable, ctx,
+                       variable_node.value());
+        statements.push_back(variable.value());
       }
 
       {
         ast::Expr* condition = nullptr;
         if(anton::Optional condition_node = get_stmt_for_condition(node)) {
-          anton::Expected<ast::Expr*, Error> result =
-            transform_expr(ctx, condition_node.value());
-          if(result) {
-            condition = result.value();
-          } else {
-            return {anton::expected_error, ANTON_MOV(result.error())};
-          }
+          RETURN_ON_FAIL(result, transform_expr, ctx, condition_node.value());
+          condition = result.value();
         }
 
         ast::Node_List continuation;
         if(anton::Optional expression_node = get_stmt_for_expression(node)) {
-          anton::Expected<ast::Expr*, Error> expression =
-            transform_expr(ctx, expression_node.value());
-          if(!expression) {
-            return {anton::expected_error, ANTON_MOV(expression.error())};
-          }
+          RETURN_ON_FAIL(expression, transform_expr, ctx,
+                         expression_node.value());
 
           auto& continuation_statements =
             *VUSH_ALLOCATE(Array<ast::Node*>, ctx.allocator, ctx.allocator);
@@ -816,12 +672,8 @@ namespace vush {
           continuation = continuation_statements;
         }
 
-        anton::Expected<ast::Node_List, Error> body =
-          transform_stmt_block_child_stmts(ctx, get_stmt_for_body(node));
-        if(!body) {
-          return {anton::expected_error, ANTON_MOV(body.error())};
-        }
-
+        RETURN_ON_FAIL(body, transform_stmt_block_child_stmts, ctx,
+                       get_stmt_for_body(node));
         ast::Stmt_Loop* const loop =
           VUSH_ALLOCATE(ast::Stmt_Loop, ctx.allocator, condition, continuation,
                         body.value(), node.source_info);
@@ -834,18 +686,10 @@ namespace vush {
     } break;
 
     case Syntax_Node_Kind::stmt_while: {
-      anton::Expected<ast::Expr*, Error> condition =
-        transform_expr(ctx, get_stmt_while_condition(node));
-      if(!condition) {
-        return {anton::expected_error, ANTON_MOV(condition.error())};
-      }
-
-      anton::Expected<ast::Node_List, Error> statements =
-        transform_stmt_block_child_stmts(ctx, get_stmt_while_statements(node));
-      if(!statements) {
-        return {anton::expected_error, ANTON_MOV(statements.error())};
-      }
-
+      RETURN_ON_FAIL(condition, transform_expr, ctx,
+                     get_stmt_while_condition(node));
+      RETURN_ON_FAIL(statements, transform_stmt_block_child_stmts, ctx,
+                     get_stmt_while_statements(node));
       return {anton::expected_value,
               VUSH_ALLOCATE(ast::Stmt_Loop, ctx.allocator, condition.value(),
                             ast::Node_List{}, statements.value(),
@@ -853,23 +697,15 @@ namespace vush {
     } break;
 
     case Syntax_Node_Kind::stmt_do_while: {
-      anton::Expected<ast::Node_List, Error> statements =
-        transform_stmt_block_child_stmts(ctx, get_stmt_do_while_body(node));
-      if(!statements) {
-        return {anton::expected_error, ANTON_MOV(statements.error())};
-      }
-
+      RETURN_ON_FAIL(statements, transform_stmt_block_child_stmts, ctx,
+                     get_stmt_do_while_body(node));
       // We want to place the condition in the continuation block,
       // therefore we transform it into 'if condition { } else { break }'.
       auto& continuation =
         *VUSH_ALLOCATE(Array<ast::Node*>, ctx.allocator, ctx.allocator);
       {
-        anton::Expected<ast::Expr*, Error> condition =
-          transform_expr(ctx, get_stmt_do_while_condition(node));
-        if(!condition) {
-          return {anton::expected_error, ANTON_MOV(condition.error())};
-        }
-
+        RETURN_ON_FAIL(condition, transform_expr, ctx,
+                       get_stmt_do_while_condition(node));
         auto& else_block =
           *VUSH_ALLOCATE(Array<ast::Node*>, ctx.allocator, ctx.allocator);
         else_block.push_back(
@@ -889,13 +725,8 @@ namespace vush {
     case Syntax_Node_Kind::stmt_return: {
       ast::Expr* expression = nullptr;
       if(anton::Optional expression_node = get_stmt_return_expression(node)) {
-        anton::Expected<ast::Expr*, Error> result =
-          transform_expr(ctx, expression_node.value());
-        if(result) {
-          expression = result.value();
-        } else {
-          return {anton::expected_error, ANTON_MOV(result.error())};
-        }
+        RETURN_ON_FAIL(result, transform_expr, ctx, expression_node.value());
+        expression = result.value();
       }
       return {anton::expected_value,
               VUSH_ALLOCATE(ast::Stmt_Return, ctx.allocator, expression,
@@ -920,12 +751,8 @@ namespace vush {
     } break;
 
     case Syntax_Node_Kind::stmt_expression: {
-      anton::Expected<ast::Expr*, Error> expression =
-        transform_expr(ctx, get_stmt_expression_expression(node));
-      if(!expression) {
-        return {anton::expected_error, ANTON_MOV(expression.error())};
-      }
-
+      RETURN_ON_FAIL(expression, transform_expr, ctx,
+                     get_stmt_expression_expression(node));
       return {anton::expected_value,
               VUSH_ALLOCATE(ast::Stmt_Expression, ctx.allocator,
                             expression.value(), node.source_info)};
@@ -976,20 +803,12 @@ namespace vush {
             key = transform_identifier(ctx, key_node);
             Syntax_Node const& value_node =
               get_attribute_parameter_keyed_value(parameter);
-            anton::Expected<ast::Expr*, Error> value_result =
-              transform_expr(ctx, value_node);
-            if(!value_result) {
-              return {anton::expected_error, ANTON_MOV(value_result.error())};
-            }
+            RETURN_ON_FAIL(value_result, transform_expr, ctx, value_node);
             value = value_result.value();
           } else {
             Syntax_Node const& value_node =
               get_attribute_parameter_positional_value(parameter);
-            anton::Expected<ast::Expr*, Error> value_result =
-              transform_expr(ctx, value_node);
-            if(!value_result) {
-              return {anton::expected_error, ANTON_MOV(value_result.error())};
-            }
+            RETURN_ON_FAIL(value_result, transform_expr, ctx, value_node);
             value = value_result.value();
           }
           parameters_array.push_back(ast::Attribute_Parameter{key, value});
@@ -1016,12 +835,8 @@ namespace vush {
   [[nodiscard]] static anton::Expected<ast::Node_List, Error>
   transform_decl_if(Context& ctx, Syntax_Node const& node)
   {
-    anton::Expected<bool, Error> condition =
-      evaluate_constant_expression(ctx, get_decl_if_condition(node));
-    if(!condition) {
-      return {anton::expected_error, ANTON_MOV(condition.error())};
-    }
-
+    RETURN_ON_FAIL(condition, evaluate_constant_expression, ctx,
+                   get_decl_if_condition(node));
     if(condition.value()) {
       Syntax_Node const& then_node = get_decl_if_then_branch(node);
       return lower_syntax_to_ast(ctx, then_node.children);
@@ -1068,22 +883,14 @@ namespace vush {
 
       ast::Identifier const identifier =
         transform_identifier(ctx, get_struct_member_identifier(member_node));
-      anton::Expected<ast::Type*, Error> type =
-        transform_type(ctx, get_struct_member_type(member_node));
-      if(!type) {
-        return {anton::expected_error, ANTON_MOV(type.error())};
-      }
+      RETURN_ON_FAIL(type, transform_type, ctx,
+                     get_struct_member_type(member_node));
       ast::Expr* initializer = nullptr;
       anton::Optional initializer_node =
         get_struct_member_initializer(member_node);
       if(initializer_node) {
-        anton::Expected<ast::Expr*, Error> result =
-          transform_expr(ctx, initializer_node.value());
-        if(result) {
-          initializer = result.value();
-        } else {
-          return {anton::expected_error, ANTON_MOV(result.error())};
-        }
+        RETURN_ON_FAIL(result, transform_expr, ctx, initializer_node.value());
+        initializer = result.value();
       }
 
       members.push_back(VUSH_ALLOCATE(ast::Struct_Field, ctx.allocator,
@@ -1104,12 +911,7 @@ namespace vush {
     if(node.kind == Syntax_Node_Kind::fn_parameter) {
       ast::Identifier const identifier =
         transform_identifier(ctx, get_fn_parameter_identifier(node));
-      anton::Expected<ast::Type*, Error> type =
-        transform_type(ctx, get_fn_parameter_type(node));
-      if(!type) {
-        return {anton::expected_error, ANTON_MOV(type.error())};
-      }
-
+      RETURN_ON_FAIL(type, transform_type, ctx, get_fn_parameter_type(node));
       ast::Identifier source;
       if(anton::Optional result = get_fn_parameter_source(node)) {
         source = transform_identifier(ctx, result.value());
@@ -1119,12 +921,8 @@ namespace vush {
               VUSH_ALLOCATE(ast::Fn_Parameter, ctx.allocator, identifier,
                             type.value(), source, node.source_info)};
     } else if(node.kind == Syntax_Node_Kind::fn_parameter_if) {
-      anton::Expected<bool, Error> condition =
-        evaluate_constant_expression(ctx, get_fn_parameter_if_condition(node));
-      if(!condition) {
-        return {anton::expected_error, ANTON_MOV(condition.error())};
-      }
-
+      RETURN_ON_FAIL(condition, evaluate_constant_expression, ctx,
+                     get_fn_parameter_if_condition(node));
       if(condition.value()) {
         Syntax_Node const& then_node = get_fn_parameter_if_then_branch(node);
         return transform_parameter(ctx, then_node);
@@ -1149,13 +947,8 @@ namespace vush {
       }
 
       Syntax_Node const& parameter_node = snot.left();
-      anton::Expected<ast::Fn_Parameter*, Error> parameter =
-        transform_parameter(ctx, parameter_node);
-      if(parameter) {
-        parameters.push_back(parameter.value());
-      } else {
-        return {anton::expected_error, ANTON_MOV(parameter.error())};
-      }
+      RETURN_ON_FAIL(parameter, transform_parameter, ctx, parameter_node);
+      parameters.push_back(parameter.value());
     }
     return {anton::expected_value, parameters};
   }
@@ -1163,32 +956,16 @@ namespace vush {
   [[nodiscard]] static anton::Expected<ast::Decl_Function*, Error>
   transform_decl_function(Context const& ctx, Syntax_Node const& node)
   {
-    anton::Expected<ast::Attr_List, Error> attribute_list =
-      transform_attribute_list(ctx, get_decl_function_attribute_list(node));
-    if(!attribute_list) {
-      return {anton::expected_error, ANTON_MOV(attribute_list.error())};
-    }
-
+    RETURN_ON_FAIL(attribute_list, transform_attribute_list, ctx,
+                   get_decl_function_attribute_list(node));
     ast::Identifier const identifier =
       transform_identifier(ctx, get_decl_function_identifier(node));
-    anton::Expected<ast::Fn_Parameter_List, Error> parameters =
-      transform_parameter_list(ctx, get_decl_function_parameter_list(node));
-    if(!parameters) {
-      return {anton::expected_error, ANTON_MOV(parameters.error())};
-    }
-
-    anton::Expected<ast::Type*, Error> return_type =
-      transform_type(ctx, get_decl_function_return_type(node));
-    if(!return_type) {
-      return {anton::expected_error, ANTON_MOV(return_type.error())};
-    }
-
-    anton::Expected<ast::Node_List, Error> body =
-      transform_stmt_block_child_stmts(ctx, get_decl_function_body(node));
-    if(!body) {
-      return {anton::expected_error, ANTON_MOV(body.error())};
-    }
-
+    RETURN_ON_FAIL(parameters, transform_parameter_list, ctx,
+                   get_decl_function_parameter_list(node));
+    RETURN_ON_FAIL(return_type, transform_type, ctx,
+                   get_decl_function_return_type(node));
+    RETURN_ON_FAIL(body, transform_stmt_block_child_stmts, ctx,
+                   get_decl_function_body(node));
     return {anton::expected_value,
             VUSH_ALLOCATE(ast::Decl_Function, ctx.allocator,
                           attribute_list.value(), identifier,
@@ -1213,36 +990,18 @@ namespace vush {
       }
     };
 
-    anton::Expected<ast::Attr_List, Error> attribute_list =
-      transform_attribute_list(ctx,
-                               get_decl_stage_function_attribute_list(node));
-    if(!attribute_list) {
-      return {anton::expected_error, ANTON_MOV(attribute_list.error())};
-    }
-
+    RETURN_ON_FAIL(attribute_list, transform_attribute_list, ctx,
+                   get_decl_stage_function_attribute_list(node));
     ast::Identifier const pass =
       transform_identifier(ctx, get_decl_stage_function_pass(node));
     ast::With_Source<Stage_Kind> const stage =
       transform_stage_kind(get_decl_stage_function_stage(node));
-    anton::Expected<ast::Fn_Parameter_List, Error> parameters =
-      transform_parameter_list(ctx,
-                               get_decl_stage_function_parameter_list(node));
-    if(!parameters) {
-      return {anton::expected_error, ANTON_MOV(parameters.error())};
-    }
-
-    anton::Expected<ast::Type*, Error> return_type =
-      transform_type(ctx, get_decl_stage_function_return_type(node));
-    if(!return_type) {
-      return {anton::expected_error, ANTON_MOV(return_type.error())};
-    }
-
-    anton::Expected<ast::Node_List, Error> body =
-      transform_stmt_block_child_stmts(ctx, get_decl_stage_function_body(node));
-    if(!body) {
-      return {anton::expected_error, ANTON_MOV(body.error())};
-    }
-
+    RETURN_ON_FAIL(parameters, transform_parameter_list, ctx,
+                   get_decl_stage_function_parameter_list(node));
+    RETURN_ON_FAIL(return_type, transform_type, ctx,
+                   get_decl_stage_function_return_type(node));
+    RETURN_ON_FAIL(body, transform_stmt_block_child_stmts, ctx,
+                   get_decl_stage_function_body(node));
     return {anton::expected_value,
             VUSH_ALLOCATE(ast::Decl_Stage_Function, ctx.allocator,
                           attribute_list.value(), pass, stage,
@@ -1263,44 +1022,24 @@ namespace vush {
       Syntax_Node const& syntax_node = snot.left();
       switch(syntax_node.kind) {
       case Syntax_Node_Kind::decl_if: {
-        anton::Expected<ast::Node_List, Error> result =
-          transform_decl_if(ctx, syntax_node);
-        if(!result) {
-          return {anton::expected_error, ANTON_MOV(result.error())};
-        }
-
+        RETURN_ON_FAIL(result, transform_decl_if, ctx, syntax_node);
         ast::Node_List const decls = result.value();
         abstract.insert(abstract.end(), decls.begin(), decls.end());
       } break;
 
       case Syntax_Node_Kind::decl_import: {
-        anton::Expected<ast::Node_List, Error> result =
-          transform_decl_import(ctx, syntax_node);
-        if(!result) {
-          return {anton::expected_error, ANTON_MOV(result.error())};
-        }
-
+        RETURN_ON_FAIL(result, transform_decl_import, ctx, syntax_node);
         ast::Node_List const decls = result.value();
         abstract.insert(abstract.end(), decls.begin(), decls.end());
       } break;
 
       case Syntax_Node_Kind::variable: {
-        anton::Expected<ast::Variable*, Error> result =
-          transform_variable(ctx, syntax_node);
-        if(!result) {
-          return {anton::expected_error, ANTON_MOV(result.error())};
-        }
-
+        RETURN_ON_FAIL(result, transform_variable, ctx, syntax_node);
         abstract.insert(abstract.end(), result.value());
       } break;
 
       case Syntax_Node_Kind::decl_struct: {
-        anton::Expected<ast::Decl_Struct*, Error> result =
-          transform_decl_struct(ctx, syntax_node);
-        if(!result) {
-          return {anton::expected_error, ANTON_MOV(result.error())};
-        }
-
+        RETURN_ON_FAIL(result, transform_decl_struct, ctx, syntax_node);
         ast::Decl_Struct* const decl = result.value();
         abstract.insert(abstract.end(), decl);
       } break;
@@ -1310,23 +1049,13 @@ namespace vush {
       } break;
 
       case Syntax_Node_Kind::decl_function: {
-        anton::Expected<ast::Decl_Function*, Error> result =
-          transform_decl_function(ctx, syntax_node);
-        if(!result) {
-          return {anton::expected_error, ANTON_MOV(result.error())};
-        }
-
+        RETURN_ON_FAIL(result, transform_decl_function, ctx, syntax_node);
         ast::Decl_Function* const decl = result.value();
         abstract.insert(abstract.end(), decl);
       } break;
 
       case Syntax_Node_Kind::decl_stage_function: {
-        anton::Expected<ast::Decl_Stage_Function*, Error> result =
-          transform_decl_stage_function(ctx, syntax_node);
-        if(!result) {
-          return {anton::expected_error, ANTON_MOV(result.error())};
-        }
-
+        RETURN_ON_FAIL(result, transform_decl_stage_function, ctx, syntax_node);
         ast::Decl_Stage_Function* const decl = result.value();
         abstract.insert(abstract.end(), decl);
       } break;
