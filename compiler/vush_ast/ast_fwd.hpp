@@ -61,7 +61,9 @@ namespace vush::ast {
   struct Stmt_Assignment;
   struct Stmt_If;
   struct Stmt_Switch;
-  struct Stmt_Loop;
+  struct Stmt_While;
+  struct Stmt_Do_While;
+  struct Stmt_For;
   struct Stmt_Return;
   struct Stmt_Break;
   struct Stmt_Continue;

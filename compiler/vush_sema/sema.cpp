@@ -965,8 +965,36 @@ namespace vush {
   }
 
   [[nodiscard]] static anton::Expected<void, Error>
-  analyse_stmt_loop(Context& ctx, Symbol_Table& symtable,
-                    ast::Stmt_Loop* const node, Sema_Context semactx)
+  analyse_stmt_for(Context& ctx, Symbol_Table& symtable,
+                   ast::Stmt_For* const node, Sema_Context semactx)
+  {
+    for(ast::Node* const declaration: node->declarations) {
+      auto const variable = static_cast<ast::Variable*>(declaration);
+      RETURN_ON_FAIL(analyse_variable, ctx, symtable, variable);
+    }
+
+    RETURN_ON_FAIL(analyse_expression, ctx, symtable, node->condition);
+    auto const condition_type = node->condition->evaluated_type;
+    auto const bool_type = get_builtin_type(ast::Type_Builtin_Kind::e_bool);
+    if(!is_convertible(bool_type, condition_type)) {
+      return {anton::expected_error, err_condition_not_of_bool_type(
+                                       ctx, node->condition, condition_type)};
+    }
+
+    for(ast::Expr* const action: node->actions) {
+      RETURN_ON_FAIL(analyse_expression, ctx, symtable, action);
+    }
+
+    semactx.stmt = Stmt_Ctx::e_loop;
+    RETURN_ON_FAIL(analyse_statements, ctx, symtable, node->statements,
+                   semactx);
+    RETURN_ON_FAIL(analyse_expression, ctx, symtable, node->condition);
+    return anton::expected_value;
+  }
+
+  [[nodiscard]] static anton::Expected<void, Error>
+  analyse_stmt_while(Context& ctx, Symbol_Table& symtable,
+                     ast::Stmt_While* const node, Sema_Context semactx)
   {
     RETURN_ON_FAIL(analyse_expression, ctx, symtable, node->condition);
     auto const condition_type = node->condition->evaluated_type;
@@ -979,8 +1007,24 @@ namespace vush {
     semactx.stmt = Stmt_Ctx::e_loop;
     RETURN_ON_FAIL(analyse_statements, ctx, symtable, node->statements,
                    semactx);
-    RETURN_ON_FAIL(analyse_statements, ctx, symtable, node->continuation,
+    return anton::expected_value;
+  }
+
+  [[nodiscard]] static anton::Expected<void, Error>
+  analyse_stmt_do_while(Context& ctx, Symbol_Table& symtable,
+                        ast::Stmt_Do_While* const node, Sema_Context semactx)
+  {
+    semactx.stmt = Stmt_Ctx::e_loop;
+    RETURN_ON_FAIL(analyse_statements, ctx, symtable, node->statements,
                    semactx);
+
+    RETURN_ON_FAIL(analyse_expression, ctx, symtable, node->condition);
+    auto const condition_type = node->condition->evaluated_type;
+    auto const bool_type = get_builtin_type(ast::Type_Builtin_Kind::e_bool);
+    if(!is_convertible(bool_type, condition_type)) {
+      return {anton::expected_error, err_condition_not_of_bool_type(
+                                       ctx, node->condition, condition_type)};
+    }
     return anton::expected_value;
   }
 
@@ -1087,9 +1131,19 @@ namespace vush {
         RETURN_ON_FAIL(analyse_stmt_if, ctx, symtable, node, semactx);
       } break;
 
-      case ast::Node_Kind::stmt_loop: {
-        auto const node = static_cast<ast::Stmt_Loop*>(stmt);
-        RETURN_ON_FAIL(analyse_stmt_loop, ctx, symtable, node, semactx);
+      case ast::Node_Kind::stmt_for: {
+        auto const node = static_cast<ast::Stmt_For*>(stmt);
+        RETURN_ON_FAIL(analyse_stmt_for, ctx, symtable, node, semactx);
+      } break;
+
+      case ast::Node_Kind::stmt_while: {
+        auto const node = static_cast<ast::Stmt_While*>(stmt);
+        RETURN_ON_FAIL(analyse_stmt_while, ctx, symtable, node, semactx);
+      } break;
+
+      case ast::Node_Kind::stmt_do_while: {
+        auto const node = static_cast<ast::Stmt_Do_While*>(stmt);
+        RETURN_ON_FAIL(analyse_stmt_do_while, ctx, symtable, node, semactx);
       } break;
 
       case ast::Node_Kind::stmt_switch: {

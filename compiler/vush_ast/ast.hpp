@@ -47,7 +47,9 @@ namespace vush::ast {
     stmt_assignment,
     stmt_if,
     stmt_switch,
-    stmt_loop,
+    stmt_while,
+    stmt_do_while,
+    stmt_for,
     stmt_return,
     stmt_break,
     stmt_continue,
@@ -782,17 +784,42 @@ namespace vush::ast {
     }
   };
 
-  struct Stmt_Loop: public Node {
-    // nullptr if the loop does not have a condition.
+  struct Stmt_While: public Node {
     Expr* condition;
-    // continue statements are not allowed within the continuation block.
-    Node_List continuation;
     Node_List statements;
 
-    constexpr Stmt_Loop(Expr* condition, Node_List continuation,
-                        Node_List statements, Source_Info const& source_info)
-      : Node(source_info, Node_Kind::stmt_loop), condition(condition),
-        continuation(continuation), statements(statements)
+    constexpr Stmt_While(Expr* condition, Node_List statements,
+                         Source_Info const& source_info)
+      : Node(source_info, Node_Kind::stmt_while), condition(condition),
+        statements(statements)
+    {
+    }
+  };
+
+  struct Stmt_Do_While: public Node {
+    Expr* condition;
+    Node_List statements;
+
+    constexpr Stmt_Do_While(Expr* condition, Node_List statements,
+                            Source_Info const& source_info)
+      : Node(source_info, Node_Kind::stmt_do_while), condition(condition),
+        statements(statements)
+    {
+    }
+  };
+
+  struct Stmt_For: public Node {
+    // nullptr if the loop does not have a condition.
+    Expr* condition;
+    Node_List declarations;
+    Expr_List actions;
+    Node_List statements;
+
+    constexpr Stmt_For(Expr* condition, Node_List declarations,
+                       Expr_List actions, Node_List statements,
+                       Source_Info const& source_info)
+      : Node(source_info, Node_Kind::stmt_for), condition(condition),
+        declarations(declarations), actions(actions), statements(statements)
     {
     }
   };

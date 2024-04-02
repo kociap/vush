@@ -641,48 +641,35 @@ namespace vush {
     } break;
 
     case Syntax_Node_Kind::stmt_for: {
-      // We transform the for loop into a block statement that contains the definition of the
-      // variable and the loop itself in order to limit scope.
-      auto& statements =
+      auto& declarations =
         *VUSH_ALLOCATE(Array<ast::Node*>, ctx.allocator, ctx.allocator);
       if(anton::Optional variable_node = get_stmt_for_variable(node)) {
         RETURN_ON_FAIL(variable, transform_variable, ctx,
                        variable_node.value());
-        statements.push_back(variable.value());
+        declarations.push_back(variable.value());
       }
 
-      {
-        ast::Expr* condition = nullptr;
-        if(anton::Optional condition_node = get_stmt_for_condition(node)) {
-          RETURN_ON_FAIL(result, transform_expr, ctx, condition_node.value());
-          condition = result.value();
-        }
-
-        ast::Node_List continuation;
-        if(anton::Optional expression_node = get_stmt_for_expression(node)) {
-          RETURN_ON_FAIL(expression, transform_expr, ctx,
-                         expression_node.value());
-
-          auto& continuation_statements =
-            *VUSH_ALLOCATE(Array<ast::Node*>, ctx.allocator, ctx.allocator);
-          ast::Stmt_Expression* const stmt =
-            VUSH_ALLOCATE(ast::Stmt_Expression, ctx.allocator,
-                          expression.value(), expression.value()->source_info);
-          continuation_statements.push_back(stmt);
-          continuation = continuation_statements;
-        }
-
-        RETURN_ON_FAIL(body, transform_stmt_block_child_stmts, ctx,
-                       get_stmt_for_body(node));
-        ast::Stmt_Loop* const loop =
-          VUSH_ALLOCATE(ast::Stmt_Loop, ctx.allocator, condition, continuation,
-                        body.value(), node.source_info);
-        statements.push_back(loop);
+      ast::Expr* condition = nullptr;
+      if(anton::Optional condition_node = get_stmt_for_condition(node)) {
+        RETURN_ON_FAIL(result, transform_expr, ctx, condition_node.value());
+        condition = result.value();
       }
+
+      auto& actions =
+        *VUSH_ALLOCATE(Array<ast::Expr*>, ctx.allocator, ctx.allocator);
+      if(anton::Optional expression_node = get_stmt_for_expression(node)) {
+        RETURN_ON_FAIL(expression, transform_expr, ctx,
+                       expression_node.value());
+        actions.push_back(expression.value());
+      }
+
+      RETURN_ON_FAIL(statements, transform_stmt_block_child_stmts, ctx,
+                     get_stmt_for_body(node));
 
       return {anton::expected_value,
-              VUSH_ALLOCATE(ast::Stmt_Block, ctx.allocator, statements,
-                            Source_Info{})};
+              VUSH_ALLOCATE(ast::Stmt_For, ctx.allocator, condition,
+                            declarations, actions, statements.value(),
+                            node.source_info)};
     } break;
 
     case Syntax_Node_Kind::stmt_while: {
@@ -691,34 +678,18 @@ namespace vush {
       RETURN_ON_FAIL(statements, transform_stmt_block_child_stmts, ctx,
                      get_stmt_while_statements(node));
       return {anton::expected_value,
-              VUSH_ALLOCATE(ast::Stmt_Loop, ctx.allocator, condition.value(),
-                            ast::Node_List{}, statements.value(),
-                            node.source_info)};
+              VUSH_ALLOCATE(ast::Stmt_While, ctx.allocator, condition.value(),
+                            statements.value(), node.source_info)};
     } break;
 
     case Syntax_Node_Kind::stmt_do_while: {
       RETURN_ON_FAIL(statements, transform_stmt_block_child_stmts, ctx,
                      get_stmt_do_while_body(node));
-      // We want to place the condition in the continuation block,
-      // therefore we transform it into 'if condition { } else { break }'.
-      auto& continuation =
-        *VUSH_ALLOCATE(Array<ast::Node*>, ctx.allocator, ctx.allocator);
-      {
-        RETURN_ON_FAIL(condition, transform_expr, ctx,
-                       get_stmt_do_while_condition(node));
-        auto& else_block =
-          *VUSH_ALLOCATE(Array<ast::Node*>, ctx.allocator, ctx.allocator);
-        else_block.push_back(
-          VUSH_ALLOCATE(ast::Stmt_Break, ctx.allocator, Source_Info{}));
-        ast::Stmt_If* const stmt_if =
-          VUSH_ALLOCATE(ast::Stmt_If, ctx.allocator, condition.value(),
-                        ast::Node_List{}, else_block, Source_Info{});
-        continuation.push_back(stmt_if);
-      }
-
+      RETURN_ON_FAIL(condition, transform_expr, ctx,
+                     get_stmt_do_while_condition(node));
       return {anton::expected_value,
-              VUSH_ALLOCATE(ast::Stmt_Loop, ctx.allocator, nullptr,
-                            continuation, statements.value(),
+              VUSH_ALLOCATE(ast::Stmt_Do_While, ctx.allocator,
+                            condition.value(), statements.value(),
                             node.source_info)};
     } break;
 
