@@ -642,7 +642,7 @@ namespace vush {
 
     case Syntax_Node_Kind::stmt_for: {
       auto& declarations =
-        *VUSH_ALLOCATE(Array<ast::Node*>, ctx.allocator, ctx.allocator);
+        *VUSH_ALLOCATE(Array<ast::Variable*>, ctx.allocator, ctx.allocator);
       if(anton::Optional variable_node = get_stmt_for_variable(node)) {
         RETURN_ON_FAIL(variable, transform_variable, ctx,
                        variable_node.value());

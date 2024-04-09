@@ -579,6 +579,16 @@ namespace vush::ast {
         arguments(arguments)
     {
     }
+
+    [[nodiscard]] bool is_unary() const
+    {
+      return arguments.size() == 1;
+    }
+
+    [[nodiscard]] bool is_binary() const
+    {
+      return arguments.size() == 2;
+    }
   };
 
   struct Expr_Field: public Expr {
@@ -715,6 +725,7 @@ namespace vush::ast {
   struct Switch_Arm {
     Expr_List labels;
     Node_List statements;
+    bool has_default = false;
 
     constexpr Switch_Arm(Expr_List labels, Node_List statements)
       : labels(labels), statements(statements)
@@ -811,11 +822,11 @@ namespace vush::ast {
   struct Stmt_For: public Node {
     // nullptr if the loop does not have a condition.
     Expr* condition;
-    Node_List declarations;
+    Variable_List declarations;
     Expr_List actions;
     Node_List statements;
 
-    constexpr Stmt_For(Expr* condition, Node_List declarations,
+    constexpr Stmt_For(Expr* condition, Variable_List declarations,
                        Expr_List actions, Node_List statements,
                        Source_Info const& source_info)
       : Node(source_info, Node_Kind::stmt_for), condition(condition),

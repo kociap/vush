@@ -1049,6 +1049,7 @@ namespace vush {
       for(ast::Expr* const label: arm->labels) {
         RETURN_ON_FAIL(analyse_expression, ctx, symtable, label);
         if(label->node_kind == ast::Node_Kind::expr_default) {
+          arm->has_default = true;
           // Ensure the default label is unique.
           if(default_label == nullptr) {
             default_label = label;

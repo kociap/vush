@@ -23,6 +23,8 @@ if(VUSH_COMPILER_CLANGPP)
     -Wall -Wextra -pedantic
     -ferror-limit=1
 
+    -ftime-trace
+
     -Werror=return-type
     -Werror=uninitialized
 
@@ -82,6 +84,8 @@ target_sources(vush
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast/type_layout.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast/type_layout.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast_passes/passes.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast_lowering/ast_lowering.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast_lowering/ast_lowering.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_autogen/builtin_functions.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_autogen/builtin_types.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_autogen/builtin_symbols.hpp"
@@ -101,6 +105,12 @@ target_sources(vush
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_diagnostics/error.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_diagnostics/utility.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_diagnostics/utility.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ir/ir.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ir/ir.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ir/ir_fwd.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ir/opcodes.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ir/types.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ir/types.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_lexer/diagnostics.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_lexer/diagnostics.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_lexer/lexer.cpp"
