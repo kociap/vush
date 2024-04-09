@@ -33,6 +33,7 @@ namespace vush {
     kw_mut,
     kw_settings,
     kw_reinterpret,
+    kw_fn,
     // separators
     tk_lbrace,
     tk_rbrace,

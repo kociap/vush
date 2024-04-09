@@ -640,6 +640,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_declaration()
     {
+      // Match declarations that do not permit attribute lists first.
       if(Optional decl_if = try_decl_if()) {
         return ANTON_MOV(*decl_if);
       }
@@ -652,19 +653,25 @@ namespace vush {
         return ANTON_MOV(*decl_settings);
       }
 
-      if(Optional decl_struct = try_decl_struct()) {
+      // Match the attribute list. It will be moved into the matched construct.
+      // Doing so saves us having to match it over and over again.
+      Syntax_Node attribute_list = try_attribute_list();
+
+      // Match declarations that do allow attribute lists.
+      if(Optional decl_struct = try_decl_struct(attribute_list)) {
         return ANTON_MOV(*decl_struct);
       }
 
-      if(Optional decl_stage_function = try_decl_stage_function()) {
+      if(Optional decl_stage_function =
+           try_decl_stage_function(attribute_list)) {
         return ANTON_MOV(*decl_stage_function);
       }
 
-      if(Optional decl_function = try_decl_function()) {
+      if(Optional decl_function = try_decl_function(attribute_list)) {
         return ANTON_MOV(*decl_function);
       }
 
-      if(Optional decl_constant = try_variable()) {
+      if(Optional decl_constant = try_variable(attribute_list)) {
         return ANTON_MOV(*decl_constant);
       }
 
@@ -744,6 +751,15 @@ namespace vush {
     Optional<Syntax_Node> try_variable()
     {
       Lexer_State const begin_state = _lexer.get_current_state();
+      Source_Info const source = src_info(begin_state, begin_state);
+      Syntax_Node dummy_attribute_list{
+        Syntax_Node_Kind::attribute_list, {}, source};
+      return try_variable(dummy_attribute_list);
+    }
+
+    Optional<Syntax_Node> try_variable(Syntax_Node& attribute_list)
+    {
+      Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::kw_var, "expected 'var'"_sv, snots);
       EXPECT_TOKEN_SKIP(Token_Kind::identifier, "expected identifier"_sv,
@@ -757,6 +773,9 @@ namespace vush {
       }
 
       EXPECT_TOKEN_SKIP(Token_Kind::tk_semicolon, "expected ';'"_sv, snots);
+
+      snots.insert(snots.begin(), ANTON_MOV(attribute_list));
+
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
       return Syntax_Node(Syntax_Node_Kind::variable, ANTON_MOV(snots), source);
@@ -766,7 +785,7 @@ namespace vush {
     {
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
-      // TODO: Attribute list does not propagate errord directly.
+      // TODO: Attribute list does not propagate errors correctly.
       {
         Syntax_Node attribute_list = try_attribute_list();
         snots.push_back(ANTON_MOV(attribute_list));
@@ -813,7 +832,7 @@ namespace vush {
                          ANTON_MOV(snots), source};
     }
 
-    Optional<Syntax_Node> try_decl_struct()
+    Optional<Syntax_Node> try_decl_struct(Syntax_Node& attribute_list)
     {
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
@@ -821,6 +840,8 @@ namespace vush {
       EXPECT_TOKEN_SKIP(Token_Kind::identifier, "expected identifier"_sv,
                         snots);
       EXPECT_NODE(try_struct_member_block, snots);
+
+      snots.insert(snots.begin(), ANTON_MOV(attribute_list));
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
       return Syntax_Node(Syntax_Node_Kind::decl_struct, ANTON_MOV(snots),
@@ -969,17 +990,12 @@ namespace vush {
                          source);
     }
 
-    Optional<Syntax_Node> try_decl_stage_function()
+    Optional<Syntax_Node> try_decl_stage_function(Syntax_Node& attribute_list)
     {
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
-      {
-        Syntax_Node attribute_list = try_attribute_list();
-        snots.push_back(ANTON_MOV(attribute_list));
-      }
 
-      // return type
-      EXPECT_NODE(try_type, snots);
+      EXPECT_TOKEN(Token_Kind::kw_fn, "expected 'fn'"_sv, snots);
 
       // pass
       EXPECT_TOKEN_SKIP(Token_Kind::identifier, "expected identifier"_sv,
@@ -988,10 +1004,20 @@ namespace vush {
                          Token_Kind::tk_colon, "expected '::'"_sv, snots);
 
       // shader stage
-      EXPECT_TOKEN_SKIP(Token_Kind::identifier, "expected identifier", snots);
+      EXPECT_TOKEN_SKIP(Token_Kind::identifier, "expected identifier"_sv,
+                        snots);
 
       EXPECT_NODE(try_fn_parameter_list, snots);
+
+      EXPECT_TOKEN2_SKIP(Syntax_Node_Kind::tk_thin_arrow, Token_Kind::tk_minus,
+                         Token_Kind::tk_rangle, "expected '->'"_sv, snots);
+
+      // return type
+      EXPECT_NODE(try_type, snots);
+
       EXPECT_NODE(try_stmt_block, snots);
+
+      snots.insert(snots.begin(), ANTON_MOV(attribute_list));
 
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
@@ -999,20 +1025,23 @@ namespace vush {
                          ANTON_MOV(snots), source);
     }
 
-    Optional<Syntax_Node> try_decl_function()
+    Optional<Syntax_Node> try_decl_function(Syntax_Node& attribute_list)
     {
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
-      {
-        Syntax_Node attribute_list = try_attribute_list();
-        snots.push_back(ANTON_MOV(attribute_list));
-      }
-
-      EXPECT_NODE(try_type, snots);
+      EXPECT_TOKEN(Token_Kind::kw_fn, "expected 'fn'"_sv, snots);
       EXPECT_TOKEN_SKIP(Token_Kind::identifier, "expected identifier"_sv,
                         snots);
       EXPECT_NODE(try_fn_parameter_list, snots);
+
+      EXPECT_TOKEN2_SKIP(Syntax_Node_Kind::tk_thin_arrow, Token_Kind::tk_minus,
+                         Token_Kind::tk_rangle, "expected '->'"_sv, snots);
+
+      EXPECT_NODE(try_type, snots);
+
       EXPECT_NODE(try_stmt_block, snots);
+
+      snots.insert(snots.begin(), ANTON_MOV(attribute_list));
 
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
@@ -1026,7 +1055,7 @@ namespace vush {
         return ANTON_MOV(*stmt_empty);
       }
 
-      if(Optional stmt_variable = try_stmt_variable()) {
+      if(Optional stmt_variable = try_variable()) {
         return ANTON_MOV(*stmt_variable);
       }
 
@@ -1095,25 +1124,6 @@ namespace vush {
       Source_Info const source = src_info(begin_state, end_state);
       return Syntax_Node(Syntax_Node_Kind::stmt_empty, ANTON_MOV(snots),
                          source);
-    }
-
-    Optional<Syntax_Node> try_stmt_variable()
-    {
-      Lexer_State const begin_state = _lexer.get_current_state();
-      Array<SNOT> snots{_allocator};
-      EXPECT_NODE(try_type, snots);
-      EXPECT_TOKEN_SKIP(Token_Kind::identifier, "expected identifier"_sv,
-                        snots);
-      if(Optional tk_equals = skipmatch(Token_Kind::tk_equals)) {
-        snots.push_back(ANTON_MOV(*tk_equals));
-        EXPECT_NODE(try_expression, snots);
-      }
-
-      EXPECT_TOKEN_SKIP(Token_Kind::tk_semicolon, "expected ';'"_sv, snots);
-
-      Lexer_State const end_state = _lexer.get_current_state_noskip();
-      Source_Info const source = src_info(begin_state, end_state);
-      return Syntax_Node(Syntax_Node_Kind::variable, ANTON_MOV(snots), source);
     }
 
     // try_stmt_block
@@ -1267,7 +1277,7 @@ namespace vush {
       }
 
       EXPECT_TOKEN_SKIP(Token_Kind::tk_semicolon, "expected ';'"_sv, snots);
-
+      // TODO FIX: does not match assignment.
       if(Optional expression = try_expression_without_init()) {
         Source_Info const source_info = expression->source_info;
         snots.push_back(WRAP_NODE(_allocator, Syntax_Node_Kind::for_expression,

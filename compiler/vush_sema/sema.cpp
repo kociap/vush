@@ -604,10 +604,10 @@ namespace vush {
 
     // Find the field within the struct and report that first.
     ast::Decl_Struct const* const decl = type->definition;
-    ast::Field_List::iterator const fields_begin = decl->fields.begin();
-    ast::Field_List::iterator const fields_end = decl->fields.end();
+    ast::Struct_Field_List::iterator const fields_begin = decl->fields.begin();
+    ast::Struct_Field_List::iterator const fields_end = decl->fields.end();
     anton::String_View const identifier = initializer->identifier.value;
-    ast::Field_List::iterator const field =
+    ast::Struct_Field_List::iterator const field =
       anton::find_if(fields_begin, fields_end,
                      [identifier](ast::Struct_Field const* const field) {
                        return field->identifier.value == identifier;

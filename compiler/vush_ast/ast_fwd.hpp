@@ -29,13 +29,12 @@ namespace vush::ast {
   struct Attribute;
   struct Variable;
 
-  struct Fn_Parameter;
   struct Struct_Field;
-
   struct Decl_Struct;
+  struct Fn_Parameter;
   struct Decl_Function;
-  struct Overload_Group;
   struct Decl_Stage_Function;
+  struct Overload_Group;
 
   struct Initializer;
   struct Field_Initializer;
@@ -75,6 +74,6 @@ namespace vush::ast {
   using Expr_List = anton::Slice<Expr* const>;
   using Fn_Parameter_List = anton::Slice<Fn_Parameter* const>;
   using Initializer_List = anton::Slice<Initializer* const>;
-  using Field_List = anton::Slice<Struct_Field* const>;
+  using Struct_Field_List = anton::Slice<Struct_Field* const>;
   using Variable_List = anton::Slice<Variable* const>;
 } // namespace vush::ast

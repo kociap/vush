@@ -507,6 +507,64 @@ namespace vush {
     }
   }
 
+  [[nodiscard]] static anton::Expected<ast::Attr_List, Error>
+  transform_attribute_list(Context const& ctx, Syntax_Node const& node)
+  {
+    if(node.children.size() == 0) {
+      return {anton::expected_value, ast::Attr_List{}};
+    }
+
+    auto& attributes =
+      *VUSH_ALLOCATE(Array<ast::Attribute*>, ctx.allocator, ctx.allocator);
+    for(SNOT const& attribute_snot: node.children) {
+      Syntax_Node const& attribute_node = attribute_snot.left();
+      anton::Slice<ast::Attribute_Parameter> parameters;
+      if(anton::Optional const parameter_list_node =
+           get_attribute_parameter_list(attribute_node)) {
+        auto& parameters_array = *VUSH_ALLOCATE(Array<ast::Attribute_Parameter>,
+                                                ctx.allocator, ctx.allocator);
+        for(SNOT const& snot: parameter_list_node->children) {
+          if(!snot.is_left()) {
+            continue;
+          }
+
+          Syntax_Node const& parameter = snot.left();
+          ANTON_ASSERT(parameter.kind ==
+                           Syntax_Node_Kind::attribute_parameter_positional ||
+                         parameter.kind ==
+                           Syntax_Node_Kind::attribute_parameter_keyed,
+                       "Syntax_Node is not an attribute_parameter_positional "
+                       "or attribute_parameter_keyed");
+          ast::Identifier key;
+          ast::Expr* value = nullptr;
+          if(parameter.kind == Syntax_Node_Kind::attribute_parameter_keyed) {
+            Syntax_Token const& key_node =
+              get_attribute_parameter_keyed_key(parameter);
+            key = transform_identifier(ctx, key_node);
+            Syntax_Node const& value_node =
+              get_attribute_parameter_keyed_value(parameter);
+            RETURN_ON_FAIL(value_result, transform_expr, ctx, value_node);
+            value = value_result.value();
+          } else {
+            Syntax_Node const& value_node =
+              get_attribute_parameter_positional_value(parameter);
+            RETURN_ON_FAIL(value_result, transform_expr, ctx, value_node);
+            value = value_result.value();
+          }
+          parameters_array.push_back(ast::Attribute_Parameter{key, value});
+        }
+        parameters = parameters_array;
+      }
+
+      ast::Identifier const identifier =
+        transform_identifier(ctx, get_attribute_identifier(attribute_node));
+      attributes.push_back(VUSH_ALLOCATE(ast::Attribute, ctx.allocator,
+                                         identifier, parameters,
+                                         attribute_node.source_info));
+    }
+    return {anton::expected_value, attributes};
+  }
+
   // transform_stmt
   //
   // Returns:
@@ -541,6 +599,9 @@ namespace vush {
   [[nodiscard]] static anton::Expected<ast::Variable*, Error>
   transform_variable(Context const& ctx, Syntax_Node const& node)
   {
+    RETURN_ON_FAIL(attribute_list, transform_attribute_list, ctx,
+                   get_variable_attribute_list(node));
+
     ast::Identifier const identifier =
       transform_identifier(ctx, get_variable_identifier(node));
     RETURN_ON_FAIL(type, transform_type, ctx, get_variable_type(node));
@@ -551,8 +612,9 @@ namespace vush {
       initializer = result.value();
     }
     return {anton::expected_value,
-            VUSH_ALLOCATE(ast::Variable, ctx.allocator, type.value(),
-                          identifier, initializer, node.source_info)};
+            VUSH_ALLOCATE(ast::Variable, ctx.allocator, attribute_list.value(),
+                          type.value(), identifier, initializer,
+                          node.source_info)};
   }
 
   anton::Expected<ast::Node*, Error> transform_stmt(Context const& ctx,
@@ -737,64 +799,6 @@ namespace vush {
     }
   }
 
-  [[nodiscard]] static anton::Expected<ast::Attr_List, Error>
-  transform_attribute_list(Context const& ctx, Syntax_Node const& node)
-  {
-    if(node.children.size() == 0) {
-      return {anton::expected_value, ast::Attr_List{}};
-    }
-
-    auto& attributes =
-      *VUSH_ALLOCATE(Array<ast::Attribute*>, ctx.allocator, ctx.allocator);
-    for(SNOT const& attribute_snot: node.children) {
-      Syntax_Node const& attribute_node = attribute_snot.left();
-      anton::Slice<ast::Attribute_Parameter> parameters;
-      if(anton::Optional const parameter_list_node =
-           get_attribute_parameter_list(attribute_node)) {
-        auto& parameters_array = *VUSH_ALLOCATE(Array<ast::Attribute_Parameter>,
-                                                ctx.allocator, ctx.allocator);
-        for(SNOT const& snot: parameter_list_node->children) {
-          if(!snot.is_left()) {
-            continue;
-          }
-
-          Syntax_Node const& parameter = snot.left();
-          ANTON_ASSERT(parameter.kind ==
-                           Syntax_Node_Kind::attribute_parameter_positional ||
-                         parameter.kind ==
-                           Syntax_Node_Kind::attribute_parameter_keyed,
-                       "Syntax_Node is not an attribute_parameter_positional "
-                       "or attribute_parameter_keyed");
-          ast::Identifier key;
-          ast::Expr* value = nullptr;
-          if(parameter.kind == Syntax_Node_Kind::attribute_parameter_keyed) {
-            Syntax_Token const& key_node =
-              get_attribute_parameter_keyed_key(parameter);
-            key = transform_identifier(ctx, key_node);
-            Syntax_Node const& value_node =
-              get_attribute_parameter_keyed_value(parameter);
-            RETURN_ON_FAIL(value_result, transform_expr, ctx, value_node);
-            value = value_result.value();
-          } else {
-            Syntax_Node const& value_node =
-              get_attribute_parameter_positional_value(parameter);
-            RETURN_ON_FAIL(value_result, transform_expr, ctx, value_node);
-            value = value_result.value();
-          }
-          parameters_array.push_back(ast::Attribute_Parameter{key, value});
-        }
-        parameters = parameters_array;
-      }
-
-      ast::Identifier const identifier =
-        transform_identifier(ctx, get_attribute_identifier(attribute_node));
-      attributes.push_back(VUSH_ALLOCATE(ast::Attribute, ctx.allocator,
-                                         identifier, parameters,
-                                         attribute_node.source_info));
-    }
-    return {anton::expected_value, attributes};
-  }
-
   [[nodiscard]] static anton::Expected<bool, Error>
   evaluate_constant_expression(Context const& ctx, Syntax_Node const& node)
   {
@@ -835,6 +839,9 @@ namespace vush {
   [[nodiscard]] static anton::Expected<ast::Decl_Struct*, Error>
   transform_decl_struct(Context const& ctx, Syntax_Node const& node)
   {
+    RETURN_ON_FAIL(attribute_list, transform_attribute_list, ctx,
+                   get_decl_struct_attribute_list(node));
+
     auto& members =
       *VUSH_ALLOCATE(Array<ast::Struct_Field*>, ctx.allocator, ctx.allocator);
     Syntax_Node const& members_node = get_decl_struct_members(node);
@@ -871,7 +878,8 @@ namespace vush {
     ast::Identifier const identifier =
       transform_identifier(ctx, get_decl_struct_identifier(node));
     return {anton::expected_value,
-            VUSH_ALLOCATE(ast::Decl_Struct, ctx.allocator, identifier, members,
+            VUSH_ALLOCATE(ast::Decl_Struct, ctx.allocator,
+                          attribute_list.value(), identifier, members,
                           node.source_info)};
   }
 

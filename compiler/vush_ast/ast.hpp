@@ -355,15 +355,17 @@ namespace vush::ast {
   };
 
   struct Variable: public Node {
+    // Allowed on variables which are declarations (globals).
+    Attr_List attributes;
     Type* type;
     Identifier identifier;
     // nullptr when Variable does not have an initializer.
     Expr* initializer;
 
-    constexpr Variable(Type* type, Identifier identifier, Expr* initializer,
-                       Source_Info const& source_info)
-      : Node(source_info, Node_Kind::variable), type(type),
-        identifier(identifier), initializer(initializer)
+    constexpr Variable(Attr_List attributes, Type* type, Identifier identifier,
+                       Expr* initializer, Source_Info const& source_info)
+      : Node(source_info, Node_Kind::variable), attributes(attributes),
+        type(type), identifier(identifier), initializer(initializer)
     {
     }
   };
@@ -384,13 +386,15 @@ namespace vush::ast {
   };
 
   struct Decl_Struct: public Node {
+    Attr_List attributes;
     Identifier identifier;
-    Field_List fields;
+    Struct_Field_List fields;
 
-    constexpr Decl_Struct(Identifier identifier, Field_List fields,
+    constexpr Decl_Struct(Attr_List attributes, Identifier identifier,
+                          Struct_Field_List fields,
                           Source_Info const& source_info)
-      : Node(source_info, Node_Kind::decl_struct), identifier(identifier),
-        fields(fields)
+      : Node(source_info, Node_Kind::decl_struct), attributes(attributes),
+        identifier(identifier), fields(fields)
     {
     }
   };

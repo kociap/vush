@@ -26,9 +26,11 @@ namespace vush {
   get_attribute_parameter_keyed_value(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const&
   get_attribute_parameter_positional_value(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const& get_variable_type(Syntax_Node const& node);
+  [[nodiscard]] Syntax_Node const&
+  get_variable_attribute_list(Syntax_Node const& node);
   [[nodiscard]] Syntax_Token const&
   get_variable_identifier(Syntax_Node const& node);
+  [[nodiscard]] Syntax_Node const& get_variable_type(Syntax_Node const& node);
   [[nodiscard]] anton::Optional<Syntax_Node const&>
   get_variable_initializer(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const&
@@ -39,30 +41,32 @@ namespace vush {
   get_decl_if_else_branch(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const&
   get_decl_import_path(Syntax_Node const& node);
+  [[nodiscard]] Syntax_Node const&
+  get_decl_struct_attribute_list(Syntax_Node const& node);
   [[nodiscard]] Syntax_Token const&
   get_decl_struct_identifier(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const&
   get_decl_struct_members(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const&
   get_decl_function_attribute_list(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_decl_function_return_type(Syntax_Node const& node);
   [[nodiscard]] Syntax_Token const&
   get_decl_function_identifier(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const&
   get_decl_function_parameter_list(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const&
+  get_decl_function_return_type(Syntax_Node const& node);
+  [[nodiscard]] Syntax_Node const&
   get_decl_function_body(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const&
   get_decl_stage_function_attribute_list(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_decl_stage_function_return_type(Syntax_Node const& node);
   [[nodiscard]] Syntax_Token const&
   get_decl_stage_function_pass(Syntax_Node const& node);
   [[nodiscard]] Syntax_Token const&
   get_decl_stage_function_stage(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const&
   get_decl_stage_function_parameter_list(Syntax_Node const& node);
+  [[nodiscard]] Syntax_Node const&
+  get_decl_stage_function_return_type(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const&
   get_decl_stage_function_body(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const&
