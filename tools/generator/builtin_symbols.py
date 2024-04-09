@@ -130,12 +130,10 @@ def write_preamble_builtin_functions(file):
 #include <anton/flat_hash_map.hpp>
 
 #include <vush_ast/ast.hpp>
-#include <vush_ast/type_layout.hpp>
 #include <vush_core/memory.hpp>
 
 #define ALLOC_BUILTIN(value) \\
-    VUSH_ALLOCATE(ast::Type_Builtin, allocator, Source_Info{}, ast::Type_Builtin_Kind::value, \\
-                                get_builtin_type_layout(ast::Type_Builtin_Kind::value))
+    VUSH_ALLOCATE(ast::Type_Builtin, allocator, Source_Info{}, ast::Type_Builtin_Kind::value)
 #define ALLOC_PARAM(name, type) VUSH_ALLOCATE(ast::Fn_Parameter, allocator, ast::Identifier{name, {}}, type, ast::Identifier{""_sv, {}}, Source_Info{})
 #define ALLOC_ARRAY_PARAM(...) VUSH_ALLOCATE(Array<ast::Fn_Parameter*>, allocator, allocator, anton::variadic_construct __VA_OPT__(,) __VA_ARGS__)
 #define ALLOC_FUNCTION(identifier, return_type, parameter_array) \\
@@ -154,11 +152,9 @@ def write_preamble_builtin_types(file):
 //
 
 #include <vush_ast/ast.hpp>
-#include <vush_ast/type_layout.hpp>
 
 #define BUILTIN_TYPE(identifier, value) \\
-    static const ast::Type_Builtin identifier(Source_Info{}, ast::Type_Builtin_Kind::value, \\
-                                              get_builtin_type_layout(ast::Type_Builtin_Kind::value))
+    static const ast::Type_Builtin identifier(Source_Info{}, ast::Type_Builtin_Kind::value)
 
 namespace vush {
 """)

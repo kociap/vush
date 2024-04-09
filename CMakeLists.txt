@@ -59,7 +59,7 @@ set(ANTON_UNREACHABLE_ASSERTS ON)
 FetchContent_Declare(
   anton_core
   GIT_REPOSITORY https://github.com/kociap/anton_core.git
-  GIT_TAG 3a566d3d2bed07bf2f308e20fb0eb933bb52de7b
+  GIT_TAG 28358bd4d2135113957bf0a5eb70b8f2c022a904
 )
 FetchContent_MakeAvailable(anton_core)
 
@@ -81,9 +81,6 @@ target_sources(vush
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast/ast.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast/ast.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast/ast_fwd.hpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast/type_layout.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast/type_layout.hpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast_passes/passes.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast_lowering/ast_lowering.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast_lowering/ast_lowering.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_autogen/builtin_functions.cpp"

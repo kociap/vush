@@ -1637,9 +1637,6 @@ namespace vush {
           return ANTON_MOV(op);
         }
 
-        if(Optional op = match(Token_Kind::tk_equals)) {
-          return ANTON_MOV(op);
-        }
         if(Optional op = match(Token_Kind::tk_amp)) {
           return ANTON_MOV(op);
         }

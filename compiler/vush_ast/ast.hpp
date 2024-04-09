@@ -5,7 +5,6 @@
 #include <anton/string.hpp>
 
 #include <vush_ast/ast_fwd.hpp>
-#include <vush_ast/type_layout.hpp>
 #include <vush_core/either.hpp>
 #include <vush_core/source_info.hpp>
 #include <vush_core/types.hpp>
@@ -81,7 +80,6 @@ namespace vush::ast {
   };
 
   struct Type: public Node {
-    Type_Layout layout = {};
     Qualifiers qualifiers;
     Type_Kind type_kind;
 
@@ -91,15 +89,9 @@ namespace vush::ast {
     }
 
     constexpr Type(Source_Info const& source_info, Type_Kind type_kind,
-                   Type_Layout layout)
-      : Node(source_info, Node_Kind::type), layout(layout), type_kind(type_kind)
-    {
-    }
-
-    constexpr Type(Source_Info const& source_info, Type_Kind type_kind,
-                   Type_Layout layout, Qualifiers qualifiers)
-      : Node(source_info, Node_Kind::type), layout(layout),
-        qualifiers(qualifiers), type_kind(type_kind)
+                   Qualifiers qualifiers)
+      : Node(source_info, Node_Kind::type), qualifiers(qualifiers),
+        type_kind(type_kind)
     {
     }
   };
@@ -298,16 +290,8 @@ namespace vush::ast {
     }
 
     constexpr Type_Builtin(Source_Info const& source_info,
-                           Type_Builtin_Kind value, Type_Layout layout)
-      : Type(source_info, Type_Kind::type_builtin, layout), value(value)
-    {
-    }
-
-    constexpr Type_Builtin(Source_Info const& source_info,
-                           Qualifiers qualifiers, Type_Builtin_Kind value,
-                           Type_Layout layout)
-      : Type(source_info, Type_Kind::type_builtin, layout, qualifiers),
-        value(value)
+                           Qualifiers qualifiers, Type_Builtin_Kind value)
+      : Type(source_info, Type_Kind::type_builtin, qualifiers), value(value)
     {
     }
   };
@@ -324,7 +308,7 @@ namespace vush::ast {
 
     Type_Struct(Source_Info const& source_info, Qualifiers qualifiers,
                 anton::String&& value)
-      : Type(source_info, Type_Kind::type_struct, {}, qualifiers),
+      : Type(source_info, Type_Kind::type_struct, qualifiers),
         value(ANTON_MOV(value))
     {
     }
@@ -343,7 +327,7 @@ namespace vush::ast {
 
     constexpr Type_Array(Source_Info const& source_info, Qualifiers qualifiers,
                          Type* base, Lt_Integer* size)
-      : Type(source_info, Type_Kind::type_array, {}, qualifiers), base(base),
+      : Type(source_info, Type_Kind::type_array, qualifiers), base(base),
         size(size)
     {
     }
@@ -390,7 +374,6 @@ namespace vush::ast {
     Type* type;
     // nullptr when the field does not have an initializer.
     Expr* initializer;
-    i64 offset = 0;
 
     constexpr Struct_Field(Attr_List attributes, Identifier identifier,
                            Type* type, Expr* initializer)
@@ -403,7 +386,6 @@ namespace vush::ast {
   struct Decl_Struct: public Node {
     Identifier identifier;
     Field_List fields;
-    Type_Layout layout;
 
     constexpr Decl_Struct(Identifier identifier, Field_List fields,
                           Source_Info const& source_info)
@@ -867,6 +849,7 @@ namespace vush::ast {
   };
 
   struct Stmt_Expression: public Node {
+    // Never nullptr.
     Expr* expression;
 
     constexpr Stmt_Expression(Expr* expression, Source_Info const& source_info)

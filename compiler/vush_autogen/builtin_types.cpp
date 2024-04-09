@@ -3,12 +3,10 @@
 //
 
 #include <vush_ast/ast.hpp>
-#include <vush_ast/type_layout.hpp>
 
-#define BUILTIN_TYPE(identifier, value)           \
-  static const ast::Type_Builtin identifier(      \
-    Source_Info{}, ast::Type_Builtin_Kind::value, \
-    get_builtin_type_layout(ast::Type_Builtin_Kind::value))
+#define BUILTIN_TYPE(identifier, value)                    \
+  static const ast::Type_Builtin identifier(Source_Info{}, \
+                                            ast::Type_Builtin_Kind::value)
 
 namespace vush {
   BUILTIN_TYPE(builtin_void, e_void);

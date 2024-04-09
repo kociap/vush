@@ -139,10 +139,9 @@ namespace vush {
         ast::enumify_builtin_type_kind(value_token.value);
       if(enumified) {
         ast::Type_Builtin_Kind const kind = enumified.value();
-        Type_Layout const layout = get_builtin_type_layout(kind);
         return {anton::expected_value,
                 VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator,
-                              node.source_info, qualifiers, kind, layout)};
+                              node.source_info, qualifiers, kind)};
       } else {
         return {anton::expected_value,
                 VUSH_ALLOCATE(ast::Type_Struct, ctx.allocator, node.source_info,

@@ -5,13 +5,11 @@
 #include <anton/flat_hash_map.hpp>
 
 #include <vush_ast/ast.hpp>
-#include <vush_ast/type_layout.hpp>
 #include <vush_core/memory.hpp>
 
 #define ALLOC_BUILTIN(value)                                 \
   VUSH_ALLOCATE(ast::Type_Builtin, allocator, Source_Info{}, \
-                ast::Type_Builtin_Kind::value,               \
-                get_builtin_type_layout(ast::Type_Builtin_Kind::value))
+                ast::Type_Builtin_Kind::value)
 #define ALLOC_PARAM(name, type)                                                \
   VUSH_ALLOCATE(ast::Fn_Parameter, allocator, ast::Identifier{name, {}}, type, \
                 ast::Identifier{""_sv, {}}, Source_Info{})

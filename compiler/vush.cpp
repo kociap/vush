@@ -11,7 +11,7 @@
 #include <anton/string_stream.hpp>
 
 #include <vush_ast/ast.hpp>
-#include <vush_ast_passes/passes.hpp>
+#include <vush_ast_lowering/ast_lowering.hpp>
 #include <vush_core/context.hpp>
 #include <vush_core/memory.hpp>
 #include <vush_core/source_registry.hpp>
