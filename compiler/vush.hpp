@@ -35,7 +35,7 @@ namespace vush {
     bool unsized;
   };
 
-  struct Source_Definition {
+  struct Buffer_Definition {
     anton::String declaration;
     anton::String bind;
   };
@@ -55,25 +55,25 @@ namespace vush {
     anton::Slice<Sourced_Opaque_Variable const> opaque_variables;
   };
 
-  struct Source_Definition_Context {
+  struct Buffer_Definition_Context {
     anton::String_View pass_name;
-    anton::String_View source_name;
+    anton::String_View buffer_name;
     anton::Slice<Setting_Key_Value const> settings;
     // Per stage sourced data. Index by casting Stage_Kind to i64.
     anton::Slice<Stage_Sourced_Data const> sourced_data;
     void* user_data;
   };
 
-  // source_definition_callback
+  // buffer_definition_callback
   //
   // Parameters:
   //     context - the definition context of a source.
-  // definitions - output parameter for per-stage source definitions. The slice
+  // definitions - output parameter for per-stage buffer definitions. The slice
   //               is always presized to stage_kind_count.
   //
-  using source_definition_callback = anton::Expected<void, anton::String> (*)(
-    Source_Definition_Context const& context,
-    anton::Slice<Source_Definition> definitions);
+  using buffer_definition_callback = anton::Expected<void, anton::String> (*)(
+    Buffer_Definition_Context const& context,
+    anton::Slice<Buffer_Definition> definitions);
 
   struct Diagnostics_Options {
     // Whether to provide extended diagnostic messages that include more
@@ -88,8 +88,8 @@ namespace vush {
     anton::String source_name;
     Array<Constant_Define> defines;
     Array<Extension> extensions;
-    source_definition_callback source_definition_cb = nullptr;
-    void* source_definition_user_data = nullptr;
+    buffer_definition_callback buffer_definition_cb = nullptr;
+    void* buffer_definition_user_data = nullptr;
     Diagnostics_Options diagnostics;
   };
 

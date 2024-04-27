@@ -12,8 +12,8 @@
 
 namespace vush {
   struct Context {
-    source_definition_callback source_definition_cb = nullptr;
-    void* source_definition_user_data = nullptr;
+    buffer_definition_callback buffer_definition_cb = nullptr;
+    void* buffer_definition_user_data = nullptr;
     source_import_callback source_import_cb = nullptr;
     void* source_import_user_data = nullptr;
     Allocator* allocator = nullptr;

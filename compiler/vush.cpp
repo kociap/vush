@@ -365,8 +365,8 @@ namespace vush {
         .allocator = &allocator,
         .source_import_cb = callback,
         .source_import_user_data = user_data,
-        .source_definition_cb = config.source_definition_cb,
-        .source_definition_user_data = config.source_definition_user_data,
+        .buffer_definition_cb = config.buffer_definition_cb,
+        .buffer_definition_user_data = config.buffer_definition_user_data,
         .diagnostics = config.diagnostics,
         .source_registry = &registry,
       };
