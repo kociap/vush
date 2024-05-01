@@ -883,6 +883,47 @@ namespace vush {
                           node.source_info)};
   }
 
+  [[nodiscard]] static anton::Expected<ast::Decl_Buffer*, Error>
+  transform_decl_buffer(Context const& ctx, Syntax_Node const& node)
+  {
+    RETURN_ON_FAIL(attribute_list, transform_attribute_list, ctx,
+                   get_decl_buffer_attribute_list(node));
+
+    auto& fields =
+      *VUSH_ALLOCATE(Array<ast::Buffer_Field*>, ctx.allocator, ctx.allocator);
+    Syntax_Node const& fields_node = get_decl_buffer_fields(node);
+    for(SNOT const& field_snot: fields_node.children) {
+      if(!field_snot.is_left()) {
+        continue;
+      }
+
+      Syntax_Node const& field_node = field_snot.left();
+      anton::Expected<ast::Attr_List, Error> attribute_list =
+        transform_attribute_list(ctx,
+                                 get_buffer_field_attribute_list(field_node));
+      if(!attribute_list) {
+        return {anton::expected_error, ANTON_MOV(attribute_list.error())};
+      }
+
+      ast::Identifier const identifier =
+        transform_identifier(ctx, get_buffer_field_identifier(field_node));
+      RETURN_ON_FAIL(type, transform_type, ctx,
+                     get_buffer_field_type(field_node));
+      fields.push_back(VUSH_ALLOCATE(ast::Buffer_Field, ctx.allocator,
+                                     attribute_list.value(), identifier,
+                                     type.value()));
+    }
+
+    ast::Identifier const identifier =
+      transform_identifier(ctx, get_decl_buffer_identifier(node));
+    ast::Identifier const pass =
+      transform_identifier(ctx, get_decl_buffer_pass(node));
+    return {anton::expected_value,
+            VUSH_ALLOCATE(ast::Decl_Buffer, ctx.allocator,
+                          attribute_list.value(), pass, identifier, fields,
+                          node.source_info)};
+  }
+
   [[nodiscard]] static anton::Expected<ast::Fn_Parameter*, Error>
   transform_parameter(Context const& ctx, Syntax_Node const& node)
   {
@@ -1019,6 +1060,12 @@ namespace vush {
       case Syntax_Node_Kind::decl_struct: {
         RETURN_ON_FAIL(result, transform_decl_struct, ctx, syntax_node);
         ast::Decl_Struct* const decl = result.value();
+        abstract.insert(abstract.end(), decl);
+      } break;
+
+      case Syntax_Node_Kind::decl_buffer: {
+        RETURN_ON_FAIL(result, transform_decl_buffer, ctx, syntax_node);
+        ast::Decl_Buffer* const decl = result.value();
         abstract.insert(abstract.end(), decl);
       } break;
 

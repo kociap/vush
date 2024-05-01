@@ -31,6 +31,8 @@ namespace vush::ast {
 
   struct Struct_Field;
   struct Decl_Struct;
+  struct Buffer_Field;
+  struct Decl_Buffer;
   struct Fn_Parameter;
   struct Decl_Function;
   struct Decl_Stage_Function;
@@ -75,5 +77,6 @@ namespace vush::ast {
   using Fn_Parameter_List = anton::Slice<Fn_Parameter* const>;
   using Initializer_List = anton::Slice<Initializer* const>;
   using Struct_Field_List = anton::Slice<Struct_Field* const>;
+  using Buffer_Field_List = anton::Slice<Buffer_Field* const>;
   using Variable_List = anton::Slice<Variable* const>;
 } // namespace vush::ast

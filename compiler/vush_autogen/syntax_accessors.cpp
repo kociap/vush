@@ -215,6 +215,53 @@ namespace vush {
     return node.children[1].left();
   }
 
+  Syntax_Node const& get_struct_member_attribute_list(Syntax_Node const& node)
+  {
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::struct_member,
+                 "node is not struct_member");
+    ANTON_ASSERT(node.children.size() > (0),
+                 "struct_member has too few children");
+    ANTON_ASSERT(node.children[0].is_left(),
+                 "attribute_list in struct_member is not Syntax_Node");
+    return node.children[0].left();
+  }
+
+  Syntax_Node const& get_struct_member_type(Syntax_Node const& node)
+  {
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::struct_member,
+                 "node is not struct_member");
+    ANTON_ASSERT(node.children.size() > (1),
+                 "struct_member has too few children");
+    ANTON_ASSERT(node.children[1].is_left(),
+                 "type in struct_member is not Syntax_Node");
+    return node.children[1].left();
+  }
+
+  Syntax_Token const& get_struct_member_identifier(Syntax_Node const& node)
+  {
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::struct_member,
+                 "node is not struct_member");
+    ANTON_ASSERT(node.children.size() > (2),
+                 "struct_member has too few children");
+    ANTON_ASSERT(node.children[2].is_right(),
+                 "identifier in struct_member is not Syntax_Token");
+    return node.children[2].right();
+  }
+
+  anton::Optional<Syntax_Node const&>
+  get_struct_member_initializer(Syntax_Node const& node)
+  {
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::struct_member,
+                 "node is not struct_member");
+    if(node.children.size() > (4)) {
+      ANTON_ASSERT(node.children[4].is_left(),
+                   "initializer in struct_member is not Syntax_Node");
+      return node.children[4].left();
+    } else {
+      return anton::null_optional;
+    }
+  }
+
   Syntax_Node const& get_decl_struct_attribute_list(Syntax_Node const& node)
   {
     ANTON_ASSERT(node.kind == Syntax_Node_Kind::decl_struct,
@@ -246,6 +293,83 @@ namespace vush {
     ANTON_ASSERT(node.children[3].is_left(),
                  "members in decl_struct is not Syntax_Node");
     return node.children[3].left();
+  }
+
+  Syntax_Node const& get_buffer_field_attribute_list(Syntax_Node const& node)
+  {
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::buffer_field,
+                 "node is not buffer_field");
+    ANTON_ASSERT(node.children.size() > (0),
+                 "buffer_field has too few children");
+    ANTON_ASSERT(node.children[0].is_left(),
+                 "attribute_list in buffer_field is not Syntax_Node");
+    return node.children[0].left();
+  }
+
+  Syntax_Node const& get_buffer_field_type(Syntax_Node const& node)
+  {
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::buffer_field,
+                 "node is not buffer_field");
+    ANTON_ASSERT(node.children.size() > (1),
+                 "buffer_field has too few children");
+    ANTON_ASSERT(node.children[1].is_left(),
+                 "type in buffer_field is not Syntax_Node");
+    return node.children[1].left();
+  }
+
+  Syntax_Token const& get_buffer_field_identifier(Syntax_Node const& node)
+  {
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::buffer_field,
+                 "node is not buffer_field");
+    ANTON_ASSERT(node.children.size() > (2),
+                 "buffer_field has too few children");
+    ANTON_ASSERT(node.children[2].is_right(),
+                 "identifier in buffer_field is not Syntax_Token");
+    return node.children[2].right();
+  }
+
+  Syntax_Node const& get_decl_buffer_attribute_list(Syntax_Node const& node)
+  {
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::decl_buffer,
+                 "node is not decl_buffer");
+    ANTON_ASSERT(node.children.size() > (0),
+                 "decl_buffer has too few children");
+    ANTON_ASSERT(node.children[0].is_left(),
+                 "attribute_list in decl_buffer is not Syntax_Node");
+    return node.children[0].left();
+  }
+
+  Syntax_Token const& get_decl_buffer_pass(Syntax_Node const& node)
+  {
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::decl_buffer,
+                 "node is not decl_buffer");
+    ANTON_ASSERT(node.children.size() > (2),
+                 "decl_buffer has too few children");
+    ANTON_ASSERT(node.children[2].is_right(),
+                 "pass in decl_buffer is not Syntax_Token");
+    return node.children[2].right();
+  }
+
+  Syntax_Token const& get_decl_buffer_identifier(Syntax_Node const& node)
+  {
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::decl_buffer,
+                 "node is not decl_buffer");
+    ANTON_ASSERT(node.children.size() > (4),
+                 "decl_buffer has too few children");
+    ANTON_ASSERT(node.children[4].is_right(),
+                 "identifier in decl_buffer is not Syntax_Token");
+    return node.children[4].right();
+  }
+
+  Syntax_Node const& get_decl_buffer_fields(Syntax_Node const& node)
+  {
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::decl_buffer,
+                 "node is not decl_buffer");
+    ANTON_ASSERT(node.children.size() > (5),
+                 "decl_buffer has too few children");
+    ANTON_ASSERT(node.children[5].is_left(),
+                 "fields in decl_buffer is not Syntax_Node");
+    return node.children[5].left();
   }
 
   Syntax_Node const& get_decl_function_attribute_list(Syntax_Node const& node)
@@ -439,53 +563,6 @@ namespace vush {
     ANTON_ASSERT(node.children[7].is_left(),
                  "else_branch in fn_parameter_if is not Syntax_Node");
     return node.children[7].left();
-  }
-
-  Syntax_Node const& get_struct_member_attribute_list(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::struct_member,
-                 "node is not struct_member");
-    ANTON_ASSERT(node.children.size() > (0),
-                 "struct_member has too few children");
-    ANTON_ASSERT(node.children[0].is_left(),
-                 "attribute_list in struct_member is not Syntax_Node");
-    return node.children[0].left();
-  }
-
-  Syntax_Node const& get_struct_member_type(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::struct_member,
-                 "node is not struct_member");
-    ANTON_ASSERT(node.children.size() > (1),
-                 "struct_member has too few children");
-    ANTON_ASSERT(node.children[1].is_left(),
-                 "type in struct_member is not Syntax_Node");
-    return node.children[1].left();
-  }
-
-  Syntax_Token const& get_struct_member_identifier(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::struct_member,
-                 "node is not struct_member");
-    ANTON_ASSERT(node.children.size() > (2),
-                 "struct_member has too few children");
-    ANTON_ASSERT(node.children[2].is_right(),
-                 "identifier in struct_member is not Syntax_Token");
-    return node.children[2].right();
-  }
-
-  anton::Optional<Syntax_Node const&>
-  get_struct_member_initializer(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::struct_member,
-                 "node is not struct_member");
-    if(node.children.size() > (4)) {
-      ANTON_ASSERT(node.children[4].is_left(),
-                   "initializer in struct_member is not Syntax_Node");
-      return node.children[4].left();
-    } else {
-      return anton::null_optional;
-    }
   }
 
   Syntax_Node const& get_expr_if_condition(Syntax_Node const& node)

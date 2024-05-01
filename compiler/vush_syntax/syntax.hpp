@@ -33,6 +33,7 @@ namespace vush {
     kw_mut,
     kw_settings,
     kw_reinterpret,
+    kw_buffer,
     kw_fn,
     // separators
     tk_lbrace,
@@ -110,6 +111,9 @@ namespace vush {
     struct_member,
     struct_member_block,
 
+    buffer_field,
+    buffer_field_block,
+
     fn_parameter_if,
     fn_parameter,
     fn_parameter_list,
@@ -124,6 +128,7 @@ namespace vush {
     decl_if,
     decl_import,
     decl_struct,
+    decl_buffer,
     decl_settings,
     decl_function,
     decl_stage_function,

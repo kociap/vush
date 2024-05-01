@@ -20,9 +20,10 @@ namespace vush::ast {
     attribute,
     variable,
 
-    fn_parameter,
-
     decl_struct,
+    decl_buffer,
+
+    fn_parameter,
     decl_function,
     decl_stage_function,
 
@@ -399,12 +400,40 @@ namespace vush::ast {
     }
   };
 
+  struct Buffer_Field {
+    Attr_List attributes;
+    Identifier identifier;
+    Type* type;
+
+    constexpr Buffer_Field(Attr_List attributes, Identifier identifier,
+                           Type* type)
+      : attributes(attributes), identifier(identifier), type(type)
+    {
+    }
+  };
+
+  struct Decl_Buffer: public Node {
+    Attr_List attributes;
+    Identifier pass;
+    Identifier identifier;
+    Buffer_Field_List fields;
+
+    constexpr Decl_Buffer(Attr_List attributes, Identifier pass,
+                          Identifier identifier, Buffer_Field_List fields,
+                          Source_Info const& source_info)
+      : Node(source_info, Node_Kind::decl_buffer), attributes(attributes),
+        pass(pass), identifier(identifier), fields(fields)
+    {
+    }
+  };
+
   struct Fn_Parameter: public Node {
     Identifier identifier;
     Type* type;
     // Empty when the parameter has no source.
     // "in" when the parameter is a vertex input parameter.
     Identifier source;
+    Decl_Buffer* buffer = nullptr;
 
     constexpr Fn_Parameter(Identifier identifier, Type* type, Identifier source,
                            Source_Info const& source_info)

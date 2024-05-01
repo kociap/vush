@@ -77,11 +77,37 @@ syntax_nodes = [
         "members": [Syntax_Member(Node_Kind.node, "path", Lookup_Kind.index, 1)]
     },
     {
+        "syntax_name": "struct_member",
+        "members": [
+            Syntax_Member(Node_Kind.node, "attribute_list", Lookup_Kind.index, 0),
+            Syntax_Member(Node_Kind.node, "type", Lookup_Kind.index, 1),
+            Syntax_Member(Node_Kind.token, "identifier", Lookup_Kind.index, 2),
+            Syntax_Member(Node_Kind.node, "initializer", Lookup_Kind.index, 4, optional = True)
+        ]
+    },
+    {
         "syntax_name": "decl_struct",
         "members": [
             Syntax_Member(Node_Kind.node, "attribute_list", Lookup_Kind.index, 0),
             Syntax_Member(Node_Kind.token, "identifier", Lookup_Kind.index, 2),
             Syntax_Member(Node_Kind.node, "members", Lookup_Kind.index, 3)
+        ]
+    },
+    {
+        "syntax_name": "buffer_field",
+        "members": [
+            Syntax_Member(Node_Kind.node, "attribute_list", Lookup_Kind.index, 0),
+            Syntax_Member(Node_Kind.node, "type", Lookup_Kind.index, 1),
+            Syntax_Member(Node_Kind.token, "identifier", Lookup_Kind.index, 2),
+        ]
+    },
+    {
+        "syntax_name": "decl_buffer",
+        "members": [
+            Syntax_Member(Node_Kind.node, "attribute_list", Lookup_Kind.index, 0),
+            Syntax_Member(Node_Kind.token, "pass", Lookup_Kind.index, 2),
+            Syntax_Member(Node_Kind.token, "identifier", Lookup_Kind.index, 4),
+            Syntax_Member(Node_Kind.node, "fields", Lookup_Kind.index, 5)
         ]
     },
     {
@@ -119,15 +145,6 @@ syntax_nodes = [
             Syntax_Member(Node_Kind.node, "condition", Lookup_Kind.index, 1),
             Syntax_Member(Node_Kind.node, "then_branch", Lookup_Kind.index, 3),
             Syntax_Member(Node_Kind.node, "else_branch", Lookup_Kind.index, 7)
-        ]
-    },
-    {
-        "syntax_name": "struct_member",
-        "members": [
-            Syntax_Member(Node_Kind.node, "attribute_list", Lookup_Kind.index, 0),
-            Syntax_Member(Node_Kind.node, "type", Lookup_Kind.index, 1),
-            Syntax_Member(Node_Kind.token, "identifier", Lookup_Kind.index, 2),
-            Syntax_Member(Node_Kind.node, "initializer", Lookup_Kind.index, 4, optional = True)
         ]
     },
     {

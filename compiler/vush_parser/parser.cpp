@@ -662,6 +662,10 @@ namespace vush {
         return ANTON_MOV(*decl_struct);
       }
 
+      if(Optional decl_buffer = try_decl_buffer(attribute_list)) {
+        return ANTON_MOV(*decl_buffer);
+      }
+
       if(Optional decl_stage_function =
            try_decl_stage_function(attribute_list)) {
         return ANTON_MOV(*decl_stage_function);
@@ -818,11 +822,6 @@ namespace vush {
           break;
         }
 
-        // TODO: Unsure whether we should match eof here to end the loop once we
-        //       reach the end of the token stream. try_struct_member in theory
-        //       should error once it runs out of tokens to match ending the
-        //       loop.
-
         EXPECT_NODE(try_struct_member, snots);
       }
 
@@ -845,6 +844,72 @@ namespace vush {
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
       return Syntax_Node(Syntax_Node_Kind::decl_struct, ANTON_MOV(snots),
+                         source);
+    }
+
+    Optional<Syntax_Node> try_buffer_field()
+    {
+      Lexer_State const begin_state = _lexer.get_current_state();
+      Array<SNOT> snots{_allocator};
+      // TODO: Attribute list does not propagate errors correctly.
+      {
+        Syntax_Node attribute_list = try_attribute_list();
+        snots.push_back(ANTON_MOV(attribute_list));
+      }
+
+      EXPECT_NODE(try_type, snots);
+      EXPECT_TOKEN_SKIP(Token_Kind::identifier, "expected identifier"_sv,
+                        snots);
+
+      if(Optional tk_equals = skipmatch(Token_Kind::tk_equals)) {
+        snots.push_back(ANTON_MOV(*tk_equals));
+        EXPECT_NODE(try_expression, snots);
+      }
+
+      EXPECT_TOKEN_SKIP(Token_Kind::tk_semicolon, "expected ';'"_sv, snots);
+      Lexer_State const end_state = _lexer.get_current_state_noskip();
+      Source_Info const source = src_info(begin_state, end_state);
+      return Syntax_Node(Syntax_Node_Kind::buffer_field, ANTON_MOV(snots),
+                         source);
+    }
+
+    Optional<Syntax_Node> try_buffer_field_block()
+    {
+      Lexer_State const begin_state = _lexer.get_current_state();
+      Array<SNOT> snots{_allocator};
+      EXPECT_TOKEN(Token_Kind::tk_lbrace, "expected '{'"_sv, snots);
+      while(true) {
+        if(Optional tk_rbrace = skipmatch(Token_Kind::tk_rbrace)) {
+          snots.push_back(ANTON_MOV(*tk_rbrace));
+          break;
+        }
+
+        EXPECT_NODE(try_buffer_field, snots);
+      }
+
+      Lexer_State const end_state = _lexer.get_current_state_noskip();
+      Source_Info const source = src_info(begin_state, end_state);
+      return Syntax_Node{Syntax_Node_Kind::buffer_field_block, ANTON_MOV(snots),
+                         source};
+    }
+
+    Optional<Syntax_Node> try_decl_buffer(Syntax_Node& attribute_list)
+    {
+      Lexer_State const begin_state = _lexer.get_current_state();
+      Array<SNOT> snots{_allocator};
+      EXPECT_TOKEN(Token_Kind::kw_buffer, "expected 'buffer'"_sv, snots);
+      EXPECT_TOKEN_SKIP(Token_Kind::identifier, "expected identifier"_sv,
+                        snots);
+      EXPECT_TOKEN2_SKIP(Syntax_Node_Kind::tk_colon2, Token_Kind::tk_colon,
+                         Token_Kind::tk_colon, "expected '::'"_sv, snots);
+      EXPECT_TOKEN_SKIP(Token_Kind::identifier, "expected identifier"_sv,
+                        snots);
+      EXPECT_NODE(try_buffer_field_block, snots);
+
+      snots.insert(snots.begin(), ANTON_MOV(attribute_list));
+      Lexer_State const end_state = _lexer.get_current_state_noskip();
+      Source_Info const source = src_info(begin_state, end_state);
+      return Syntax_Node(Syntax_Node_Kind::decl_buffer, ANTON_MOV(snots),
                          source);
     }
 

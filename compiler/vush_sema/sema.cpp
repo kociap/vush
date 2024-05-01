@@ -26,11 +26,15 @@ namespace vush {
     Stmt_Ctx stmt;
   };
 
+  struct Namespace;
+
   enum struct Symbol_Kind {
     e_variable,
     e_parameter,
     e_struct,
+    e_buffer,
     e_overload_group,
+    e_namespace,
   };
 
   struct Symbol {
@@ -39,7 +43,9 @@ namespace vush {
       ast::Variable* value_variable;
       ast::Fn_Parameter* value_parameter;
       ast::Decl_Struct* value_struct;
+      ast::Decl_Buffer* value_buffer;
       ast::Overload_Group* value_overload_group;
+      Namespace* value_namespace;
     };
     Symbol_Kind kind;
 
@@ -60,9 +66,32 @@ namespace vush {
     {
     }
 
+    Symbol(anton::String_View identifier, ast::Decl_Buffer* value)
+      : identifier(identifier), value_buffer(value), kind(Symbol_Kind::e_buffer)
+    {
+    }
+
     Symbol(anton::String_View identifier, ast::Overload_Group* value)
       : identifier(identifier), value_overload_group(value),
         kind(Symbol_Kind::e_overload_group)
+    {
+    }
+
+    Symbol(anton::String_View identifier, Namespace* value)
+      : identifier(identifier), value_namespace(value),
+        kind(Symbol_Kind::e_namespace)
+    {
+    }
+  };
+
+  using Symbol_Table = Scoped_Map<anton::String_View, Symbol>;
+
+  struct Namespace {
+    ast::Identifier identifier;
+    Symbol_Table symtable;
+
+    Namespace(Allocator* allocator, ast::Identifier identifier)
+      : identifier(identifier), symtable(allocator)
     {
     }
   };
@@ -82,8 +111,6 @@ namespace vush {
 
     return anton::expected_value;
   }
-
-  using Symbol_Table = Scoped_Map<anton::String_View, Symbol>;
 
 #define RETURN_ON_FAIL(fn, ...)                                            \
   {                                                                        \
@@ -106,17 +133,17 @@ namespace vush {
       auto get_symbol_identifier_source =
         [](Symbol const& symbol) -> Source_Info {
         switch(symbol.kind) {
-        case Symbol_Kind::e_variable: {
+        case Symbol_Kind::e_variable:
           return symbol.value_variable->identifier.source_info;
-        }
 
-        case Symbol_Kind::e_parameter: {
+        case Symbol_Kind::e_parameter:
           return symbol.value_parameter->identifier.source_info;
-        }
 
-        case Symbol_Kind::e_struct: {
+        case Symbol_Kind::e_struct:
           return symbol.value_struct->identifier.source_info;
-        }
+
+        case Symbol_Kind::e_buffer:
+          return symbol.value_buffer->identifier.source_info;
 
         case Symbol_Kind::e_overload_group: {
           // Use the first overload as the source location.
@@ -125,8 +152,8 @@ namespace vush {
           return overload->identifier.source_info;
         }
 
-        default:
-          ANTON_UNREACHABLE("unknown symbol type");
+        case Symbol_Kind::e_namespace:
+          return symbol.value_namespace->identifier.source_info;
         }
       };
 
@@ -219,7 +246,8 @@ namespace vush {
 
       default:
         // TODO: Error.
-        return {anton::expected_error, Error()};
+        return {anton::expected_error,
+                err_unimplemented(ctx, type->source_info, __FILE__, __LINE__)};
       }
 
       type_struct->definition = symbol->value_struct;
@@ -437,9 +465,12 @@ namespace vush {
                 ctx, expr->source_info)};
     } break;
 
+    case Symbol_Kind::e_buffer:
     case Symbol_Kind::e_struct:
+    case Symbol_Kind::e_namespace:
       // TODO: Error.
-      return {anton::expected_error, Error()};
+      return {anton::expected_error,
+              err_unimplemented(ctx, expr->source_info, __FILE__, __LINE__)};
     }
   }
 
@@ -458,7 +489,9 @@ namespace vush {
       expr->overload_group = symbol->value_overload_group;
     } else {
       // TODO: Error.
-      return {anton::expected_error, Error()};
+      return {anton::expected_error,
+              err_unimplemented(ctx, expr->identifier.source_info, __FILE__,
+                                __LINE__)};
     }
 
     // Always evaluate all arguments before doing overload resolution. The
@@ -1264,6 +1297,36 @@ namespace vush {
   }
 
   [[nodiscard]] static anton::Expected<void, Error>
+  analyse_buffer(Context& ctx, Symbol_Table& symtable,
+                 ast::Decl_Buffer* const buffer)
+  {
+    // TODO: Validate out duplicate buffer attributes.
+
+    if(buffer->fields.size() == 0) {
+      // TODO: Error.
+      return {anton::expected_error,
+              err_unimplemented(ctx, buffer->identifier.source_info, __FILE__,
+                                __LINE__)};
+    }
+
+    anton::Flat_Hash_Map<anton::String_View, ast::Identifier> field_identifiers;
+    for(ast::Buffer_Field* const field: buffer->fields) {
+      RETURN_ON_FAIL(namebind_type, ctx, symtable, field->type);
+      // Validate out duplicate names.
+      auto iter = field_identifiers.find(field->identifier.value);
+      if(iter != field_identifiers.end()) {
+        return {
+          anton::expected_error,
+          err_unimplemented(ctx, iter->value.source_info, __FILE__, __LINE__)};
+      } else {
+        field_identifiers.emplace(field->identifier.value, field->identifier);
+      }
+    }
+
+    return anton::expected_value;
+  }
+
+  [[nodiscard]] static anton::Expected<void, Error>
   analyse_function(Context& ctx, Symbol_Table& symtable,
                    ast::Decl_Function* const fn)
   {
@@ -1275,11 +1338,6 @@ namespace vush {
 
     // We do not defcheck the identifier of the function because it has already
     // been added as an overloaded function.
-
-    // Validate the return type:
-    // - if the type is an array, it must be sized.
-    RETURN_ON_FAIL(namebind_type, ctx, symtable, fn->return_type);
-    RETURN_ON_FAIL(check_array_is_sized, ctx, fn->return_type);
 
     // Push a new scope for the function body and parameters.
     symtable.push_scope();
@@ -1295,10 +1353,78 @@ namespace vush {
       }
     }
 
+    // Validate the return type:
+    // - if the type is an array, it must be sized.
+    RETURN_ON_FAIL(namebind_type, ctx, symtable, fn->return_type);
+    RETURN_ON_FAIL(check_array_is_sized, ctx, fn->return_type);
+
     Sema_Context semactx{Stmt_Ctx::e_none};
     RETURN_ON_FAIL(analyse_statements, ctx, symtable, fn->body, semactx);
 
     symtable.pop_scope();
+    return anton::expected_value;
+  }
+
+  [[nodiscard]] static anton::Expected<void, Error>
+  analyse_parameter_source(Context& ctx, Symbol_Table& symtable,
+                           ast::Fn_Parameter* const p)
+  {
+    if(!ast::is_sourced_parameter(*p)) {
+      return anton::expected_value;
+    }
+
+    if(ast::is_vertex_input_parameter(*p)) {
+      return anton::expected_value;
+    }
+
+    anton::String_View const source = p->source.value;
+    Symbol const* const symbol = symtable.find_entry(source);
+    if(!symbol) {
+      return {anton::expected_error,
+              err_undefined_symbol(ctx, p->source.source_info)};
+    }
+
+    if(symbol->kind != Symbol_Kind::e_buffer) {
+      switch(symbol->kind) {
+      case Symbol_Kind::e_buffer:
+        // The above condition ensures that this case is unreachable, however,
+        // clang (and possibly others) cannot figure that out and complain about
+        // unhandled enumeration.
+        ANTON_UNREACHABLE("unreachable");
+
+      case Symbol_Kind::e_variable:
+      case Symbol_Kind::e_parameter:
+      case Symbol_Kind::e_overload_group:
+      case Symbol_Kind::e_struct:
+      case Symbol_Kind::e_namespace:
+        // TODO: Error.
+        return {
+          anton::expected_error,
+          err_unimplemented(ctx, p->source.source_info, __FILE__, __LINE__)};
+      }
+    }
+
+    p->buffer = symbol->value_buffer;
+
+    auto const field_iter = anton::find_if(
+      p->buffer->fields.begin(), p->buffer->fields.end(),
+      [identifier = p->identifier.value](ast::Buffer_Field const* const field) {
+        return field->identifier.value == identifier;
+      });
+    if(field_iter == p->buffer->fields.end()) {
+      // TODO: Error.
+      return {
+        anton::expected_error,
+        err_unimplemented(ctx, p->identifier.source_info, __FILE__, __LINE__)};
+    }
+
+    ast::Buffer_Field const* const field = *field_iter;
+    if(!ast::compare_types_equal(*field->type, *p->type)) {
+      // TODO: Error.
+      return {anton::expected_error,
+              err_unimplemented(ctx, p->type->source_info, __FILE__, __LINE__)};
+    }
+
     return anton::expected_value;
   }
 
@@ -1338,72 +1464,27 @@ namespace vush {
     } break;
     }
 
-    // Validate the return type:
-    // - vertex: must be builtin or struct.
-    // - fragment: must be builtin or struct.
-    // - compute: must be void.
-    {
-      RETURN_ON_FAIL(namebind_type, ctx, symtable, fn->return_type);
-      bool const void_return = ast::is_void(*fn->return_type);
-      bool const builtin_return =
-        fn->return_type->type_kind == ast::Type_Kind::type_builtin;
-      bool const struct_return =
-        fn->return_type->type_kind == ast::Type_Kind::type_struct;
-      switch(fn->stage.value) {
-      case Stage_Kind::vertex: {
-        if(!builtin_return && !struct_return) {
-          return {anton::expected_error,
-                  err_stage_return_must_be_builtin_or_struct(
-                    ctx, fn->pass.value, fn->stage.source_info,
-                    fn->return_type->source_info)};
-        }
-      } break;
-
-      case Stage_Kind::fragment: {
-        if(!builtin_return && !struct_return) {
-          return {anton::expected_error,
-                  err_stage_return_must_be_builtin_or_struct(
-                    ctx, fn->pass.value, fn->stage.source_info,
-                    fn->return_type->source_info)};
-        }
-      } break;
-
-      case Stage_Kind::compute: {
-        if(!void_return) {
-          return {anton::expected_error,
-                  err_compute_return_must_be_void(
-                    ctx, fn->pass.value, fn->return_type->source_info)};
-        }
-      } break;
-      }
-    }
-
     // Push a new scope for the function body and parameters.
     symtable.push_scope();
+    // We use the namespace's symtable for sources of the parameters.
+    Symbol const* const namespace_symbol = symtable.find_entry(fn->pass.value);
+    ANTON_ASSERT(namespace_symbol != nullptr,
+                 "pass namespace not in symbol table");
+    ANTON_ASSERT(namespace_symbol->kind == Symbol_Kind::e_namespace,
+                 "symbol for namespace is not namespace");
+    Symbol_Table& ns_symtable = namespace_symbol->value_namespace->symtable;
     // Validate parameters:
-    // - all parameters must be builtin or struct. Arrays are not supported yet.
-    // - vertex: only vertex input parameters and sourced parameters are allowed. vertex input
-    //   parameters must not be opaque.
-    // - fragment: all parameters must be sourced with the exception of the first one which might be
-    //   an ordinary parameter that is used as an input from the previous stage.
+    // - vertex: only vertex input parameters and sourced parameters are
+    //   allowed. vertex input parameters must not be opaque.
+    // - fragment: all parameters must be sourced with the exception of the
+    //   first one which might be an ordinary parameter that is used as an input
+    //   from the previous stage.
     // - compute: only sourced parameters are allowed.
     bool first = true;
     for(ast::Fn_Parameter* const parameter: fn->parameters) {
       RETURN_ON_FAIL(namebind_type, ctx, symtable, parameter->type);
       RETURN_ON_FAIL(add_symbol, ctx, symtable,
                      Symbol(parameter->identifier.value, parameter));
-      {
-        bool const builtin_type =
-          fn->return_type->type_kind == ast::Type_Kind::type_builtin;
-        bool const struct_type =
-          fn->return_type->type_kind == ast::Type_Kind::type_struct;
-        if(!builtin_type && !struct_type) {
-          return {anton::expected_error,
-                  err_stage_parameter_must_be_builtin_or_struct(
-                    ctx, parameter->type->source_info)};
-        }
-      }
-
       switch(fn->stage.value) {
       case Stage_Kind::vertex: {
         if(!ast::is_sourced_parameter(*parameter)) {
@@ -1455,7 +1536,49 @@ namespace vush {
       } break;
       }
 
+      RETURN_ON_FAIL(analyse_parameter_source, ctx, ns_symtable, parameter);
+
       first = false;
+    }
+
+    // Validate the return type:
+    // - vertex: must be builtin or struct.
+    // - fragment: must be builtin or struct.
+    // - compute: must be void.
+    {
+      RETURN_ON_FAIL(namebind_type, ctx, symtable, fn->return_type);
+      bool const void_return = ast::is_void(*fn->return_type);
+      bool const builtin_return =
+        fn->return_type->type_kind == ast::Type_Kind::type_builtin;
+      bool const struct_return =
+        fn->return_type->type_kind == ast::Type_Kind::type_struct;
+      switch(fn->stage.value) {
+      case Stage_Kind::vertex: {
+        if(!builtin_return && !struct_return) {
+          return {anton::expected_error,
+                  err_stage_return_must_be_builtin_or_struct(
+                    ctx, fn->pass.value, fn->stage.source_info,
+                    fn->return_type->source_info)};
+        }
+      } break;
+
+      case Stage_Kind::fragment: {
+        if(!builtin_return && !struct_return) {
+          return {anton::expected_error,
+                  err_stage_return_must_be_builtin_or_struct(
+                    ctx, fn->pass.value, fn->stage.source_info,
+                    fn->return_type->source_info)};
+        }
+      } break;
+
+      case Stage_Kind::compute: {
+        if(!void_return) {
+          return {anton::expected_error,
+                  err_compute_return_must_be_void(
+                    ctx, fn->pass.value, fn->return_type->source_info)};
+        }
+      } break;
+      }
     }
 
     Sema_Context semactx{Stmt_Ctx::e_none};
@@ -1545,6 +1668,26 @@ namespace vush {
                        Symbol(node->identifier.value, node));
       } break;
 
+      case ast::Node_Kind::decl_buffer: {
+        auto const node = static_cast<ast::Decl_Buffer*>(decl);
+        ast::Identifier const pass = node->pass;
+        Symbol const* ns = symtable.find_entry(pass.value);
+        if(!ns) {
+          auto const pns =
+            VUSH_ALLOCATE(Namespace, ctx.allocator, ctx.allocator, pass);
+          ns = symtable.add_entry(pass.value, Symbol(pass.value, pns));
+        } else {
+          if(ns->kind != Symbol_Kind::e_namespace) {
+            // TODO: Error.
+            return {
+              anton::expected_error,
+              err_unimplemented(ctx, pass.source_info, __FILE__, __LINE__)};
+          }
+        }
+        RETURN_ON_FAIL(add_symbol, ctx, ns->value_namespace->symtable,
+                       Symbol(node->identifier.value, node));
+      } break;
+
       case ast::Node_Kind::decl_function: {
         auto const node = static_cast<ast::Decl_Function*>(decl);
         auto const i = groups.find(node->identifier.value);
@@ -1565,6 +1708,19 @@ namespace vush {
         }
       } break;
 
+      case ast::Node_Kind::decl_stage_function: {
+        auto const node = static_cast<ast::Decl_Stage_Function*>(decl);
+        ast::Identifier const pass = node->pass;
+        // Create namespace if does not exist. We want to ensure that each stage
+        // has its namespace's symbol table.
+        Symbol const* ns = symtable.find_entry(pass.value);
+        if(!ns) {
+          auto const pns =
+            VUSH_ALLOCATE(Namespace, ctx.allocator, ctx.allocator, pass);
+          ns = symtable.add_entry(pass.value, Symbol(pass.value, pns));
+        }
+      } break;
+
       default:
         // Nothing.
         break;
@@ -1582,6 +1738,11 @@ namespace vush {
       case ast::Node_Kind::decl_struct: {
         auto const decl = static_cast<ast::Decl_Struct*>(node);
         RETURN_ON_FAIL(analyse_struct, ctx, symtable, decl);
+      } break;
+
+      case ast::Node_Kind::decl_buffer: {
+        auto const decl = static_cast<ast::Decl_Buffer*>(node);
+        RETURN_ON_FAIL(analyse_buffer, ctx, symtable, decl);
       } break;
 
       case ast::Node_Kind::decl_function: {

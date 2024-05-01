@@ -43,10 +43,11 @@ namespace vush {
     // Adds an entry to the current scope. Adding an entry might invalidate
     // pointers previously returned by find_entry.
     //
-    void add_entry(Key const& key, Value const& value)
+    Value const* add_entry(Key const& key, Value const& value)
     {
       Entry_Map& map = scopes.back();
-      map.emplace(key, value);
+      auto iterator = map.emplace(key, value);
+      return &iterator->value;
     }
 
     // push_scope

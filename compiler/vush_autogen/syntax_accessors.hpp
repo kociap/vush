@@ -42,11 +42,33 @@ namespace vush {
   [[nodiscard]] Syntax_Node const&
   get_decl_import_path(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const&
+  get_struct_member_attribute_list(Syntax_Node const& node);
+  [[nodiscard]] Syntax_Node const&
+  get_struct_member_type(Syntax_Node const& node);
+  [[nodiscard]] Syntax_Token const&
+  get_struct_member_identifier(Syntax_Node const& node);
+  [[nodiscard]] anton::Optional<Syntax_Node const&>
+  get_struct_member_initializer(Syntax_Node const& node);
+  [[nodiscard]] Syntax_Node const&
   get_decl_struct_attribute_list(Syntax_Node const& node);
   [[nodiscard]] Syntax_Token const&
   get_decl_struct_identifier(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const&
   get_decl_struct_members(Syntax_Node const& node);
+  [[nodiscard]] Syntax_Node const&
+  get_buffer_field_attribute_list(Syntax_Node const& node);
+  [[nodiscard]] Syntax_Node const&
+  get_buffer_field_type(Syntax_Node const& node);
+  [[nodiscard]] Syntax_Token const&
+  get_buffer_field_identifier(Syntax_Node const& node);
+  [[nodiscard]] Syntax_Node const&
+  get_decl_buffer_attribute_list(Syntax_Node const& node);
+  [[nodiscard]] Syntax_Token const&
+  get_decl_buffer_pass(Syntax_Node const& node);
+  [[nodiscard]] Syntax_Token const&
+  get_decl_buffer_identifier(Syntax_Node const& node);
+  [[nodiscard]] Syntax_Node const&
+  get_decl_buffer_fields(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const&
   get_decl_function_attribute_list(Syntax_Node const& node);
   [[nodiscard]] Syntax_Token const&
@@ -81,14 +103,6 @@ namespace vush {
   get_fn_parameter_if_then_branch(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const&
   get_fn_parameter_if_else_branch(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_struct_member_attribute_list(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_struct_member_type(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Token const&
-  get_struct_member_identifier(Syntax_Node const& node);
-  [[nodiscard]] anton::Optional<Syntax_Node const&>
-  get_struct_member_initializer(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const&
   get_expr_if_condition(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const&

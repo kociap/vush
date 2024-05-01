@@ -91,6 +91,8 @@ namespace vush {
       return Token_Kind::kw_settings;
     case anton::hash("reinterpret"_sv7):
       return Token_Kind::kw_reinterpret;
+    case anton::hash("buffer"_sv7):
+      return Token_Kind::kw_buffer;
     case anton::hash("fn"_sv7):
       return Token_Kind::kw_fn;
     default:
