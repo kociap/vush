@@ -320,9 +320,9 @@ namespace vush {
     return error;
   }
 
-  Error err_duplicate_struct_member(Context const& ctx,
-                                    Source_Info const& first_member_name,
-                                    Source_Info const& second_member_name)
+  Error err_duplicate_struct_field(Context const& ctx,
+                                   Source_Info const& first_member_name,
+                                   Source_Info const& second_member_name)
   {
     Error error = error_from_source(ctx.allocator, second_member_name);
     anton::String_View const source =

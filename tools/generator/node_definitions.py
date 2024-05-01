@@ -77,7 +77,7 @@ syntax_nodes = [
         "members": [Syntax_Member(Node_Kind.node, "path", Lookup_Kind.index, 1)]
     },
     {
-        "syntax_name": "struct_member",
+        "syntax_name": "struct_field",
         "members": [
             Syntax_Member(Node_Kind.node, "attribute_list", Lookup_Kind.index, 0),
             Syntax_Member(Node_Kind.node, "type", Lookup_Kind.index, 1),

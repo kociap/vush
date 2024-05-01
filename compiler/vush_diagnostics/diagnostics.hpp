@@ -96,9 +96,9 @@ namespace vush {
   [[nodiscard]] Error err_empty_struct(Context const& ctx,
                                        Source_Info const& struct_name);
   [[nodiscard]] Error
-  err_duplicate_struct_member(Context const& ctx,
-                              Source_Info const& first_member_name,
-                              Source_Info const& second_member_name);
+  err_duplicate_struct_field(Context const& ctx,
+                             Source_Info const& first_member_name,
+                             Source_Info const& second_member_name);
   [[nodiscard]] Error err_opaque_type_in_struct(Context const& ctx,
                                                 Source_Info const& type);
   [[nodiscard]] Error

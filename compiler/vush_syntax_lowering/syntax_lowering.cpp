@@ -844,7 +844,7 @@ namespace vush {
 
     auto& members =
       *VUSH_ALLOCATE(Array<ast::Struct_Field*>, ctx.allocator, ctx.allocator);
-    Syntax_Node const& members_node = get_decl_struct_members(node);
+    Syntax_Node const& members_node = get_decl_struct_fields(node);
     for(SNOT const& member_snot: members_node.children) {
       if(!member_snot.is_left()) {
         continue;
@@ -853,18 +853,18 @@ namespace vush {
       Syntax_Node const& member_node = member_snot.left();
       anton::Expected<ast::Attr_List, Error> attribute_list =
         transform_attribute_list(ctx,
-                                 get_struct_member_attribute_list(member_node));
+                                 get_struct_field_attribute_list(member_node));
       if(!attribute_list) {
         return {anton::expected_error, ANTON_MOV(attribute_list.error())};
       }
 
       ast::Identifier const identifier =
-        transform_identifier(ctx, get_struct_member_identifier(member_node));
+        transform_identifier(ctx, get_struct_field_identifier(member_node));
       RETURN_ON_FAIL(type, transform_type, ctx,
-                     get_struct_member_type(member_node));
+                     get_struct_field_type(member_node));
       ast::Expr* initializer = nullptr;
       anton::Optional initializer_node =
-        get_struct_member_initializer(member_node);
+        get_struct_field_initializer(member_node);
       if(initializer_node) {
         RETURN_ON_FAIL(result, transform_expr, ctx, initializer_node.value());
         initializer = result.value();

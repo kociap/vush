@@ -785,7 +785,7 @@ namespace vush {
       return Syntax_Node(Syntax_Node_Kind::variable, ANTON_MOV(snots), source);
     }
 
-    Optional<Syntax_Node> try_struct_member()
+    Optional<Syntax_Node> try_struct_field()
     {
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
@@ -807,11 +807,11 @@ namespace vush {
       EXPECT_TOKEN_SKIP(Token_Kind::tk_semicolon, "expected ';'"_sv, snots);
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return Syntax_Node(Syntax_Node_Kind::struct_member, ANTON_MOV(snots),
+      return Syntax_Node(Syntax_Node_Kind::struct_field, ANTON_MOV(snots),
                          source);
     }
 
-    Optional<Syntax_Node> try_struct_member_block()
+    Optional<Syntax_Node> try_struct_field_block()
     {
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
@@ -822,13 +822,13 @@ namespace vush {
           break;
         }
 
-        EXPECT_NODE(try_struct_member, snots);
+        EXPECT_NODE(try_struct_field, snots);
       }
 
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return Syntax_Node{Syntax_Node_Kind::struct_member_block,
-                         ANTON_MOV(snots), source};
+      return Syntax_Node{Syntax_Node_Kind::struct_field_block, ANTON_MOV(snots),
+                         source};
     }
 
     Optional<Syntax_Node> try_decl_struct(Syntax_Node& attribute_list)
@@ -838,7 +838,7 @@ namespace vush {
       EXPECT_TOKEN(Token_Kind::kw_struct, "expected 'struct'"_sv, snots);
       EXPECT_TOKEN_SKIP(Token_Kind::identifier, "expected identifier"_sv,
                         snots);
-      EXPECT_NODE(try_struct_member_block, snots);
+      EXPECT_NODE(try_struct_field_block, snots);
 
       snots.insert(snots.begin(), ANTON_MOV(attribute_list));
       Lexer_State const end_state = _lexer.get_current_state_noskip();

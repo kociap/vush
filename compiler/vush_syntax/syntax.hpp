@@ -108,8 +108,8 @@ namespace vush {
 
     variable,
 
-    struct_member,
-    struct_member_block,
+    struct_field,
+    struct_field_block,
 
     buffer_field,
     buffer_field_block,

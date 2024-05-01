@@ -42,19 +42,19 @@ namespace vush {
   [[nodiscard]] Syntax_Node const&
   get_decl_import_path(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const&
-  get_struct_member_attribute_list(Syntax_Node const& node);
+  get_struct_field_attribute_list(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const&
-  get_struct_member_type(Syntax_Node const& node);
+  get_struct_field_type(Syntax_Node const& node);
   [[nodiscard]] Syntax_Token const&
-  get_struct_member_identifier(Syntax_Node const& node);
+  get_struct_field_identifier(Syntax_Node const& node);
   [[nodiscard]] anton::Optional<Syntax_Node const&>
-  get_struct_member_initializer(Syntax_Node const& node);
+  get_struct_field_initializer(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const&
   get_decl_struct_attribute_list(Syntax_Node const& node);
   [[nodiscard]] Syntax_Token const&
   get_decl_struct_identifier(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const&
-  get_decl_struct_members(Syntax_Node const& node);
+  get_decl_struct_fields(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const&
   get_buffer_field_attribute_list(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const&

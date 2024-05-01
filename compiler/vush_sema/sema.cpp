@@ -1228,13 +1228,13 @@ namespace vush {
     return anton::expected_value;
   }
 
-  // analyse_struct_member_type
+  // analyse_struct_field_type
   // Validate that a type is a complete type, i.e. not opaque, and is not a
   // recursive definition.
   //
   [[nodiscard]] static anton::Expected<void, Error>
-  analyse_struct_member_type(Context const& ctx, ast::Type const& type,
-                             ast::Identifier const& struct_identifier)
+  analyse_struct_field_type(Context const& ctx, ast::Type const& type,
+                            ast::Identifier const& struct_identifier)
   {
     switch(type.type_kind) {
     case ast::Type_Kind::type_builtin: {
@@ -1259,7 +1259,7 @@ namespace vush {
 
     case ast::Type_Kind::type_array: {
       auto t = static_cast<ast::Type_Array const&>(type);
-      return analyse_struct_member_type(ctx, *t.base, struct_identifier);
+      return analyse_struct_field_type(ctx, *t.base, struct_identifier);
     }
     }
   }
@@ -1277,14 +1277,14 @@ namespace vush {
       member_identifiers;
     for(ast::Struct_Field* const field: dstruct->fields) {
       RETURN_ON_FAIL(namebind_type, ctx, symtable, field->type);
-      RETURN_ON_FAIL(analyse_struct_member_type, ctx, *field->type,
+      RETURN_ON_FAIL(analyse_struct_field_type, ctx, *field->type,
                      dstruct->identifier);
       // Validate out duplicate names.
       auto iter = member_identifiers.find(field->identifier.value);
       if(iter != member_identifiers.end()) {
         return {anton::expected_error,
-                err_duplicate_struct_member(ctx, iter->value.source_info,
-                                            field->identifier.source_info)};
+                err_duplicate_struct_field(ctx, iter->value.source_info,
+                                           field->identifier.source_info)};
       } else {
         member_identifiers.emplace(field->identifier.value, field->identifier);
       }
