@@ -8,6 +8,7 @@ class Builtin_Operator:
         self.identifier = identifier
         self.signature = signature
 
+# Based on The OpenGL Shading Language, Version 4.60, Section 5.9.
 builtin_operator_definitions = (
     # Two operands are scalars.
     Builtin_Operator("operator+", (Builtin_Type.type_int, Builtin_Type.type_int, Builtin_Type.type_int)),
@@ -577,6 +578,34 @@ builtin_operator_definitions = (
     Builtin_Operator("operator<<", (Builtin_Type.type_uvec4, Builtin_Type.type_uvec4, Builtin_Type.type_ivec4)),
     Builtin_Operator("operator<<", (Builtin_Type.type_uvec4, Builtin_Type.type_uvec4, Builtin_Type.type_int)),
     Builtin_Operator("operator<<", (Builtin_Type.type_uvec4, Builtin_Type.type_uvec4, Builtin_Type.type_uint)),
+    Builtin_Operator("operator>>", (Builtin_Type.type_int, Builtin_Type.type_int, Builtin_Type.type_int)),
+    Builtin_Operator("operator>>", (Builtin_Type.type_int, Builtin_Type.type_int, Builtin_Type.type_uint)),
+    Builtin_Operator("operator>>", (Builtin_Type.type_uint, Builtin_Type.type_uint, Builtin_Type.type_uint)),
+    Builtin_Operator("operator>>", (Builtin_Type.type_uint, Builtin_Type.type_uint, Builtin_Type.type_int)),
+    Builtin_Operator("operator>>", (Builtin_Type.type_ivec2, Builtin_Type.type_ivec2, Builtin_Type.type_ivec2)),
+    Builtin_Operator("operator>>", (Builtin_Type.type_ivec2, Builtin_Type.type_ivec2, Builtin_Type.type_uvec2)),
+    Builtin_Operator("operator>>", (Builtin_Type.type_ivec2, Builtin_Type.type_ivec2, Builtin_Type.type_int)),
+    Builtin_Operator("operator>>", (Builtin_Type.type_ivec2, Builtin_Type.type_ivec2, Builtin_Type.type_uint)),
+    Builtin_Operator("operator>>", (Builtin_Type.type_ivec3, Builtin_Type.type_ivec3, Builtin_Type.type_ivec3)),
+    Builtin_Operator("operator>>", (Builtin_Type.type_ivec3, Builtin_Type.type_ivec3, Builtin_Type.type_uvec3)),
+    Builtin_Operator("operator>>", (Builtin_Type.type_ivec3, Builtin_Type.type_ivec3, Builtin_Type.type_int)),
+    Builtin_Operator("operator>>", (Builtin_Type.type_ivec3, Builtin_Type.type_ivec3, Builtin_Type.type_uint)),
+    Builtin_Operator("operator>>", (Builtin_Type.type_ivec4, Builtin_Type.type_ivec4, Builtin_Type.type_ivec4)),
+    Builtin_Operator("operator>>", (Builtin_Type.type_ivec4, Builtin_Type.type_ivec4, Builtin_Type.type_uvec4)),
+    Builtin_Operator("operator>>", (Builtin_Type.type_ivec4, Builtin_Type.type_ivec4, Builtin_Type.type_int)),
+    Builtin_Operator("operator>>", (Builtin_Type.type_ivec4, Builtin_Type.type_ivec4, Builtin_Type.type_uint)),
+    Builtin_Operator("operator>>", (Builtin_Type.type_uvec2, Builtin_Type.type_uvec2, Builtin_Type.type_uvec2)),
+    Builtin_Operator("operator>>", (Builtin_Type.type_uvec2, Builtin_Type.type_uvec2, Builtin_Type.type_ivec2)),
+    Builtin_Operator("operator>>", (Builtin_Type.type_uvec2, Builtin_Type.type_uvec2, Builtin_Type.type_int)),
+    Builtin_Operator("operator>>", (Builtin_Type.type_uvec2, Builtin_Type.type_uvec2, Builtin_Type.type_uint)),
+    Builtin_Operator("operator>>", (Builtin_Type.type_uvec3, Builtin_Type.type_uvec3, Builtin_Type.type_uvec3)),
+    Builtin_Operator("operator>>", (Builtin_Type.type_uvec3, Builtin_Type.type_uvec3, Builtin_Type.type_ivec3)),
+    Builtin_Operator("operator>>", (Builtin_Type.type_uvec3, Builtin_Type.type_uvec3, Builtin_Type.type_int)),
+    Builtin_Operator("operator>>", (Builtin_Type.type_uvec3, Builtin_Type.type_uvec3, Builtin_Type.type_uint)),
+    Builtin_Operator("operator>>", (Builtin_Type.type_uvec4, Builtin_Type.type_uvec4, Builtin_Type.type_uvec4)),
+    Builtin_Operator("operator>>", (Builtin_Type.type_uvec4, Builtin_Type.type_uvec4, Builtin_Type.type_ivec4)),
+    Builtin_Operator("operator>>", (Builtin_Type.type_uvec4, Builtin_Type.type_uvec4, Builtin_Type.type_int)),
+    Builtin_Operator("operator>>", (Builtin_Type.type_uvec4, Builtin_Type.type_uvec4, Builtin_Type.type_uint)),
     #
     Builtin_Operator("operator&", (Builtin_Type.type_int, Builtin_Type.type_int, Builtin_Type.type_int)),
     Builtin_Operator("operator&", (Builtin_Type.type_uint, Builtin_Type.type_uint, Builtin_Type.type_uint)),

@@ -4,6 +4,9 @@ from builtin_functions import Param_Type, Array_Type, Return_Placeholder, return
 from builtin_type import Builtin_Type, stringify_builtin_type
 from builtin_operator import Builtin_Operator, builtin_operator_definitions
 
+def get_static_type_builtin_id(name):
+    return f"builtin_{name}"
+
 def generate_alloc_identifier(value):
     return f"ast::Identifier{{\"{value}\"_sv, {{}}}}"
 
@@ -14,7 +17,7 @@ def generate_alloc_type(t):
     if isinstance(t, Array_Type):
         return f"VUSH_ALLOCATE(ast::Type_Array, allocator, Source_Info{{}}, {generate_alloc_type(t.base)}, {generate_alloc_lt_integer(t.size)})"
     elif isinstance(t, Builtin_Type):
-        return f"ALLOC_BUILTIN(e_{stringify_builtin_type(t)})"
+        return f"&{get_static_type_builtin_id(stringify_builtin_type(t))}"
     else:
         raise TypeError("invalid type")
 
@@ -104,9 +107,6 @@ def write_get_builtin_functions_declarations(file, functions):
   }}
 """)
 
-def get_static_type_builtin_id(name):
-    return f"builtin_{name}"
-
 def write_get_builtin_types(file):
     file.write(f"""\
   ast::Type_Builtin const* get_builtin_type(ast::Type_Builtin_Kind const type) {{
@@ -132,8 +132,8 @@ def write_preamble_builtin_functions(file):
 #include <vush_ast/ast.hpp>
 #include <vush_core/memory.hpp>
 
-#define ALLOC_BUILTIN(value) \\
-    VUSH_ALLOCATE(ast::Type_Builtin, allocator, Source_Info{}, ast::Type_Builtin_Kind::value)
+#define BUILTIN_TYPE(identifier, value) \\
+    static ast::Type_Builtin identifier(Source_Info{}, ast::Type_Builtin_Kind::value)
 #define ALLOC_PARAM(name, type) VUSH_ALLOCATE(ast::Fn_Parameter, allocator, ast::Identifier{name, {}}, type, ast::Identifier{""_sv, {}}, Source_Info{})
 #define ALLOC_ARRAY_PARAM(...) VUSH_ALLOCATE(Array<ast::Fn_Parameter*>, allocator, allocator, anton::variadic_construct __VA_OPT__(,) __VA_ARGS__)
 #define ALLOC_FUNCTION(identifier, return_type, parameter_array) \\
@@ -184,6 +184,10 @@ def main():
 
     file = open("./compiler/vush_autogen/builtin_functions.cpp", "w")
     write_preamble_builtin_functions(file)
+
+    for t in Builtin_Type:
+        identifier = stringify_builtin_type(t)
+        file.write(f"BUILTIN_TYPE({get_static_type_builtin_id(identifier)}, e_{identifier});\n")
 
     write_get_builtin_functions_declarations(file, functions)
 
