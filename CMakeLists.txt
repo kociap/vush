@@ -1,14 +1,6 @@
 cmake_minimum_required(VERSION 3.18)
 include(FetchContent)
 
-# Add anton_core
-FetchContent_Declare(
-  anton_core
-  GIT_REPOSITORY https://github.com/kociap/anton_core.git
-  GIT_TAG 28358bd4d2135113957bf0a5eb70b8f2c022a904
-)
-FetchContent_MakeAvailable(anton_core)
-
 project(vush CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -110,10 +102,24 @@ elseif(VUSH_COMPILER_MSVC)
   )
 endif()
 
-set(ANTON_BUILD_DEBUG $<CONFIG:Debug>)
-set(ANTON_ITERATOR_DEBUG $<CONFIG:Debug>)
-set(ANTON_OPTIONAL_CHECK_VALUE $<CONFIG:Debug>)
 set(ANTON_UNREACHABLE_ASSERTS ON)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  set(ANTON_BUILD_DEBUG ON)
+  set(ANTON_ITERATOR_DEBUG ON)
+  set(ANTON_OPTIONAL_CHECK_VALUE ON)
+else()
+  set(ANTON_BUILD_DEBUG OFF)
+  set(ANTON_ITERATOR_DEBUG OFF)
+  set(ANTON_OPTIONAL_CHECK_VALUE OFF)
+endif()
+
+# Add anton_core
+FetchContent_Declare(
+  anton_core
+  GIT_REPOSITORY https://github.com/kociap/anton_core.git
+  GIT_TAG 28358bd4d2135113957bf0a5eb70b8f2c022a904
+)
+FetchContent_MakeAvailable(anton_core)
 
 add_library(vush)
 set_target_properties(vush PROPERTIES CXX_STANDARD 20 CXX_EXTENSIONS OFF)
