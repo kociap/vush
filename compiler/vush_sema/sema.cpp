@@ -120,6 +120,12 @@ namespace vush {
     }                                                                      \
   }
 
+#define RETURN_ON_FAIL_VAR(variable, fn, ...)                    \
+  auto variable = fn(__VA_ARGS__);                               \
+  if(!variable) {                                                \
+    return {anton::expected_error, ANTON_MOV(variable.error())}; \
+  }
+
   // add_symbol
   // Checks whether a symbol already exists and if not, adds it to the symbol
   // table. Otherwise returns an error diagnostic.
@@ -582,16 +588,14 @@ namespace vush {
     case ast::Type_Kind::type_builtin: {
       auto const type = static_cast<ast::Type_Builtin const*>(generic_type);
       if(is_vector(*type)) {
-        auto field_result = evaluate_vector_field(ctx, *type, expr->field);
-        if(field_result) {
-          expr->evaluated_type = field_result.value();
-        }
+        RETURN_ON_FAIL_VAR(field_result, evaluate_vector_field, ctx, *type,
+                           expr->field);
+        expr->evaluated_type = field_result.value();
         return anton::expected_value;
       } else if(is_matrix(*type)) {
-        auto field_result = evaluate_matrix_field(ctx, *type, expr->field);
-        if(field_result) {
-          expr->evaluated_type = field_result.value();
-        }
+        RETURN_ON_FAIL_VAR(field_result, evaluate_matrix_field, ctx, *type,
+                           expr->field);
+        expr->evaluated_type = field_result.value();
         return anton::expected_value;
       } else {
         return {anton::expected_error, err_builtin_type_has_no_member_named(
@@ -966,6 +970,8 @@ namespace vush {
     RETURN_ON_FAIL(analyse_expression, ctx, symtable, node->lhs);
     RETURN_ON_FAIL(analyse_expression, ctx, symtable, node->rhs);
 
+    // TODO: Arithmetic assignments are only allowed on arithmetic types.
+    // TODO: Opaque types are non-assignable.
     // TODO: We have to verify that the type we are assigning to is not an
     //       opaque type or a struct with opaque types.
     ast::Type const* const lhs_type = node->lhs->evaluated_type;

@@ -98,9 +98,35 @@ namespace vush::ast {
   };
 
   [[nodiscard]] bool compare_types_equal(Type const& lhs, Type const& rhs);
+
+  // is_integer_based
+  // Check whether the type's fundamental operations operate on integer
+  // numbers.
+  //
+  [[nodiscard]] bool is_integer_based(Type const& type);
+
+  // is_signed_integer_based
+  // Check whether the type's fundamental operations operate on signed integer
+  // numbers.
+  //
+  [[nodiscard]] bool is_signed_integer_based(Type const& type);
+
+  // is_unsigned_integer_based
+  // Check whether the type's fundamental operations operate on unsigned integer
+  // numbers.
+  //
+  [[nodiscard]] bool is_unsigned_integer_based(Type const& type);
+
+  // is_fp_based
+  // Check whether the type's fundamental operations operate on floating point
+  // numbers.
+  //
+  [[nodiscard]] bool is_fp_based(Type const& type);
+
   [[nodiscard]] bool is_void(Type const& type);
   [[nodiscard]] bool is_scalar(Type const& type);
   [[nodiscard]] bool is_integer(Type const& type);
+  [[nodiscard]] bool is_fp(Type const& type);
   [[nodiscard]] bool is_signed_integer(Type const& type);
   [[nodiscard]] bool is_unsigned_integer(Type const& type);
   [[nodiscard]] bool is_vector(Type const& type);
@@ -109,6 +135,9 @@ namespace vush::ast {
   [[nodiscard]] bool is_vector4(Type const& type);
   [[nodiscard]] bool is_bool_vector(Type const& type);
   [[nodiscard]] bool is_integer_vector(Type const& type);
+  [[nodiscard]] bool is_signed_integer_vector(Type const& type);
+  [[nodiscard]] bool is_unsigned_integer_vector(Type const& type);
+  [[nodiscard]] bool is_fp_vector(Type const& type);
   [[nodiscard]] bool is_i32_vector(Type const& type);
   [[nodiscard]] bool is_u32_vector(Type const& type);
   [[nodiscard]] bool is_f32_vector(Type const& type);
@@ -162,120 +191,124 @@ namespace vush::ast {
     e_dmat3x4,
     e_dmat4x2,
     e_dmat4x3,
-    e_sampler1D,
-    e_texture1D,
+    // Image types.
     e_image1D,
-    e_sampler1DShadow,
-    e_sampler1DArray,
-    e_texture1DArray,
     e_image1DArray,
-    e_sampler1DArrayShadow,
-    e_sampler2D,
-    e_texture2D,
     e_image2D,
-    e_sampler2DShadow,
-    e_sampler2DArray,
-    e_texture2DArray,
     e_image2DArray,
+    e_image2DMS,
+    e_image2DMSArray,
+    e_image2DRect,
+    e_image3D,
+    e_imageBuffer,
+    e_imageCube,
+    e_imageCubeArray,
+    e_iimage1D,
+    e_iimage1DArray,
+    e_iimage2D,
+    e_iimage2DArray,
+    e_iimage2DMS,
+    e_iimage2DMSArray,
+    e_iimage2DRect,
+    e_iimage3D,
+    e_iimageBuffer,
+    e_iimageCube,
+    e_iimageCubeArray,
+    e_uimage1D,
+    e_uimage1DArray,
+    e_uimage2D,
+    e_uimage2DArray,
+    e_uimage2DMS,
+    e_uimage2DMSArray,
+    e_uimage2DRect,
+    e_uimage3D,
+    e_uimageBuffer,
+    e_uimageCube,
+    e_uimageCubeArray,
+    // Sampler types.
+    e_sampler,
+    e_sampler1D,
+    e_sampler1DArray,
+    e_sampler1DArrayShadow,
+    e_sampler1DShadow,
+    e_sampler2D,
+    e_sampler2DArray,
     e_sampler2DArrayShadow,
     e_sampler2DMS,
-    e_texture2DMS,
-    e_image2DMS,
     e_sampler2DMSArray,
-    e_texture2DMSArray,
-    e_image2DMSArray,
     e_sampler2DRect,
-    e_texture2DRect,
-    e_image2DRect,
     e_sampler2DRectShadow,
+    e_sampler2DShadow,
     e_sampler3D,
-    e_texture3D,
-    e_image3D,
-    e_samplerCube,
-    e_textureCube,
-    e_imageCube,
-    e_samplerCubeShadow,
-    e_samplerCubeArray,
-    e_textureCubeArray,
-    e_imageCubeArray,
-    e_samplerCubeArrayShadow,
     e_samplerBuffer,
+    e_samplerCube,
+    e_samplerCubeArray,
+    e_samplerCubeArrayShadow,
+    e_samplerCubeShadow,
+    e_samplerShadow,
+    e_isampler1D,
+    e_isampler1DArray,
+    e_isampler2D,
+    e_isampler2DArray,
+    e_isampler2DMS,
+    e_isampler2DMSArray,
+    e_isampler2DRect,
+    e_isampler3D,
+    e_isamplerBuffer,
+    e_isamplerCube,
+    e_isamplerCubeArray,
+    e_usampler1D,
+    e_usampler1DArray,
+    e_usampler2D,
+    e_usampler2DArray,
+    e_usampler2DMS,
+    e_usampler2DMSArray,
+    e_usampler2DRect,
+    e_usampler3D,
+    e_usamplerBuffer,
+    e_usamplerCube,
+    e_usamplerCubeArray,
+    // Texture types.
+    e_texture1D,
+    e_texture1DArray,
+    e_texture2D,
+    e_texture2DArray,
+    e_texture2DMS,
+    e_texture2DMSArray,
+    e_texture2DRect,
+    e_texture3D,
     e_textureBuffer,
-    e_imageBuffer,
+    e_textureCube,
+    e_textureCubeArray,
+    e_itexture1D,
+    e_itexture1DArray,
+    e_itexture2D,
+    e_itexture2DArray,
+    e_itexture2DMS,
+    e_itexture2DMSArray,
+    e_itexture2DRect,
+    e_itexture3D,
+    e_itextureBuffer,
+    e_itextureCube,
+    e_itextureCubeArray,
+    e_utexture1D,
+    e_utexture1DArray,
+    e_utexture2D,
+    e_utexture2DArray,
+    e_utexture2DMS,
+    e_utexture2DMSArray,
+    e_utexture2DRect,
+    e_utexture3D,
+    e_utextureBuffer,
+    e_utextureCube,
+    e_utextureCubeArray,
+    // Subpass types.
     e_subpassInput,
     e_subpassInputMS,
-    e_isampler1D,
-    e_itexture1D,
-    e_iimage1D,
-    e_isampler1DArray,
-    e_itexture1DArray,
-    e_iimage1DArray,
-    e_isampler2D,
-    e_itexture2D,
-    e_iimage2D,
-    e_isampler2DArray,
-    e_itexture2DArray,
-    e_iimage2DArray,
-    e_isampler2DMS,
-    e_itexture2DMS,
-    e_iimage2DMS,
-    e_isampler2DMSArray,
-    e_itexture2DMSArray,
-    e_iimage2DMSArray,
-    e_isampler2DRect,
-    e_itexture2DRect,
-    e_iimage2DRect,
-    e_isampler3D,
-    e_itexture3D,
-    e_iimage3D,
-    e_isamplerCube,
-    e_itextureCube,
-    e_iimageCube,
-    e_isamplerCubeArray,
-    e_itextureCubeArray,
-    e_iimageCubeArray,
-    e_isamplerBuffer,
-    e_itextureBuffer,
-    e_iimageBuffer,
     e_isubpassInput,
     e_isubpassInputMS,
-    e_usampler1D,
-    e_utexture1D,
-    e_uimage1D,
-    e_usampler1DArray,
-    e_utexture1DArray,
-    e_uimage1DArray,
-    e_usampler2D,
-    e_utexture2D,
-    e_uimage2D,
-    e_usampler2DArray,
-    e_utexture2DArray,
-    e_uimage2DArray,
-    e_usampler2DMS,
-    e_utexture2DMS,
-    e_uimage2DMS,
-    e_usampler2DMSArray,
-    e_utexture2DMSArray,
-    e_uimage2DMSArray,
-    e_usampler2DRect,
-    e_utexture2DRect,
-    e_uimage2DRect,
-    e_usampler3D,
-    e_utexture3D,
-    e_uimage3D,
-    e_usamplerCube,
-    e_utextureCube,
-    e_uimageCube,
-    e_usamplerCubeArray,
-    e_utextureCubeArray,
-    e_uimageCubeArray,
-    e_usamplerBuffer,
-    e_utextureBuffer,
-    e_uimageBuffer,
     e_usubpassInput,
     e_usubpassInputMS,
-    e_sampler,
-    e_samplerShadow,
   };
 
   [[nodiscard]] anton::Optional<Type_Builtin_Kind>
@@ -616,6 +649,13 @@ namespace vush::ast {
     {
     }
   };
+
+  // vector_swizzle_char_to_index
+  // Convert swizzle character to index. Allowed swizzle characters are
+  //   x, y, z, w, r, g, b, a, s, t, u, v
+  // Other chars return -1, but are considered invalid.
+  //
+  [[nodiscard]] i32 vector_swizzle_char_to_index(char8 c);
 
   struct Expr_Index: public Expr {
     Expr* base;

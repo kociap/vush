@@ -3,6 +3,7 @@
 #include <anton/flat_hash_map.hpp>
 
 #include <vush_ast/ast_fwd.hpp>
+#include <vush_ir/ir.hpp>
 
 namespace vush {
   // get_builtin_functions_declarations
@@ -24,4 +25,10 @@ namespace vush {
   //
   [[nodiscard]] ast::Type_Builtin const*
   get_builtin_type(ast::Type_Builtin_Kind type);
+
+  // select_ext
+  //
+  ir::Instr_ext_call* select_ext(Allocator* const allocator, i64 const id,
+                                 ir::Type* const type,
+                                 ast::Expr_Call const* const expr);
 } // namespace vush

@@ -7,10 +7,31 @@
 namespace vush::ast {
   using namespace anton::literals;
 
+  bool is_integer_based(Type const& type)
+  {
+    return is_integer_vector(type) || is_integer(type);
+  }
+
+  bool is_signed_integer_based(Type const& type)
+  {
+    return is_signed_integer_vector(type) || is_signed_integer(type);
+  }
+
+  bool is_unsigned_integer_based(Type const& type)
+  {
+    return is_unsigned_integer_vector(type) || is_unsigned_integer(type);
+  }
+
+  bool is_fp_based(Type const& type)
+  {
+    return is_matrix(type) || is_fp_vector(type) || is_fp(type);
+  }
+
   bool is_void(Type const& type)
   {
     return type.type_kind == Type_Kind::type_builtin &&
-           static_cast<Type_Builtin const&>(type).value == Type_Builtin_Kind::e_void;
+           static_cast<Type_Builtin const&>(type).value ==
+             Type_Builtin_Kind::e_void;
   }
 
   bool is_scalar(Type const& type)
@@ -43,6 +64,14 @@ namespace vush::ast {
     Type_Builtin const& builtin = static_cast<Type_Builtin const&>(type);
     return type.type_kind == Type_Kind::type_builtin &&
            builtin.value == Type_Builtin_Kind::e_uint;
+  }
+
+  bool is_fp(Type const& type)
+  {
+    Type_Builtin const& builtin = static_cast<Type_Builtin const&>(type);
+    return type.type_kind == Type_Kind::type_builtin &&
+           (builtin.value == Type_Builtin_Kind::e_float ||
+            builtin.value == Type_Builtin_Kind::e_double);
   }
 
   bool is_vector(Type const& type)
@@ -117,6 +146,40 @@ namespace vush::ast {
     Type_Builtin_Kind const v = static_cast<Type_Builtin const&>(type).value;
     return v == Kind::e_ivec2 || v == Kind::e_ivec3 || v == Kind::e_ivec4 ||
            v == Kind::e_uvec2 || v == Kind::e_uvec3 || v == Kind::e_uvec4;
+  }
+
+  bool is_signed_integer_vector(Type const& type)
+  {
+    if(type.type_kind != Type_Kind::type_builtin) {
+      return false;
+    }
+
+    using Kind = Type_Builtin_Kind;
+    Type_Builtin_Kind const v = static_cast<Type_Builtin const&>(type).value;
+    return v == Kind::e_ivec2 || v == Kind::e_ivec3 || v == Kind::e_ivec4;
+  }
+
+  bool is_unsigned_integer_vector(Type const& type)
+  {
+    if(type.type_kind != Type_Kind::type_builtin) {
+      return false;
+    }
+
+    using Kind = Type_Builtin_Kind;
+    Type_Builtin_Kind const v = static_cast<Type_Builtin const&>(type).value;
+    return v == Kind::e_uvec2 || v == Kind::e_uvec3 || v == Kind::e_uvec4;
+  }
+
+  bool is_fp_vector(Type const& type)
+  {
+    if(type.type_kind != Type_Kind::type_builtin) {
+      return false;
+    }
+
+    using Kind = Type_Builtin_Kind;
+    Type_Builtin_Kind const v = static_cast<Type_Builtin const&>(type).value;
+    return v == Kind::e_vec2 || v == Kind::e_vec3 || v == Kind::e_vec4 ||
+           v == Kind::e_dvec2 || v == Kind::e_dvec3 || v == Kind::e_dvec4;
   }
 
   bool is_i32_vector(Type const& type)
@@ -689,6 +752,39 @@ namespace vush::ast {
       return compare_integer_literals(*lhs_v.size, *rhs_v.size) ==
              anton::Strong_Ordering::equal;
     }
+    }
+  }
+
+  i32 vector_swizzle_char_to_index(char8 const c)
+  {
+    // Swizzles:
+    // xyzw
+    // rgba
+    // stuv
+    switch(c) {
+    case 'x':
+    case 'r':
+    case 's':
+      return 0;
+
+    case 'y':
+    case 'g':
+    case 't':
+      return 1;
+
+    case 'z':
+    case 'b':
+    case 'u':
+      return 2;
+
+    case 'w':
+    case 'a':
+    case 'v':
+      return 3;
+
+    default:
+      ANTON_ASSERT(false, "invalid swizzle char");
+      return -1;
     }
   }
 

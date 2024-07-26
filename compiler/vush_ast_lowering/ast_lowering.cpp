@@ -1,10 +1,13 @@
 #include <vush_ast_lowering/ast_lowering.hpp>
 
+#include <anton/expected.hpp>
 #include <anton/iterators/zip.hpp>
 #include <anton/math/math.hpp>
+#include <anton/ranges.hpp>
 #include <anton/string7_view.hpp>
 
 #include <vush_ast/ast.hpp>
+#include <vush_autogen/builtin_symbols.hpp>
 #include <vush_core/memory.hpp>
 #include <vush_core/scoped_map.hpp>
 #include <vush_ir/ir.hpp>
@@ -23,6 +26,7 @@ namespace vush {
 
     ir::Basic_Block* nearest_converge_block = nullptr;
     ir::Basic_Block* nearest_continuation_block = nullptr;
+    ast::Type const* current_function_return_type = nullptr;
 
   private:
     i64 id = 0;
@@ -58,20 +62,775 @@ namespace vush {
     }
   };
 
-  [[nodiscard]] static ir::Type* convert_ast_to_ir_type(ast::Type const* const)
+  [[nodiscard]] static bool have_equal_element_count(ir::Type const& lhs,
+                                                     ir::Type const& rhs)
   {
-    return nullptr;
+    bool const lhs_single_element = ir::is_int_type(lhs) || ir::is_fp_type(lhs);
+    bool const rhs_single_element = ir::is_int_type(rhs) || ir::is_fp_type(rhs);
+    if(lhs_single_element && rhs_single_element) {
+      return true;
+    }
+    if(lhs.kind == ir::Type_Kind::e_vec && rhs.kind == ir::Type_Kind::e_vec) {
+      auto const lhs_elements = static_cast<ir::Type_Vec const&>(lhs).rows;
+      auto const rhs_elements = static_cast<ir::Type_Vec const&>(rhs).rows;
+      return lhs_elements == rhs_elements;
+    }
+    if(lhs.kind == ir::Type_Kind::e_mat && rhs.kind == ir::Type_Kind::e_mat) {
+      auto lhs_mat = static_cast<ir::Type_Mat const&>(lhs);
+      auto rhs_mat = static_cast<ir::Type_Mat const&>(rhs);
+      return lhs_mat.rows == rhs_mat.rows && lhs_mat.columns == rhs_mat.columns;
+    }
+    return false;
   }
 
-  [[nodiscard]] static ir::Instr* generate_conversion(Lowering_Context& ctx,
-                                                      Builder& builder,
-                                                      ir::Value* value,
-                                                      ast::Type* target_type)
+  [[nodiscard]] static i32 get_bit_count(ir::Type const& type)
   {
-    return nullptr;
+    ir::Type_Kind kind = type.kind;
+    if(type.kind == ir::Type_Kind::e_vec) {
+      kind = static_cast<ir::Type_Vec const&>(type).element_kind;
+    } else if(type.kind == ir::Type_Kind::e_mat) {
+      kind = static_cast<ir::Type_Mat const&>(type).element_kind;
+    }
+    switch(kind) {
+    case ir::Type_Kind::e_bool:
+      return 1;
+    case ir::Type_Kind::e_int8:
+      return 8;
+    case ir::Type_Kind::e_int16:
+      return 16;
+    case ir::Type_Kind::e_int32:
+      return 32;
+    case ir::Type_Kind::e_fp16:
+      return 16;
+    case ir::Type_Kind::e_fp32:
+      return 32;
+    case ir::Type_Kind::e_fp64:
+      return 64;
+    default:
+      return 0;
+    }
   }
 
-  [[nodiscard]] static i32 get_field_index(ast::Decl_Struct* const decl,
+  [[nodiscard]] static ir::Type*
+  convert_ast_to_ir_type(Lowering_Context& ctx, ast::Type const* const type)
+  {
+    switch(type->type_kind) {
+    case ast::Type_Kind::type_builtin: {
+      auto const ast_type = static_cast<ast::Type_Builtin const*>(type);
+      switch(ast_type->value) {
+      case ast::Type_Builtin_Kind::e_void:
+        return ir::get_type_void();
+      case ast::Type_Builtin_Kind::e_bool:
+        return ir::get_type_bool();
+      case ast::Type_Builtin_Kind::e_int:
+        return ir::get_type_int32();
+      case ast::Type_Builtin_Kind::e_uint:
+        return ir::get_type_int32();
+      case ast::Type_Builtin_Kind::e_float:
+        return ir::get_type_fp32();
+      case ast::Type_Builtin_Kind::e_double:
+        return ir::get_type_fp64();
+      case ast::Type_Builtin_Kind::e_vec2:
+        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_fp32,
+                             2);
+      case ast::Type_Builtin_Kind::e_vec3:
+        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_fp32,
+                             3);
+      case ast::Type_Builtin_Kind::e_vec4:
+        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_fp32,
+                             4);
+      case ast::Type_Builtin_Kind::e_dvec2:
+        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_fp64,
+                             2);
+      case ast::Type_Builtin_Kind::e_dvec3:
+        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_fp64,
+                             3);
+      case ast::Type_Builtin_Kind::e_dvec4:
+        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_fp64,
+                             4);
+      case ast::Type_Builtin_Kind::e_bvec2:
+        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_bool,
+                             2);
+      case ast::Type_Builtin_Kind::e_bvec3:
+        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_bool,
+                             3);
+      case ast::Type_Builtin_Kind::e_bvec4:
+        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_bool,
+                             4);
+      case ast::Type_Builtin_Kind::e_ivec2:
+      case ast::Type_Builtin_Kind::e_uvec2:
+        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator,
+                             ir::Type_Kind::e_int32, 2);
+      case ast::Type_Builtin_Kind::e_ivec3:
+      case ast::Type_Builtin_Kind::e_uvec3:
+        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator,
+                             ir::Type_Kind::e_int32, 3);
+      case ast::Type_Builtin_Kind::e_ivec4:
+      case ast::Type_Builtin_Kind::e_uvec4:
+        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator,
+                             ir::Type_Kind::e_int32, 4);
+      case ast::Type_Builtin_Kind::e_mat2:
+        return VUSH_ALLOCATE(ir::Type_Mat, ctx.allocator, ir::Type_Kind::e_fp32,
+                             2, 2);
+      case ast::Type_Builtin_Kind::e_mat3:
+        return VUSH_ALLOCATE(ir::Type_Mat, ctx.allocator, ir::Type_Kind::e_fp32,
+                             3, 3);
+      case ast::Type_Builtin_Kind::e_mat4:
+        return VUSH_ALLOCATE(ir::Type_Mat, ctx.allocator, ir::Type_Kind::e_fp32,
+                             4, 4);
+      case ast::Type_Builtin_Kind::e_mat2x3:
+        return VUSH_ALLOCATE(ir::Type_Mat, ctx.allocator, ir::Type_Kind::e_fp32,
+                             2, 3);
+      case ast::Type_Builtin_Kind::e_mat2x4:
+        return VUSH_ALLOCATE(ir::Type_Mat, ctx.allocator, ir::Type_Kind::e_fp32,
+                             2, 4);
+      case ast::Type_Builtin_Kind::e_mat3x2:
+        return VUSH_ALLOCATE(ir::Type_Mat, ctx.allocator, ir::Type_Kind::e_fp32,
+                             3, 2);
+      case ast::Type_Builtin_Kind::e_mat3x4:
+        return VUSH_ALLOCATE(ir::Type_Mat, ctx.allocator, ir::Type_Kind::e_fp32,
+                             3, 4);
+      case ast::Type_Builtin_Kind::e_mat4x2:
+        return VUSH_ALLOCATE(ir::Type_Mat, ctx.allocator, ir::Type_Kind::e_fp32,
+                             4, 2);
+      case ast::Type_Builtin_Kind::e_mat4x3:
+        return VUSH_ALLOCATE(ir::Type_Mat, ctx.allocator, ir::Type_Kind::e_fp32,
+                             4, 3);
+      case ast::Type_Builtin_Kind::e_dmat2:
+        return VUSH_ALLOCATE(ir::Type_Mat, ctx.allocator, ir::Type_Kind::e_fp64,
+                             2, 2);
+      case ast::Type_Builtin_Kind::e_dmat3:
+        return VUSH_ALLOCATE(ir::Type_Mat, ctx.allocator, ir::Type_Kind::e_fp64,
+                             3, 3);
+      case ast::Type_Builtin_Kind::e_dmat4:
+        return VUSH_ALLOCATE(ir::Type_Mat, ctx.allocator, ir::Type_Kind::e_fp64,
+                             4, 4);
+      case ast::Type_Builtin_Kind::e_dmat2x3:
+        return VUSH_ALLOCATE(ir::Type_Mat, ctx.allocator, ir::Type_Kind::e_fp64,
+                             2, 3);
+      case ast::Type_Builtin_Kind::e_dmat2x4:
+        return VUSH_ALLOCATE(ir::Type_Mat, ctx.allocator, ir::Type_Kind::e_fp64,
+                             2, 4);
+      case ast::Type_Builtin_Kind::e_dmat3x2:
+        return VUSH_ALLOCATE(ir::Type_Mat, ctx.allocator, ir::Type_Kind::e_fp64,
+                             3, 2);
+      case ast::Type_Builtin_Kind::e_dmat3x4:
+        return VUSH_ALLOCATE(ir::Type_Mat, ctx.allocator, ir::Type_Kind::e_fp64,
+                             3, 4);
+      case ast::Type_Builtin_Kind::e_dmat4x2:
+        return VUSH_ALLOCATE(ir::Type_Mat, ctx.allocator, ir::Type_Kind::e_fp64,
+                             4, 2);
+      case ast::Type_Builtin_Kind::e_dmat4x3:
+        return VUSH_ALLOCATE(ir::Type_Mat, ctx.allocator, ir::Type_Kind::e_fp64,
+                             4, 3);
+      case ast::Type_Builtin_Kind::e_image1D:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_1D,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_image1DArray:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_1D, true,
+                             false);
+      case ast::Type_Builtin_Kind::e_image2D:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_2D,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_image2DArray:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_2D, true,
+                             false);
+      case ast::Type_Builtin_Kind::e_image2DMS:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_MS,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_image2DMSArray:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_MS, true,
+                             false);
+      case ast::Type_Builtin_Kind::e_image2DRect:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_rect,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_image3D:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_3D,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_imageBuffer:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_buffer,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_imageCube:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_cube,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_imageCubeArray:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_cube,
+                             true, false);
+      case ast::Type_Builtin_Kind::e_iimage1D:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_1D,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_iimage1DArray:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_1D,
+                             true, false);
+      case ast::Type_Builtin_Kind::e_iimage2D:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_2D,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_iimage2DArray:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_2D,
+                             true, false);
+      case ast::Type_Builtin_Kind::e_iimage2DMS:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_MS,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_iimage2DMSArray:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_MS,
+                             true, false);
+      case ast::Type_Builtin_Kind::e_iimage2DRect:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_rect,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_iimage3D:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_3D,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_iimageBuffer:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_buffer,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_iimageCube:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_cube,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_iimageCubeArray:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_cube,
+                             true, false);
+      case ast::Type_Builtin_Kind::e_uimage1D:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_1D,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_uimage1DArray:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_1D,
+                             true, false);
+      case ast::Type_Builtin_Kind::e_uimage2D:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_2D,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_uimage2DArray:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_2D,
+                             true, false);
+      case ast::Type_Builtin_Kind::e_uimage2DMS:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_MS,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_uimage2DMSArray:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_MS,
+                             true, false);
+      case ast::Type_Builtin_Kind::e_uimage2DRect:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_rect,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_uimage3D:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_3D,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_uimageBuffer:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_buffer,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_uimageCube:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_cube,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_uimageCubeArray:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_cube,
+                             true, false);
+      case ast::Type_Builtin_Kind::e_sampler:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_1D,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_samplerBuffer:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_buffer,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_samplerCube:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_cube,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_samplerCubeArray:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_cube,
+                             true, false);
+      case ast::Type_Builtin_Kind::e_samplerCubeArrayShadow:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_cube,
+                             true, true);
+      case ast::Type_Builtin_Kind::e_samplerCubeShadow:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_cube,
+                             false, true);
+      case ast::Type_Builtin_Kind::e_samplerShadow:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_1D,
+                             false, true);
+      case ast::Type_Builtin_Kind::e_sampler1D:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_1D,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_sampler1DArray:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_1D, true,
+                             false);
+      case ast::Type_Builtin_Kind::e_sampler1DArrayShadow:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_1D, true,
+                             true);
+      case ast::Type_Builtin_Kind::e_sampler1DShadow:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_1D,
+                             false, true);
+      case ast::Type_Builtin_Kind::e_sampler2D:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_2D,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_sampler2DArray:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_2D, true,
+                             false);
+      case ast::Type_Builtin_Kind::e_sampler2DArrayShadow:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_2D, true,
+                             true);
+      case ast::Type_Builtin_Kind::e_sampler2DMS:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_MS,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_sampler2DMSArray:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_MS, true,
+                             true);
+      case ast::Type_Builtin_Kind::e_sampler2DRect:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_rect,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_sampler2DRectShadow:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_rect,
+                             false, true);
+      case ast::Type_Builtin_Kind::e_sampler2DShadow:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_2D,
+                             false, true);
+      case ast::Type_Builtin_Kind::e_sampler3D:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_3D,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_isampler1D:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_1D,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_isampler1DArray:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_1D,
+                             true, false);
+      case ast::Type_Builtin_Kind::e_isampler2D:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_2D,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_isampler2DArray:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_2D,
+                             true, false);
+      case ast::Type_Builtin_Kind::e_isampler2DMS:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_MS,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_isampler2DMSArray:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_MS,
+                             true, false);
+      case ast::Type_Builtin_Kind::e_isampler2DRect:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_rect,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_isampler3D:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_3D,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_isamplerBuffer:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_buffer,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_isamplerCube:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_cube,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_isamplerCubeArray:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_cube,
+                             true, false);
+      case ast::Type_Builtin_Kind::e_usampler1D:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_1D,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_usampler1DArray:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_1D,
+                             true, false);
+      case ast::Type_Builtin_Kind::e_usampler2D:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_2D,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_usampler2DArray:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_2D,
+                             true, false);
+      case ast::Type_Builtin_Kind::e_usampler2DMS:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_MS,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_usampler2DMSArray:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_MS,
+                             true, false);
+      case ast::Type_Builtin_Kind::e_usampler2DRect:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_rect,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_usampler3D:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_3D,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_usamplerBuffer:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_buffer,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_usamplerCube:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_cube,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_usamplerCubeArray:
+        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_cube,
+                             true, false);
+      case ast::Type_Builtin_Kind::e_texture1D:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_1D,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_texture1DArray:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_1D, true,
+                             false);
+      case ast::Type_Builtin_Kind::e_texture2D:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_2D,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_texture2DArray:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_2D, true,
+                             false);
+      case ast::Type_Builtin_Kind::e_texture2DMS:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_MS,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_texture2DMSArray:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_MS, true,
+                             false);
+      case ast::Type_Builtin_Kind::e_texture2DRect:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_rect,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_texture3D:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_3D,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_textureBuffer:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_buffer,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_textureCube:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_cube,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_textureCubeArray:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_cube,
+                             true, false);
+      case ast::Type_Builtin_Kind::e_itexture1D:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_1D,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_itexture1DArray:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_1D,
+                             true, false);
+      case ast::Type_Builtin_Kind::e_itexture2D:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_2D,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_itexture2DArray:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_2D,
+                             true, false);
+      case ast::Type_Builtin_Kind::e_itexture2DMS:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_MS,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_itexture2DMSArray:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_MS,
+                             true, false);
+      case ast::Type_Builtin_Kind::e_itexture2DRect:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_rect,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_itexture3D:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_3D,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_itextureBuffer:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_buffer,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_itextureCube:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_cube,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_itextureCubeArray:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_cube,
+                             true, false);
+      case ast::Type_Builtin_Kind::e_utexture1D:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_1D,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_utexture1DArray:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_1D,
+                             true, false);
+      case ast::Type_Builtin_Kind::e_utexture2D:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_2D,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_utexture2DArray:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_2D,
+                             true, false);
+      case ast::Type_Builtin_Kind::e_utexture2DMS:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_MS,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_utexture2DMSArray:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_MS,
+                             true, false);
+      case ast::Type_Builtin_Kind::e_utexture2DRect:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_rect,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_utexture3D:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_3D,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_utextureBuffer:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_buffer,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_utextureCube:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_cube,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_utextureCubeArray:
+        return VUSH_ALLOCATE(ir::Type_Texture, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_cube,
+                             true, false);
+      case ast::Type_Builtin_Kind::e_subpassInput:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_fp32, ir::Sampler_Dim::e_subpass,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_subpassInputMS:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_fp32,
+                             ir::Sampler_Dim::e_subpass_MS, false, false);
+      case ast::Type_Builtin_Kind::e_isubpassInput:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_subpass,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_isubpassInputMS:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_int32,
+                             ir::Sampler_Dim::e_subpass_MS, false, false);
+      case ast::Type_Builtin_Kind::e_usubpassInput:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_int32, ir::Sampler_Dim::e_subpass,
+                             false, false);
+      case ast::Type_Builtin_Kind::e_usubpassInputMS:
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
+                             ir::Type_Kind::e_int32,
+                             ir::Sampler_Dim::e_subpass_MS, false, false);
+      }
+    }
+
+    case ast::Type_Kind::type_struct: {
+      auto const ast_type = static_cast<ast::Type_Struct const*>(type);
+      auto const struct_definition = ast_type->definition;
+      auto const composite =
+        VUSH_ALLOCATE(ir::Type_Composite, ctx.allocator, ctx.allocator,
+                      struct_definition->identifier.value);
+      for(auto const field: struct_definition->fields) {
+        auto const field_type = convert_ast_to_ir_type(ctx, field->type);
+        composite->elements.push_back(field_type);
+      }
+      return composite;
+    }
+
+    case ast::Type_Kind::type_array: {
+      auto const ast_type = static_cast<ast::Type_Array const*>(type);
+      auto const base_type = convert_ast_to_ir_type(ctx, ast_type->base);
+      i64 size = -1;
+      if(ast_type->size != nullptr) {
+        size = ast::get_lt_integer_value_as_u32(*ast_type->size);
+      }
+      auto const array =
+        VUSH_ALLOCATE(ir::Type_Array, ctx.allocator, base_type, size);
+      return array;
+    }
+    }
+  }
+
+  [[nodiscard]] static anton::Expected<ir::Value*, Error> generate_conversion(
+    Lowering_Context& ctx, Builder& builder, ir::Value* const value,
+    ast::Type const* const target_type, ast::Type const* const source_type,
+    Source_Info const& source_info)
+  {
+    if(ast::compare_types_equal(*target_type, *source_type)) {
+      return {anton::expected_value, value};
+    }
+
+    ir::Type* const source_ir_type = value->type;
+    switch(target_type->type_kind) {
+    case ast::Type_Kind::type_builtin: {
+      bool const target_is_unsigned_int =
+        ast::is_unsigned_integer_based(*target_type);
+      bool const target_is_signed_int =
+        ast::is_signed_integer_based(*target_type);
+      bool const target_is_int = target_is_signed_int || target_is_unsigned_int;
+      bool const source_is_unsigned_int =
+        ast::is_unsigned_integer_based(*source_type);
+      bool const source_is_signed_int =
+        ast::is_signed_integer_based(*source_type);
+      bool const source_is_int = source_is_signed_int || source_is_unsigned_int;
+      auto const target_ir_type = convert_ast_to_ir_type(ctx, target_type);
+      if(target_is_int && source_is_int) {
+        // Both types are (signed/unsigned) integers. They might either be
+        // different size (trunc/[sz]ext) or same size (nothing to do).
+        if(!have_equal_element_count(*target_ir_type, *source_ir_type)) {
+          // TODO: Error.
+          return {anton::expected_error, Error()};
+        }
+        i32 const source_bits = get_bit_count(*source_ir_type);
+        i32 const target_bits = get_bit_count(*target_ir_type);
+        if(target_bits < source_bits) {
+          auto const instr =
+            make_instr_cvt_trunc(ctx.allocator, ctx.get_next_id(),
+                                 target_ir_type, value, source_info);
+          builder.insert(instr);
+          return {anton::expected_value, instr};
+        } else if(target_bits > source_bits) {
+          ir::Instr* instr = nullptr;
+          if(source_is_signed_int) {
+            instr = make_instr_cvt_sext(ctx.allocator, ctx.get_next_id(),
+                                        target_ir_type, value, source_info);
+          } else {
+            instr = make_instr_cvt_zext(ctx.allocator, ctx.get_next_id(),
+                                        target_ir_type, value, source_info);
+          }
+          builder.insert(instr);
+          return {anton::expected_value, instr};
+        } else {
+          return {anton::expected_value, value};
+        }
+      }
+
+      bool const target_is_fp = ast::is_fp_based(*target_type);
+      bool const source_is_fp = ast::is_fp_based(*source_type);
+      if(target_is_fp && source_is_fp) {
+        // Both types are floating point. They might either be different size
+        // (trunc/ext) or same size (nothing to do).
+        if(!have_equal_element_count(*target_ir_type, *source_ir_type)) {
+          // TODO: Error.
+          return {anton::expected_error, Error()};
+        }
+        i32 const source_bits = get_bit_count(*source_ir_type);
+        i32 const target_bits = get_bit_count(*target_ir_type);
+        if(target_bits < source_bits) {
+          auto const instr =
+            make_instr_cvt_fptrunc(ctx.allocator, ctx.get_next_id(),
+                                   target_ir_type, value, source_info);
+          builder.insert(instr);
+          return {anton::expected_value, instr};
+        } else if(target_bits > source_bits) {
+          auto const instr =
+            make_instr_cvt_fpext(ctx.allocator, ctx.get_next_id(),
+                                 target_ir_type, value, source_info);
+          builder.insert(instr);
+          return {anton::expected_value, instr};
+        } else {
+          return {anton::expected_value, value};
+        }
+      }
+
+      if(target_is_fp && source_is_int) {
+        // Conversion from int to fp.
+        ir::Instr* instr = nullptr;
+        if(source_is_signed_int) {
+          instr = ir::make_instr_cvt_si2fp(ctx.allocator, ctx.get_next_id(),
+                                           target_ir_type, value, source_info);
+        } else {
+          instr = ir::make_instr_cvt_ui2fp(ctx.allocator, ctx.get_next_id(),
+                                           target_ir_type, value, source_info);
+        }
+        builder.insert(instr);
+        return {anton::expected_value, instr};
+      }
+
+      if(target_is_int && source_is_fp) {
+        // Conversion from fp to int.
+        ir::Instr* instr = nullptr;
+        if(source_is_signed_int) {
+          instr = ir::make_instr_cvt_fp2si(ctx.allocator, ctx.get_next_id(),
+                                           target_ir_type, value, source_info);
+        } else {
+          instr = ir::make_instr_cvt_fp2ui(ctx.allocator, ctx.get_next_id(),
+                                           target_ir_type, value, source_info);
+        }
+        builder.insert(instr);
+        return {anton::expected_value, instr};
+      }
+
+      // TODO: Non-convertible error.
+      return {anton::expected_error, Error()};
+    } break;
+
+    case ast::Type_Kind::type_struct:
+    case ast::Type_Kind::type_array:
+      // TODO: Non-convertible error.
+      return {anton::expected_error, Error()};
+    }
+  }
+
+  [[nodiscard]] static i32 get_field_index(ast::Decl_Struct const* const decl,
                                            anton::String_View const identifier)
   {
     i32 index = 0;
@@ -109,14 +868,14 @@ namespace vush {
   address_expr_field(Lowering_Context& ctx, Builder& builder,
                      ast::Expr_Field const* const expr)
   {
-    ANTON_ASSERT(expr->base->evaluated_type->type_kind ==
-                   ast::Type_Kind::type_struct,
+    auto const base_eval_type = expr->base->evaluated_type;
+    ANTON_ASSERT(base_eval_type->type_kind == ast::Type_Kind::type_struct,
                  "cannot address fields of a non-struct type");
-    ast::Type_Struct const* const base_type =
-      static_cast<ast::Type_Struct const*>(expr->base->evaluated_type);
-    ir::Type* const addressed_type = convert_ast_to_ir_type(base_type);
+    auto const base_type = static_cast<ast::Type_Struct const*>(base_eval_type);
+    ir::Type* const addressed_type = convert_ast_to_ir_type(ctx, base_type);
     ir::Instr* const address = get_address(ctx, builder, expr->base);
     i32 const index = get_field_index(base_type->definition, expr->field.value);
+    ANTON_ASSERT(index >= 0, "type has no field");
     ir::Value* const index_value = ir::make_constant_i32(ctx.allocator, index);
     ir::Instr* const getptr =
       ir::make_instr_getptr(ctx.allocator, ctx.get_next_id(), addressed_type,
@@ -130,7 +889,7 @@ namespace vush {
                      ast::Expr_Index const* const expr)
   {
     ir::Type* const addressed_type =
-      convert_ast_to_ir_type(expr->base->evaluated_type);
+      convert_ast_to_ir_type(ctx, expr->base->evaluated_type);
     ir::Instr* const address = get_address(ctx, builder, expr->base);
     ir::Value* const index = lower_expression(ctx, builder, expr->index);
     ir::Instr* const getptr =
@@ -247,48 +1006,11 @@ namespace vush {
     }
   }
 
-  // vector_swizzle_char_to_index
-  // Convert swizzle character to index. Allowed swizzle characters are
-  //   x, y, z, w, r, g, b, a, s, t, u, v
-  // Other chars result in undefined behaviour.
-  //
-  [[nodiscard]] static i32 vector_swizzle_char_to_index(char8 const c)
-  {
-    // Swizzles:
-    // xyzw
-    // rgba
-    // stuv
-    switch(c) {
-    case 'x':
-    case 'r':
-    case 's':
-      return 0;
-
-    case 'y':
-    case 'g':
-    case 't':
-      return 1;
-
-    case 'z':
-    case 'b':
-    case 'u':
-      return 2;
-
-    case 'w':
-    case 'a':
-    case 'v':
-      return 3;
-
-    default:
-      ANTON_UNREACHABLE("unreachable");
-    }
-  }
-
   [[nodiscard]] static ir::Instr*
   lower_expr_identifier(Lowering_Context& ctx, Builder& builder,
                         ast::Expr_Identifier const* const expr)
   {
-    ir::Type* const type = convert_ast_to_ir_type(expr->evaluated_type);
+    ir::Type* const type = convert_ast_to_ir_type(ctx, expr->evaluated_type);
     ir::Instr* const address = get_address(ctx, builder, expr);
     ir::Instr* const load = ir::make_instr_load(
       ctx.allocator, ctx.get_next_id(), type, address, expr->source_info);
@@ -300,12 +1022,59 @@ namespace vush {
   lower_expr_field(Lowering_Context& ctx, Builder& builder,
                    ast::Expr_Field const* const expr)
   {
-    ir::Instr* const address = get_address(ctx, builder, expr);
-    ir::Type* const type = convert_ast_to_ir_type(expr->evaluated_type);
-    ir::Instr* const load = ir::make_instr_load(
-      ctx.allocator, ctx.get_next_id(), type, address, expr->source_info);
-    builder.insert(load);
-    return load;
+    auto const base_type = expr->base->evaluated_type;
+    if(base_type->type_kind == ast::Type_Kind::type_struct) {
+      ir::Instr* const address = get_address(ctx, builder, expr);
+      ir::Type* const type = convert_ast_to_ir_type(ctx, expr->evaluated_type);
+      ir::Instr* const load = ir::make_instr_load(
+        ctx.allocator, ctx.get_next_id(), type, address, expr->source_info);
+      builder.insert(load);
+      return load;
+    }
+
+    if(base_type->type_kind == ast::Type_Kind::type_builtin) {
+      // Vectors and matrices have fields, but we cannot take the address of
+      // them, hence we need to construct a new composite or a scalar.
+      ir::Type* const result_type =
+        convert_ast_to_ir_type(ctx, expr->evaluated_type);
+      ir::Value* const base = lower_expression(ctx, builder, expr->base);
+      if(ast::is_vector(*base_type)) {
+        bool const result_is_scalar = expr->field.value.size_bytes() == 1;
+        if(result_is_scalar) {
+          char8 const field_char = expr->field.value.data()[0];
+          i32 const extract_index =
+            ast::vector_swizzle_char_to_index(field_char);
+          auto const result = ir::make_instr_vector_extract(
+            ctx.allocator, ctx.get_next_id(), result_type, base, extract_index,
+            expr->source_info);
+          builder.insert(result);
+          return result;
+        } else {
+          auto const construct = ir::make_instr_composite_construct(
+            ctx.allocator, ctx.get_next_id(), result_type, expr->source_info);
+          for(char8 const field_char: expr->field.value.bytes()) {
+            i32 const extract_index =
+              ast::vector_swizzle_char_to_index(field_char);
+            auto const result = ir::make_instr_vector_extract(
+              ctx.allocator, ctx.get_next_id(), result_type, base,
+              extract_index, expr->source_info);
+            builder.insert(result);
+            construct->add_element(result);
+          }
+          builder.insert(construct);
+          return construct;
+        }
+      } else {
+        ANTON_ASSERT(ast::is_matrix(*base_type), "base type is not matrix");
+        auto const construct = ir::make_instr_composite_construct(
+          ctx.allocator, ctx.get_next_id(), result_type, expr->source_info);
+        // TODO: Construct the matrix.
+        builder.insert(construct);
+        return construct;
+      }
+    }
+
+    ANTON_UNREACHABLE("invalid expr field base type");
   }
 
   [[nodiscard]] static ir::Instr*
@@ -313,7 +1082,7 @@ namespace vush {
                    ast::Expr_Index const* const expr)
   {
     ir::Instr* const address = get_address(ctx, builder, expr);
-    ir::Type* const type = convert_ast_to_ir_type(expr->evaluated_type);
+    ir::Type* const type = convert_ast_to_ir_type(ctx, expr->evaluated_type);
     ir::Instr* const load = ir::make_instr_load(
       ctx.allocator, ctx.get_next_id(), type, address, expr->source_info);
     builder.insert(load);
@@ -324,38 +1093,236 @@ namespace vush {
   lower_expr_init(Lowering_Context& ctx, Builder& builder,
                   ast::Expr_Init const* const expr)
   {
-    return nullptr;
+    auto const type = convert_ast_to_ir_type(ctx, expr->evaluated_type);
+    auto const temporary = ir::make_instr_alloc(
+      ctx.allocator, ctx.get_next_id(), type, expr->source_info);
+    builder.insert(temporary);
+    // TODO: Set members.
+    // We load the sturct and pass it farther down.
+    auto const instr_load = ir::make_instr_load(
+      ctx.allocator, ctx.get_next_id(), type, temporary, expr->source_info);
+    builder.insert(instr_load);
+    return instr_load;
+  }
+
+  [[nodiscard]] static ir::Value*
+  lower_expression_and_cvt(Lowering_Context& ctx, Builder& builder,
+                           ast::Type const* const target_type,
+                           ast::Expr const* const expr)
+  {
+    auto const result = lower_expression(ctx, builder, expr);
+    auto cvt_result =
+      generate_conversion(ctx, builder, result, target_type,
+                          expr->evaluated_type, expr->source_info);
+    // TODO: Propagate error.
+    ANTON_ASSERT(cvt_result.holds_value(), "conversion failed");
+    return cvt_result.value();
+  }
+
+  [[nodiscard]] static ir::ALU_Opcode
+  select_opcode(anton::String_View const identifier, bool const binary,
+                bool const result_is_fp, bool const result_is_sint,
+                bool const result_is_uint, bool const parameters_are_fp,
+                bool const parameters_are_sint)
+  {
+    if(identifier == "operator+"_sv) {
+      ANTON_ASSERT(binary, "operator+ not binary");
+      if(result_is_sint) {
+        return ir::ALU_Opcode::e_iadd;
+      } else if(result_is_uint) {
+        return ir::ALU_Opcode::e_uadd;
+      } else {
+        return ir::ALU_Opcode::e_fadd;
+      }
+    } else if(identifier == "operator-"_sv) {
+      if(binary) {
+        if(result_is_sint) {
+          return ir::ALU_Opcode::e_iadd;
+        } else if(result_is_uint) {
+          return ir::ALU_Opcode::e_uadd;
+        } else {
+          return ir::ALU_Opcode::e_fadd;
+        }
+      } else {
+        if(result_is_fp) {
+          return ir::ALU_Opcode::e_fneg;
+        } else {
+          return ir::ALU_Opcode::e_neg;
+        }
+      }
+    } else if(identifier == "operator*"_sv) {
+      ANTON_ASSERT(binary, "operator* not binary");
+      if(result_is_sint) {
+        return ir::ALU_Opcode::e_imul;
+      } else if(result_is_uint) {
+        return ir::ALU_Opcode::e_umul;
+      } else {
+        return ir::ALU_Opcode::e_fmul;
+      }
+    } else if(identifier == "operator/"_sv) {
+      ANTON_ASSERT(binary, "operator/ not binary");
+      if(result_is_sint) {
+        return ir::ALU_Opcode::e_idiv;
+      } else if(result_is_uint) {
+        return ir::ALU_Opcode::e_udiv;
+      } else {
+        return ir::ALU_Opcode::e_fdiv;
+      }
+    } else if(identifier == "operator%"_sv) {
+      ANTON_ASSERT(binary, "operator% not binary");
+      ANTON_ASSERT(!result_is_fp, "result of operator% is floating point");
+      if(result_is_sint) {
+        return ir::ALU_Opcode::e_irem;
+      } else {
+        return ir::ALU_Opcode::e_urem;
+      }
+    } else if(identifier == "operator<<"_sv) {
+      ANTON_ASSERT(binary, "operator<< not binary");
+      ANTON_ASSERT(!result_is_fp, "result of operator<< is floating point");
+      return ir::ALU_Opcode::e_shl;
+    } else if(identifier == "operator>>"_sv) {
+      ANTON_ASSERT(binary, "operator>> not binary");
+      ANTON_ASSERT(!result_is_fp, "result of operator>> is floating point");
+      return ir::ALU_Opcode::e_shr;
+    } else if(identifier == "operator~"_sv) {
+      ANTON_ASSERT(!binary, "operator~ not unary");
+      ANTON_ASSERT(!result_is_fp, "result of operator~ is floating point");
+      return ir::ALU_Opcode::e_inv;
+    } else if(identifier == "operator&"_sv) {
+      ANTON_ASSERT(binary, "operator& not binary");
+      ANTON_ASSERT(!result_is_fp, "result of operator& is floating point");
+      return ir::ALU_Opcode::e_and;
+    } else if(identifier == "operator|"_sv) {
+      ANTON_ASSERT(binary, "operator| not binary");
+      ANTON_ASSERT(!result_is_fp, "result of operator| is floating point");
+      return ir::ALU_Opcode::e_or;
+    } else if(identifier == "operator^"_sv) {
+      ANTON_ASSERT(binary, "operator^ not binary");
+      ANTON_ASSERT(!result_is_fp, "result of operator^ is floating point");
+      return ir::ALU_Opcode::e_xor;
+    } else if(identifier == "operator!"_sv) {
+      ANTON_ASSERT(!binary, "operator! not unary");
+      return ir::ALU_Opcode::e_inv;
+    } else if(identifier == "operator^"_sv) {
+      ANTON_ASSERT(binary, "operator^ not binary");
+      ANTON_ASSERT(!result_is_fp, "result of operator^ is floating point");
+      return ir::ALU_Opcode::e_xor;
+    } else if(identifier == "operator=="_sv) {
+      ANTON_ASSERT(binary, "operator== not binary");
+      if(parameters_are_fp) {
+        return ir::ALU_Opcode::e_fcmp_eq;
+      } else {
+        return ir::ALU_Opcode::e_icmp_eq;
+      }
+    } else if(identifier == "operator!="_sv) {
+      ANTON_ASSERT(binary, "operator!= not binary");
+      if(parameters_are_fp) {
+        return ir::ALU_Opcode::e_fcmp_neq;
+      } else {
+        return ir::ALU_Opcode::e_icmp_neq;
+      }
+    } else if(identifier == "operator<"_sv) {
+      ANTON_ASSERT(binary, "operator< not binary");
+      if(parameters_are_fp) {
+        return ir::ALU_Opcode::e_fcmp_lt;
+      } else if(parameters_are_sint) {
+        return ir::ALU_Opcode::e_icmp_slt;
+      } else {
+        return ir::ALU_Opcode::e_icmp_ult;
+      }
+    } else if(identifier == "operator>"_sv) {
+      ANTON_ASSERT(binary, "operator> not binary");
+      if(parameters_are_fp) {
+        return ir::ALU_Opcode::e_fcmp_gt;
+      } else if(parameters_are_sint) {
+        return ir::ALU_Opcode::e_icmp_sgt;
+      } else {
+        return ir::ALU_Opcode::e_icmp_ugt;
+      }
+    } else if(identifier == "operator<="_sv) {
+      ANTON_ASSERT(binary, "operator<= not binary");
+      if(parameters_are_fp) {
+        return ir::ALU_Opcode::e_fcmp_le;
+      } else if(parameters_are_sint) {
+        return ir::ALU_Opcode::e_icmp_sle;
+      } else {
+        return ir::ALU_Opcode::e_icmp_ule;
+      }
+    } else if(identifier == "operator>="_sv) {
+      ANTON_ASSERT(binary, "operator>= not binary");
+      if(parameters_are_fp) {
+        return ir::ALU_Opcode::e_fcmp_ge;
+      } else if(parameters_are_sint) {
+        return ir::ALU_Opcode::e_icmp_sge;
+      } else {
+        return ir::ALU_Opcode::e_icmp_uge;
+      }
+    }
+
+    ANTON_UNREACHABLE("no opcode selected");
   }
 
   [[nodiscard]] static ir::Instr*
   lower_builtin_operator(Lowering_Context& ctx, Builder& builder,
-                         ir::Type* const type, ast::Expr_Call const* const expr)
+                         ast::Expr_Call const* const expr)
   {
     ANTON_ASSERT(expr->is_unary() || expr->is_binary(),
                  "call to operator is not unary or binary");
-    auto const lhs = lower_expression(ctx, builder, expr->arguments[0]);
-    anton::String_View const identifier = expr->function->identifier.value;
-    if(identifier == "operator+"_sv) {
-      // operator+ is always binary.
-      ANTON_ASSERT(expr->is_binary(), "operator+ not binary");
-      auto const rhs = lower_expression(ctx, builder, expr->arguments[1]);
-      // TODO: uint
-      if(ir::is_int_based_type(*type)) {
-        auto const instr =
-          ir::make_instr_alu(ctx.allocator, ctx.get_next_id(), type,
-                             ir::ALU_Opcode::iadd, lhs, rhs, expr->source_info);
-        builder.insert(instr);
-        return instr;
-      } else {
-        auto const instr =
-          ir::make_instr_alu(ctx.allocator, ctx.get_next_id(), type,
-                             ir::ALU_Opcode::fadd, lhs, rhs, expr->source_info);
-        builder.insert(instr);
-        return instr;
-      }
+    anton::String_View const identifier = expr->identifier.value;
+    bool const short_circuited_operator = (identifier == "operator&&"_sv) ||
+                                          (identifier == "operator||"_sv) ||
+                                          (identifier == "operator^^"_sv);
+    if(short_circuited_operator) {
+      // TODO: Short-circuit logic operators.
+      return nullptr;
     }
 
-    return nullptr;
+    // Lower non-short-circuit operators.
+    ast::Type const* const result_type = expr->evaluated_type;
+    ir::Type* const ir_result_type = convert_ast_to_ir_type(ctx, result_type);
+    bool const result_is_uint = ast::is_unsigned_integer_based(*result_type);
+    bool const result_is_sint = ast::is_signed_integer_based(*result_type);
+    bool const result_is_fp = ast::is_fp_based(*result_type);
+    // Lower and convert arguments to parameter types.
+    ast::Fn_Parameter_List const parameters = expr->function->parameters;
+    ir::Value* const lhs = lower_expression_and_cvt(
+      ctx, builder, parameters[0]->type, expr->arguments[0]);
+    ir::Value* const rhs =
+      expr->is_binary()
+        ? lower_expression_and_cvt(ctx, builder, parameters[1]->type,
+                                   expr->arguments[1])
+        : nullptr;
+
+    bool const parameters_are_fp = ast::is_fp_based(*parameters[0]->type);
+    bool const parameters_are_sint =
+      ast::is_signed_integer_based(*parameters[0]->type);
+    ir::ALU_Opcode const opcode =
+      select_opcode(identifier, expr->is_binary(), result_is_fp, result_is_sint,
+                    result_is_uint, parameters_are_fp, parameters_are_sint);
+    auto const instr =
+      ir::make_instr_alu(ctx.allocator, ctx.get_next_id(), ir_result_type,
+                         opcode, lhs, rhs, expr->source_info);
+    builder.insert(instr);
+    return instr;
+  }
+
+  [[nodiscard]] static ir::Instr*
+  lower_builtin_function_call(Lowering_Context& ctx, Builder& builder,
+                              ast::Expr_Call const* const expr)
+  {
+    ir::Type* const type = convert_ast_to_ir_type(ctx, expr->evaluated_type);
+    ir::Instr_ext_call* const call =
+      select_ext(ctx.allocator, ctx.get_next_id(), type, expr);
+    // TODO: Do proper error handling.
+    ANTON_FAIL(call != nullptr, "no ext selected");
+    for(auto const [p, a]:
+        anton::zip(expr->function->parameters, expr->arguments)) {
+      ir::Value* const result =
+        lower_expression_and_cvt(ctx, builder, p->type, a);
+      call->add_argument(result);
+    }
+    builder.insert(call);
+    return call;
   }
 
   [[nodiscard]] static ir::Instr*
@@ -363,21 +1330,21 @@ namespace vush {
                   ast::Expr_Call const* const expr)
   {
     ast::Decl_Function* const fn = expr->function;
-    ir::Type* const type = convert_ast_to_ir_type(expr->evaluated_type);
     if(fn->builtin) {
       if(anton::begins_with(fn->identifier.value, "operator"_sv)) {
-        return lower_builtin_operator(ctx, builder, type, expr);
+        return lower_builtin_operator(ctx, builder, expr);
       } else {
-        // lower_builtin_function_call();
-        return nullptr;
+        return lower_builtin_function_call(ctx, builder, expr);
       }
     } else {
       ir::Function* const* const function =
         ctx.fntable.find_entry(expr->identifier.value);
       ANTON_ASSERT(function != nullptr, "call has no function");
+      ir::Type* const type = convert_ast_to_ir_type(ctx, expr->evaluated_type);
       auto const call = ir::make_instr_call(ctx.allocator, ctx.get_next_id(),
                                             *function, type, expr->source_info);
       for(ast::Expr const* const arg: expr->arguments) {
+        // TODO: Convert to the appropriate type.
         auto const value = lower_expression(ctx, builder, arg);
         call->add_argument(value);
       }
@@ -426,12 +1393,12 @@ namespace vush {
     builder.set_insert_block(converge_block);
     auto const phi = ir::make_instr_phi(ctx.allocator, ctx.get_next_id(),
                                         then_result->type, expr->source_info);
-    ANTON_ASSERT(instanceof <ir::Instr>(then_result),
-                            "phi argument is not an instruction");
+    ANTON_ASSERT(instanceof<ir::Instr>(then_result),
+                 "phi argument is not an instruction");
     phi->srcs.push_back(static_cast<ir::Instr*>(then_result));
     then_result->add_referrer(phi);
-    ANTON_ASSERT(instanceof <ir::Instr>(else_result),
-                            "phi argument is not an instruction");
+    ANTON_ASSERT(instanceof<ir::Instr>(else_result),
+                 "phi argument is not an instruction");
     phi->srcs.push_back(static_cast<ir::Instr*>(else_result));
     else_result->add_referrer(phi);
     builder.insert(phi);
@@ -540,7 +1507,7 @@ namespace vush {
   static void lower_variable(Lowering_Context& ctx, Builder& builder,
                              ast::Variable const* const variable)
   {
-    ir::Type* const type = convert_ast_to_ir_type(variable->type);
+    ir::Type* const type = convert_ast_to_ir_type(ctx, variable->type);
     ir::Instr* const instr = ir::make_instr_alloc(
       ctx.allocator, ctx.get_next_id(), type, variable->source_info);
     builder.insert(instr);
@@ -550,16 +1517,18 @@ namespace vush {
   static void lower_stmt_assignment(Lowering_Context& ctx, Builder& builder,
                                     ast::Stmt_Assignment const* const stmt)
   {
-    // TODO FIX: does not account for assignment kind.
-    ir::Instr* const address = get_address(ctx, builder, stmt->lhs);
-    ANTON_ASSERT(address->type->kind == ir::Type_Kind::e_ptr,
-                 "address is not pointer");
     ir::Value* const rhs = lower_expression(ctx, builder, stmt->rhs);
-    // TODO: target conversion type.
-    ir::Instr* const result = generate_conversion(ctx, builder, rhs, nullptr);
-    ir::Instr* const store = ir::make_instr_store(
-      ctx.allocator, ctx.get_next_id(), address, result, stmt->source_info);
-    builder.insert(store);
+    ast::Type const* const lhs_type = stmt->lhs->evaluated_type;
+    if(lhs_type->type_kind == ast::Type_Kind::type_array ||
+       lhs_type->type_kind == ast::Type_Kind::type_struct) {
+      // TODO: Copy memory.
+      return;
+    } else {
+      ANTON_ASSERT(lhs_type->type_kind == ast::Type_Kind::type_builtin,
+                   "type is not builtin");
+      // If the LHS expression is field expression, we're taking the address of the base
+      // Otherwise we load, select the ALU operation and store.
+    }
   }
 
   static void lower_stmt_return(Lowering_Context& ctx, Builder& builder,
@@ -568,11 +1537,14 @@ namespace vush {
     if(stmt->expression != nullptr) {
       ir::Value* const ret_expr =
         lower_expression(ctx, builder, stmt->expression);
-      // TODO: target conversion type.
-      ir::Instr* const cvt_ret_expr =
-        generate_conversion(ctx, builder, ret_expr, nullptr);
-      ir::Instr* const ret = ir::make_instr_return(
-        ctx.allocator, ctx.get_next_id(), cvt_ret_expr, stmt->source_info);
+      auto cvt_result = generate_conversion(
+        ctx, builder, ret_expr, ctx.current_function_return_type,
+        stmt->expression->evaluated_type, stmt->expression->source_info);
+      // TODO: Propagate error up.
+      ANTON_ASSERT(cvt_result.holds_value(), "conversion failed");
+      ir::Instr* const ret =
+        ir::make_instr_return(ctx.allocator, ctx.get_next_id(),
+                              cvt_result.value(), stmt->source_info);
       builder.insert(ret);
     } else {
       ir::Instr* const ret = ir::make_instr_return(
@@ -875,8 +1847,19 @@ namespace vush {
     ir::Function* const fn = VUSH_ALLOCATE(
       ir::Function, ctx.allocator, ctx.get_next_id(), ANTON_MOV(entry_block),
       anton::String("main"_sv, ctx.allocator), stage->source_info);
+    ctx.current_function_return_type = stage->return_type;
     Builder builder;
     builder.set_insert_block(&fn->entry_block);
+    // Generate allocas for the parameters.
+    // TODO: These allocas are currently unset and are serving as placeholders.
+    for(ast::Fn_Parameter const* const parameter: stage->parameters) {
+      ir::Type* const type = convert_ast_to_ir_type(ctx, parameter->type);
+      auto const instr = ir::make_instr_alloc(ctx.allocator, ctx.get_next_id(),
+                                              type, parameter->source_info);
+      builder.insert(instr);
+      ctx.symtable.add_entry(parameter->identifier.value, instr);
+    }
+
     lower_statement_block(ctx, builder, stage->body);
     return ir::Module(anton::String(stage->pass.value, ctx.allocator),
                       stage->stage.value, fn);

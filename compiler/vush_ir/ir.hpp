@@ -9,13 +9,16 @@
 #include <vush_core/source_info.hpp>
 #include <vush_core/types.hpp>
 
+#include <vush_ir/ext.hpp>
 #include <vush_ir/ir_fwd.hpp>
 #include <vush_ir/opcodes.hpp>
 #include <vush_ir/types.hpp>
 
-namespace vush::ir {
-  struct Context {};
+// Types:
+// Aggregate - a struct or an array type.
+// Composite - an aggregate, a matrix or a vector.
 
+namespace vush::ir {
   struct Module {
     anton::String pass_identifier;
     Stage_Kind stage;
@@ -46,9 +49,8 @@ namespace vush::ir {
   // unconditional branch is added to the original block and the remaining
   // instructions are moved to the new block.
   //
-  [[nodiscard]] Basic_Block* split_block(Context& ctx, i64 label,
-                                         Instr* instruction, Instr* end,
-                                         bool before = false);
+  [[nodiscard]] Basic_Block* split_block(i64 label, Instr* instruction,
+                                         Instr* end, bool before = false);
 
   struct Function {
     Basic_Block entry_block;
@@ -100,7 +102,7 @@ namespace vush::ir {
   };
 
   template<typename T>
-  [[nodiscard]] bool instanceof (Value const* value);
+  [[nodiscard]] bool instanceof(Value const* value);
 
   void replace_uses_with(Value* value, Value* replacement);
 
@@ -190,12 +192,22 @@ namespace vush::ir {
     e_alloc,
     e_load,
     e_store,
-    // e_memcpy,
-    // e_memset,
     e_getptr,
     e_alu,
-    e_setvalue,
+    e_vector_extract,
+    e_composite_extract,
+    e_composite_construct,
+    e_cvt_sext,
+    e_cvt_zext,
+    e_cvt_trunc,
+    e_cvt_fpext,
+    e_cvt_fptrunc,
+    e_cvt_si2fp,
+    e_cvt_fp2si,
+    e_cvt_ui2fp,
+    e_cvt_fp2ui,
     e_call,
+    e_ext_call,
     e_branch,
     e_brcond,
     e_switch,
@@ -232,9 +244,9 @@ namespace vush::ir {
     }
   };
 
-  [[nodiscard]] ir::Instr_alloc*
-  make_instr_alloc(Allocator* allocator, i64 id, Type* alloc_type,
-                   Source_Info const& source_info);
+  [[nodiscard]] Instr_alloc* make_instr_alloc(Allocator* allocator, i64 id,
+                                              Type* alloc_type,
+                                              Source_Info const& source_info);
 
   struct Instr_load: public Instr {
     Instr* address;
@@ -247,10 +259,9 @@ namespace vush::ir {
     }
   };
 
-  [[nodiscard]] ir::Instr_load* make_instr_load(Allocator* allocator, i64 id,
-                                                ir::Type* type,
-                                                ir::Instr* address,
-                                                Source_Info const& source_info);
+  [[nodiscard]] Instr_load* make_instr_load(Allocator* allocator, i64 id,
+                                            Type* type, Instr* address,
+                                            Source_Info const& source_info);
 
   // Instr_store
   // Store value from src in memory pointed to by dst.
@@ -269,53 +280,13 @@ namespace vush::ir {
     }
   };
 
-  [[nodiscard]] ir::Instr_store*
-  make_instr_store(Allocator* allocator, i64 id, ir::Instr* dst, ir::Value* src,
-                   Source_Info const& source_info);
+  [[nodiscard]] Instr_store* make_instr_store(Allocator* allocator, i64 id,
+                                              Instr* dst, Value* src,
+                                              Source_Info const& source_info);
 
-  // // Instr_memcpy
-  // // Copy count bytes from location pointed to by src to location pointed to by
-  // // dst.
-  // //
-  // struct Instr_memcpy: public Instr {
-  //   Instr* dst;
-  //   Instr* src;
-  //   i64 count;
-
-  //   Instr_memcpy(i64 id, Instr* dst, Instr* src, i64 count,
-  //                Allocator* allocator, Source_Info const& source_info)
-  //     : Instr(id, Instr_Kind::e_memcpy, get_type_void(), allocator,
-  //             source_info),
-  //       dst(dst), src(src), count(count)
-  //   {
-  //   }
-  // };
-
-  // [[nodiscard]] ir::Instr_memcpy*
-  // make_instr_memcpy(Allocator* allocator, i64 id, ir::Instr* dst,
-  //                   ir::Instr* src, i64 count, Source_Info const& source_info);
-
-  // // Instr_memset
-  // // Set count bytes to value at location pointed to by dst.
-  // //
-  // struct Instr_memset: public Instr {
-  //   Instr* dst;
-  //   i64 count;
-  //   u8 value;
-
-  //   Instr_memset(i64 id, Instr* dst, i64 count, u8 value, Allocator* allocator,
-  //                Source_Info const& source_info)
-  //     : Instr(id, Instr_Kind::e_memset, get_type_void(), allocator,
-  //             source_info),
-  //       dst(dst), count(count), value(value)
-  //   {
-  //   }
-  // };
-
-  // [[nodiscard]] ir::Instr_memset*
-  // make_instr_memset(Allocator* allocator, i64 id, ir::Instr* dst, i64 count,
-  //                   u8 value, Source_Info const& source_info);
-
+  // getptr
+  // The instruction is used to calculate the address of a field of an aggregate
+  // data structure.
   struct Instr_getptr: public Instr {
     Type* addressed_type;
     Instr* address;
@@ -329,10 +300,10 @@ namespace vush::ir {
     }
   };
 
-  [[nodiscard]] ir::Instr_getptr*
-  make_instr_getptr(Allocator* allocator, i64 id, Type* addressed_type,
-                    ir::Instr* address, Value* index,
-                    Source_Info const& source_info);
+  [[nodiscard]] Instr_getptr* make_instr_getptr(Allocator* allocator, i64 id,
+                                                Type* addressed_type,
+                                                Instr* address, Value* index,
+                                                Source_Info const& source_info);
 
   struct Instr_ALU: public Instr {
     Value* src1;
@@ -347,33 +318,215 @@ namespace vush::ir {
     }
   };
 
-  [[nodiscard]] ir::Instr_ALU* make_instr_alu(Allocator* allocator, i64 id,
-                                              ir::Type* type, ALU_Opcode op,
-                                              ir::Value* src1, ir::Value* src2,
-                                              Source_Info const& source_info);
+  [[nodiscard]] Instr_ALU* make_instr_alu(Allocator* allocator, i64 id,
+                                          Type* type, ALU_Opcode op,
+                                          Value* src1, Value* src2,
+                                          Source_Info const& source_info);
 
-  struct Instr_setvalue: public Instr {
-    Value* dst;
+  struct Instr_vector_extract: public Instr {
+    Value* value;
+    i64 index;
+
+    Instr_vector_extract(i64 id, Type* type, Value* value, i64 index,
+                         Allocator* allocator, Source_Info const& source_info)
+      : Instr(id, Instr_Kind::e_vector_extract, type, allocator, source_info),
+        value(value), index(index)
+    {
+    }
+  };
+
+  [[nodiscard]] Instr_vector_extract*
+  make_instr_vector_extract(Allocator* allocator, i64 id, Type* type,
+                            Value* value, i64 index,
+                            Source_Info const& source_info);
+
+  struct Instr_composite_extract: public Instr {
     Value* value;
     Array<i64> indices;
 
-    Instr_setvalue(i64 id, Type* type, Value* dst, Value* value, i64 index,
-                   Allocator* allocator, Source_Info const& source_info)
-      : Instr(id, Instr_Kind::e_setvalue, type, allocator, source_info),
-        dst(dst), value(value)
+    Instr_composite_extract(i64 id, Type* type, Value* value, i64 index,
+                            Allocator* allocator,
+                            Source_Info const& source_info)
+      : Instr(id, Instr_Kind::e_composite_extract, type, allocator,
+              source_info),
+        value(value)
     {
       indices.push_back(index);
     }
 
-    Instr_setvalue(i64 id, Type* type, Value* dst, Value* value,
-                   anton::Slice<i64> indices, Allocator* allocator,
-                   Source_Info const& source_info)
-      : Instr(id, Instr_Kind::e_setvalue, type, allocator, source_info),
-        dst(dst), value(value)
+    Instr_composite_extract(i64 id, Type* type, Value* value,
+                            anton::Slice<i64> indices, Allocator* allocator,
+                            Source_Info const& source_info)
+      : Instr(id, Instr_Kind::e_composite_extract, type, allocator,
+              source_info),
+        value(value)
     {
       this->indices.assign(indices.begin(), indices.end());
     }
   };
+
+  struct Instr_composite_construct: public Instr {
+    Array<Value*> elements;
+
+    Instr_composite_construct(i64 id, Type* type, Allocator* allocator,
+                              Source_Info const& source_info)
+      : Instr(id, Instr_Kind::e_composite_construct, type, allocator,
+              source_info),
+        elements(allocator)
+    {
+    }
+
+    void add_element(Value* value)
+    {
+      elements.push_back(value);
+      value->add_referrer(this);
+    }
+  };
+
+  [[nodiscard]] Instr_composite_construct*
+  make_instr_composite_construct(Allocator* allocator, i64 id, Type* type,
+                                 Source_Info const& source_info);
+
+  [[nodiscard]] Instr_composite_construct*
+  make_instr_composite_construct(Allocator* allocator, i64 id, Type* type,
+                                 anton::Slice<Value* const> elements,
+                                 Source_Info const& source_info);
+
+  struct Instr_cvt_sext: public Instr {
+    Value* value;
+
+    Instr_cvt_sext(i64 id, Type* target_type, Value* value,
+                   Allocator* allocator, Source_Info const& source_info)
+      : Instr(id, Instr_Kind::e_cvt_sext, target_type, allocator, source_info),
+        value(value)
+    {
+    }
+  };
+
+  [[nodiscard]] Instr_cvt_sext*
+  make_instr_cvt_sext(Allocator* allocator, i64 id, Type* target_type,
+                      Value* value, Source_Info const& source_info);
+
+  struct Instr_cvt_zext: public Instr {
+    Value* value;
+
+    Instr_cvt_zext(i64 id, Type* target_type, Value* value,
+                   Allocator* allocator, Source_Info const& source_info)
+      : Instr(id, Instr_Kind::e_cvt_zext, target_type, allocator, source_info),
+        value(value)
+    {
+    }
+  };
+
+  [[nodiscard]] Instr_cvt_zext*
+  make_instr_cvt_zext(Allocator* allocator, i64 id, Type* target_type,
+                      Value* value, Source_Info const& source_info);
+
+  struct Instr_cvt_trunc: public Instr {
+    Value* value;
+
+    Instr_cvt_trunc(i64 id, Type* target_type, Value* value,
+                    Allocator* allocator, Source_Info const& source_info)
+      : Instr(id, Instr_Kind::e_cvt_trunc, target_type, allocator, source_info),
+        value(value)
+    {
+    }
+  };
+
+  [[nodiscard]] Instr_cvt_trunc*
+  make_instr_cvt_trunc(Allocator* allocator, i64 id, Type* target_type,
+                       Value* value, Source_Info const& source_info);
+
+  struct Instr_cvt_fpext: public Instr {
+    Value* value;
+
+    Instr_cvt_fpext(i64 id, Type* target_type, Value* value,
+                    Allocator* allocator, Source_Info const& source_info)
+      : Instr(id, Instr_Kind::e_cvt_fpext, target_type, allocator, source_info),
+        value(value)
+    {
+    }
+  };
+
+  [[nodiscard]] Instr_cvt_fpext*
+  make_instr_cvt_fpext(Allocator* allocator, i64 id, Type* target_type,
+                       Value* value, Source_Info const& source_info);
+
+  struct Instr_cvt_fptrunc: public Instr {
+    Value* value;
+
+    Instr_cvt_fptrunc(i64 id, Type* target_type, Value* value,
+                      Allocator* allocator, Source_Info const& source_info)
+      : Instr(id, Instr_Kind::e_cvt_fptrunc, target_type, allocator,
+              source_info),
+        value(value)
+    {
+    }
+  };
+
+  [[nodiscard]] Instr_cvt_fptrunc*
+  make_instr_cvt_fptrunc(Allocator* allocator, i64 id, Type* target_type,
+                         Value* value, Source_Info const& source_info);
+
+  struct Instr_cvt_si2fp: public Instr {
+    Value* value;
+
+    Instr_cvt_si2fp(i64 id, Type* target_type, Value* value,
+                    Allocator* allocator, Source_Info const& source_info)
+      : Instr(id, Instr_Kind::e_cvt_si2fp, target_type, allocator, source_info),
+        value(value)
+    {
+    }
+  };
+
+  [[nodiscard]] Instr_cvt_si2fp*
+  make_instr_cvt_si2fp(Allocator* allocator, i64 id, Type* target_type,
+                       Value* value, Source_Info const& source_info);
+
+  struct Instr_cvt_ui2fp: public Instr {
+    Value* value;
+
+    Instr_cvt_ui2fp(i64 id, Type* target_type, Value* value,
+                    Allocator* allocator, Source_Info const& source_info)
+      : Instr(id, Instr_Kind::e_cvt_ui2fp, target_type, allocator, source_info),
+        value(value)
+    {
+    }
+  };
+
+  [[nodiscard]] Instr_cvt_ui2fp*
+  make_instr_cvt_ui2fp(Allocator* allocator, i64 id, Type* target_type,
+                       Value* value, Source_Info const& source_info);
+
+  struct Instr_cvt_fp2si: public Instr {
+    Value* value;
+
+    Instr_cvt_fp2si(i64 id, Type* target_type, Value* value,
+                    Allocator* allocator, Source_Info const& source_info)
+      : Instr(id, Instr_Kind::e_cvt_fp2si, target_type, allocator, source_info),
+        value(value)
+    {
+    }
+  };
+
+  [[nodiscard]] Instr_cvt_fp2si*
+  make_instr_cvt_fp2si(Allocator* allocator, i64 id, Type* target_type,
+                       Value* value, Source_Info const& source_info);
+
+  struct Instr_cvt_fp2ui: public Instr {
+    Value* value;
+
+    Instr_cvt_fp2ui(i64 id, Type* target_type, Value* value,
+                    Allocator* allocator, Source_Info const& source_info)
+      : Instr(id, Instr_Kind::e_cvt_fp2ui, target_type, allocator, source_info),
+        value(value)
+    {
+    }
+  };
+
+  [[nodiscard]] Instr_cvt_fp2ui*
+  make_instr_cvt_fp2ui(Allocator* allocator, i64 id, Type* target_type,
+                       Value* value, Source_Info const& source_info);
 
   struct Instr_call: public Instr {
     Array<Value*> args;
@@ -401,6 +554,33 @@ namespace vush::ir {
                                             Function* function, Type* type,
                                             anton::Slice<Value* const> args,
                                             Source_Info const& source_info);
+
+  struct Instr_ext_call: public Instr {
+    Array<Value*> args;
+    Ext_Kind ext;
+
+    Instr_ext_call(i64 id, Ext_Kind ext, Type* type, Allocator* allocator,
+                   Source_Info const& source_info)
+      : Instr(id, Instr_Kind::e_ext_call, type, allocator, source_info),
+        args(allocator), ext(ext)
+    {
+    }
+
+    void add_argument(Value* const value)
+    {
+      args.push_back(value);
+      value->add_referrer(this);
+    }
+  };
+
+  [[nodiscard]] Instr_ext_call*
+  make_instr_ext_call(Allocator* allocator, i64 id, Ext_Kind ext, Type* type,
+                      Source_Info const& source_info);
+
+  [[nodiscard]] Instr_ext_call*
+  make_instr_ext_call(Allocator* allocator, i64 id, Ext_Kind ext, Type* type,
+                      anton::Slice<Value* const> args,
+                      Source_Info const& source_info);
 
   struct Instr_branch: public Instr {
     Basic_Block* target;
@@ -463,11 +643,12 @@ namespace vush::ir {
     }
   };
 
-  [[nodiscard]] ir::Instr_switch*
-  make_instr_switch(Allocator* allocator, i64 id, Value* selector,
-                    Basic_Block* default_label, Source_Info const& source_info);
+  [[nodiscard]] Instr_switch* make_instr_switch(Allocator* allocator, i64 id,
+                                                Value* selector,
+                                                Basic_Block* default_label,
+                                                Source_Info const& source_info);
 
-  [[nodiscard]] ir::Instr_switch* make_instr_switch(
+  [[nodiscard]] Instr_switch* make_instr_switch(
     Allocator* allocator, i64 id, Value* selector, Basic_Block* default_label,
     anton::Slice<Switch_Label const> labels, Source_Info const& source_info);
 
@@ -488,14 +669,14 @@ namespace vush::ir {
     }
   };
 
-  [[nodiscard]] ir::Instr_phi* make_instr_phi(Allocator* allocator, i64 id,
-                                              ir::Type* type,
-                                              Source_Info const& source_info);
+  [[nodiscard]] Instr_phi* make_instr_phi(Allocator* allocator, i64 id,
+                                          Type* type,
+                                          Source_Info const& source_info);
 
-  [[nodiscard]] ir::Instr_phi*
-  make_instr_phi(Allocator* allocator, i64 id, ir::Type* type,
-                 anton::Slice<ir::Instr* const> srcs,
-                 Source_Info const& source_info);
+  [[nodiscard]] Instr_phi* make_instr_phi(Allocator* allocator, i64 id,
+                                          Type* type,
+                                          anton::Slice<Instr* const> srcs,
+                                          Source_Info const& source_info);
 
   struct Instr_return: public Instr {
     Value* value = nullptr;
@@ -513,12 +694,11 @@ namespace vush::ir {
     }
   };
 
-  [[nodiscard]] ir::Instr_return*
-  make_instr_return(Allocator* allocator, i64 id,
-                    Source_Info const& source_info);
-  [[nodiscard]] ir::Instr_return*
-  make_instr_return(Allocator* allocator, i64 id, ir::Value* value,
-                    Source_Info const& source_info);
+  [[nodiscard]] Instr_return* make_instr_return(Allocator* allocator, i64 id,
+                                                Source_Info const& source_info);
+  [[nodiscard]] Instr_return* make_instr_return(Allocator* allocator, i64 id,
+                                                Value* value,
+                                                Source_Info const& source_info);
 
   // Instr_die
   // Terminate (die) current invocation.
@@ -530,6 +710,6 @@ namespace vush::ir {
     }
   };
 
-  [[nodiscard]] ir::Instr_die* make_instr_die(Allocator* allocator, i64 id,
-                                              Source_Info const& source_info);
+  [[nodiscard]] Instr_die* make_instr_die(Allocator* allocator, i64 id,
+                                          Source_Info const& source_info);
 } // namespace vush::ir

@@ -2,36 +2,43 @@
 
 namespace vush::ir {
   enum struct ALU_Opcode {
-    neg,
-    iadd,
-    imul,
-    uadd,
-    umul,
-    fneg,
-    fadd,
-    fmul,
-    fma,
-    // perm - Permute Components
-    //
-    // dst = perm src, mask
-    //
-    // Permute components of the source register according to the mask storing
-    // the result in the destination register. The destination register and the
-    // mask register must have equal number of components, but need not be the
-    // same width.
-    //
-    // Operation: for i in 0..components dst[i] = src[mask[i]]
-    //
-    perm,
-    // extract - Extract Component
-    //
-    // dst = extract src, index
-    //
-    // Extract component of the source register. The destination register must
-    // be a 1-component register of the same width.
-    //
-    // Operation: dst = src[index]
-    //
-    extract,
+    e_inv, // Bitwise inversion
+    e_and, // Bitwise and
+    e_or, // Bitwise or
+    e_xor, // Bitwise xor
+    e_shl,
+    e_shr,
+    e_neg, // Algebraic negation
+    e_iadd,
+    e_imul,
+    e_uadd,
+    e_umul,
+    e_idiv,
+    e_udiv,
+    e_irem,
+    e_urem,
+    e_fneg,
+    e_fadd,
+    e_fmul,
+    e_fdiv,
+    e_fma,
+    // Integer comparisons
+    e_icmp_eq,
+    e_icmp_neq,
+    e_icmp_ugt, // Unsigned greater than
+    e_icmp_ult, // Unsigned less than
+    e_icmp_uge, // Unsigned greater or equal
+    e_icmp_ule, // Unsigned less or equal
+    e_icmp_sgt, // Signed greater than
+    e_icmp_slt, // Signed less than
+    e_icmp_sge, // Signed greater or equal
+    e_icmp_sle, // Signed less or equal
+    // FP comparisons
+    e_fcmp_eq,
+    e_fcmp_neq,
+    e_fcmp_gt,
+    e_fcmp_lt,
+    e_fcmp_ge,
+    e_fcmp_le,
   };
 } // namespace vush::ir

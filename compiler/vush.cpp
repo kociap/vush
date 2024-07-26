@@ -8,14 +8,18 @@
 #include <anton/iterators.hpp>
 #include <anton/iterators/zip.hpp>
 #include <anton/optional.hpp>
+#include <anton/stdio.hpp>
 #include <anton/string_stream.hpp>
 
 #include <vush_ast/ast.hpp>
 #include <vush_ast_lowering/ast_lowering.hpp>
+#include <vush_ast_opt/opts.hpp>
 #include <vush_core/context.hpp>
 #include <vush_core/memory.hpp>
 #include <vush_core/source_registry.hpp>
 #include <vush_diagnostics/diagnostics.hpp>
+#include <vush_ir/ir.hpp>
+#include <vush_ir/prettyprint.hpp>
 #include <vush_parser/parser.hpp>
 #include <vush_sema/sema.hpp>
 #include <vush_syntax_lowering/syntax_lowering.hpp>
@@ -397,6 +401,16 @@ namespace vush {
           return {anton::expected_error, ANTON_MOV(result.error())};
         }
       }
+
+      {
+        bool changed = false;
+        do {
+          changed = false;
+          changed |= run_opt_ast_fold_swizzles(ctx.allocator, ast_nodes);
+        } while(changed);
+      }
+
+      Array<ir::Module> modules = lower_ast_to_ir(ctx.allocator, ast_nodes);
 
       return {anton::expected_error,
               Error{.diagnostic =
