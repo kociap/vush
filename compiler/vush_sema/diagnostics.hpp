@@ -28,6 +28,13 @@ namespace vush {
     return Error{.diagnostic = anton::String("err_discard_outside_fragment")};
   }
 
+  [[nodiscard]] Error
+  err_opaque_type_non_assignable(Context const& ctx,
+                                 ast::Stmt_Assignment const* assignment);
+
+  [[nodiscard]] Error err_arithmetic_assignment_to_non_arithmetic_type(
+    Context const& ctx, ast::Stmt_Assignment const* assignment);
+
   // TODO: Implement.
   [[nodiscard]] inline Error
   err_unsized_array_not_allowed([[maybe_unused]] Context const& ctx,

@@ -970,11 +970,18 @@ namespace vush {
     RETURN_ON_FAIL(analyse_expression, ctx, symtable, node->lhs);
     RETURN_ON_FAIL(analyse_expression, ctx, symtable, node->rhs);
 
-    // TODO: Arithmetic assignments are only allowed on arithmetic types.
-    // TODO: Opaque types are non-assignable.
-    // TODO: We have to verify that the type we are assigning to is not an
-    //       opaque type or a struct with opaque types.
     ast::Type const* const lhs_type = node->lhs->evaluated_type;
+    if(ast::is_opaque_type(*lhs_type)) {
+      return {anton::expected_error, err_opaque_type_non_assignable(ctx, node)};
+    }
+
+    bool const arithmetic_assignment =
+      node->kind != ast::Assignment_Kind::e_assign;
+    if(arithmetic_assignment && !ast::is_arithmetic_type(*lhs_type)) {
+      return {anton::expected_error,
+              err_arithmetic_assignment_to_non_arithmetic_type(ctx, node)};
+    }
+
     ast::Type const* const rhs_type = node->rhs->evaluated_type;
     if(is_convertible(lhs_type, rhs_type)) {
       return anton::expected_value;

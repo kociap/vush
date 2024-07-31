@@ -70,6 +70,15 @@ namespace vush::ast {
     }
   };
 
+  template<typename T>
+  [[nodiscard]] bool instanceof(Node const& node);
+
+  template<typename T>
+  [[nodiscard]] bool instanceof(Node const* node)
+  {
+    return instanceof<T>(*node);
+  }
+
   struct Qualifiers {
     bool mut = false;
   };
@@ -145,7 +154,21 @@ namespace vush::ast {
   [[nodiscard]] bool is_matrix(Type const& type);
   [[nodiscard]] bool is_f32_matrix(Type const& type);
   [[nodiscard]] bool is_f64_matrix(Type const& type);
+
+  // is_opaque_type
+  // Check whether a type is opaque, i.e. is an opaque builtin type, a struct
+  // containing an opaque type or an array of opaque types.
+  //
+  // If a struct does not have a corresponding definition, returns true.
+  //
   [[nodiscard]] bool is_opaque_type(Type const& type);
+
+  // is_arithmetic_type
+  // Check whether type is a type that supports arithmetic operations, e.g.
+  // addition.
+  //
+  [[nodiscard]] bool is_arithmetic_type(Type const& type);
+
   [[nodiscard]] bool is_array(Type const& type);
   [[nodiscard]] bool is_unsized_array(Type const& type);
   [[nodiscard]] bool is_sized_array(Type const& type);
@@ -366,8 +389,6 @@ namespace vush::ast {
     {
     }
   };
-
-  [[nodiscard]] bool is_type(Node const& node);
 
   struct Attribute_Parameter {
     // empty if the parameters positional.

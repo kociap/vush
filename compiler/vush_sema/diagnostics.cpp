@@ -80,6 +80,28 @@ namespace vush {
     return error;
   }
 
+  Error err_opaque_type_non_assignable(Context const& ctx,
+                                       ast::Stmt_Assignment const* assignment)
+  {
+    Source_Info const source_info = assignment->source_info;
+    Error error = error_from_source(ctx.allocator, source_info);
+    error.diagnostic =
+      "error: the left hand side of the assignment has an opaque type";
+    // TODO: Explain why the type is opaque.
+    return error;
+  }
+
+  Error err_arithmetic_assignment_to_non_arithmetic_type(
+    Context const& ctx, ast::Stmt_Assignment const* assignment)
+  {
+    Source_Info const source_info = assignment->source_info;
+    Error error = error_from_source(ctx.allocator, source_info);
+    error.diagnostic =
+      "error: arithmetic assignment to non-arithmetic type is not allowed";
+    // TODO: Include the token of the assignment in the short diagnostic.
+    return error;
+  }
+
   [[nodiscard]] static anton::String
   stringify_call_argument_types(Context const& ctx,
                                 ast::Expr_List const arguments)
