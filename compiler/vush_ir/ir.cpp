@@ -19,7 +19,7 @@ namespace vush::ir {
   template<>
   bool instanceof<Instr>(Value const* value)
   {
-    return value->value_kind == Value_Kind::e_const;
+    return value->value_kind == Value_Kind::e_instr;
   }
 
   template<>
