@@ -653,7 +653,7 @@ namespace vush::ir {
     anton::Slice<Switch_Label const> labels, Source_Info const& source_info);
 
   struct Instr_phi: public Instr {
-    Array<Instr*> srcs;
+    Array<Value*> srcs;
 
     Instr_phi(i64 id, Type* type, Allocator* allocator,
               Source_Info const& source_info)
@@ -662,7 +662,7 @@ namespace vush::ir {
     {
     }
 
-    void add_source(Instr* const value)
+    void add_source(Value* const value)
     {
       srcs.push_back(value);
       value->add_referrer(this);
@@ -675,7 +675,7 @@ namespace vush::ir {
 
   [[nodiscard]] Instr_phi* make_instr_phi(Allocator* allocator, i64 id,
                                           Type* type,
-                                          anton::Slice<Instr* const> srcs,
+                                          anton::Slice<Value* const> srcs,
                                           Source_Info const& source_info);
 
   struct Instr_return: public Instr {

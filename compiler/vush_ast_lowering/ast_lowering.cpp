@@ -851,9 +851,6 @@ namespace vush {
   lower_expression(Lowering_Context& ctx, Builder& builder,
                    ast::Expr const* generic_expr);
 
-  [[nodiscard]] static ir::Function* lower_function(Lowering_Context& ctx,
-                                                    ast::Decl_Function* fn);
-
   [[nodiscard]] static ir::Instr*
   address_expr_identifier(Lowering_Context& ctx, Builder& builder,
                           ast::Expr_Identifier const* const expr)
@@ -1269,12 +1266,48 @@ namespace vush {
     ANTON_ASSERT(expr->is_unary() || expr->is_binary(),
                  "call to operator is not unary or binary");
     anton::String_View const identifier = expr->identifier.value;
-    bool const short_circuited_operator = (identifier == "operator&&"_sv) ||
-                                          (identifier == "operator||"_sv) ||
-                                          (identifier == "operator^^"_sv);
+    // XOR is not short-circuitable.
+    bool const operator_is_and = identifier == "operator&&"_sv;
+    bool const short_circuited_operator =
+      operator_is_and || (identifier == "operator||"_sv);
     if(short_circuited_operator) {
-      // TODO: Short-circuit logic operators.
-      return nullptr;
+      ANTON_ASSERT(expr->is_binary(),
+                   "call to short circuited operator is not binary");
+      auto const builtin_bool =
+        get_builtin_type(ast::Type_Builtin_Kind::e_bool);
+      // Lower the LHS and jump based on its value.
+      // AND on false jumps to converge.
+      // OR on true jumps to converge.
+      ir::Value* const lhs = lower_expression_and_cvt(
+        ctx, builder, builtin_bool, expr->arguments[0]);
+      auto const rhs_block =
+        VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.get_next_id());
+      auto const converge_block =
+        VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.get_next_id());
+      auto const then_block = operator_is_and ? rhs_block : converge_block;
+      auto const else_block = operator_is_and ? converge_block : rhs_block;
+      auto const brcond =
+        ir::make_instr_brcond(ctx.allocator, ctx.get_next_id(), lhs, then_block,
+                              else_block, expr->source_info);
+      builder.insert(brcond);
+
+      // Lower the RHS.
+      builder.set_insert_block(rhs_block);
+      ir::Value* const rhs = lower_expression_and_cvt(
+        ctx, builder, builtin_bool, expr->arguments[1]);
+      auto const branch = ir::make_instr_branch(
+        ctx.allocator, ctx.get_next_id(), converge_block, expr->source_info);
+      builder.insert(branch);
+
+      // Converge the operator.
+      builder.set_insert_block(converge_block);
+      auto const phi =
+        ir::make_instr_phi(ctx.allocator, ctx.get_next_id(),
+                           ir::get_type_bool(), expr->source_info);
+      phi->add_source(lhs);
+      phi->add_source(rhs);
+      builder.insert(phi);
+      return phi;
     }
 
     // Lower non-short-circuit operators.

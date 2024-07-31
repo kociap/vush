@@ -567,12 +567,12 @@ namespace vush::ir {
 
   Instr_phi* make_instr_phi(Allocator* const allocator, i64 const id,
                             Type* const type,
-                            anton::Slice<Instr* const> const srcs,
+                            anton::Slice<Value* const> const srcs,
                             Source_Info const& source_info)
   {
     auto const instr =
       VUSH_ALLOCATE(Instr_phi, allocator, id, type, allocator, source_info);
-    for(Instr* src: srcs) {
+    for(Value* src: srcs) {
       instr->add_source(src);
     }
     return instr;
