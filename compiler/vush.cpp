@@ -411,6 +411,14 @@ namespace vush {
       }
 
       Array<ir::Module> modules = lower_ast_to_ir(ctx.allocator, ast_nodes);
+      ir::Prettyprint_Options options{
+        .function_location = true,
+        .instruction_location = false,
+      };
+      for(ir::Module const& module: modules) {
+        anton::STDOUT_Stream stdout;
+        prettyprint(ctx.allocator, stdout, options, module);
+      }
 
       return {anton::expected_error,
               Error{.diagnostic =
