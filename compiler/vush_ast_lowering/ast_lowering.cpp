@@ -1866,23 +1866,41 @@ namespace vush {
     }
   }
 
-  // [[nodiscard]] static ir::Function* lower_function(Lowering_Context& ctx,
-  //                                                   ast::Decl_Function* const fn)
-  // {
-  //   return nullptr;
-  // }
+  static void lower_function(Lowering_Context& ctx,
+                             ast::Decl_Function const* const ast_fn,
+                             ir::Function* const fn)
+  {
+    ctx.current_function_return_type = ast_fn->return_type;
+    ctx.symtable.push_scope();
+    Builder builder;
+    builder.set_insert_block(fn->entry_block);
+    // Generate allocas for the parameters.
+    // TODO: These allocas are currently unset and are serving as placeholders.
+    for(ast::Fn_Parameter const* const parameter: ast_fn->parameters) {
+      ir::Type* const type = convert_ast_to_ir_type(ctx, parameter->type);
+      auto const instr = ir::make_instr_alloc(ctx.allocator, ctx.get_next_id(),
+                                              type, parameter->source_info);
+      builder.insert(instr);
+      ctx.symtable.add_entry(parameter->identifier.value, instr);
+    }
+
+    lower_statement_block(ctx, builder, ast_fn->body);
+    ctx.symtable.pop_scope();
+  }
 
   [[nodiscard]] static ir::Module
   lower_module(Lowering_Context& ctx,
                ast::Decl_Stage_Function const* const stage)
   {
-    ir::Basic_Block entry_block(ctx.get_next_id());
-    ir::Function* const fn = VUSH_ALLOCATE(
-      ir::Function, ctx.allocator, ctx.get_next_id(), ANTON_MOV(entry_block),
+    auto const entry_block =
+      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.get_next_id());
+    auto const fn = VUSH_ALLOCATE(
+      ir::Function, ctx.allocator, ctx.get_next_id(), entry_block,
       anton::String("main"_sv, ctx.allocator), stage->source_info);
     ctx.current_function_return_type = stage->return_type;
+    ctx.symtable.push_scope();
     Builder builder;
-    builder.set_insert_block(&fn->entry_block);
+    builder.set_insert_block(fn->entry_block);
     // Generate allocas for the parameters.
     // TODO: These allocas are currently unset and are serving as placeholders.
     for(ast::Fn_Parameter const* const parameter: stage->parameters) {
@@ -1894,6 +1912,7 @@ namespace vush {
     }
 
     lower_statement_block(ctx, builder, stage->body);
+    ctx.symtable.pop_scope();
     return ir::Module(anton::String(stage->pass.value, ctx.allocator),
                       stage->stage.value, fn);
   }
@@ -1906,11 +1925,12 @@ namespace vush {
     for(ast::Node const* const node: ast) {
       if(node->node_kind == ast::Node_Kind::decl_function) {
         auto const ast_fn = static_cast<ast::Decl_Function const*>(node);
-        ir::Basic_Block entry_block{ctx.get_next_id()};
+        auto const entry_block =
+          VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.get_next_id());
         anton::String identifier{ast_fn->identifier.value, ctx.allocator};
-        auto const ir_fn = VUSH_ALLOCATE(
-          ir::Function, allocator, ctx.get_next_id(), ANTON_MOV(entry_block),
-          ANTON_MOV(identifier), ast_fn->source_info);
+        auto const ir_fn =
+          VUSH_ALLOCATE(ir::Function, allocator, ctx.get_next_id(), entry_block,
+                        ANTON_MOV(identifier), ast_fn->source_info);
         ctx.fntable.add_entry(ir_fn->identifier, ir_fn);
       }
     }
@@ -1920,6 +1940,12 @@ namespace vush {
         auto const stage = static_cast<ast::Decl_Stage_Function const*>(node);
         ir::Module module = lower_module(ctx, stage);
         modules.push_back(ANTON_MOV(module));
+      }
+
+      if(node->node_kind == ast::Node_Kind::decl_function) {
+        auto const ast_fn = static_cast<ast::Decl_Function const*>(node);
+        auto const fn = *ctx.fntable.find_entry(ast_fn->identifier.value);
+        lower_function(ctx, ast_fn, fn);
       }
     }
     return modules;
