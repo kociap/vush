@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vush_ast/ast.hpp>
 #include <vush_ast/ast_fwd.hpp>
 #include <vush_core/source_info.hpp>
 #include <vush_diagnostics/error.hpp>
@@ -12,6 +13,10 @@ namespace vush {
   [[nodiscard]] Error err_symbol_redefinition(Context const& ctx,
                                               Source_Info const& old_symbol,
                                               Source_Info const& new_symbol);
+
+  [[nodiscard]] Error
+  err_init_invalid_vector_initializer_kind(Context const& ctx,
+                                           ast::Initializer const* initializer);
 
   [[nodiscard]] Error
   err_init_invalid_matrix_initializer_kind(Context const& ctx,
@@ -31,6 +36,10 @@ namespace vush {
   [[nodiscard]] Error
   err_opaque_type_non_assignable(Context const& ctx,
                                  ast::Stmt_Assignment const* assignment);
+
+  [[nodiscard]] Error
+  err_assignment_to_immutable(Context const& ctx,
+                              ast::Stmt_Assignment const* assignment);
 
   [[nodiscard]] Error err_arithmetic_assignment_to_non_arithmetic_type(
     Context const& ctx, ast::Stmt_Assignment const* assignment);
@@ -76,11 +85,38 @@ namespace vush {
                                                   ast::Type_Builtin const* type,
                                                   ast::Identifier const& field);
 
+  [[nodiscard]] Error
+  err_vector_lvalue_swizzle_overlong(Context const& ctx,
+                                     ast::Expr_Field const* expr);
+
+  [[nodiscard]] Error
+  err_vector_lvalue_swizzle_duplicate_components(Context const& ctx,
+                                                 ast::Expr_Field const* expr);
+
+  [[nodiscard]] Error
+  err_expr_default_not_lvalue(Context const& ctx,
+                              ast::Expr_Default const* expr);
+
+  [[nodiscard]] Error err_lt_bool_not_lvalue(Context const& ctx,
+                                             ast::Lt_Bool const* expr);
+
+  [[nodiscard]] Error err_lt_integer_not_lvalue(Context const& ctx,
+                                                ast::Lt_Integer const* expr);
+
+  [[nodiscard]] Error err_lt_float_not_lvalue(Context const& ctx,
+                                              ast::Lt_Float const* expr);
+
+  [[nodiscard]] Error err_expr_call_not_lvalue(Context const& ctx,
+                                               ast::Expr_Call const* expr);
+
+  [[nodiscard]] Error err_expr_init_not_lvalue(Context const& ctx,
+                                               ast::Expr_Init const* expr);
+
+  [[nodiscard]] Error err_expr_if_not_lvalue(Context const& ctx,
+                                             ast::Expr_If const* expr);
+
   [[nodiscard]] Error err_unknown_vector_type(Context const& ctx,
                                               ast::Type const* type);
-
-  [[nodiscard]] Error err_matrix_field_invalid(Context const& ctx,
-                                               ast::Identifier const* field);
 
   [[nodiscard]] inline Error err_builtin_type_has_no_member_named(
     [[maybe_unused]] Context const& ctx, [[maybe_unused]] ast::Type const* type,

@@ -34,6 +34,12 @@ namespace vush::ast {
            static_cast<Type const&>(node).type_kind == Type_Kind::type_array;
   }
 
+  template<>
+  bool instanceof<Expr_Field>(Node const& node)
+  {
+    return node.node_kind == Node_Kind::expr_field;
+  }
+
   bool is_integer_based(Type const& type)
   {
     return is_integer_vector(type) || is_integer(type);

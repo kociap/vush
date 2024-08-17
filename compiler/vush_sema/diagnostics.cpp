@@ -51,6 +51,21 @@ namespace vush {
     return error;
   }
 
+  Error err_init_invalid_vector_initializer_kind(
+    Context const& ctx, ast::Initializer const* const initializer)
+  {
+    Source_Info const source_info = initializer->source_info;
+    Error error = error_from_source(ctx.allocator, source_info);
+    anton::String_View const source =
+      ctx.source_registry->find_source(source_info.source_path)->data;
+    error.diagnostic =
+      "error: vector initializer is not a basic initializer"_sv;
+    print_source_snippet(ctx, error.extended_diagnostic, source, source_info);
+    error.extended_diagnostic +=
+      " vector initializers must be basic initializers"_sv;
+    return error;
+  }
+
   Error err_init_invalid_matrix_initializer_kind(
     Context const& ctx, ast::Initializer const* const initializer)
   {
@@ -59,10 +74,10 @@ namespace vush {
     anton::String_View const source =
       ctx.source_registry->find_source(source_info.source_path)->data;
     error.diagnostic =
-      "error: matrix initializer is not a field or range initializer"_sv;
+      "error: matrix initializer is not a basic initializer"_sv;
     print_source_snippet(ctx, error.extended_diagnostic, source, source_info);
     error.extended_diagnostic +=
-      " matrix initializers must be field or range initializers"_sv;
+      " matrix initializers must be basic initializers"_sv;
     return error;
   }
 
@@ -88,6 +103,21 @@ namespace vush {
     error.diagnostic =
       "error: the left hand side of the assignment has an opaque type";
     // TODO: Explain why the type is opaque.
+    return error;
+  }
+
+  Error err_assignment_to_immutable(Context const& ctx,
+                                    ast::Stmt_Assignment const* assignment)
+  {
+    Source_Info const source_info = assignment->source_info;
+    Source_Info const lhs_source_info = assignment->lhs->source_info;
+    Error error = error_from_source(ctx.allocator, source_info);
+    error.diagnostic = "error: cannot assign to an immutable location"_sv;
+    anton::String_View const source =
+      ctx.source_registry->find_source(source_info.source_path)->data;
+    print_source_snippet(ctx, error.extended_diagnostic, source,
+                         lhs_source_info);
+    error.extended_diagnostic += " LHS is immutable"_sv;
     return error;
   }
 
@@ -294,14 +324,72 @@ namespace vush {
     return error;
   }
 
+  Error err_vector_lvalue_swizzle_overlong(Context const& ctx,
+                                           ast::Expr_Field const* const expr)
+  {
+    Source_Info const field_source_info = expr->field.source_info;
+    Error error = error_from_source(ctx.allocator, field_source_info);
+    error.diagnostic =
+      "error: lvalue vector swizzle longer than the vector type"_sv;
+    return error;
+  }
+
+  Error err_vector_lvalue_swizzle_duplicate_components(
+    Context const& ctx, ast::Expr_Field const* const expr)
+  {
+    Source_Info const field_source_info = expr->field.source_info;
+    Error error = error_from_source(ctx.allocator, field_source_info);
+    error.diagnostic =
+      "error: lvalue vector swizzle contains duplicate components"_sv;
+    return error;
+  }
+
+  Error err_expr_default_not_lvalue(Context const& ctx,
+                                    ast::Expr_Default const* expr)
+  {
+    return Error{};
+  }
+
+  Error err_lt_bool_not_lvalue(Context const& ctx, ast::Lt_Bool const* expr)
+  {
+    return Error{};
+  }
+
+  Error err_lt_integer_not_lvalue(Context const& ctx,
+                                  ast::Lt_Integer const* expr)
+  {
+    return Error{};
+  }
+
+  Error err_lt_float_not_lvalue(Context const& ctx, ast::Lt_Float const* expr)
+  {
+    return Error{};
+  }
+
+  Error err_expr_call_not_lvalue(Context const& ctx, ast::Expr_Call const* expr)
+  {
+    return Error{};
+  }
+
+  Error err_expr_init_not_lvalue(Context const& ctx, ast::Expr_Init const* expr)
+  {
+    return Error{};
+  }
+
+  Error err_expr_if_not_lvalue(Context const& ctx, ast::Expr_If const* expr)
+  {
+    return Error{};
+  }
+
+  Error err_unknown_vector_type(Context const& ctx, ast::Type const* type)
+  {
+    return Error{};
+  }
+
   Error err_matrix_field_invalid(Context const& ctx,
                                  ast::Identifier const* field)
   {
-    Error error = error_from_source(ctx.allocator, field->source_info);
-    error.diagnostic =
-      anton::format("error: invalid matrix field '{}'"_sv, field->value);
-    // TODO: Extended diagnostic.
-    return error;
+    return Error{};
   }
 
   Error err_type_has_no_field_named(Context const& ctx, ast::Type const* type,

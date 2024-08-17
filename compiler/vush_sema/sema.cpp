@@ -96,6 +96,36 @@ namespace vush {
     }
   };
 
+  [[nodiscard]] static ast::Type* copy(Allocator* const allocator,
+                                       ast::Type const* const gtype)
+  {
+    switch(gtype->type_kind) {
+    case ast::Type_Kind::type_builtin: {
+      auto const type = static_cast<ast::Type_Builtin const*>(gtype);
+      return VUSH_ALLOCATE(ast::Type_Builtin, allocator, type->source_info,
+                           type->qualifiers, type->value);
+    }
+
+    case ast::Type_Kind::type_struct: {
+      auto const type = static_cast<ast::Type_Struct const*>(gtype);
+      return VUSH_ALLOCATE(ast::Type_Struct, allocator, type->source_info,
+                           type->qualifiers,
+                           anton::String(type->value, allocator));
+    }
+
+    case ast::Type_Kind::type_array: {
+      auto const type = static_cast<ast::Type_Array const*>(gtype);
+      auto const base = copy(allocator, type->base);
+      auto const size =
+        type->size != nullptr
+          ? VUSH_ALLOCATE(ast::Lt_Integer, allocator, *type->size)
+          : nullptr;
+      return VUSH_ALLOCATE(ast::Type_Array, allocator, type->source_info,
+                           type->qualifiers, base, size);
+    }
+    }
+  }
+
   [[nodiscard]] static anton::Expected<void, Error>
   check_array_is_sized(Context const& ctx, ast::Type const* const type)
   {
@@ -267,7 +297,7 @@ namespace vush {
     }
   }
 
-  [[nodiscard]] static anton::Expected<ast::Type const*, Error>
+  [[nodiscard]] static anton::Expected<ast::Type*, Error>
   evaluate_vector_field(Context const& ctx, ast::Type_Builtin const& type,
                         ast::Identifier const& field)
   {
@@ -296,16 +326,20 @@ namespace vush {
       switch(size) {
       case 1:
         return {anton::expected_value,
-                get_builtin_type(ast::Type_Builtin_Kind::e_bool)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
+                              ast::Type_Builtin_Kind::e_bool)};
       case 2:
         return {anton::expected_value,
-                get_builtin_type(ast::Type_Builtin_Kind::e_bvec2)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
+                              ast::Type_Builtin_Kind::e_bvec2)};
       case 3:
         return {anton::expected_value,
-                get_builtin_type(ast::Type_Builtin_Kind::e_bvec3)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
+                              ast::Type_Builtin_Kind::e_bvec3)};
       case 4:
         return {anton::expected_value,
-                get_builtin_type(ast::Type_Builtin_Kind::e_bvec4)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
+                              ast::Type_Builtin_Kind::e_bvec4)};
       }
     }
 
@@ -313,16 +347,20 @@ namespace vush {
       switch(size) {
       case 1:
         return {anton::expected_value,
-                get_builtin_type(ast::Type_Builtin_Kind::e_int)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
+                              ast::Type_Builtin_Kind::e_int)};
       case 2:
         return {anton::expected_value,
-                get_builtin_type(ast::Type_Builtin_Kind::e_ivec2)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
+                              ast::Type_Builtin_Kind::e_ivec2)};
       case 3:
         return {anton::expected_value,
-                get_builtin_type(ast::Type_Builtin_Kind::e_ivec3)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
+                              ast::Type_Builtin_Kind::e_ivec3)};
       case 4:
         return {anton::expected_value,
-                get_builtin_type(ast::Type_Builtin_Kind::e_ivec4)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
+                              ast::Type_Builtin_Kind::e_ivec4)};
       }
     }
 
@@ -330,16 +368,20 @@ namespace vush {
       switch(size) {
       case 1:
         return {anton::expected_value,
-                get_builtin_type(ast::Type_Builtin_Kind::e_uint)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
+                              ast::Type_Builtin_Kind::e_uint)};
       case 2:
         return {anton::expected_value,
-                get_builtin_type(ast::Type_Builtin_Kind::e_uvec2)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
+                              ast::Type_Builtin_Kind::e_uvec2)};
       case 3:
         return {anton::expected_value,
-                get_builtin_type(ast::Type_Builtin_Kind::e_uvec3)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
+                              ast::Type_Builtin_Kind::e_uvec3)};
       case 4:
         return {anton::expected_value,
-                get_builtin_type(ast::Type_Builtin_Kind::e_uvec4)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
+                              ast::Type_Builtin_Kind::e_uvec4)};
       }
     }
 
@@ -347,16 +389,20 @@ namespace vush {
       switch(size) {
       case 1:
         return {anton::expected_value,
-                get_builtin_type(ast::Type_Builtin_Kind::e_float)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
+                              ast::Type_Builtin_Kind::e_float)};
       case 2:
         return {anton::expected_value,
-                get_builtin_type(ast::Type_Builtin_Kind::e_vec2)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
+                              ast::Type_Builtin_Kind::e_vec2)};
       case 3:
         return {anton::expected_value,
-                get_builtin_type(ast::Type_Builtin_Kind::e_vec3)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
+                              ast::Type_Builtin_Kind::e_vec3)};
       case 4:
         return {anton::expected_value,
-                get_builtin_type(ast::Type_Builtin_Kind::e_vec4)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
+                              ast::Type_Builtin_Kind::e_vec4)};
       }
     }
 
@@ -364,72 +410,25 @@ namespace vush {
       switch(size) {
       case 1:
         return {anton::expected_value,
-                get_builtin_type(ast::Type_Builtin_Kind::e_double)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
+                              ast::Type_Builtin_Kind::e_double)};
       case 2:
         return {anton::expected_value,
-                get_builtin_type(ast::Type_Builtin_Kind::e_dvec2)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
+                              ast::Type_Builtin_Kind::e_dvec2)};
       case 3:
         return {anton::expected_value,
-                get_builtin_type(ast::Type_Builtin_Kind::e_dvec3)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
+                              ast::Type_Builtin_Kind::e_dvec3)};
       case 4:
         return {anton::expected_value,
-                get_builtin_type(ast::Type_Builtin_Kind::e_dvec4)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
+                              ast::Type_Builtin_Kind::e_dvec4)};
       }
     }
 
     return {anton::expected_error,
             err_unimplemented(ctx, field.source_info, __FILE__, __LINE__)};
-  }
-
-  [[nodiscard]] static anton::Expected<ast::Type const*, Error>
-  evaluate_matrix_field(Context const& ctx, ast::Type_Builtin const& type,
-                        ast::Identifier const& field)
-  {
-    ANTON_ASSERT(is_matrix(type), "type is not matrix");
-    // Matrices have fields named matX or matYxZ where X, Y, Z in {2, 3, 4}.
-
-    auto select_kind_from_field =
-      [](Context const& ctx, ast::Identifier const* const field,
-         bool const is_f32) -> anton::Expected<ast::Type_Builtin_Kind, Error> {
-      using Kind = ast::Type_Builtin_Kind;
-      switch(anton::hash(field->value)) {
-      case anton::hash("mat2"_sv):
-        return {anton::expected_value, is_f32 ? Kind::e_mat2 : Kind::e_dmat2};
-      case anton::hash("mat2x3"_sv):
-        return {anton::expected_value,
-                is_f32 ? Kind::e_mat2x3 : Kind::e_dmat2x3};
-      case anton::hash("mat2x4"_sv):
-        return {anton::expected_value,
-                is_f32 ? Kind::e_mat2x4 : Kind::e_dmat2x4};
-      case anton::hash("mat3x2"_sv):
-        return {anton::expected_value,
-                is_f32 ? Kind::e_mat3x2 : Kind::e_dmat3x2};
-      case anton::hash("mat3"_sv):
-        return {anton::expected_value, is_f32 ? Kind::e_mat3 : Kind::e_dmat3};
-      case anton::hash("mat3x4"_sv):
-        return {anton::expected_value,
-                is_f32 ? Kind::e_mat3x4 : Kind::e_dmat3x4};
-      case anton::hash("mat4x2"_sv):
-        return {anton::expected_value,
-                is_f32 ? Kind::e_mat4x2 : Kind::e_dmat4x2};
-      case anton::hash("mat4x3"_sv):
-        return {anton::expected_value,
-                is_f32 ? Kind::e_mat4x3 : Kind::e_dmat4x3};
-      case anton::hash("mat4"_sv):
-        return {anton::expected_value, is_f32 ? Kind::e_mat4 : Kind::e_dmat4};
-      default:
-        return {anton::expected_error, err_matrix_field_invalid(ctx, field)};
-      }
-    };
-
-    bool const is_f32 = is_f32_matrix(type);
-    auto result = select_kind_from_field(ctx, &field, is_f32);
-    if(!result) {
-      return {anton::expected_error, ANTON_MOV(result.error())};
-    }
-
-    ast::Type_Builtin_Kind const field_kind = result.value();
-    return {anton::expected_value, get_builtin_type(field_kind)};
   }
 
   [[nodiscard]] static anton::Expected<void, Error>
@@ -579,8 +578,8 @@ namespace vush {
                      ast::Expr_Field* const expr)
   {
     RETURN_ON_FAIL(analyse_expression, ctx, symtable, expr->base);
-    // Arrays have no members. Builtin types with the exception of vectors and
-    // matrices do not have members.
+    // Arrays have no members. Builtin types with the exception of vectors do
+    // not have members.
     //
     // TODO: Separate diagnostics for each type kind.
     ast::Type const* generic_type = expr->base->evaluated_type;
@@ -590,12 +589,10 @@ namespace vush {
       if(is_vector(*type)) {
         RETURN_ON_FAIL_VAR(field_result, evaluate_vector_field, ctx, *type,
                            expr->field);
-        expr->evaluated_type = field_result.value();
-        return anton::expected_value;
-      } else if(is_matrix(*type)) {
-        RETURN_ON_FAIL_VAR(field_result, evaluate_matrix_field, ctx, *type,
-                           expr->field);
-        expr->evaluated_type = field_result.value();
+        // We must propagate the qualifiers.
+        auto const evaluated_type = field_result.value();
+        evaluated_type->qualifiers = type->qualifiers;
+        expr->evaluated_type = evaluated_type;
         return anton::expected_value;
       } else {
         return {anton::expected_error, err_builtin_type_has_no_member_named(
@@ -612,7 +609,10 @@ namespace vush {
           continue;
         }
 
-        expr->evaluated_type = field->type;
+        // We must propagate the qualifiers.
+        auto const evaluated_type = copy(ctx.allocator, field->type);
+        evaluated_type->qualifiers = type->qualifiers;
+        expr->evaluated_type = evaluated_type;
         return anton::expected_value;
       }
 
@@ -671,111 +671,6 @@ namespace vush {
   }
 
   [[nodiscard]] static anton::Expected<void, Error>
-  analyse_expr_init_type_builtin(Context& ctx, Symbol_Table& symtable,
-                                 ast::Type_Builtin const* const type,
-                                 ast::Initializer* const ginitializer)
-  {
-    if(is_vector(*type)) {
-      if(ginitializer->node_kind != ast::Node_Kind::field_initializer) {
-        return {anton::expected_error,
-                err_init_invalid_struct_initializer_kind(ctx, ginitializer)};
-      }
-
-      auto const initializer =
-        static_cast<ast::Field_Initializer const*>(ginitializer);
-
-      // Validate out swizzles larger than the vector type.
-      i64 const field_size = initializer->identifier.value.size_bytes();
-      if(is_vector2(*type) && field_size > 2) {
-        return {anton::expected_error, err_vector_swizzle_overlong(
-                                         ctx, type, initializer->identifier)};
-      }
-
-      if(is_vector3(*type) && field_size > 3) {
-        return {anton::expected_error, err_vector_swizzle_overlong(
-                                         ctx, type, initializer->identifier)};
-      }
-
-      if(is_vector4(*type) && field_size > 4) {
-        return {anton::expected_error, err_vector_swizzle_overlong(
-                                         ctx, type, initializer->identifier)};
-      }
-
-      auto field_result =
-        evaluate_vector_field(ctx, *type, initializer->identifier);
-      if(!field_result) {
-        return {anton::expected_error, ANTON_MOV(field_result.error())};
-      }
-
-      // Perform validation of the expression and report any errors there.
-      RETURN_ON_FAIL(analyse_expression, ctx, symtable,
-                     initializer->expression);
-
-      // Ensure type compatibility as the last step.
-      ast::Type const* const field_type = field_result.value();
-      ast::Type const* const initializer_type =
-        initializer->expression->evaluated_type;
-      if(is_convertible(field_type, initializer_type)) {
-        return anton::expected_value;
-      } else {
-        return {anton::expected_error,
-                err_cannot_convert_type(ctx,
-                                        initializer->expression->source_info,
-                                        field_type, initializer_type)};
-      }
-    } else if(is_matrix(*type)) {
-      if(ginitializer->node_kind != ast::Node_Kind::index_initializer &&
-         ginitializer->node_kind != ast::Node_Kind::field_initializer) {
-        return {anton::expected_error,
-                err_init_invalid_matrix_initializer_kind(ctx, ginitializer)};
-      }
-
-      switch(ginitializer->node_kind) {
-      case ast::Node_Kind::field_initializer: {
-        auto const initializer =
-          static_cast<ast::Field_Initializer const*>(ginitializer);
-
-        // Validate the field first and report errors.
-        auto field_result =
-          evaluate_matrix_field(ctx, *type, initializer->identifier);
-        if(!field_result) {
-          return {anton::expected_error, ANTON_MOV(field_result.error())};
-        }
-
-        RETURN_ON_FAIL(analyse_expression, ctx, symtable,
-                       initializer->expression)
-
-        // Ensure type compatibility as the last step.
-        ast::Type const* field_type = field_result.value();
-        ast::Type const* initializer_type =
-          initializer->expression->evaluated_type;
-        if(is_convertible(field_type, initializer_type)) {
-          return anton::expected_value;
-        } else {
-          return {anton::expected_error,
-                  err_cannot_convert_type(ctx,
-                                          initializer->expression->source_info,
-                                          field_type, initializer_type)};
-        }
-      }
-
-      case ast::Node_Kind::index_initializer: {
-        return {anton::expected_error,
-                err_unimplemented(ctx, ginitializer->source_info, __FILE__,
-                                  __LINE__)};
-      }
-
-      default:
-        return {anton::expected_error,
-                err_unimplemented(ctx, ginitializer->source_info, __FILE__,
-                                  __LINE__)};
-      }
-    } else {
-      return {anton::expected_error, err_init_type_is_builtin(ctx, type)};
-    }
-  }
-
-  [[nodiscard]] static anton::Expected<void, Error>
   analyse_expr_init_type_array(Context& ctx, Symbol_Table& symtable,
                                ast::Type_Array const* const type,
                                ast::Initializer* const ginitializer)
@@ -796,15 +691,16 @@ namespace vush {
                     ast::Expr_Init* const expr)
   {
     // Initialization rules:
-    // - Builtin types: we do not allow initialization of builtin types with the exception of
-    //   vectors and matrices. Vectors follow rules for structs, matrices have special rules
-    //   allowing both field initializers and range initializers.
-    // - Struct types: we allow initialization of struct types using only field initializers.
-    // - Array types: we allow initialization of array types using only range or basic
-    //   initializers. Usage of both kinds of initializers in one initialization is disallowed.
+    // - Builtin types: we do not allow initialization of builtin types with the
+    //   exception of vectors and matrices - basic initializers in both cases.
+    // - Struct types: we allow initialization of struct types using only field
+    //   initializers.
+    // - Array types: we allow initialization of array types using only range or
+    //   basic initializers. Usage of both kinds of initializers in one
+    //   initialization is disallowed.
     //   TODO: We might lift this restriction at a later time.
-    // Duplicate or overlapping initializers are not allowed. Initializers are evaluated in the
-    // order of appearance.
+    // Duplicate or overlapping initializers are not allowed. Initializers are
+    // evaluated in the order of appearance.
     RETURN_ON_FAIL(namebind_type, ctx, symtable, expr->type);
     ast::Type_Kind const type_kind = expr->type->type_kind;
     switch(type_kind) {
@@ -819,9 +715,30 @@ namespace vush {
     case ast::Type_Kind::type_builtin: {
       auto const type = static_cast<ast::Type_Builtin*>(expr->type);
       for(ast::Initializer* const ginitializer: expr->initializers) {
-        RETURN_ON_FAIL(analyse_expr_init_type_builtin, ctx, symtable, type,
-                       ginitializer);
+        if(is_vector(*type)) {
+          if(ginitializer->node_kind != ast::Node_Kind::basic_initializer) {
+            return {
+              anton::expected_error,
+              err_init_invalid_vector_initializer_kind(ctx, ginitializer)};
+          }
+        } else if(is_matrix(*type)) {
+          if(ginitializer->node_kind != ast::Node_Kind::basic_initializer) {
+            return {
+              anton::expected_error,
+              err_init_invalid_matrix_initializer_kind(ctx, ginitializer)};
+          }
+        } else {
+          return {anton::expected_error, err_init_type_is_builtin(ctx, type)};
+        }
+
+        auto const initializer =
+          static_cast<ast::Basic_Initializer const*>(ginitializer);
+        RETURN_ON_FAIL(analyse_expression, ctx, symtable,
+                       initializer->expression);
       }
+
+      // Do a hand-wavy "overload" resolution of the init expression.
+      // TODO: This ^.
     } break;
 
     case ast::Type_Kind::type_array: {
@@ -964,16 +881,114 @@ namespace vush {
   }
 
   [[nodiscard]] static anton::Expected<void, Error>
+  analyse_lvalue_vector_field(Context& ctx, ast::Expr_Field const* const expr)
+  {
+    if(instanceof<ast::Expr_Field>(expr->base)) {
+      auto const base = static_cast<ast::Expr_Field const*>(expr->base);
+      RETURN_ON_FAIL(analyse_lvalue_vector_field, ctx, base);
+    }
+
+    auto const base_type = expr->base->evaluated_type;
+    if(is_vector(*base_type)) {
+      anton::String_View const field = expr->field.value;
+      // If it's a vector, it's always at least length 2.
+      i64 vector_length = 2;
+      if(is_vector3(*base_type)) {
+        vector_length = 3;
+      } else if(is_vector4(*base_type)) {
+        vector_length = 4;
+      }
+
+      if(field.size_bytes() > vector_length) {
+        return {anton::expected_error,
+                err_vector_lvalue_swizzle_overlong(ctx, expr)};
+      }
+
+      for(auto b = field.bytes_begin(), e = field.bytes_end(); b != e; ++b) {
+        for(auto i = b + 1; i != e; ++i) {
+          if(*b == *i) {
+            return {anton::expected_error,
+                    err_vector_lvalue_swizzle_duplicate_components(ctx, expr)};
+          }
+        }
+      }
+    }
+
+    return anton::expected_value;
+  }
+
+  [[nodiscard]] static anton::Expected<void, Error>
   analyse_stmt_assignment(Context& ctx, Symbol_Table& symtable,
                           ast::Stmt_Assignment* const node)
   {
-    RETURN_ON_FAIL(analyse_expression, ctx, symtable, node->lhs);
-    RETURN_ON_FAIL(analyse_expression, ctx, symtable, node->rhs);
+    switch(node->lhs->node_kind) {
+    case ast::Node_Kind::expr_identifier: {
+      auto const expr = static_cast<ast::Expr_Identifier*>(node->lhs);
+      RETURN_ON_FAIL(analyse_expr_identifier, ctx, symtable, expr);
+    } break;
+
+    case ast::Node_Kind::expr_field: {
+      auto const expr = static_cast<ast::Expr_Field*>(node->lhs);
+      RETURN_ON_FAIL(analyse_expr_field, ctx, symtable, expr);
+      RETURN_ON_FAIL(analyse_lvalue_vector_field, ctx, expr);
+    } break;
+
+    case ast::Node_Kind::expr_index: {
+      auto const expr = static_cast<ast::Expr_Index*>(node->lhs);
+      RETURN_ON_FAIL(analyse_expr_index, ctx, symtable, expr);
+    } break;
+
+    case ast::Node_Kind::expr_default:
+      return {anton::expected_error,
+              err_expr_default_not_lvalue(
+                ctx, static_cast<ast::Expr_Default*>(node->lhs))};
+
+    case ast::Node_Kind::lt_bool:
+      return {
+        anton::expected_error,
+        err_lt_bool_not_lvalue(ctx, static_cast<ast::Lt_Bool*>(node->lhs))};
+
+    case ast::Node_Kind::lt_integer:
+      return {anton::expected_error,
+              err_lt_integer_not_lvalue(
+                ctx, static_cast<ast::Lt_Integer*>(node->lhs))};
+
+    case ast::Node_Kind::lt_float:
+      return {
+        anton::expected_error,
+        err_lt_float_not_lvalue(ctx, static_cast<ast::Lt_Float*>(node->lhs))};
+
+    case ast::Node_Kind::expr_call:
+      return {
+        anton::expected_error,
+        err_expr_call_not_lvalue(ctx, static_cast<ast::Expr_Call*>(node->lhs))};
+
+    case ast::Node_Kind::expr_init:
+      return {
+        anton::expected_error,
+        err_expr_init_not_lvalue(ctx, static_cast<ast::Expr_Init*>(node->lhs))};
+
+    case ast::Node_Kind::expr_if:
+      return {
+        anton::expected_error,
+        err_expr_if_not_lvalue(ctx, static_cast<ast::Expr_If*>(node->lhs))};
+
+    case ast::Node_Kind::expr_reinterpret:
+    default:
+      ANTON_UNREACHABLE("invalid node kind");
+    }
 
     ast::Type const* const lhs_type = node->lhs->evaluated_type;
     if(ast::is_opaque_type(*lhs_type)) {
       return {anton::expected_error, err_opaque_type_non_assignable(ctx, node)};
     }
+
+    bool const lhs_immutable = !lhs_type->qualifiers.mut;
+    if(lhs_immutable) {
+      return {anton::expected_error, err_assignment_to_immutable(ctx, node)};
+    }
+
+    RETURN_ON_FAIL(analyse_expression, ctx, symtable, node->rhs);
 
     bool const arithmetic_assignment =
       node->kind != ast::Assignment_Kind::e_assign;
@@ -981,6 +996,9 @@ namespace vush {
       return {anton::expected_error,
               err_arithmetic_assignment_to_non_arithmetic_type(ctx, node)};
     }
+
+    // TODO: Not all arithmetic operations are allowed on all types. Do some
+    //       sort of overload resolution?
 
     ast::Type const* const rhs_type = node->rhs->evaluated_type;
     if(is_convertible(lhs_type, rhs_type)) {
