@@ -28,6 +28,15 @@ namespace vush::ir {
     Type_Kind kind;
   };
 
+  template<typename T>
+  [[nodiscard]] bool instanceof(Type const& type);
+
+  template<typename T>
+  [[nodiscard]] bool instanceof(Type const* type)
+  {
+    return instanceof<T>(*type);
+  }
+
   [[nodiscard]] bool compare_types_equal(Type const& lhs, Type const& rhs);
 
   [[nodiscard]] Type* get_type_void();
@@ -38,13 +47,15 @@ namespace vush::ir {
   [[nodiscard]] Type* get_type_fp16();
   [[nodiscard]] Type* get_type_fp32();
   [[nodiscard]] Type* get_type_fp64();
-  [[nodiscard]] Type* get_type_fp64();
   [[nodiscard]] Type* get_type_ptr();
 
   [[nodiscard]] bool is_int_type(Type const& type);
   [[nodiscard]] bool is_int_based_type(Type const& type);
   [[nodiscard]] bool is_fp_type(Type const& type);
   [[nodiscard]] bool is_fp_based_type(Type const& type);
+  [[nodiscard]] bool is_vec2(Type const& type);
+  [[nodiscard]] bool is_vec3(Type const& type);
+  [[nodiscard]] bool is_vec4(Type const& type);
 
   enum struct Sampler_Dim {
     e_1D,

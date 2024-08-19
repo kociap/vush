@@ -107,6 +107,12 @@ namespace vush::ir {
     return &static_type_ptr;
   }
 
+  template<>
+  bool instanceof<Type_Vec>(Type const& type)
+  {
+    return type.kind == Type_Kind::e_vec;
+  }
+
   bool is_int_type(Type const& type)
   {
     return type.kind == Type_Kind::e_int8 || type.kind == Type_Kind::e_int16 ||
@@ -143,5 +149,23 @@ namespace vush::ir {
 
     return kind == Type_Kind::e_fp16 || kind == Type_Kind::e_fp32 ||
            kind == Type_Kind::e_fp64;
+  }
+
+  bool is_vec2(Type const& type)
+  {
+    return type.kind == Type_Kind::e_vec &&
+           static_cast<Type_Vec const&>(type).rows == 2;
+  }
+
+  bool is_vec3(Type const& type)
+  {
+    return type.kind == Type_Kind::e_vec &&
+           static_cast<Type_Vec const&>(type).rows == 3;
+  }
+
+  bool is_vec4(Type const& type)
+  {
+    return type.kind == Type_Kind::e_vec &&
+           static_cast<Type_Vec const&>(type).rows == 4;
   }
 } // namespace vush::ir

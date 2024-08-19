@@ -195,6 +195,7 @@ namespace vush::ir {
     e_getptr,
     e_alu,
     e_vector_extract,
+    e_vector_insert,
     e_composite_extract,
     e_composite_construct,
     e_cvt_sext,
@@ -339,6 +340,24 @@ namespace vush::ir {
   make_instr_vector_extract(Allocator* allocator, i64 id, Type* type,
                             Value* value, i64 index,
                             Source_Info const& source_info);
+
+  struct Instr_vector_insert: public Instr {
+    Value* dst;
+    Value* value;
+    i64 index;
+
+    Instr_vector_insert(i64 id, Type* type, Value* dst, Value* value, i64 index,
+                        Allocator* allocator, Source_Info const& source_info)
+      : Instr(id, Instr_Kind::e_vector_insert, type, allocator, source_info),
+        dst(dst), value(value), index(index)
+    {
+    }
+  };
+
+  [[nodiscard]] Instr_vector_insert*
+  make_instr_vector_insert(Allocator* allocator, i64 id, Type* type, Value* dst,
+                           Value* value, i64 index,
+                           Source_Info const& source_info);
 
   struct Instr_composite_extract: public Instr {
     Value* value;

@@ -106,6 +106,14 @@ namespace vush::ir {
   }
 
   template<>
+  bool instanceof<Instr_vector_insert>(Value const* value)
+  {
+    return value->value_kind == Value_Kind::e_instr &&
+           static_cast<Instr const*>(value)->instr_kind ==
+             Instr_Kind::e_vector_insert;
+  }
+
+  template<>
   bool instanceof<Instr_composite_extract>(Value const* value)
   {
     return value->value_kind == Value_Kind::e_instr &&
@@ -346,6 +354,18 @@ namespace vush::ir {
   {
     auto const instr = VUSH_ALLOCATE(Instr_vector_extract, allocator, id, type,
                                      value, index, allocator, source_info);
+    value->add_referrer(instr);
+    return instr;
+  }
+
+  Instr_vector_insert* make_instr_vector_insert(Allocator* allocator, i64 id,
+                                                Type* type, Value* dst,
+                                                Value* value, i64 index,
+                                                Source_Info const& source_info)
+  {
+    auto const instr = VUSH_ALLOCATE(Instr_vector_insert, allocator, id, type,
+                                     dst, value, index, allocator, source_info);
+    dst->add_referrer(instr);
     value->add_referrer(instr);
     return instr;
   }

@@ -11,6 +11,7 @@
 #include <vush_core/memory.hpp>
 #include <vush_core/scoped_map.hpp>
 #include <vush_ir/ir.hpp>
+#include <vush_ir/types.hpp>
 
 namespace vush {
   using namespace anton::literals;
@@ -1551,16 +1552,53 @@ namespace vush {
                                     ast::Stmt_Assignment const* const stmt)
   {
     ir::Value* const rhs = lower_expression(ctx, builder, stmt->rhs);
-    ast::Type const* const lhs_type = stmt->lhs->evaluated_type;
-    if(lhs_type->type_kind == ast::Type_Kind::type_array ||
-       lhs_type->type_kind == ast::Type_Kind::type_struct) {
-      // TODO: Copy memory.
-      return;
+    auto const field_expr = static_cast<ast::Expr_Field const*>(stmt->lhs);
+    if(instanceof<ast::Expr_Field>(stmt->lhs) &&
+       ast::is_vector(*field_expr->base->evaluated_type)) {
+      auto const dst = get_address(ctx, builder, field_expr->base);
+      ast::Type const* const ast_base_type = field_expr->base->evaluated_type;
+      ir::Type* const base_type = convert_ast_to_ir_type(ctx, ast_base_type);
+      ANTON_ASSERT(instanceof<ir::Type_Vec>(base_type), "type is not vector");
+      auto const type = static_cast<ir::Type_Vec const*>(base_type);
+      auto const element_type =
+        VUSH_ALLOCATE(ir::Type, ctx.allocator, type->element_kind);
+      ir::Instr* value =
+        ir::make_instr_load(ctx.allocator, ctx.get_next_id(), base_type, dst,
+                            field_expr->base->source_info);
+      builder.insert(value);
+      for(auto const [src_index, swizzle]:
+          anton::zip(anton::irange(0, 3), field_expr->field.value.bytes())) {
+        i64 const dst_index = ast::vector_swizzle_char_to_index(swizzle);
+        // TODO: Arithmetic operations.
+        auto const element = ir::make_instr_vector_extract(
+          ctx.allocator, ctx.get_next_id(), element_type, rhs, src_index,
+          field_expr->source_info);
+        builder.insert(element);
+        value = ir::make_instr_vector_insert(ctx.allocator, ctx.get_next_id(),
+                                             value->type, value, element,
+                                             dst_index, stmt->source_info);
+        builder.insert(value);
+      }
+      auto const store = ir::make_instr_store(ctx.allocator, ctx.get_next_id(),
+                                              dst, value, stmt->source_info);
+      builder.insert(store);
     } else {
-      ANTON_ASSERT(lhs_type->type_kind == ast::Type_Kind::type_builtin,
-                   "type is not builtin");
-      // If the LHS expression is field expression, we're taking the address of the base
-      // Otherwise we load, select the ALU operation and store.
+      ast::Type const* const lhs_type = stmt->lhs->evaluated_type;
+      if(instanceof<ast::Type_Array>(lhs_type) ||
+         instanceof<ast::Type_Struct>(lhs_type)) {
+        auto const dst = get_address(ctx, builder, stmt->lhs);
+        auto const store = ir::make_instr_store(
+          ctx.allocator, ctx.get_next_id(), dst, rhs, stmt->source_info);
+        builder.insert(store);
+      } else {
+        ANTON_ASSERT(lhs_type->type_kind == ast::Type_Kind::type_builtin,
+                     "type is not builtin");
+        auto const dst = get_address(ctx, builder, stmt->lhs);
+        // TODO: Arithmetic operations.
+        auto const store = ir::make_instr_store(
+          ctx.allocator, ctx.get_next_id(), dst, rhs, stmt->source_info);
+        builder.insert(store);
+      }
     }
   }
 
