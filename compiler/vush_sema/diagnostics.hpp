@@ -34,6 +34,13 @@ namespace vush {
   }
 
   [[nodiscard]] Error
+  err_variable_type_unsized_array(Context const& ctx,
+                                  ast::Variable const* variable);
+
+  [[nodiscard]] Error err_variable_type_opaque(Context const& ctx,
+                                               ast::Variable const* variable);
+
+  [[nodiscard]] Error
   err_opaque_type_non_assignable(Context const& ctx,
                                  ast::Stmt_Assignment const* assignment);
 

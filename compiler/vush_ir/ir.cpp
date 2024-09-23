@@ -11,6 +11,12 @@ namespace vush::ir {
   }
 
   template<>
+  bool instanceof<Argument>(Value const* value)
+  {
+    return value->value_kind == Value_Kind::e_argument;
+  }
+
+  template<>
   bool instanceof<Constant>(Value const* value)
   {
     return value->value_kind == Value_Kind::e_const;
@@ -272,6 +278,12 @@ namespace vush::ir {
     return instr;
   }
 
+  Constant_u32* make_constant_u32(Allocator* allocator, u32 value)
+  {
+    auto const instr = VUSH_ALLOCATE(Constant_u32, allocator, value, allocator);
+    return instr;
+  }
+
   Constant_f32* make_constant_f32(Allocator* const allocator, f32 const value)
   {
     auto const instr = VUSH_ALLOCATE(Constant_f32, allocator, value, allocator);
@@ -366,6 +378,31 @@ namespace vush::ir {
     auto const instr = VUSH_ALLOCATE(Instr_vector_insert, allocator, id, type,
                                      dst, value, index, allocator, source_info);
     dst->add_referrer(instr);
+    value->add_referrer(instr);
+    return instr;
+  }
+
+  Instr_composite_extract*
+  make_instr_composite_extract(Allocator* allocator, i64 id, Type* type,
+                               Value* value, i64 index,
+                               Source_Info const& source_info)
+  {
+    auto const instr =
+      VUSH_ALLOCATE(Instr_composite_extract, allocator, id, type, value, index,
+                    allocator, source_info);
+    instr->indices.push_back(index);
+    value->add_referrer(instr);
+    return instr;
+  }
+
+  Instr_composite_extract*
+  make_instr_composite_extract(Allocator* allocator, i64 id, Type* type,
+                               Value* value, anton::Slice<i64 const> indices,
+                               Source_Info const& source_info)
+  {
+    auto const instr =
+      VUSH_ALLOCATE(Instr_composite_extract, allocator, id, type, value,
+                    indices, allocator, source_info);
     value->add_referrer(instr);
     return instr;
   }

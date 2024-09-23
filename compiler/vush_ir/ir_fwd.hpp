@@ -5,6 +5,7 @@ namespace vush::ir {
   struct Basic_Block;
   struct Function;
   struct Value;
+  struct Argument;
   struct Constant;
   struct Constant_bool;
   struct Constant_i32;

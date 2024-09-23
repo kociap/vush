@@ -710,6 +710,7 @@ namespace vush {
         RETURN_ON_FAIL(analyse_expr_init_type_struct, ctx, symtable, type,
                        ginitializer);
       }
+      // TODO: Deduplicate initializers.
     } break;
 
     case ast::Type_Kind::type_builtin: {
@@ -728,6 +729,7 @@ namespace vush {
               err_init_invalid_matrix_initializer_kind(ctx, ginitializer)};
           }
         } else {
+          // TODO: This must be lifted to allow conversions.
           return {anton::expected_error, err_init_type_is_builtin(ctx, type)};
         }
 
@@ -739,14 +741,43 @@ namespace vush {
 
       // Do a hand-wavy "overload" resolution of the init expression.
       // TODO: This ^.
+      //
+      // Vector construction
+      // ===================
+      // Fields without an initializer provided will be defaulted to 0.
+      //
+      // 1. vecX() - construct vector with all elements set to 0.
+      // 2. vecX(x), x is scalar - construct vector with all elements set to x.
+      // 3. vecX(vecY), X < Y
+      // 4. vecX(yn...), total size of all yi <= X, yi may be vectors or
+      //     scalars.
+      //
+      // Matrix construction
+      // ==================
+      // Missing columns/elements will be initialized from an identity matrix
+      // of the target size.
+      //
+      // 1. matX() - construct identity matrix.
+      // 2. matX(x), x is scalar - construct matrix with diagonal elements set
+      //      to x.
+      // 3. matX(matY)
+      // 4. matYxZ(xn...), xi are scalars, n == X * Z - construct with
+      //      elements set to xi in column order.
+      // 5. matYxZ(vn...), vi are vectors of size Z, n == Y - construct with
+      //      column vectors vi.
     } break;
 
     case ast::Type_Kind::type_array: {
-      auto const type = static_cast<ast::Type_Array*>(expr->type);
-      for(ast::Initializer* const ginitializer: expr->initializers) {
-        RETURN_ON_FAIL(analyse_expr_init_type_array, ctx, symtable, type,
-                       ginitializer);
-      }
+      return {anton::expected_error,
+              err_unimplemented(ctx, expr->source_info, __FILE__, __LINE__)};
+
+      // auto const type = static_cast<ast::Type_Array*>(expr->type);
+      // for(ast::Initializer* const ginitializer: expr->initializers) {
+      //   RETURN_ON_FAIL(analyse_expr_init_type_array, ctx, symtable, type,
+      //                  ginitializer);
+      // }
+
+      // TODO: Deduplicate initializers.
     } break;
     }
 
@@ -854,6 +885,15 @@ namespace vush {
   {
     RETURN_ON_FAIL(namebind_type, ctx, symtable, node->type);
 
+    if(ast::is_unsized_array(*node->type)) {
+      return {anton::expected_error,
+              err_variable_type_unsized_array(ctx, node)};
+    }
+
+    if(ast::is_opaque_type(*node->type)) {
+      return {anton::expected_error, err_variable_type_opaque(ctx, node)};
+    }
+
     // We first check the initializer, then add the symbol for the variable,
     // so that if the initializer uses the variable, an error is reported.
     if(node->initializer != nullptr) {
@@ -891,15 +931,8 @@ namespace vush {
     auto const base_type = expr->base->evaluated_type;
     if(is_vector(*base_type)) {
       anton::String_View const field = expr->field.value;
-      // If it's a vector, it's always at least length 2.
-      i64 vector_length = 2;
-      if(is_vector3(*base_type)) {
-        vector_length = 3;
-      } else if(is_vector4(*base_type)) {
-        vector_length = 4;
-      }
-
-      if(field.size_bytes() > vector_length) {
+      i64 const vector_size = ast::get_vector_size(*base_type);
+      if(field.size_bytes() > vector_size) {
         return {anton::expected_error,
                 err_vector_lvalue_swizzle_overlong(ctx, expr)};
       }
@@ -921,6 +954,7 @@ namespace vush {
   analyse_stmt_assignment(Context& ctx, Symbol_Table& symtable,
                           ast::Stmt_Assignment* const node)
   {
+    // Analyse the LHS as an lvalue.
     switch(node->lhs->node_kind) {
     case ast::Node_Kind::expr_identifier: {
       auto const expr = static_cast<ast::Expr_Identifier*>(node->lhs);

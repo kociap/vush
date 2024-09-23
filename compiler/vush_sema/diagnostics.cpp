@@ -95,6 +95,30 @@ namespace vush {
     return error;
   }
 
+  Error err_variable_type_unsized_array(Context const& ctx,
+                                        ast::Variable const* variable)
+  {
+    Source_Info const source_info = variable->source_info;
+    Error error = error_from_source(ctx.allocator, source_info);
+    anton::String_View const source =
+      ctx.source_registry->find_source(source_info.source_path)->data;
+    error.diagnostic = "error: variable type must not be unsized array"_sv;
+    print_source_snippet(ctx, error.extended_diagnostic, source, source_info);
+    return error;
+  }
+
+  Error err_variable_type_opaque(Context const& ctx,
+                                 ast::Variable const* variable)
+  {
+    Source_Info const source_info = variable->source_info;
+    Error error = error_from_source(ctx.allocator, source_info);
+    anton::String_View const source =
+      ctx.source_registry->find_source(source_info.source_path)->data;
+    error.diagnostic = "error: variable type must not be opaque"_sv;
+    print_source_snippet(ctx, error.extended_diagnostic, source, source_info);
+    return error;
+  }
+
   Error err_opaque_type_non_assignable(Context const& ctx,
                                        ast::Stmt_Assignment const* assignment)
   {

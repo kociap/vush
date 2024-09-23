@@ -155,6 +155,30 @@ namespace vush::ast {
   [[nodiscard]] bool is_f32_matrix(Type const& type);
   [[nodiscard]] bool is_f64_matrix(Type const& type);
 
+  // get_vector_size
+  // Calculate the size (number of elements) of a vector type.
+  //
+  // Returns:
+  // Size or -1 if not a vector type.
+  //
+  [[nodiscard]] i64 get_vector_size(Type const& type);
+
+  // get_matrix_rows
+  // Calculate the number of matrix rows.
+  //
+  // Returns:
+  // Number of rows or -1 if not a matrix type.
+  //
+  [[nodiscard]] i64 get_matrix_rows(Type const& type);
+
+  // get_matrix_columns
+  // Calculate the number of matrix columns.
+  //
+  // Returns:
+  // Number of columns or -1 if not a matrix type.
+  //
+  [[nodiscard]] i64 get_matrix_columns(Type const& type);
+
   // is_opaque_type
   // Check whether a type is opaque, i.e. is an opaque builtin type, a struct
   // containing an opaque type or an array of opaque types.
@@ -844,6 +868,9 @@ namespace vush::ast {
     {
     }
   };
+
+  [[nodiscard]] bool
+  is_assignment_arithmetic(Stmt_Assignment const* assignment);
 
   struct Stmt_If: public Node {
     Expr* condition;

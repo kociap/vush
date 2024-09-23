@@ -160,6 +160,7 @@ target_sources(vush
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_core/source_registry.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_core/source_registry.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_core/types.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_core/utility.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_diagnostics/diagnostics.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_diagnostics/diagnostics.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_diagnostics/error.cpp"

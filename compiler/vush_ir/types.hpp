@@ -11,6 +11,9 @@ namespace vush::ir {
     e_int8,
     e_int16,
     e_int32,
+    e_uint8,
+    e_uint16,
+    e_uint32,
     e_fp16,
     e_fp32,
     e_fp64,
@@ -44,18 +47,30 @@ namespace vush::ir {
   [[nodiscard]] Type* get_type_int8();
   [[nodiscard]] Type* get_type_int16();
   [[nodiscard]] Type* get_type_int32();
+  [[nodiscard]] Type* get_type_uint8();
+  [[nodiscard]] Type* get_type_uint16();
+  [[nodiscard]] Type* get_type_uint32();
   [[nodiscard]] Type* get_type_fp16();
   [[nodiscard]] Type* get_type_fp32();
   [[nodiscard]] Type* get_type_fp64();
   [[nodiscard]] Type* get_type_ptr();
 
   [[nodiscard]] bool is_int_type(Type const& type);
-  [[nodiscard]] bool is_int_based_type(Type const& type);
+  [[nodiscard]] bool is_int_based(Type const& type);
+  [[nodiscard]] bool is_signed_int_type(Type const& type);
+  [[nodiscard]] bool is_signed_int_based(Type const& type);
+  [[nodiscard]] bool is_unsigned_int_type(Type const& type);
+  [[nodiscard]] bool is_unsigned_int_based(Type const& type);
   [[nodiscard]] bool is_fp_type(Type const& type);
-  [[nodiscard]] bool is_fp_based_type(Type const& type);
+  [[nodiscard]] bool is_fp_based(Type const& type);
   [[nodiscard]] bool is_vec2(Type const& type);
   [[nodiscard]] bool is_vec3(Type const& type);
   [[nodiscard]] bool is_vec4(Type const& type);
+  [[nodiscard]] bool is_scalar_type(Type const& type);
+  [[nodiscard]] bool is_primitive_type(Type const& type);
+  [[nodiscard]] bool is_aggregate_type(Type const& type);
+  [[nodiscard]] bool is_opaque_type(Type const& type);
+  [[nodiscard]] bool is_pointer(Type const& type);
 
   enum struct Sampler_Dim {
     e_1D,
@@ -150,13 +165,11 @@ namespace vush::ir {
   };
 
   struct Type_Mat: public Type {
-    Type_Kind element_kind;
-    i64 rows;
+    Type_Vec* column_type;
     i64 columns;
 
-    Type_Mat(Type_Kind element_kind, i64 rows, i64 columns)
-      : Type{Type_Kind::e_mat}, element_kind(element_kind), rows(rows),
-        columns(columns)
+    Type_Mat(Type_Vec* column_type, i64 columns)
+      : Type{Type_Kind::e_mat}, column_type(column_type), columns(columns)
     {
     }
   };

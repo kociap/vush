@@ -53,6 +53,7 @@ namespace vush::ir {
                                          Instr* end, bool before = false);
 
   struct Function {
+    anton::IList<Argument> arguments;
     Basic_Block* entry_block;
     // IR identifier of the function.
     i64 id;
@@ -70,6 +71,7 @@ namespace vush::ir {
   };
 
   enum struct Value_Kind {
+    e_argument,
     e_const,
     e_instr,
   };
@@ -106,11 +108,25 @@ namespace vush::ir {
 
   void replace_uses_with(Value* value, Value* replacement);
 
+  // Argument
+  // Represents the formal parameter of a function and, when used within the
+  // body, the value passed to the function.
+  //
+  struct Argument: public Value, anton::IList_DNode {
+    Function* function;
+
+    Argument(Type* type, Function* function, Allocator* allocator)
+      : Value(Value_Kind::e_argument, type, allocator), function(function)
+    {
+    }
+  };
+
   enum struct Constant_Kind {
     e_constant_bool,
     // constant_i8,
     // constant_i16,
     e_constant_i32,
+    e_constant_u32,
     e_constant_f32,
     e_constant_f64,
     e_undef,
@@ -151,6 +167,19 @@ namespace vush::ir {
 
   [[nodiscard]] Constant_i32* make_constant_i32(Allocator* allocator,
                                                 i32 value);
+
+  struct Constant_u32: public Constant {
+    u32 value;
+
+    Constant_u32(u32 value, Allocator* allocator)
+      : Constant(Constant_Kind::e_constant_u32, get_type_uint32(), allocator),
+        value(value)
+    {
+    }
+  };
+
+  [[nodiscard]] Constant_u32* make_constant_u32(Allocator* allocator,
+                                                u32 value);
 
   struct Constant_f32: public Constant {
     f32 value;
@@ -288,6 +317,7 @@ namespace vush::ir {
   // getptr
   // The instruction is used to calculate the address of a field of an aggregate
   // data structure.
+  //
   struct Instr_getptr: public Instr {
     Type* addressed_type;
     Instr* address;
@@ -374,7 +404,8 @@ namespace vush::ir {
     }
 
     Instr_composite_extract(i64 id, Type* type, Value* value,
-                            anton::Slice<i64> indices, Allocator* allocator,
+                            anton::Slice<i64 const> indices,
+                            Allocator* allocator,
                             Source_Info const& source_info)
       : Instr(id, Instr_Kind::e_composite_extract, type, allocator,
               source_info),
@@ -383,6 +414,16 @@ namespace vush::ir {
       this->indices.assign(indices.begin(), indices.end());
     }
   };
+
+  [[nodiscard]] Instr_composite_extract*
+  make_instr_composite_extract(Allocator* allocator, i64 id, Type* type,
+                               Value* value, i64 index,
+                               Source_Info const& source_info);
+
+  [[nodiscard]] Instr_composite_extract*
+  make_instr_composite_extract(Allocator* allocator, i64 id, Type* type,
+                               Value* value, anton::Slice<i64 const> indices,
+                               Source_Info const& source_info);
 
   struct Instr_composite_construct: public Instr {
     Array<Value*> elements;

@@ -40,6 +40,24 @@ namespace vush::ast {
     return node.node_kind == Node_Kind::expr_field;
   }
 
+  template<>
+  bool instanceof<Basic_Initializer>(Node const& node)
+  {
+    return node.node_kind == Node_Kind::basic_initializer;
+  }
+
+  template<>
+  bool instanceof<Field_Initializer>(Node const& node)
+  {
+    return node.node_kind == Node_Kind::field_initializer;
+  }
+
+  template<>
+  bool instanceof<Index_Initializer>(Node const& node)
+  {
+    return node.node_kind == Node_Kind::index_initializer;
+  }
+
   bool is_integer_based(Type const& type)
   {
     return is_integer_vector(type) || is_integer(type);
@@ -301,6 +319,69 @@ namespace vush::ast {
            v == Kind::e_dmat2x3 || v == Kind::e_dmat2x4 ||
            v == Kind::e_dmat3x2 || v == Kind::e_dmat3x4 ||
            v == Kind::e_dmat4x2 || v == Kind::e_dmat4x3;
+  }
+
+  i64 get_vector_size(Type const& type)
+  {
+    if(is_vector2(type)) {
+      return 2;
+    } else if(is_vector3(type)) {
+      return 3;
+    } else if(is_vector4(type)) {
+      return 4;
+    }
+
+    return -1;
+  }
+
+  i64 get_matrix_rows(Type const& type)
+  {
+    if(!is_matrix(type)) {
+      return -1;
+    }
+
+    Type_Builtin_Kind const kind = static_cast<Type_Builtin const&>(type).value;
+    switch(kind) {
+    case Type_Builtin_Kind::e_mat2:
+    case Type_Builtin_Kind::e_mat2x3:
+    case Type_Builtin_Kind::e_mat2x4:
+      return 2;
+    case Type_Builtin_Kind::e_mat3:
+    case Type_Builtin_Kind::e_mat3x2:
+    case Type_Builtin_Kind::e_mat3x4:
+      return 3;
+    case Type_Builtin_Kind::e_mat4:
+    case Type_Builtin_Kind::e_mat4x2:
+    case Type_Builtin_Kind::e_mat4x3:
+      return 4;
+    default:
+      ANTON_UNREACHABLE("unreachable");
+    }
+  }
+
+  i64 get_matrix_columns(Type const& type)
+  {
+    if(!is_matrix(type)) {
+      return -1;
+    }
+
+    Type_Builtin_Kind const kind = static_cast<Type_Builtin const&>(type).value;
+    switch(kind) {
+    case Type_Builtin_Kind::e_mat2:
+    case Type_Builtin_Kind::e_mat3x2:
+    case Type_Builtin_Kind::e_mat4x2:
+      return 2;
+    case Type_Builtin_Kind::e_mat3:
+    case Type_Builtin_Kind::e_mat2x3:
+    case Type_Builtin_Kind::e_mat4x3:
+      return 3;
+    case Type_Builtin_Kind::e_mat4:
+    case Type_Builtin_Kind::e_mat2x4:
+    case Type_Builtin_Kind::e_mat3x4:
+      return 4;
+    default:
+      ANTON_UNREACHABLE("unreachable");
+    }
   }
 
   bool is_opaque_type(Type const& generic_type)
@@ -871,4 +952,10 @@ namespace vush::ast {
     u32 const rhs_value = get_lt_integer_value_as_u32(rhs);
     return compare_integers_strong(lhs_value, rhs_value);
   }
+
+  bool is_assignment_arithmetic(Stmt_Assignment const* assignment)
+  {
+    return assignment->kind != Assignment_Kind::e_assign;
+  }
+
 } // namespace vush::ast
