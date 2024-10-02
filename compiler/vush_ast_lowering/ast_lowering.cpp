@@ -1104,7 +1104,6 @@ namespace vush {
   address_expr_identifier(Lowering_Context& ctx, Builder& builder,
                           ast::Expr_Identifier const* const expr)
   {
-    // TODO: Cannot address buffers.
     ANTON_UNUSED(builder);
     ir::Instr* const* const address = ctx.symtable.find_entry(expr->value);
     ANTON_ASSERT(address != nullptr, "missing entry in symbol table");
@@ -2488,7 +2487,7 @@ namespace vush {
     Builder builder;
     builder.set_insert_block(fn->entry_block);
     // Generate arguments and their respective allocs.
-    // TODO: Sourced parameters.
+    // TODO: Unsized array parametrs.
     for(ast::Fn_Parameter const* const parameter: ast_fn->parameters) {
       ir::Type* const type = convert_ast_to_ir_type(ctx, parameter->type);
       auto const argument =
@@ -2508,6 +2507,51 @@ namespace vush {
     ctx.symtable.pop_scope();
   }
 
+  [[nodiscard]] ir::Storage_Class
+  select_storage_class(ast::Fn_Parameter const* const parameter,
+                       bool const first)
+  {
+    if(first && !ast::is_sourced_parameter(*parameter)) {
+      return ir::Storage_Class::e_input;
+    }
+
+    if(ast::is_vertex_input_parameter(*parameter)) {
+      return ir::Storage_Class::e_input;
+    }
+
+    if(parameter->buffer != nullptr) {
+      auto const buffer = parameter->buffer;
+      if(ast::is_uniform(buffer)) {
+        return ir::Storage_Class::e_uniform;
+      } else if(ast::is_push_constant(buffer)) {
+        return ir::Storage_Class::e_push_constant;
+      } else {
+        return ir::Storage_Class::e_buffer;
+      }
+    }
+
+    return ir::Storage_Class::e_automatic;
+  }
+
+  [[nodiscard]] ir::Buffer* lower_buffer(Lowering_Context& ctx,
+                                         ast::Decl_Buffer const* const buffer)
+  {
+    auto const composite =
+      VUSH_ALLOCATE(ir::Type_Composite, ctx.allocator, ctx.allocator,
+                    buffer->identifier.value);
+    composite->elements.ensure_capacity(buffer->fields.size());
+    for(ast::Buffer_Field const* const field: buffer->fields) {
+      ir::Type* const type = convert_ast_to_ir_type(ctx, field->type);
+      composite->elements.push_back(type);
+    }
+
+    auto const result =
+      VUSH_ALLOCATE(ir::Buffer, ctx.allocator, nullptr,
+                    anton::String(buffer->identifier.value, ctx.allocator),
+                    buffer->source_info);
+    return result;
+  }
+
   [[nodiscard]] static ir::Module
   lower_module(Lowering_Context& ctx,
                ast::Decl_Stage_Function const* const stage)
@@ -2522,18 +2566,29 @@ namespace vush {
     Builder builder;
     builder.set_insert_block(fn->entry_block);
     // Generate allocas for the parameters.
-    // TODO: These allocas are currently unset and are serving as placeholders.
-    // TODO: Sourced parameters.
-    for(ast::Fn_Parameter const* const parameter: stage->parameters) {
+    for(bool first = true;
+        ast::Fn_Parameter const* const parameter: stage->parameters) {
       ir::Type* const type = convert_ast_to_ir_type(ctx, parameter->type);
-      auto const instr = ir::make_instr_alloc(ctx.allocator, ctx.get_next_id(),
+      auto const argument =
+        VUSH_ALLOCATE(ir::Argument, ctx.allocator, type, fn, ctx.allocator);
+      argument->storage_class = select_storage_class(parameter, first);
+      argument->buffer = lower_buffer(ctx, parameter->buffer);
+      fn->arguments.insert_back(*argument);
+      auto const alloc = ir::make_instr_alloc(ctx.allocator, ctx.get_next_id(),
                                               type, parameter->source_info);
-      builder.insert(instr);
-      ctx.symtable.add_entry(parameter->identifier.value, instr);
+      builder.insert(alloc);
+      auto const store =
+        ir::make_instr_store(ctx.allocator, ctx.get_next_id(), alloc, argument,
+                             parameter->identifier.source_info);
+      builder.insert(store);
+      ctx.symtable.add_entry(parameter->identifier.value, alloc);
+
+      first = false;
     }
 
     lower_statement_block(ctx, builder, stage->body);
     ctx.symtable.pop_scope();
+    // TODO: transform module return to output variable.
     return ir::Module(anton::String(stage->pass.value, ctx.allocator),
                       stage->stage.value, fn);
   }

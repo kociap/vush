@@ -440,6 +440,16 @@ namespace vush::ir {
       printer.write(anton::format(allocator, ", {}"_sv, instr->index));
     } break;
 
+    case Instr_Kind::e_vector_insert: {
+      auto const instr = static_cast<Instr_vector_insert const*>(generic_instr);
+      print_value(allocator, printer, options, instr);
+      printer.write(" = vector_insert"_sv);
+      // TODO: Print type.
+      printer.write("<type>, "_sv);
+      print_value(allocator, printer, options, instr->value);
+      printer.write(anton::format(allocator, ", {}"_sv, instr->index));
+    } break;
+
     case Instr_Kind::e_composite_extract: {
       auto const instr =
         static_cast<Instr_composite_extract const*>(generic_instr);

@@ -889,6 +889,37 @@ namespace vush::ast {
     }
   }
 
+  bool is_buffer(Decl_Buffer const* buffer)
+  {
+    for(Attribute const* attribute: buffer->attributes) {
+      anton::String_View identifier = attribute->identifier.value;
+      if(identifier == "push_constant"_sv || identifier == "uniform"_sv) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool is_uniform(Decl_Buffer const* buffer)
+  {
+    for(Attribute const* attribute: buffer->attributes) {
+      if(attribute->identifier.value == "uniform"_sv) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool is_push_constant(Decl_Buffer const* buffer)
+  {
+    for(Attribute const* attribute: buffer->attributes) {
+      if(attribute->identifier.value == "push_constant"_sv) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   i32 vector_swizzle_char_to_index(char8 const c)
   {
     // Swizzles:

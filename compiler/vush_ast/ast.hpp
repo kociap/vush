@@ -505,6 +505,10 @@ namespace vush::ast {
     }
   };
 
+  [[nodiscard]] bool is_buffer(Decl_Buffer const* buffer);
+  [[nodiscard]] bool is_uniform(Decl_Buffer const* buffer);
+  [[nodiscard]] bool is_push_constant(Decl_Buffer const* buffer);
+
   struct Fn_Parameter: public Node {
     Identifier identifier;
     Type* type;

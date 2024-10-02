@@ -19,18 +19,6 @@
 // Composite - an aggregate, a matrix or a vector.
 
 namespace vush::ir {
-  struct Module {
-    anton::String pass_identifier;
-    Stage_Kind stage;
-
-    Function* entry;
-
-    Module(anton::String&& pass_identifier, Stage_Kind stage, Function* entry)
-      : pass_identifier(ANTON_MOV(pass_identifier)), stage(stage), entry(entry)
-    {
-    }
-  };
-
   struct Basic_Block {
     anton::IList<Instr, Basic_Block> instructions;
     i64 id;
@@ -52,6 +40,18 @@ namespace vush::ir {
   [[nodiscard]] Basic_Block* split_block(i64 label, Instr* instruction,
                                          Instr* end, bool before = false);
 
+  struct Module {
+    anton::String pass_identifier;
+    Stage_Kind stage;
+
+    Function* entry;
+
+    Module(anton::String&& pass_identifier, Stage_Kind stage, Function* entry)
+      : pass_identifier(ANTON_MOV(pass_identifier)), stage(stage), entry(entry)
+    {
+    }
+  };
+
   struct Function {
     anton::IList<Argument> arguments;
     Basic_Block* entry_block;
@@ -66,6 +66,20 @@ namespace vush::ir {
              Source_Info const& source_info)
       : entry_block(entry_block), id(id), identifier(ANTON_MOV(identifier)),
         source_info(source_info)
+    {
+    }
+  };
+
+  struct Buffer {
+    Type* type;
+
+    // Source code string identifier of the function.
+    anton::String identifier;
+    Source_Info source_info;
+
+    Buffer(Type* type, anton::String&& identifier,
+           Source_Info const& source_info)
+      : type(type), identifier(ANTON_MOV(identifier)), source_info(source_info)
     {
     }
   };
@@ -108,12 +122,23 @@ namespace vush::ir {
 
   void replace_uses_with(Value* value, Value* replacement);
 
+  enum struct Storage_Class {
+    e_automatic,
+    e_input,
+    e_output,
+    e_uniform,
+    e_push_constant,
+    e_buffer,
+  };
+
   // Argument
   // Represents the formal parameter of a function and, when used within the
   // body, the value passed to the function.
   //
   struct Argument: public Value, anton::IList_DNode {
     Function* function;
+    Buffer* buffer = nullptr;
+    Storage_Class storage_class = Storage_Class::e_automatic;
 
     Argument(Type* type, Function* function, Allocator* allocator)
       : Value(Value_Kind::e_argument, type, allocator), function(function)

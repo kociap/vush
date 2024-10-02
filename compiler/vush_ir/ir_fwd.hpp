@@ -4,6 +4,7 @@ namespace vush::ir {
   struct Module;
   struct Basic_Block;
   struct Function;
+  struct Buffer;
   struct Value;
   struct Argument;
   struct Constant;
