@@ -2102,7 +2102,6 @@ namespace vush {
       ast::Type const* const ast_base_type = field_expr->base->evaluated_type;
       auto const target_type =
         safe_cast<ir::Type_Vec*>(convert_ast_to_ir_type(ctx, ast_base_type));
-      auto const source_type = safe_cast<ir::Type_Vec*>(rhs->type);
       ir::Instr* const initial_target =
         ir::make_instr_load(ctx.allocator, ctx.get_next_id(), target_type, dst,
                             field_expr->base->source_info);
@@ -2111,13 +2110,19 @@ namespace vush {
       for(auto const [src_index, swizzle]:
           anton::zip(anton::irange(0, 3), field_expr->field.value.bytes())) {
         i64 const dst_index = ast::vector_swizzle_char_to_index(swizzle);
-        // Extract the element from the source vector.
-        auto const source_element_type =
-          VUSH_ALLOCATE(ir::Type, ctx.allocator, source_type->element_kind);
-        ir::Instr* element = ir::make_instr_vector_extract(
-          ctx.allocator, ctx.get_next_id(), source_element_type, rhs, src_index,
-          field_expr->source_info);
-        builder.insert(element);
+        ir::Value* element = rhs;
+        if(instanceof<ir::Type_Vec>(rhs->type)) {
+          auto const source_type = safe_cast<ir::Type_Vec*>(rhs->type);
+          // Extract the element from the source vector.
+          auto const source_element_type =
+            VUSH_ALLOCATE(ir::Type, ctx.allocator, source_type->element_kind);
+          ir::Instr* const extract = ir::make_instr_vector_extract(
+            ctx.allocator, ctx.get_next_id(), source_element_type, rhs,
+            src_index, field_expr->source_info);
+          builder.insert(extract);
+          element = extract;
+        }
+
         if(ast::is_assignment_arithmetic(stmt)) {
           // Extract the element from the target and do arithmetic.
           auto const target_element_type =
@@ -2127,17 +2132,20 @@ namespace vush {
             dst_index, field_expr->source_info);
           builder.insert(target_element);
           ir::ALU_Opcode const op = select_opcode(stmt);
-          element = ir::make_instr_alu(ctx.allocator, ctx.get_next_id(),
-                                       target_element_type, op, target_element,
-                                       element, stmt->source_info);
-          builder.insert(element);
+          ir::Instr* const alu = ir::make_instr_alu(
+            ctx.allocator, ctx.get_next_id(), target_element_type, op,
+            target_element, element, stmt->source_info);
+          builder.insert(alu);
+          element = alu;
         }
+
         // Insert the element into the target vector.
         value = ir::make_instr_vector_insert(ctx.allocator, ctx.get_next_id(),
                                              value->type, value, element,
                                              dst_index, stmt->source_info);
         builder.insert(value);
       }
+
       auto const store = ir::make_instr_store(ctx.allocator, ctx.get_next_id(),
                                               dst, value, stmt->source_info);
       builder.insert(store);
