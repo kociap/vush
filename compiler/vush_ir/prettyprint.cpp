@@ -64,6 +64,107 @@ namespace vush::ir {
     printer.write(anton::format(allocator, "B_{}"_sv, block->id));
   }
 
+  [[nodiscard]] static anton::String_View
+  scalar_type_to_string(Type_Kind const kind)
+  {
+    switch(kind) {
+    case Type_Kind::e_bool:
+      return "bool"_sv;
+    case Type_Kind::e_int8:
+      return "int8"_sv;
+    case Type_Kind::e_int16:
+      return "int16"_sv;
+    case Type_Kind::e_int32:
+      return "int32"_sv;
+    case Type_Kind::e_uint8:
+      return "uint8"_sv;
+    case Type_Kind::e_uint16:
+      return "uint16"_sv;
+    case Type_Kind::e_uint32:
+      return "uint32"_sv;
+    case Type_Kind::e_fp16:
+      return "fp16"_sv;
+    case Type_Kind::e_fp32:
+      return "fp32"_sv;
+    case Type_Kind::e_fp64:
+      return "fp64"_sv;
+    default:
+      ANTON_UNREACHABLE("type is not scalar");
+    }
+  }
+
+  static void print_type_inline(Allocator* const allocator, Printer& printer,
+                                Prettyprint_Options const& options,
+                                Type const* const type)
+  {
+    switch(type->kind) {
+    case Type_Kind::e_void:
+      printer.write("void"_sv);
+      break;
+
+    case Type_Kind::e_bool:
+    case Type_Kind::e_int8:
+    case Type_Kind::e_int16:
+    case Type_Kind::e_int32:
+    case Type_Kind::e_uint8:
+    case Type_Kind::e_uint16:
+    case Type_Kind::e_uint32:
+    case Type_Kind::e_fp16:
+    case Type_Kind::e_fp32:
+    case Type_Kind::e_fp64:
+      printer.write(scalar_type_to_string(type->kind));
+      break;
+
+    case Type_Kind::e_ptr:
+      printer.write("ptr"_sv);
+      break;
+
+    case Type_Kind::e_vec: {
+      auto const vec = static_cast<ir::Type_Vec const*>(type);
+      printer.write(anton::format(allocator, "<{} x {}>"_sv, vec->rows,
+                                  scalar_type_to_string(vec->element_kind)));
+    } break;
+
+    case Type_Kind::e_mat: {
+      auto const mat = static_cast<ir::Type_Mat const*>(type);
+      printer.write(anton::format(
+        allocator, "<{} x <{} x {}>>"_sv, mat->columns, mat->column_type->rows,
+        scalar_type_to_string(mat->column_type->element_kind)));
+    } break;
+
+    case Type_Kind::e_sampler:
+    case Type_Kind::e_image:
+    case Type_Kind::e_texture:
+      // TODO: Print sampler types.
+      printer.write("<type>"_sv);
+      break;
+
+    case Type_Kind::e_composite: {
+      auto const composite = static_cast<ir::Type_Composite const*>(type);
+      printer.write("{ "_sv);
+      for(bool first = true; Type const* const member: composite->elements) {
+        if(!first) {
+          printer.write(", ");
+        }
+        print_type_inline(allocator, printer, options, member);
+        first = false;
+      }
+      printer.write(" }"_sv);
+    } break;
+
+    case Type_Kind::e_array: {
+      auto const array = static_cast<ir::Type_Array const*>(type);
+      printer.write("["_sv);
+      print_type_inline(allocator, printer, options, array->element_type);
+      printer.write("; "_sv);
+      if(array->size >= 0) {
+        printer.write(anton::to_string(allocator, array->size));
+      }
+      printer.write("]"_sv);
+    } break;
+    }
+  }
+
   static void print_constant(Allocator* const allocator, Printer& printer,
                              Prettyprint_Options const& options,
                              Constant const* const generic_constant)
@@ -168,165 +269,165 @@ namespace vush::ir {
   {
     switch(kind) {
     case Ext_Kind::e_round:
-      return "round";
+      return "round"_sv;
     case Ext_Kind::e_round_even:
-      return "round_even";
+      return "round_even"_sv;
     case Ext_Kind::e_trunc:
-      return "trunc";
+      return "trunc"_sv;
     case Ext_Kind::e_iabs:
-      return "iabs";
+      return "iabs"_sv;
     case Ext_Kind::e_fabs:
-      return "fabs";
+      return "fabs"_sv;
     case Ext_Kind::e_isign:
-      return "isign";
+      return "isign"_sv;
     case Ext_Kind::e_fsign:
-      return "fsign";
+      return "fsign"_sv;
     case Ext_Kind::e_floor:
-      return "floor";
+      return "floor"_sv;
     case Ext_Kind::e_ceil:
-      return "ceil";
+      return "ceil"_sv;
     case Ext_Kind::e_fract:
-      return "fract";
+      return "fract"_sv;
     case Ext_Kind::e_fmod:
-      return "fmod";
+      return "fmod"_sv;
     case Ext_Kind::e_imin:
-      return "imin";
+      return "imin"_sv;
     case Ext_Kind::e_umin:
-      return "umin";
+      return "umin"_sv;
     case Ext_Kind::e_fmin:
-      return "fmin";
+      return "fmin"_sv;
     case Ext_Kind::e_imax:
-      return "imax";
+      return "imax"_sv;
     case Ext_Kind::e_umax:
-      return "umax";
+      return "umax"_sv;
     case Ext_Kind::e_fmax:
-      return "fmax";
+      return "fmax"_sv;
     case Ext_Kind::e_iclamp:
-      return "iclamp";
+      return "iclamp"_sv;
     case Ext_Kind::e_uclamp:
-      return "uclamp";
+      return "uclamp"_sv;
     case Ext_Kind::e_fclamp:
-      return "fclamp";
+      return "fclamp"_sv;
     case Ext_Kind::e_radians:
-      return "radians";
+      return "radians"_sv;
     case Ext_Kind::e_degrees:
-      return "degrees";
+      return "degrees"_sv;
     case Ext_Kind::e_fmix:
-      return "fmix";
+      return "fmix"_sv;
     case Ext_Kind::e_step:
-      return "step";
+      return "step"_sv;
     case Ext_Kind::e_smooth_step:
-      return "smooth_step";
+      return "smooth_step"_sv;
     case Ext_Kind::e_fma:
-      return "fma";
+      return "fma"_sv;
     case Ext_Kind::e_sin:
-      return "sin";
+      return "sin"_sv;
     case Ext_Kind::e_cos:
-      return "cos";
+      return "cos"_sv;
     case Ext_Kind::e_tan:
-      return "tan";
+      return "tan"_sv;
     case Ext_Kind::e_asin:
-      return "asin";
+      return "asin"_sv;
     case Ext_Kind::e_acos:
-      return "acos";
+      return "acos"_sv;
     case Ext_Kind::e_atan:
-      return "atan";
+      return "atan"_sv;
     case Ext_Kind::e_atan2:
-      return "atan2";
+      return "atan2"_sv;
     case Ext_Kind::e_sinh:
-      return "sinh";
+      return "sinh"_sv;
     case Ext_Kind::e_cosh:
-      return "cosh";
+      return "cosh"_sv;
     case Ext_Kind::e_tanh:
-      return "tanh";
+      return "tanh"_sv;
     case Ext_Kind::e_asinh:
-      return "asinh";
+      return "asinh"_sv;
     case Ext_Kind::e_acosh:
-      return "acosh";
+      return "acosh"_sv;
     case Ext_Kind::e_atanh:
-      return "atanh";
+      return "atanh"_sv;
     case Ext_Kind::e_pow:
-      return "pow";
+      return "pow"_sv;
     case Ext_Kind::e_exp:
-      return "exp";
+      return "exp"_sv;
     case Ext_Kind::e_exp2:
-      return "exp2";
+      return "exp2"_sv;
     case Ext_Kind::e_log:
-      return "log";
+      return "log"_sv;
     case Ext_Kind::e_log2:
-      return "log2";
+      return "log2"_sv;
     case Ext_Kind::e_sqrt:
-      return "sqrt";
+      return "sqrt"_sv;
     case Ext_Kind::e_inv_sqrt:
-      return "inv_sqrt";
+      return "inv_sqrt"_sv;
     case Ext_Kind::e_length:
-      return "length";
+      return "length"_sv;
     case Ext_Kind::e_distance:
-      return "distance";
+      return "distance"_sv;
     case Ext_Kind::e_dot:
-      return "dot";
+      return "dot"_sv;
     case Ext_Kind::e_cross:
-      return "cross";
+      return "cross"_sv;
     case Ext_Kind::e_normalize:
-      return "normalize";
+      return "normalize"_sv;
     case Ext_Kind::e_faceforward:
-      return "faceforward";
+      return "faceforward"_sv;
     case Ext_Kind::e_reflect:
-      return "reflect";
+      return "reflect"_sv;
     case Ext_Kind::e_refract:
-      return "refract";
+      return "refract"_sv;
     case Ext_Kind::e_mat_comp_mult:
-      return "mat_comp_mult";
+      return "mat_comp_mult"_sv;
     case Ext_Kind::e_outer_product:
-      return "outer_product";
+      return "outer_product"_sv;
     case Ext_Kind::e_transpose:
-      return "transpose";
+      return "transpose"_sv;
     case Ext_Kind::e_mat_det:
-      return "mat_det";
+      return "mat_det"_sv;
     case Ext_Kind::e_mat_inv:
-      return "mat_inv";
+      return "mat_inv"_sv;
     case Ext_Kind::e_tex_size:
-      return "tex_size";
+      return "tex_size"_sv;
     case Ext_Kind::e_tex_query_lod:
-      return "tex_query_lod";
+      return "tex_query_lod"_sv;
     case Ext_Kind::e_tex_query_levels:
-      return "tex_query_levels";
+      return "tex_query_levels"_sv;
     case Ext_Kind::e_tex_samples:
-      return "tex_samples";
+      return "tex_samples"_sv;
     case Ext_Kind::e_tex:
-      return "tex";
+      return "tex"_sv;
     case Ext_Kind::e_tex_lod:
-      return "tex_lod";
+      return "tex_lod"_sv;
     case Ext_Kind::e_tex_proj:
-      return "tex_proj";
+      return "tex_proj"_sv;
     case Ext_Kind::e_tex_off:
-      return "tex_off";
+      return "tex_off"_sv;
     case Ext_Kind::e_texel_fetch:
-      return "texel_fetch";
+      return "texel_fetch"_sv;
     case Ext_Kind::e_texel_fetch_off:
-      return "texel_fetch_off";
+      return "texel_fetch_off"_sv;
     case Ext_Kind::e_tex_lod_off:
-      return "tex_lod_off";
+      return "tex_lod_off"_sv;
     case Ext_Kind::e_tex_proj_lod_off:
-      return "tex_proj_lod_off";
+      return "tex_proj_lod_off"_sv;
     case Ext_Kind::e_tex_proj_lod:
-      return "tex_proj_lod";
+      return "tex_proj_lod"_sv;
     case Ext_Kind::e_tex_proj_off:
-      return "tex_proj_off";
+      return "tex_proj_off"_sv;
     case Ext_Kind::e_tex_grad:
-      return "tex_grad";
+      return "tex_grad"_sv;
     case Ext_Kind::e_tex_grad_off:
-      return "tex_grad_off";
+      return "tex_grad_off"_sv;
     case Ext_Kind::e_tex_proj_grad:
-      return "tex_proj_grad";
+      return "tex_proj_grad"_sv;
     case Ext_Kind::e_tex_proj_grad_off:
-      return "tex_proj_grad_off";
+      return "tex_proj_grad_off"_sv;
     case Ext_Kind::e_tex_gather:
-      return "tex_gather";
+      return "tex_gather"_sv;
     case Ext_Kind::e_tex_gather_off:
-      return "tex_gather_off";
+      return "tex_gather_off"_sv;
     case Ext_Kind::e_tex_gather_offs:
-      return "tex_gather_offs";
+      return "tex_gather_offs"_sv;
     }
   }
 
@@ -340,13 +441,16 @@ namespace vush::ir {
     case Instr_Kind::e_alloc: {
       auto const instr = static_cast<Instr_alloc const*>(generic_instr);
       print_value(allocator, printer, options, instr);
-      printer.write(" = alloc <type>"_sv);
+      printer.write(" = alloc "_sv);
+      print_type_inline(allocator, printer, options, instr->alloc_type);
     } break;
 
     case Instr_Kind::e_load: {
       auto const instr = static_cast<Instr_load const*>(generic_instr);
       print_value(allocator, printer, options, instr);
-      printer.write(" = load <type>, "_sv);
+      printer.write(" = load , "_sv);
+      print_type_inline(allocator, printer, options, instr->type);
+      printer.write(", "_sv);
       print_value(allocator, printer, options, instr->address);
     } break;
 
@@ -434,8 +538,8 @@ namespace vush::ir {
         static_cast<Instr_vector_extract const*>(generic_instr);
       print_value(allocator, printer, options, instr);
       printer.write(" = vector_extract "_sv);
-      // TODO: Print type.
-      printer.write("<type>, "_sv);
+      print_type_inline(allocator, printer, options, instr->type);
+      printer.write(", "_sv);
       print_value(allocator, printer, options, instr->value);
       printer.write(anton::format(allocator, ", {}"_sv, instr->index));
     } break;
@@ -444,8 +548,8 @@ namespace vush::ir {
       auto const instr = static_cast<Instr_vector_insert const*>(generic_instr);
       print_value(allocator, printer, options, instr);
       printer.write(" = vector_insert"_sv);
-      // TODO: Print type.
-      printer.write("<type>, "_sv);
+      print_type_inline(allocator, printer, options, instr->type);
+      printer.write(", "_sv);
       print_value(allocator, printer, options, instr->value);
       printer.write(anton::format(allocator, ", {}"_sv, instr->index));
     } break;
@@ -455,8 +559,8 @@ namespace vush::ir {
         static_cast<Instr_composite_extract const*>(generic_instr);
       print_value(allocator, printer, options, instr);
       printer.write(" = composite_extract "_sv);
-      // TODO: Print type.
-      printer.write("<type>, "_sv);
+      print_type_inline(allocator, printer, options, instr->type);
+      printer.write(", "_sv);
       print_value(allocator, printer, options, instr->value);
       for(auto const index: instr->indices) {
         printer.write(anton::format(allocator, ", {}"_sv, index));
@@ -468,8 +572,7 @@ namespace vush::ir {
         static_cast<Instr_composite_construct const*>(generic_instr);
       print_value(allocator, printer, options, instr);
       printer.write(" = composite_construct "_sv);
-      // TODO: Print type.
-      printer.write("<type>"_sv);
+      print_type_inline(allocator, printer, options, instr->type);
       for(auto const element: instr->elements) {
         printer.write(", "_sv);
         print_value(allocator, printer, options, element);
@@ -480,8 +583,7 @@ namespace vush::ir {
       auto const instr = static_cast<Instr_cvt_sext const*>(generic_instr);
       print_value(allocator, printer, options, instr);
       printer.write(" = cvt_sext "_sv);
-      // TODO: Print type.
-      printer.write("<type>"_sv);
+      print_type_inline(allocator, printer, options, instr->type);
       printer.write(", "_sv);
       print_value(allocator, printer, options, instr->value);
     } break;
@@ -490,8 +592,7 @@ namespace vush::ir {
       auto const instr = static_cast<Instr_cvt_zext const*>(generic_instr);
       print_value(allocator, printer, options, instr);
       printer.write(" = cvt_zext "_sv);
-      // TODO: Print type.
-      printer.write("<type>"_sv);
+      print_type_inline(allocator, printer, options, instr->type);
       printer.write(", "_sv);
       print_value(allocator, printer, options, instr->value);
     } break;
@@ -500,8 +601,7 @@ namespace vush::ir {
       auto const instr = static_cast<Instr_cvt_trunc const*>(generic_instr);
       print_value(allocator, printer, options, instr);
       printer.write(" = cvt_trunc "_sv);
-      // TODO: Print type.
-      printer.write("<type>"_sv);
+      print_type_inline(allocator, printer, options, instr->type);
       printer.write(", "_sv);
       print_value(allocator, printer, options, instr->value);
     } break;
@@ -510,8 +610,7 @@ namespace vush::ir {
       auto const instr = static_cast<Instr_cvt_fpext const*>(generic_instr);
       print_value(allocator, printer, options, instr);
       printer.write(" = cvt_fpext "_sv);
-      // TODO: Print type.
-      printer.write("<type>"_sv);
+      print_type_inline(allocator, printer, options, instr->type);
       printer.write(", "_sv);
       print_value(allocator, printer, options, instr->value);
     } break;
@@ -520,8 +619,7 @@ namespace vush::ir {
       auto const instr = static_cast<Instr_cvt_fptrunc const*>(generic_instr);
       print_value(allocator, printer, options, instr);
       printer.write(" = cvt_fptrunc "_sv);
-      // TODO: Print type.
-      printer.write("<type>"_sv);
+      print_type_inline(allocator, printer, options, instr->type);
       printer.write(", "_sv);
       print_value(allocator, printer, options, instr->value);
     } break;
@@ -530,8 +628,7 @@ namespace vush::ir {
       auto const instr = static_cast<Instr_cvt_si2fp const*>(generic_instr);
       print_value(allocator, printer, options, instr);
       printer.write(" = cvt_si2fp "_sv);
-      // TODO: Print type.
-      printer.write("<type>"_sv);
+      print_type_inline(allocator, printer, options, instr->type);
       printer.write(", "_sv);
       print_value(allocator, printer, options, instr->value);
     } break;
@@ -540,8 +637,7 @@ namespace vush::ir {
       auto const instr = static_cast<Instr_cvt_fp2si const*>(generic_instr);
       print_value(allocator, printer, options, instr);
       printer.write(" = cvt_fp2si "_sv);
-      // TODO: Print type.
-      printer.write("<type>"_sv);
+      print_type_inline(allocator, printer, options, instr->type);
       printer.write(", "_sv);
       print_value(allocator, printer, options, instr->value);
     } break;
@@ -550,8 +646,7 @@ namespace vush::ir {
       auto const instr = static_cast<Instr_cvt_ui2fp const*>(generic_instr);
       print_value(allocator, printer, options, instr);
       printer.write(" = cvt_ui2fp "_sv);
-      // TODO: Print type.
-      printer.write("<type>"_sv);
+      print_type_inline(allocator, printer, options, instr->type);
       printer.write(", "_sv);
       print_value(allocator, printer, options, instr->value);
     } break;
@@ -560,8 +655,7 @@ namespace vush::ir {
       auto const instr = static_cast<Instr_cvt_fp2ui const*>(generic_instr);
       print_value(allocator, printer, options, instr);
       printer.write(" = cvt_fp2ui "_sv);
-      // TODO: Print type.
-      printer.write("<type>"_sv);
+      print_type_inline(allocator, printer, options, instr->type);
       printer.write(", "_sv);
       print_value(allocator, printer, options, instr->value);
     } break;
