@@ -19,12 +19,17 @@ namespace vush {
 
   using Fn_Table = Scoped_Map<anton::String_View, ir::Function*>;
   using Symbol_Table = Scoped_Map<anton::String_View, ir::Instr*>;
+  // Maps namespace (pass) to table of symbols.
+  using Buffer_Table =
+    anton::Flat_Hash_Map<anton::String_View,
+                         anton::Flat_Hash_Map<anton::String_View, ir::Buffer*>>;
 
   struct Lowering_Context {
   public:
     Allocator* allocator;
     Fn_Table fntable;
     Symbol_Table symtable;
+    Buffer_Table buftable;
 
     ir::Basic_Block* nearest_converge_block = nullptr;
     ir::Basic_Block* nearest_continuation_block = nullptr;
@@ -35,7 +40,8 @@ namespace vush {
 
   public:
     Lowering_Context(Allocator* allocator)
-      : allocator(allocator), fntable(allocator), symtable(allocator)
+      : allocator(allocator), fntable(allocator), symtable(allocator),
+        buftable(allocator)
     {
     }
 
@@ -2536,20 +2542,31 @@ namespace vush {
   [[nodiscard]] ir::Buffer* lower_buffer(Lowering_Context& ctx,
                                          ast::Decl_Buffer const* const buffer)
   {
-    auto const composite =
-      VUSH_ALLOCATE(ir::Type_Composite, ctx.allocator, ctx.allocator,
-                    buffer->identifier.value);
-    composite->elements.ensure_capacity(buffer->fields.size());
-    for(ast::Buffer_Field const* const field: buffer->fields) {
-      ir::Type* const type = convert_ast_to_ir_type(ctx, field->type);
-      composite->elements.push_back(type);
+    auto ns = ctx.buftable.find(buffer->pass.value);
+    if(ns == ctx.buftable.end()) {
+      ns = ctx.buftable.emplace(buffer->pass.value, ctx.allocator);
     }
 
-    auto const result =
-      VUSH_ALLOCATE(ir::Buffer, ctx.allocator, nullptr,
-                    anton::String(buffer->identifier.value, ctx.allocator),
-                    buffer->source_info);
-    return result;
+    auto& bufspace = ns->value;
+    auto entry = bufspace.find(buffer->identifier.value);
+    if(entry == bufspace.end()) {
+      auto const composite =
+        VUSH_ALLOCATE(ir::Type_Composite, ctx.allocator, ctx.allocator,
+                      buffer->identifier.value);
+      composite->elements.ensure_capacity(buffer->fields.size());
+      for(ast::Buffer_Field const* const field: buffer->fields) {
+        ir::Type* const type = convert_ast_to_ir_type(ctx, field->type);
+        composite->elements.push_back(type);
+      }
+
+      auto const result =
+        VUSH_ALLOCATE(ir::Buffer, ctx.allocator, nullptr,
+                      anton::String(buffer->identifier.value, ctx.allocator),
+                      buffer->source_info);
+      entry = bufspace.emplace(buffer->identifier.value, result);
+    }
+
+    return entry->value;
   }
 
   [[nodiscard]] static ir::Module
