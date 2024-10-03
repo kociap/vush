@@ -2597,8 +2597,11 @@ namespace vush {
       auto const argument =
         VUSH_ALLOCATE(ir::Argument, ctx.allocator, type, fn, ctx.allocator);
       argument->storage_class = select_storage_class(parameter, first);
-      argument->buffer = lower_buffer(ctx, parameter->buffer);
+      if(parameter->buffer != nullptr) {
+        argument->buffer = lower_buffer(ctx, parameter->buffer);
+      }
       fn->arguments.insert_back(*argument);
+
       auto const alloc = ir::make_instr_alloc(ctx.allocator, ctx.get_next_id(),
                                               type, parameter->source_info);
       builder.insert(alloc);
