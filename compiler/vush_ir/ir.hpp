@@ -73,7 +73,7 @@ namespace vush::ir {
   struct Buffer {
     Type* type;
 
-    // Source code string identifier of the function.
+    // Source code string identifier of the buffer.
     anton::String identifier;
     Source_Info source_info;
 
@@ -136,12 +136,14 @@ namespace vush::ir {
   // body, the value passed to the function.
   //
   struct Argument: public Value, anton::IList_DNode {
+    i64 id = -1;
     Function* function;
     Buffer* buffer = nullptr;
     Storage_Class storage_class = Storage_Class::e_automatic;
 
-    Argument(Type* type, Function* function, Allocator* allocator)
-      : Value(Value_Kind::e_argument, type, allocator), function(function)
+    Argument(i64 id, Type* type, Function* function, Allocator* allocator)
+      : Value(Value_Kind::e_argument, type, allocator), id(id),
+        function(function)
     {
     }
   };

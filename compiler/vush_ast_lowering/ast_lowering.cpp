@@ -2505,7 +2505,8 @@ namespace vush {
     for(ast::Fn_Parameter const* const parameter: ast_fn->parameters) {
       ir::Type* const type = convert_ast_to_ir_type(ctx, parameter->type);
       auto const argument =
-        VUSH_ALLOCATE(ir::Argument, ctx.allocator, type, fn, ctx.allocator);
+        VUSH_ALLOCATE(ir::Argument, ctx.allocator, ctx.get_next_id(), type, fn,
+                      ctx.allocator);
       fn->arguments.insert_back(*argument);
       auto const alloc = ir::make_instr_alloc(ctx.allocator, ctx.get_next_id(),
                                               type, parameter->source_info);
@@ -2595,7 +2596,8 @@ namespace vush {
         ast::Fn_Parameter const* const parameter: stage->parameters) {
       ir::Type* const type = convert_ast_to_ir_type(ctx, parameter->type);
       auto const argument =
-        VUSH_ALLOCATE(ir::Argument, ctx.allocator, type, fn, ctx.allocator);
+        VUSH_ALLOCATE(ir::Argument, ctx.allocator, ctx.get_next_id(), type, fn,
+                      ctx.allocator);
       argument->storage_class = select_storage_class(parameter, first);
       if(parameter->buffer != nullptr) {
         argument->buffer = lower_buffer(ctx, parameter->buffer);

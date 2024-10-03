@@ -71,23 +71,23 @@ namespace vush::ir {
     case Type_Kind::e_bool:
       return "bool"_sv;
     case Type_Kind::e_int8:
-      return "int8"_sv;
+      return "i8"_sv;
     case Type_Kind::e_int16:
-      return "int16"_sv;
+      return "i16"_sv;
     case Type_Kind::e_int32:
-      return "int32"_sv;
+      return "i32"_sv;
     case Type_Kind::e_uint8:
-      return "uint8"_sv;
+      return "u8"_sv;
     case Type_Kind::e_uint16:
-      return "uint16"_sv;
+      return "u16"_sv;
     case Type_Kind::e_uint32:
-      return "uint32"_sv;
+      return "u32"_sv;
     case Type_Kind::e_fp16:
-      return "fp16"_sv;
+      return "f16"_sv;
     case Type_Kind::e_fp32:
-      return "fp32"_sv;
+      return "f32"_sv;
     case Type_Kind::e_fp64:
-      return "fp64"_sv;
+      return "f64"_sv;
     default:
       ANTON_UNREACHABLE("type is not scalar");
     }
@@ -167,23 +167,63 @@ namespace vush::ir {
 
   static void print_constant(Allocator* const allocator, Printer& printer,
                              Prettyprint_Options const& options,
-                             Constant const* const generic_constant)
+                             Constant const* const gconstant)
   {
-    printer.write("%const"_sv);
+    switch(gconstant->constant_kind) {
+    case Constant_Kind::e_constant_bool: {
+      auto const value = static_cast<Constant_bool const*>(gconstant);
+      if(value->value) {
+        printer.write("%true"_sv);
+      } else {
+        printer.write("%false"_sv);
+      }
+    } break;
+
+    case Constant_Kind::e_constant_i32: {
+      auto const value = static_cast<Constant_i32 const*>(gconstant);
+      printer.write(anton::format(allocator, "%i32_{}"_sv, value->value));
+    } break;
+
+    case Constant_Kind::e_constant_u32: {
+      auto const value = static_cast<Constant_u32 const*>(gconstant);
+      printer.write(anton::format(allocator, "%u32_{}"_sv, value->value));
+    } break;
+
+    case Constant_Kind::e_constant_f32: {
+      auto const value = static_cast<Constant_f32 const*>(gconstant);
+      printer.write(anton::format(allocator, "%f32_{}"_sv, value->value));
+    } break;
+
+    case Constant_Kind::e_constant_f64: {
+      auto const value = static_cast<Constant_f64 const*>(gconstant);
+      printer.write(anton::format(allocator, "%f64_{}"_sv, value->value));
+    } break;
+
+    case Constant_Kind::e_undef: {
+      printer.write("%undef"_sv);
+    } break;
+    }
   }
 
   static void print_value(Allocator* const allocator, Printer& printer,
                           Prettyprint_Options const& options,
                           Value const* const value)
   {
-    if(instanceof<Instr>(value)) {
+    switch(value->value_kind) {
+    case Value_Kind::e_instr: {
       auto const instr = static_cast<Instr const*>(value);
       printer.write(anton::format(allocator, "%{}"_sv, instr->id));
-    } else if(instanceof<Constant>(value)) {
+    } break;
+
+    case Value_Kind::e_const: {
       auto const constant = static_cast<Constant const*>(value);
       print_constant(allocator, printer, options, constant);
-    } else {
-      printer.write("%unknown"_sv);
+    } break;
+
+    case Value_Kind::e_argument: {
+      auto const argument = static_cast<Argument const*>(value);
+      printer.write(anton::format(allocator, "%{}"_sv, argument->id));
+    } break;
     }
   }
 
@@ -448,7 +488,7 @@ namespace vush::ir {
     case Instr_Kind::e_load: {
       auto const instr = static_cast<Instr_load const*>(generic_instr);
       print_value(allocator, printer, options, instr);
-      printer.write(" = load , "_sv);
+      printer.write(" = load "_sv);
       print_type_inline(allocator, printer, options, instr->type);
       printer.write(", "_sv);
       print_value(allocator, printer, options, instr->address);
