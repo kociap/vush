@@ -54,6 +54,7 @@ namespace vush::ir {
 
   struct Function {
     anton::IList<Argument> arguments;
+    Type* return_type;
     Basic_Block* entry_block;
     // IR identifier of the function.
     i64 id;
@@ -62,10 +63,10 @@ namespace vush::ir {
     anton::String identifier;
     Source_Info source_info;
 
-    Function(i64 id, Basic_Block* entry_block, anton::String&& identifier,
-             Source_Info const& source_info)
-      : entry_block(entry_block), id(id), identifier(ANTON_MOV(identifier)),
-        source_info(source_info)
+    Function(i64 id, Type* return_type, Basic_Block* entry_block,
+             anton::String&& identifier, Source_Info const& source_info)
+      : return_type(return_type), entry_block(entry_block), id(id),
+        identifier(ANTON_MOV(identifier)), source_info(source_info)
     {
     }
   };

@@ -2582,10 +2582,12 @@ namespace vush {
   lower_module(Lowering_Context& ctx,
                ast::Decl_Stage_Function const* const stage)
   {
+    // Stage always returns void.
+    auto const return_type = ir::get_type_void();
     auto const entry_block =
       VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.get_next_id());
     auto const fn = VUSH_ALLOCATE(
-      ir::Function, ctx.allocator, ctx.get_next_id(), entry_block,
+      ir::Function, ctx.allocator, ctx.get_next_id(), return_type, entry_block,
       anton::String("main"_sv, ctx.allocator), stage->source_info);
     ctx.current_function_return_type = stage->return_type;
     ctx.symtable.push_scope();
@@ -2631,12 +2633,14 @@ namespace vush {
     for(ast::Node const* const node: ast) {
       if(node->node_kind == ast::Node_Kind::decl_function) {
         auto const ast_fn = static_cast<ast::Decl_Function const*>(node);
+        auto const return_type =
+          convert_ast_to_ir_type(ctx, ast_fn->return_type);
         auto const entry_block =
           VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.get_next_id());
         anton::String identifier{ast_fn->identifier.value, ctx.allocator};
-        auto const ir_fn =
-          VUSH_ALLOCATE(ir::Function, allocator, ctx.get_next_id(), entry_block,
-                        ANTON_MOV(identifier), ast_fn->source_info);
+        auto const ir_fn = VUSH_ALLOCATE(
+          ir::Function, allocator, ctx.get_next_id(), return_type, entry_block,
+          ANTON_MOV(identifier), ast_fn->source_info);
         ctx.fntable.add_entry(ir_fn->identifier, ir_fn);
       }
     }
