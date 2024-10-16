@@ -100,9 +100,10 @@ namespace vush {
   {
     ir::Type_Kind kind = type.kind;
     if(instanceof<ir::Type_Vec>(type)) {
-      kind = static_cast<ir::Type_Vec const&>(type).element_kind;
+      kind = static_cast<ir::Type_Vec const&>(type).element_type->kind;
     } else if(instanceof<ir::Type_Mat>(type)) {
-      kind = static_cast<ir::Type_Mat const&>(type).column_type->element_kind;
+      kind =
+        static_cast<ir::Type_Mat const&>(type).column_type->element_type->kind;
     }
     switch(kind) {
     case ir::Type_Kind::e_bool:
@@ -144,139 +145,139 @@ namespace vush {
       case ast::Type_Builtin_Kind::e_double:
         return ir::get_type_fp64();
       case ast::Type_Builtin_Kind::e_vec2:
-        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_fp32,
+        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_fp32(),
                              2);
       case ast::Type_Builtin_Kind::e_vec3:
-        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_fp32,
+        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_fp32(),
                              3);
       case ast::Type_Builtin_Kind::e_vec4:
-        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_fp32,
+        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_fp32(),
                              4);
       case ast::Type_Builtin_Kind::e_dvec2:
-        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_fp64,
+        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_fp64(),
                              2);
       case ast::Type_Builtin_Kind::e_dvec3:
-        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_fp64,
+        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_fp64(),
                              3);
       case ast::Type_Builtin_Kind::e_dvec4:
-        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_fp64,
+        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_fp64(),
                              4);
       case ast::Type_Builtin_Kind::e_bvec2:
-        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_bool,
+        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_bool(),
                              2);
       case ast::Type_Builtin_Kind::e_bvec3:
-        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_bool,
+        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_bool(),
                              3);
       case ast::Type_Builtin_Kind::e_bvec4:
-        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_bool,
+        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_bool(),
                              4);
       case ast::Type_Builtin_Kind::e_ivec2:
-        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator,
-                             ir::Type_Kind::e_int32, 2);
+        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_int32(),
+                             2);
       case ast::Type_Builtin_Kind::e_uvec2:
-        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator,
-                             ir::Type_Kind::e_uint32, 2);
+        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_uint32(),
+                             2);
       case ast::Type_Builtin_Kind::e_ivec3:
-        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator,
-                             ir::Type_Kind::e_int32, 3);
+        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_int32(),
+                             3);
       case ast::Type_Builtin_Kind::e_uvec3:
-        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator,
-                             ir::Type_Kind::e_uint32, 3);
+        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_uint32(),
+                             3);
       case ast::Type_Builtin_Kind::e_ivec4:
-        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator,
-                             ir::Type_Kind::e_uint32, 4);
+        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_int32(),
+                             4);
       case ast::Type_Builtin_Kind::e_uvec4:
-        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator,
-                             ir::Type_Kind::e_int32, 4);
+        return VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_uint32(),
+                             4);
       case ast::Type_Builtin_Kind::e_mat2:
         return VUSH_ALLOCATE(
           ir::Type_Mat, ctx.allocator,
-          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_fp32, 2),
+          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_fp32(), 2),
           2);
       case ast::Type_Builtin_Kind::e_mat3:
         return VUSH_ALLOCATE(
           ir::Type_Mat, ctx.allocator,
-          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_fp32, 3),
+          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_fp32(), 3),
           3);
       case ast::Type_Builtin_Kind::e_mat4:
         return VUSH_ALLOCATE(
           ir::Type_Mat, ctx.allocator,
-          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_fp32, 4),
+          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_fp32(), 4),
           4);
       case ast::Type_Builtin_Kind::e_mat2x3:
         return VUSH_ALLOCATE(
           ir::Type_Mat, ctx.allocator,
-          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_fp32, 2),
+          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_fp32(), 2),
           3);
       case ast::Type_Builtin_Kind::e_mat2x4:
         return VUSH_ALLOCATE(
           ir::Type_Mat, ctx.allocator,
-          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_fp32, 2),
+          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_fp32(), 2),
           4);
       case ast::Type_Builtin_Kind::e_mat3x2:
         return VUSH_ALLOCATE(
           ir::Type_Mat, ctx.allocator,
-          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_fp32, 3),
+          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_fp32(), 3),
           2);
       case ast::Type_Builtin_Kind::e_mat3x4:
         return VUSH_ALLOCATE(
           ir::Type_Mat, ctx.allocator,
-          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_fp32, 3),
+          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_fp32(), 3),
           4);
       case ast::Type_Builtin_Kind::e_mat4x2:
         return VUSH_ALLOCATE(
           ir::Type_Mat, ctx.allocator,
-          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_fp32, 4),
+          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_fp32(), 4),
           2);
       case ast::Type_Builtin_Kind::e_mat4x3:
         return VUSH_ALLOCATE(
           ir::Type_Mat, ctx.allocator,
-          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_fp32, 4),
+          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_fp32(), 4),
           3);
       case ast::Type_Builtin_Kind::e_dmat2:
         return VUSH_ALLOCATE(
           ir::Type_Mat, ctx.allocator,
-          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_fp64, 2),
+          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_fp64(), 2),
           2);
       case ast::Type_Builtin_Kind::e_dmat3:
         return VUSH_ALLOCATE(
           ir::Type_Mat, ctx.allocator,
-          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_fp64, 3),
+          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_fp64(), 3),
           3);
       case ast::Type_Builtin_Kind::e_dmat4:
         return VUSH_ALLOCATE(
           ir::Type_Mat, ctx.allocator,
-          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_fp64, 4),
+          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_fp64(), 4),
           4);
       case ast::Type_Builtin_Kind::e_dmat2x3:
         return VUSH_ALLOCATE(
           ir::Type_Mat, ctx.allocator,
-          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_fp64, 2),
+          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_fp64(), 2),
           3);
       case ast::Type_Builtin_Kind::e_dmat2x4:
         return VUSH_ALLOCATE(
           ir::Type_Mat, ctx.allocator,
-          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_fp64, 2),
+          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_fp64(), 2),
           4);
       case ast::Type_Builtin_Kind::e_dmat3x2:
         return VUSH_ALLOCATE(
           ir::Type_Mat, ctx.allocator,
-          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_fp64, 3),
+          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_fp64(), 3),
           2);
       case ast::Type_Builtin_Kind::e_dmat3x4:
         return VUSH_ALLOCATE(
           ir::Type_Mat, ctx.allocator,
-          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_fp64, 3),
+          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_fp64(), 3),
           4);
       case ast::Type_Builtin_Kind::e_dmat4x2:
         return VUSH_ALLOCATE(
           ir::Type_Mat, ctx.allocator,
-          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_fp64, 4),
+          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_fp64(), 4),
           2);
       case ast::Type_Builtin_Kind::e_dmat4x3:
         return VUSH_ALLOCATE(
           ir::Type_Mat, ctx.allocator,
-          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::Type_Kind::e_fp64, 4),
+          VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_fp64(), 4),
           3);
       case ast::Type_Builtin_Kind::e_image1D:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
@@ -1043,17 +1044,15 @@ namespace vush {
       i64 const min_rows = anton::math::min(source->rows, target->rows);
       i64 const max_rows = anton::math::max(source->rows, target->rows);
       for(i64 i = 0; i < min_rows; i += 1) {
-        auto const element_type =
-          VUSH_ALLOCATE(ir::Type, ctx.allocator, source->element_kind);
+        auto const element_type = source->element_type;
         auto const element =
           ir::make_instr_vector_extract(ctx.allocator, ctx.get_next_id(),
                                         element_type, value, i, source_info);
         builder.insert(element);
-        if(target->element_kind == source->element_kind) {
+        if(target->element_type == source->element_type) {
           construct->add_element(element);
         } else {
-          auto const cvt_element_type =
-            VUSH_ALLOCATE(ir::Type, ctx.allocator, target->element_kind);
+          auto const cvt_element_type = target->element_type;
           auto const cvt_element = generate_conversion(
             ctx, builder, cvt_element_type, element, source_info);
           // TODO: Error propagation.
@@ -1063,7 +1062,7 @@ namespace vush {
         }
       }
       auto const zero =
-        make_constant_for_type(ctx.allocator, target->element_kind, 0);
+        make_constant_for_type(ctx.allocator, target->element_type->kind, 0);
       for(i64 i = min_rows; i < max_rows; i += 1) {
         construct->add_element(zero);
       }
@@ -1410,8 +1409,7 @@ namespace vush {
         // Overload #2.
         auto const initializer =
           static_cast<ast::Basic_Initializer const*>(expr->initializers[0]);
-        auto const element_type = VUSH_ALLOCATE(ir::Type, ctx.allocator,
-                                                constructed_type->element_kind);
+        auto const element_type = constructed_type->element_type;
         auto const value = lower_expression_and_cvt(ctx, builder, element_type,
                                                     initializer->expression);
         for(i64 i = 0; i < vector_size; i += 1) {
@@ -1432,8 +1430,7 @@ namespace vush {
           auto const value =
             lower_expression(ctx, builder, initializer->expression);
           if(ast::is_scalar(*initializer->expression->evaluated_type)) {
-            auto const element_type = VUSH_ALLOCATE(
-              ir::Type, ctx.allocator, constructed_type->element_kind);
+            auto const element_type = constructed_type->element_type;
             auto const result = generate_conversion(
               ctx, builder, element_type, value, initializer->source_info);
             ANTON_ASSERT(result.holds_value(), "conversion failed");
@@ -1451,14 +1448,12 @@ namespace vush {
 
               auto const source_type =
                 static_cast<ir::Type_Vec const*>(value->type);
-              auto const source_element_type = VUSH_ALLOCATE(
-                ir::Type, ctx.allocator, source_type->element_kind);
+              auto const source_element_type = source_type->element_type;
               auto const extract = ir::make_instr_vector_extract(
                 ctx.allocator, ctx.get_next_id(), source_element_type, value, i,
                 initializer->expression->source_info);
               builder.insert(extract);
-              auto const element_type = VUSH_ALLOCATE(
-                ir::Type, ctx.allocator, constructed_type->element_kind);
+              auto const element_type = constructed_type->element_type;
               auto const result = generate_conversion(
                 ctx, builder, element_type, extract, initializer->source_info);
               ANTON_ASSERT(result.holds_value(), "conversion failed");
@@ -1468,7 +1463,7 @@ namespace vush {
         }
         // Pad with zeros if missing initializers.
         auto const zero = make_constant_for_type(
-          ctx.allocator, constructed_type->element_kind, 0);
+          ctx.allocator, constructed_type->element_type->kind, 0);
         for(i64 i = construct->elements.size(); i < vector_size; i += 1) {
           construct->add_element(zero);
         }
@@ -1501,7 +1496,7 @@ namespace vush {
               i, initializer->source_info);
             auto const column_type = VUSH_ALLOCATE(
               ir::Type_Vec, ctx.allocator,
-              constructed_type->column_type->element_kind, matrix_rows);
+              constructed_type->column_type->element_type, matrix_rows);
             auto const column = construct_vec_from_vec(
               ctx, builder, column_type, extract, initializer->source_info);
             construct->add_element(column);
@@ -1510,10 +1505,9 @@ namespace vush {
           // Overload #2.
           // Pad with zeros if missing initializers.
           auto const zero = make_constant_for_type(
-            ctx.allocator, constructed_type->column_type->element_kind, 0);
-          auto const element_type =
-            VUSH_ALLOCATE(ir::Type, ctx.allocator,
-                          constructed_type->column_type->element_kind);
+            ctx.allocator, constructed_type->column_type->element_type->kind,
+            0);
+          auto const element_type = constructed_type->column_type->element_type;
           auto const element = generate_conversion(
             ctx, builder, element_type, value, initializer->source_info);
           // TODO: Propagate error.
@@ -1521,7 +1515,7 @@ namespace vush {
           for(i64 i = 0; i < matrix_cols; i += 1) {
             auto const column_type = VUSH_ALLOCATE(
               ir::Type_Vec, ctx.allocator,
-              constructed_type->column_type->element_kind, matrix_rows);
+              constructed_type->column_type->element_type, matrix_rows);
             auto const column = ir::make_instr_composite_construct(
               ctx.allocator, ctx.get_next_id(), column_type, expr->source_info);
             // Fill the column with 0s.
@@ -1543,7 +1537,7 @@ namespace vush {
         for(i64 col_idx = 0; col_idx < matrix_cols; col_idx += 1) {
           auto const column_type = VUSH_ALLOCATE(
             ir::Type_Vec, ctx.allocator,
-            constructed_type->column_type->element_kind, matrix_rows);
+            constructed_type->column_type->element_type, matrix_rows);
           auto const column = ir::make_instr_composite_construct(
             ctx.allocator, ctx.get_next_id(), column_type, expr->source_info);
           for(i64 row_idx = 0; row_idx < matrix_rows; row_idx += 1) {
@@ -1565,7 +1559,7 @@ namespace vush {
             lower_expression(ctx, builder, initializer->expression);
           auto const column_type = VUSH_ALLOCATE(
             ir::Type_Vec, ctx.allocator,
-            constructed_type->column_type->element_kind, matrix_rows);
+            constructed_type->column_type->element_type, matrix_rows);
           auto const column = construct_vec_from_vec(
             ctx, builder, column_type, source, initializer->source_info);
           construct->add_element(column);
@@ -1573,13 +1567,13 @@ namespace vush {
       }
       // Pad with identity columns if missing initializers.
       auto const zero = make_constant_for_type(
-        ctx.allocator, constructed_type->column_type->element_kind, 0);
+        ctx.allocator, constructed_type->column_type->element_type->kind, 0);
       auto const one = make_constant_for_type(
-        ctx.allocator, constructed_type->column_type->element_kind, 1);
+        ctx.allocator, constructed_type->column_type->element_type->kind, 1);
       for(i64 i = construct->elements.size(); i < matrix_cols; i += 1) {
         auto const column_type = VUSH_ALLOCATE(
           ir::Type_Vec, ctx.allocator,
-          constructed_type->column_type->element_kind, matrix_rows);
+          constructed_type->column_type->element_type, matrix_rows);
         auto const column = ir::make_instr_composite_construct(
           ctx.allocator, ctx.get_next_id(), column_type, expr->source_info);
         // Fill the column with 0s.
@@ -2114,8 +2108,7 @@ namespace vush {
         if(instanceof<ir::Type_Vec>(rhs->type)) {
           auto const source_type = safe_cast<ir::Type_Vec*>(rhs->type);
           // Extract the element from the source vector.
-          auto const source_element_type =
-            VUSH_ALLOCATE(ir::Type, ctx.allocator, source_type->element_kind);
+          auto const source_element_type = source_type->element_type;
           ir::Instr* const extract = ir::make_instr_vector_extract(
             ctx.allocator, ctx.get_next_id(), source_element_type, rhs,
             src_index, field_expr->source_info);
@@ -2125,8 +2118,7 @@ namespace vush {
 
         if(ast::is_assignment_arithmetic(stmt)) {
           // Extract the element from the target and do arithmetic.
-          auto const target_element_type =
-            VUSH_ALLOCATE(ir::Type, ctx.allocator, target_type->element_kind);
+          auto const target_element_type = target_type->element_type;
           auto target_element = ir::make_instr_vector_extract(
             ctx.allocator, ctx.get_next_id(), target_element_type, rhs,
             dst_index, field_expr->source_info);

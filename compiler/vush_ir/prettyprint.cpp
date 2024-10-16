@@ -121,15 +121,16 @@ namespace vush::ir {
 
     case Type_Kind::e_vec: {
       auto const vec = static_cast<ir::Type_Vec const*>(type);
-      printer.write(anton::format(allocator, "<{} x {}>"_sv, vec->rows,
-                                  scalar_type_to_string(vec->element_kind)));
+      printer.write(
+        anton::format(allocator, "<{} x {}>"_sv, vec->rows,
+                      scalar_type_to_string(vec->element_type->kind)));
     } break;
 
     case Type_Kind::e_mat: {
       auto const mat = static_cast<ir::Type_Mat const*>(type);
       printer.write(anton::format(
         allocator, "<{} x <{} x {}>>"_sv, mat->columns, mat->column_type->rows,
-        scalar_type_to_string(mat->column_type->element_kind)));
+        scalar_type_to_string(mat->column_type->element_type->kind)));
     } break;
 
     case Type_Kind::e_sampler:

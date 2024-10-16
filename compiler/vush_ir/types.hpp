@@ -155,11 +155,11 @@ namespace vush::ir {
   };
 
   struct Type_Vec: public Type {
-    Type_Kind element_kind;
+    Type* element_type;
     i64 rows;
 
-    Type_Vec(Type_Kind element_kind, i64 rows)
-      : Type{Type_Kind::e_vec}, element_kind(element_kind), rows(rows)
+    Type_Vec(Type* element_type, i64 rows)
+      : Type{Type_Kind::e_vec}, element_type(element_type), rows(rows)
     {
     }
   };

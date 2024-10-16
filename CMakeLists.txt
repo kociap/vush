@@ -187,6 +187,8 @@ target_sources(vush
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_sema/sema.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_sema/typeconv.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_sema/typeconv.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_spirv/lower_ir.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_spirv/lower_ir.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_spirv/spirv.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_spirv/spirv.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_spirv/spirv_fwd.hpp"

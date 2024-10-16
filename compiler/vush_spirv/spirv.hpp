@@ -152,7 +152,7 @@ namespace vush::spirv {
     e_unreachable,
   };
 
-  struct Instr: public anton::IList_Node<Instr> {
+  struct Instr: public anton::IList_DNode {
     i64 id;
     Instr_Kind instr_kind;
 
@@ -322,6 +322,10 @@ namespace vush::spirv {
     }
   };
 
+  [[nodiscard]] Instr_entry_point*
+  make_instr_entry_point(Allocator* allocator, Instr_function* entry_point,
+                         anton::String&& name, Execution_Model execution_model);
+
   enum struct Capability {
     e_matrix = 0,
     e_shader = 1,
@@ -342,7 +346,14 @@ namespace vush::spirv {
   };
 
   ID_INSTR(Instr_type_void, e_type_void);
+
+  [[nodiscard]] Instr_type_void* make_instr_type_void(Allocator* allocator,
+                                                      i64 id);
+
   ID_INSTR(Instr_type_bool, e_type_bool);
+
+  [[nodiscard]] Instr_type_bool* make_instr_type_bool(Allocator* allocator,
+                                                      i64 id);
 
   struct Instr_type_int: public Instr {
     u32 width;
@@ -354,6 +365,9 @@ namespace vush::spirv {
     }
   };
 
+  [[nodiscard]] Instr_type_int*
+  make_instr_type_int(Allocator* allocator, i64 id, u32 width, bool signedness);
+
   struct Instr_type_float: public Instr {
     u32 width;
     // There are no alternative FP encodings, hence we omit the member.
@@ -363,6 +377,9 @@ namespace vush::spirv {
     {
     }
   };
+
+  [[nodiscard]] Instr_type_float* make_instr_type_float(Allocator* allocator,
+                                                        i64 id, u32 width);
 
   struct Instr_type_vector: public Instr {
     Instr* component_type;
@@ -375,6 +392,11 @@ namespace vush::spirv {
     }
   };
 
+  [[nodiscard]] Instr_type_vector* make_instr_type_vector(Allocator* allocator,
+                                                          i64 id,
+                                                          Instr* component_type,
+                                                          u32 component_count);
+
   struct Instr_type_matrix: public Instr {
     Instr* column_type;
     u32 column_count;
@@ -385,6 +407,11 @@ namespace vush::spirv {
     {
     }
   };
+
+  [[nodiscard]] Instr_type_matrix* make_instr_type_matrix(Allocator* allocator,
+                                                          i64 id,
+                                                          Instr* column_type,
+                                                          u32 column_count);
 
   enum struct Dimensionality {
     e_1D = 0,
@@ -483,6 +510,11 @@ namespace vush::spirv {
     }
   };
 
+  [[nodiscard]] Instr_type_array* make_instr_type_array(Allocator* allocator,
+                                                        i64 id,
+                                                        Instr* element_type,
+                                                        Instr* length);
+
   struct Instr_type_runtime_array: public Instr {
     Instr* element_type;
 
@@ -491,6 +523,10 @@ namespace vush::spirv {
     {
     }
   };
+
+  [[nodiscard]] Instr_type_runtime_array*
+  make_instr_type_runtime_array(Allocator* allocator, i64 id,
+                                Instr* element_type);
 
   struct Instr_type_struct: public Instr {
     Array<Instr*> field_types;
@@ -508,6 +544,9 @@ namespace vush::spirv {
     {
     }
   };
+
+  [[nodiscard]] Instr_type_struct* make_instr_type_struct(Allocator* allocator,
+                                                          i64 id);
 
   enum struct Storage_Class {
     e_uniform_constant = 0,
@@ -555,6 +594,9 @@ namespace vush::spirv {
     }
   };
 
+  [[nodiscard]] Instr_type_function*
+  make_instr_type_function(Allocator* allocator, i64 id, Instr* return_type);
+
   TYPED_INSTR(Instr_constant_true, e_constant_true);
   TYPED_INSTR(Instr_constant_false, e_constant_false);
 
@@ -571,6 +613,16 @@ namespace vush::spirv {
       memcpy(&word1, data, byte_length);
     }
   };
+
+  // make_instr_constant_u32
+  //
+  // Parameters:
+  // result_type - must be a u32 type.
+  //
+  [[nodiscard]] Instr_constant* make_instr_constant_u32(Allocator* allocator,
+                                                        i64 id,
+                                                        Instr* result_type,
+                                                        u32 value);
 
   struct Instr_constant_composite: public Instr {
     Instr* result_type;
@@ -652,6 +704,10 @@ namespace vush::spirv {
     {
     }
   };
+
+  [[nodiscard]] Instr_function*
+  make_instr_function(Allocator* allocator, i64 id,
+                      Instr_type_function* function_type);
 
   TYPED_INSTR(Instr_function_parameter, e_function_parameter);
   NOTHING_INSTR(Instr_function_end, e_function_end);

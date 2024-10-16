@@ -11,7 +11,7 @@ namespace vush::ir {
     case Type_Kind::e_vec: {
       auto const v_lhs = static_cast<Type_Vec const&>(lhs);
       auto const v_rhs = static_cast<Type_Vec const&>(rhs);
-      return v_lhs.element_kind == v_rhs.element_kind &&
+      return v_lhs.element_type == v_rhs.element_type &&
              v_lhs.rows == v_rhs.rows;
     } break;
 
@@ -151,9 +151,9 @@ namespace vush::ir {
   {
     Type_Kind kind = type.kind;
     if(type.kind == Type_Kind::e_mat) {
-      kind = static_cast<Type_Mat const&>(type).column_type->element_kind;
+      kind = static_cast<Type_Mat const&>(type).column_type->element_type->kind;
     } else if(type.kind == Type_Kind::e_vec) {
-      kind = static_cast<Type_Vec const&>(type).element_kind;
+      kind = static_cast<Type_Vec const&>(type).element_type->kind;
     }
 
     return kind == Type_Kind::e_int8 || kind == Type_Kind::e_int16 ||
@@ -171,9 +171,9 @@ namespace vush::ir {
   {
     Type_Kind kind = type.kind;
     if(type.kind == Type_Kind::e_mat) {
-      kind = static_cast<Type_Mat const&>(type).column_type->element_kind;
+      kind = static_cast<Type_Mat const&>(type).column_type->element_type->kind;
     } else if(type.kind == Type_Kind::e_vec) {
-      kind = static_cast<Type_Vec const&>(type).element_kind;
+      kind = static_cast<Type_Vec const&>(type).element_type->kind;
     }
 
     return kind == Type_Kind::e_int8 || kind == Type_Kind::e_int16 ||
@@ -190,9 +190,9 @@ namespace vush::ir {
   {
     Type_Kind kind = type.kind;
     if(type.kind == Type_Kind::e_mat) {
-      kind = static_cast<Type_Mat const&>(type).column_type->element_kind;
+      kind = static_cast<Type_Mat const&>(type).column_type->element_type->kind;
     } else if(type.kind == Type_Kind::e_vec) {
-      kind = static_cast<Type_Vec const&>(type).element_kind;
+      kind = static_cast<Type_Vec const&>(type).element_type->kind;
     }
 
     return kind == Type_Kind::e_uint8 || kind == Type_Kind::e_uint16 ||
@@ -209,9 +209,9 @@ namespace vush::ir {
   {
     Type_Kind kind = type.kind;
     if(type.kind == Type_Kind::e_mat) {
-      kind = static_cast<Type_Mat const&>(type).column_type->element_kind;
+      kind = static_cast<Type_Mat const&>(type).column_type->element_type->kind;
     } else if(type.kind == Type_Kind::e_vec) {
-      kind = static_cast<Type_Vec const&>(type).element_kind;
+      kind = static_cast<Type_Vec const&>(type).element_type->kind;
     }
 
     return kind == Type_Kind::e_fp16 || kind == Type_Kind::e_fp32 ||

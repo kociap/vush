@@ -1,5 +1,7 @@
 #include <vush_spirv/spirv.hpp>
 
+#include <vush_core/memory.hpp>
+
 namespace vush::spirv {
   template<>
   bool instanceof<Instr_string>(Instr const* const instr)
@@ -743,5 +745,97 @@ namespace vush::spirv {
   bool instanceof<Instr_unreachable>(Instr const* const instr)
   {
     return instr->instr_kind == Instr_Kind::e_unreachable;
+  }
+
+  Instr_entry_point* make_instr_entry_point(Allocator* allocator,
+                                            Instr_function* entry_point,
+                                            anton::String&& name,
+                                            Execution_Model execution_model)
+  {
+    auto const instr =
+      VUSH_ALLOCATE(Instr_entry_point, allocator, entry_point, ANTON_MOV(name),
+                    execution_model, allocator);
+    return instr;
+  }
+
+  Instr_type_int* make_instr_type_int(Allocator* allocator, i64 id, u32 width,
+                                      bool signedness)
+  {
+    auto const instr =
+      VUSH_ALLOCATE(Instr_type_int, allocator, id, width, signedness);
+    return instr;
+  }
+
+  Instr_type_float* make_instr_type_float(Allocator* allocator, i64 id,
+                                          u32 width)
+  {
+    auto const instr = VUSH_ALLOCATE(Instr_type_float, allocator, id, width);
+    return instr;
+  }
+
+  Instr_type_struct* make_instr_type_struct(Allocator* allocator, i64 id)
+  {
+    auto const instr =
+      VUSH_ALLOCATE(Instr_type_struct, allocator, id, allocator);
+    return instr;
+  }
+
+  Instr_type_array* make_instr_type_array(Allocator* allocator, i64 id,
+                                          Instr* element_type, Instr* length)
+  {
+    auto const instr =
+      VUSH_ALLOCATE(Instr_type_array, allocator, id, element_type, length);
+    return instr;
+  }
+
+  Instr_type_runtime_array* make_instr_type_runtime_array(Allocator* allocator,
+                                                          i64 id,
+                                                          Instr* element_type)
+  {
+    auto const instr =
+      VUSH_ALLOCATE(Instr_type_runtime_array, allocator, id, element_type);
+    return instr;
+  }
+
+  Instr_type_vector* make_instr_type_vector(Allocator* allocator, i64 id,
+                                            Instr* component_type,
+                                            u32 component_count)
+  {
+    auto const instr = VUSH_ALLOCATE(Instr_type_vector, allocator, id,
+                                     component_type, component_count);
+    return instr;
+  }
+
+  Instr_type_matrix* make_instr_type_matrix(Allocator* allocator, i64 id,
+                                            Instr* column_type,
+                                            u32 column_count)
+  {
+    auto const instr = VUSH_ALLOCATE(Instr_type_matrix, allocator, id,
+                                     column_type, column_count);
+    return instr;
+  }
+
+  Instr_type_function* make_instr_type_function(Allocator* allocator, i64 id,
+                                                Instr* return_type)
+  {
+    auto const instr =
+      VUSH_ALLOCATE(Instr_type_function, allocator, id, return_type, allocator);
+    return instr;
+  }
+
+  Instr_constant* make_instr_constant_u32(Allocator* allocator, i64 id,
+                                          Instr* result_type, u32 value)
+  {
+    auto const instr =
+      VUSH_ALLOCATE(Instr_constant, allocator, id, result_type, 4, &value);
+    return instr;
+  }
+
+  Instr_function* make_instr_function(Allocator* allocator, i64 id,
+                                      Instr_type_function* function_type)
+  {
+    auto const instr =
+      VUSH_ALLOCATE(Instr_function, allocator, id, function_type);
+    return instr;
   }
 } // namespace vush::spirv
