@@ -45,7 +45,7 @@ namespace vush {
     {
     }
 
-    [[nodiscard]] i64 get_next_id()
+    [[nodiscard]] i64 next_id()
     {
       i64 const value = id;
       id += 1;
@@ -818,18 +818,17 @@ namespace vush {
         i32 const source_bits = get_bit_count(*source_ir_type);
         i32 const target_bits = get_bit_count(*target_ir_type);
         if(target_bits < source_bits) {
-          auto const instr =
-            make_instr_cvt_trunc(ctx.allocator, ctx.get_next_id(),
-                                 target_ir_type, value, source_info);
+          auto const instr = make_instr_cvt_trunc(
+            ctx.allocator, ctx.next_id(), target_ir_type, value, source_info);
           builder.insert(instr);
           return {anton::expected_value, instr};
         } else if(target_bits > source_bits) {
           ir::Instr* instr = nullptr;
           if(source_is_signed_int) {
-            instr = make_instr_cvt_sext(ctx.allocator, ctx.get_next_id(),
+            instr = make_instr_cvt_sext(ctx.allocator, ctx.next_id(),
                                         target_ir_type, value, source_info);
           } else {
-            instr = make_instr_cvt_zext(ctx.allocator, ctx.get_next_id(),
+            instr = make_instr_cvt_zext(ctx.allocator, ctx.next_id(),
                                         target_ir_type, value, source_info);
           }
           builder.insert(instr);
@@ -851,15 +850,13 @@ namespace vush {
         i32 const source_bits = get_bit_count(*source_ir_type);
         i32 const target_bits = get_bit_count(*target_ir_type);
         if(target_bits < source_bits) {
-          auto const instr =
-            make_instr_cvt_fptrunc(ctx.allocator, ctx.get_next_id(),
-                                   target_ir_type, value, source_info);
+          auto const instr = make_instr_cvt_fptrunc(
+            ctx.allocator, ctx.next_id(), target_ir_type, value, source_info);
           builder.insert(instr);
           return {anton::expected_value, instr};
         } else if(target_bits > source_bits) {
-          auto const instr =
-            make_instr_cvt_fpext(ctx.allocator, ctx.get_next_id(),
-                                 target_ir_type, value, source_info);
+          auto const instr = make_instr_cvt_fpext(
+            ctx.allocator, ctx.next_id(), target_ir_type, value, source_info);
           builder.insert(instr);
           return {anton::expected_value, instr};
         } else {
@@ -871,10 +868,10 @@ namespace vush {
         // Conversion from int to fp.
         ir::Instr* instr = nullptr;
         if(source_is_signed_int) {
-          instr = ir::make_instr_cvt_si2fp(ctx.allocator, ctx.get_next_id(),
+          instr = ir::make_instr_cvt_si2fp(ctx.allocator, ctx.next_id(),
                                            target_ir_type, value, source_info);
         } else {
-          instr = ir::make_instr_cvt_ui2fp(ctx.allocator, ctx.get_next_id(),
+          instr = ir::make_instr_cvt_ui2fp(ctx.allocator, ctx.next_id(),
                                            target_ir_type, value, source_info);
         }
         builder.insert(instr);
@@ -885,10 +882,10 @@ namespace vush {
         // Conversion from fp to int.
         ir::Instr* instr = nullptr;
         if(source_is_signed_int) {
-          instr = ir::make_instr_cvt_fp2si(ctx.allocator, ctx.get_next_id(),
+          instr = ir::make_instr_cvt_fp2si(ctx.allocator, ctx.next_id(),
                                            target_ir_type, value, source_info);
         } else {
-          instr = ir::make_instr_cvt_fp2ui(ctx.allocator, ctx.get_next_id(),
+          instr = ir::make_instr_cvt_fp2ui(ctx.allocator, ctx.next_id(),
                                            target_ir_type, value, source_info);
         }
         builder.insert(instr);
@@ -943,17 +940,17 @@ namespace vush {
         i32 const target_bits = get_bit_count(*target);
         if(target_bits < source_bits) {
           auto const instr = ir::make_instr_cvt_trunc(
-            ctx.allocator, ctx.get_next_id(), target, value, source_info);
+            ctx.allocator, ctx.next_id(), target, value, source_info);
           builder.insert(instr);
           return {anton::expected_value, instr};
         } else if(target_bits > source_bits) {
           ir::Instr* instr = nullptr;
           if(source_is_signed_int) {
-            instr = make_instr_cvt_sext(ctx.allocator, ctx.get_next_id(),
-                                        target, value, source_info);
+            instr = make_instr_cvt_sext(ctx.allocator, ctx.next_id(), target,
+                                        value, source_info);
           } else {
-            instr = make_instr_cvt_zext(ctx.allocator, ctx.get_next_id(),
-                                        target, value, source_info);
+            instr = make_instr_cvt_zext(ctx.allocator, ctx.next_id(), target,
+                                        value, source_info);
           }
           builder.insert(instr);
           return {anton::expected_value, instr};
@@ -975,12 +972,12 @@ namespace vush {
         i32 const target_bits = get_bit_count(*target);
         if(target_bits < source_bits) {
           auto const instr = make_instr_cvt_fptrunc(
-            ctx.allocator, ctx.get_next_id(), target, value, source_info);
+            ctx.allocator, ctx.next_id(), target, value, source_info);
           builder.insert(instr);
           return {anton::expected_value, instr};
         } else if(target_bits > source_bits) {
-          auto const instr = make_instr_cvt_fpext(
-            ctx.allocator, ctx.get_next_id(), target, value, source_info);
+          auto const instr = make_instr_cvt_fpext(ctx.allocator, ctx.next_id(),
+                                                  target, value, source_info);
           builder.insert(instr);
           return {anton::expected_value, instr};
         } else {
@@ -992,11 +989,11 @@ namespace vush {
         // Conversion from int to fp.
         ir::Instr* instr = nullptr;
         if(source_is_signed_int) {
-          instr = ir::make_instr_cvt_si2fp(ctx.allocator, ctx.get_next_id(),
-                                           target, value, source_info);
+          instr = ir::make_instr_cvt_si2fp(ctx.allocator, ctx.next_id(), target,
+                                           value, source_info);
         } else {
-          instr = ir::make_instr_cvt_ui2fp(ctx.allocator, ctx.get_next_id(),
-                                           target, value, source_info);
+          instr = ir::make_instr_cvt_ui2fp(ctx.allocator, ctx.next_id(), target,
+                                           value, source_info);
         }
         builder.insert(instr);
         return {anton::expected_value, instr};
@@ -1006,11 +1003,11 @@ namespace vush {
         // Conversion from fp to int.
         ir::Instr* instr = nullptr;
         if(source_is_signed_int) {
-          instr = ir::make_instr_cvt_fp2si(ctx.allocator, ctx.get_next_id(),
-                                           target, value, source_info);
+          instr = ir::make_instr_cvt_fp2si(ctx.allocator, ctx.next_id(), target,
+                                           value, source_info);
         } else {
-          instr = ir::make_instr_cvt_fp2ui(ctx.allocator, ctx.get_next_id(),
-                                           target, value, source_info);
+          instr = ir::make_instr_cvt_fp2ui(ctx.allocator, ctx.next_id(), target,
+                                           value, source_info);
         }
         builder.insert(instr);
         return {anton::expected_value, instr};
@@ -1040,14 +1037,13 @@ namespace vush {
       return result.value();
     } else {
       auto const construct = ir::make_instr_composite_construct(
-        ctx.allocator, ctx.get_next_id(), target, source_info);
+        ctx.allocator, ctx.next_id(), target, source_info);
       i64 const min_rows = anton::math::min(source->rows, target->rows);
       i64 const max_rows = anton::math::max(source->rows, target->rows);
       for(i64 i = 0; i < min_rows; i += 1) {
         auto const element_type = source->element_type;
-        auto const element =
-          ir::make_instr_vector_extract(ctx.allocator, ctx.get_next_id(),
-                                        element_type, value, i, source_info);
+        auto const element = ir::make_instr_vector_extract(
+          ctx.allocator, ctx.next_id(), element_type, value, i, source_info);
         builder.insert(element);
         if(target->element_type == source->element_type) {
           construct->add_element(element);
@@ -1129,7 +1125,7 @@ namespace vush {
     ANTON_ASSERT(index >= 0, "type has no field");
     ir::Value* const index_value = ir::make_constant_i32(ctx.allocator, index);
     ir::Instr* const getptr =
-      ir::make_instr_getptr(ctx.allocator, ctx.get_next_id(), addressed_type,
+      ir::make_instr_getptr(ctx.allocator, ctx.next_id(), addressed_type,
                             address, index_value, expr->source_info);
     builder.insert(getptr);
     return getptr;
@@ -1144,7 +1140,7 @@ namespace vush {
     ir::Instr* const address = get_address(ctx, builder, expr->base);
     ir::Value* const index = lower_expression(ctx, builder, expr->index);
     ir::Instr* const getptr =
-      ir::make_instr_getptr(ctx.allocator, ctx.get_next_id(), addressed_type,
+      ir::make_instr_getptr(ctx.allocator, ctx.next_id(), addressed_type,
                             address, index, expr->source_info);
     builder.insert(getptr);
     return getptr;
@@ -1157,28 +1153,28 @@ namespace vush {
     ir::Value* const condition =
       lower_expression(ctx, builder, expr->condition);
     auto const then_block =
-      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.get_next_id());
+      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
     auto const else_block =
-      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.get_next_id());
+      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
     auto const converge_block =
-      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.get_next_id());
+      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
     auto const brcond =
-      ir::make_instr_brcond(ctx.allocator, ctx.get_next_id(), condition,
-                            then_block, else_block, expr->source_info);
+      ir::make_instr_brcond(ctx.allocator, ctx.next_id(), condition, then_block,
+                            else_block, expr->source_info);
     builder.insert(brcond);
 
     // Lower then branch.
     builder.set_insert_block(then_block);
     ir::Instr* const then_result = get_address(ctx, builder, expr->then_branch);
     auto const branch_from_then = ir::make_instr_branch(
-      ctx.allocator, ctx.get_next_id(), converge_block, expr->source_info);
+      ctx.allocator, ctx.next_id(), converge_block, expr->source_info);
     builder.insert(branch_from_then);
 
     // Lower else branch.
     builder.set_insert_block(else_block);
     ir::Instr* const else_result = get_address(ctx, builder, expr->else_branch);
     auto const branch_from_else = ir::make_instr_branch(
-      ctx.allocator, ctx.get_next_id(), converge_block, expr->source_info);
+      ctx.allocator, ctx.next_id(), converge_block, expr->source_info);
     builder.insert(branch_from_else);
 
     ANTON_ASSERT(compare_types_equal(*then_result->type, *else_result->type),
@@ -1186,7 +1182,7 @@ namespace vush {
 
     // Insert the phi node at the start of the converge block.
     builder.set_insert_block(converge_block);
-    auto const phi = ir::make_instr_phi(ctx.allocator, ctx.get_next_id(),
+    auto const phi = ir::make_instr_phi(ctx.allocator, ctx.next_id(),
                                         ir::get_type_ptr(), expr->source_info);
     phi->srcs.push_back(then_result);
     then_result->add_referrer(phi);
@@ -1291,7 +1287,7 @@ namespace vush {
     ir::Type* const type = convert_ast_to_ir_type(ctx, expr->evaluated_type);
     ir::Instr* const address = get_address(ctx, builder, expr);
     ir::Instr* const load = ir::make_instr_load(
-      ctx.allocator, ctx.get_next_id(), type, address, expr->source_info);
+      ctx.allocator, ctx.next_id(), type, address, expr->source_info);
     builder.insert(load);
     return load;
   }
@@ -1305,7 +1301,7 @@ namespace vush {
       ir::Instr* const address = get_address(ctx, builder, expr);
       ir::Type* const type = convert_ast_to_ir_type(ctx, expr->evaluated_type);
       ir::Instr* const load = ir::make_instr_load(
-        ctx.allocator, ctx.get_next_id(), type, address, expr->source_info);
+        ctx.allocator, ctx.next_id(), type, address, expr->source_info);
       builder.insert(load);
       return load;
     }
@@ -1321,18 +1317,18 @@ namespace vush {
         char8 const field_char = expr->field.value.data()[0];
         i32 const extract_index = ast::vector_swizzle_char_to_index(field_char);
         auto const result = ir::make_instr_vector_extract(
-          ctx.allocator, ctx.get_next_id(), result_type, base, extract_index,
+          ctx.allocator, ctx.next_id(), result_type, base, extract_index,
           expr->source_info);
         builder.insert(result);
         return result;
       } else {
         auto const construct = ir::make_instr_composite_construct(
-          ctx.allocator, ctx.get_next_id(), result_type, expr->source_info);
+          ctx.allocator, ctx.next_id(), result_type, expr->source_info);
         for(char8 const field_char: expr->field.value.bytes()) {
           i32 const extract_index =
             ast::vector_swizzle_char_to_index(field_char);
           auto const result = ir::make_instr_vector_extract(
-            ctx.allocator, ctx.get_next_id(), result_type, base, extract_index,
+            ctx.allocator, ctx.next_id(), result_type, base, extract_index,
             expr->source_info);
           builder.insert(result);
           construct->add_element(result);
@@ -1352,7 +1348,7 @@ namespace vush {
     ir::Instr* const address = get_address(ctx, builder, expr);
     ir::Type* const type = convert_ast_to_ir_type(ctx, expr->evaluated_type);
     ir::Instr* const load = ir::make_instr_load(
-      ctx.allocator, ctx.get_next_id(), type, address, expr->source_info);
+      ctx.allocator, ctx.next_id(), type, address, expr->source_info);
     builder.insert(load);
     return load;
   }
@@ -1362,8 +1358,8 @@ namespace vush {
                   ast::Expr_Init const* const expr)
   {
     auto const type = convert_ast_to_ir_type(ctx, expr->evaluated_type);
-    auto const temporary = ir::make_instr_alloc(
-      ctx.allocator, ctx.get_next_id(), type, expr->source_info);
+    auto const temporary = ir::make_instr_alloc(ctx.allocator, ctx.next_id(),
+                                                type, expr->source_info);
     builder.insert(temporary);
     if(instanceof<ast::Type_Struct>(expr->evaluated_type)) {
       auto const constructed_type =
@@ -1381,18 +1377,18 @@ namespace vush {
                                           initializer->identifier.value);
         auto const value = ir::make_constant_i32(ctx.allocator, index);
         auto const field_address =
-          ir::make_instr_getptr(ctx.allocator, ctx.get_next_id(), type,
-                                temporary, value, initializer->source_info);
+          ir::make_instr_getptr(ctx.allocator, ctx.next_id(), type, temporary,
+                                value, initializer->source_info);
         builder.insert(field_address);
         auto const store =
-          ir::make_instr_store(ctx.allocator, ctx.get_next_id(), field_address,
-                               rhs, initializer->source_info);
+          ir::make_instr_store(ctx.allocator, ctx.next_id(), field_address, rhs,
+                               initializer->source_info);
         builder.insert(store);
       }
     } else if(is_vector(*expr->evaluated_type)) {
       auto const constructed_type = static_cast<ir::Type_Vec*>(type);
       auto const construct = ir::make_instr_composite_construct(
-        ctx.allocator, ctx.get_next_id(), type, expr->source_info);
+        ctx.allocator, ctx.next_id(), type, expr->source_info);
       i64 const vector_size = ast::get_vector_size(*expr->evaluated_type);
       // We handle constructor #2 separately.
       bool single_scalar_constructor = false;
@@ -1450,7 +1446,7 @@ namespace vush {
                 static_cast<ir::Type_Vec const*>(value->type);
               auto const source_element_type = source_type->element_type;
               auto const extract = ir::make_instr_vector_extract(
-                ctx.allocator, ctx.get_next_id(), source_element_type, value, i,
+                ctx.allocator, ctx.next_id(), source_element_type, value, i,
                 initializer->expression->source_info);
               builder.insert(extract);
               auto const element_type = constructed_type->element_type;
@@ -1471,7 +1467,7 @@ namespace vush {
       builder.insert(construct);
     } else if(is_matrix(*expr->evaluated_type)) {
       auto const construct = ir::make_instr_composite_construct(
-        ctx.allocator, ctx.get_next_id(), type, expr->source_info);
+        ctx.allocator, ctx.next_id(), type, expr->source_info);
       i64 const matrix_rows = ast::get_matrix_rows(*expr->evaluated_type);
       i64 const matrix_cols = ast::get_matrix_columns(*expr->evaluated_type);
       auto const constructed_type = static_cast<ir::Type_Mat*>(type);
@@ -1492,8 +1488,8 @@ namespace vush {
             anton::math::min(matrix_cols, source_type->columns);
           for(i64 i = 0; i < min_cols; i += 1) {
             auto const extract = ir::make_instr_composite_extract(
-              ctx.allocator, ctx.get_next_id(), source_type->column_type, value,
-              i, initializer->source_info);
+              ctx.allocator, ctx.next_id(), source_type->column_type, value, i,
+              initializer->source_info);
             auto const column_type = VUSH_ALLOCATE(
               ir::Type_Vec, ctx.allocator,
               constructed_type->column_type->element_type, matrix_rows);
@@ -1517,7 +1513,7 @@ namespace vush {
               ir::Type_Vec, ctx.allocator,
               constructed_type->column_type->element_type, matrix_rows);
             auto const column = ir::make_instr_composite_construct(
-              ctx.allocator, ctx.get_next_id(), column_type, expr->source_info);
+              ctx.allocator, ctx.next_id(), column_type, expr->source_info);
             // Fill the column with 0s.
             for(i64 r = 0; r < matrix_rows; r += 1) {
               column->add_element(zero);
@@ -1539,7 +1535,7 @@ namespace vush {
             ir::Type_Vec, ctx.allocator,
             constructed_type->column_type->element_type, matrix_rows);
           auto const column = ir::make_instr_composite_construct(
-            ctx.allocator, ctx.get_next_id(), column_type, expr->source_info);
+            ctx.allocator, ctx.next_id(), column_type, expr->source_info);
           for(i64 row_idx = 0; row_idx < matrix_rows; row_idx += 1) {
             auto const initializer = static_cast<ast::Basic_Initializer const*>(
               expr->initializers[col_idx * matrix_rows + row_idx]);
@@ -1575,7 +1571,7 @@ namespace vush {
           ir::Type_Vec, ctx.allocator,
           constructed_type->column_type->element_type, matrix_rows);
         auto const column = ir::make_instr_composite_construct(
-          ctx.allocator, ctx.get_next_id(), column_type, expr->source_info);
+          ctx.allocator, ctx.next_id(), column_type, expr->source_info);
         // Fill the column with 0s.
         for(i64 r = 0; r < matrix_rows; r += 1) {
           column->add_element(zero);
@@ -1595,7 +1591,7 @@ namespace vush {
     }
     // We load the struct and pass it farther down.
     auto const instr_load = ir::make_instr_load(
-      ctx.allocator, ctx.get_next_id(), type, temporary, expr->source_info);
+      ctx.allocator, ctx.next_id(), type, temporary, expr->source_info);
     builder.insert(instr_load);
     return instr_load;
   }
@@ -1766,13 +1762,13 @@ namespace vush {
       ir::Value* const lhs = lower_expression_and_cvt(
         ctx, builder, builtin_bool, expr->arguments[0]);
       auto const rhs_block =
-        VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.get_next_id());
+        VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
       auto const converge_block =
-        VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.get_next_id());
+        VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
       auto const then_block = operator_is_and ? rhs_block : converge_block;
       auto const else_block = operator_is_and ? converge_block : rhs_block;
       auto const brcond =
-        ir::make_instr_brcond(ctx.allocator, ctx.get_next_id(), lhs, then_block,
+        ir::make_instr_brcond(ctx.allocator, ctx.next_id(), lhs, then_block,
                               else_block, expr->source_info);
       builder.insert(brcond);
 
@@ -1781,14 +1777,13 @@ namespace vush {
       ir::Value* const rhs = lower_expression_and_cvt(
         ctx, builder, builtin_bool, expr->arguments[1]);
       auto const branch = ir::make_instr_branch(
-        ctx.allocator, ctx.get_next_id(), converge_block, expr->source_info);
+        ctx.allocator, ctx.next_id(), converge_block, expr->source_info);
       builder.insert(branch);
 
       // Converge the operator.
       builder.set_insert_block(converge_block);
-      auto const phi =
-        ir::make_instr_phi(ctx.allocator, ctx.get_next_id(),
-                           ir::get_type_bool(), expr->source_info);
+      auto const phi = ir::make_instr_phi(
+        ctx.allocator, ctx.next_id(), ir::get_type_bool(), expr->source_info);
       phi->add_source(lhs);
       phi->add_source(rhs);
       builder.insert(phi);
@@ -1818,8 +1813,8 @@ namespace vush {
       select_opcode(identifier, expr->is_binary(), result_is_fp, result_is_sint,
                     result_is_uint, parameters_are_fp, parameters_are_sint);
     auto const instr =
-      ir::make_instr_alu(ctx.allocator, ctx.get_next_id(), ir_result_type,
-                         opcode, lhs, rhs, expr->source_info);
+      ir::make_instr_alu(ctx.allocator, ctx.next_id(), ir_result_type, opcode,
+                         lhs, rhs, expr->source_info);
     builder.insert(instr);
     return instr;
   }
@@ -1830,7 +1825,7 @@ namespace vush {
   {
     ir::Type* const type = convert_ast_to_ir_type(ctx, expr->evaluated_type);
     ir::Instr_ext_call* const call =
-      select_ext(ctx.allocator, ctx.get_next_id(), type, expr);
+      select_ext(ctx.allocator, ctx.next_id(), type, expr);
     // TODO: Do proper error handling.
     ANTON_FAIL(call != nullptr, "no ext selected");
     for(auto const [p, a]:
@@ -1859,7 +1854,7 @@ namespace vush {
         ctx.fntable.find_entry(expr->identifier.value);
       ANTON_ASSERT(function != nullptr, "call has no function");
       ir::Type* const type = convert_ast_to_ir_type(ctx, expr->evaluated_type);
-      auto const call = ir::make_instr_call(ctx.allocator, ctx.get_next_id(),
+      auto const call = ir::make_instr_call(ctx.allocator, ctx.next_id(),
                                             *function, type, expr->source_info);
       for(auto [arg, param]:
           anton::zip(expr->arguments, expr->function->parameters)) {
@@ -1879,14 +1874,14 @@ namespace vush {
     ir::Value* const condition =
       lower_expression(ctx, builder, expr->condition);
     auto const then_block =
-      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.get_next_id());
+      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
     auto const else_block =
-      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.get_next_id());
+      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
     auto const converge_block =
-      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.get_next_id());
+      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
     auto const brcond =
-      ir::make_instr_brcond(ctx.allocator, ctx.get_next_id(), condition,
-                            then_block, else_block, expr->source_info);
+      ir::make_instr_brcond(ctx.allocator, ctx.next_id(), condition, then_block,
+                            else_block, expr->source_info);
     builder.insert(brcond);
 
     // Lower then branch.
@@ -1894,7 +1889,7 @@ namespace vush {
     ir::Value* const then_result =
       lower_expression(ctx, builder, expr->then_branch);
     auto const jmp_from_then = ir::make_instr_branch(
-      ctx.allocator, ctx.get_next_id(), converge_block, expr->source_info);
+      ctx.allocator, ctx.next_id(), converge_block, expr->source_info);
     builder.insert(jmp_from_then);
 
     // Lower else branch.
@@ -1902,7 +1897,7 @@ namespace vush {
     ir::Value* const else_result =
       lower_expression(ctx, builder, expr->else_branch);
     auto const jmp_from_else = ir::make_instr_branch(
-      ctx.allocator, ctx.get_next_id(), converge_block, expr->source_info);
+      ctx.allocator, ctx.next_id(), converge_block, expr->source_info);
     builder.insert(jmp_from_else);
 
     ANTON_ASSERT(compare_types_equal(*then_result->type, *else_result->type),
@@ -1910,7 +1905,7 @@ namespace vush {
 
     // Insert phi nodes at the start of the converge block.
     builder.set_insert_block(converge_block);
-    auto const phi = ir::make_instr_phi(ctx.allocator, ctx.get_next_id(),
+    auto const phi = ir::make_instr_phi(ctx.allocator, ctx.next_id(),
                                         then_result->type, expr->source_info);
     ANTON_ASSERT(instanceof<ir::Instr>(then_result),
                  "phi argument is not an instruction");
@@ -2027,8 +2022,8 @@ namespace vush {
                              ast::Variable const* const variable)
   {
     ir::Type* const type = convert_ast_to_ir_type(ctx, variable->type);
-    ir::Instr* const instr = ir::make_instr_alloc(
-      ctx.allocator, ctx.get_next_id(), type, variable->source_info);
+    ir::Instr* const instr = ir::make_instr_alloc(ctx.allocator, ctx.next_id(),
+                                                  type, variable->source_info);
     builder.insert(instr);
     ctx.symtable.add_entry(variable->identifier.value, instr);
   }
@@ -2097,7 +2092,7 @@ namespace vush {
       auto const target_type =
         safe_cast<ir::Type_Vec*>(convert_ast_to_ir_type(ctx, ast_base_type));
       ir::Instr* const initial_target =
-        ir::make_instr_load(ctx.allocator, ctx.get_next_id(), target_type, dst,
+        ir::make_instr_load(ctx.allocator, ctx.next_id(), target_type, dst,
                             field_expr->base->source_info);
       ir::Instr* value = initial_target;
       builder.insert(value);
@@ -2110,8 +2105,8 @@ namespace vush {
           // Extract the element from the source vector.
           auto const source_element_type = source_type->element_type;
           ir::Instr* const extract = ir::make_instr_vector_extract(
-            ctx.allocator, ctx.get_next_id(), source_element_type, rhs,
-            src_index, field_expr->source_info);
+            ctx.allocator, ctx.next_id(), source_element_type, rhs, src_index,
+            field_expr->source_info);
           builder.insert(extract);
           element = extract;
         }
@@ -2120,34 +2115,34 @@ namespace vush {
           // Extract the element from the target and do arithmetic.
           auto const target_element_type = target_type->element_type;
           auto target_element = ir::make_instr_vector_extract(
-            ctx.allocator, ctx.get_next_id(), target_element_type, rhs,
-            dst_index, field_expr->source_info);
+            ctx.allocator, ctx.next_id(), target_element_type, rhs, dst_index,
+            field_expr->source_info);
           builder.insert(target_element);
           ir::ALU_Opcode const op = select_opcode(stmt);
           ir::Instr* const alu = ir::make_instr_alu(
-            ctx.allocator, ctx.get_next_id(), target_element_type, op,
+            ctx.allocator, ctx.next_id(), target_element_type, op,
             target_element, element, stmt->source_info);
           builder.insert(alu);
           element = alu;
         }
 
         // Insert the element into the target vector.
-        value = ir::make_instr_vector_insert(ctx.allocator, ctx.get_next_id(),
+        value = ir::make_instr_vector_insert(ctx.allocator, ctx.next_id(),
                                              value->type, value, element,
                                              dst_index, stmt->source_info);
         builder.insert(value);
       }
 
-      auto const store = ir::make_instr_store(ctx.allocator, ctx.get_next_id(),
-                                              dst, value, stmt->source_info);
+      auto const store = ir::make_instr_store(ctx.allocator, ctx.next_id(), dst,
+                                              value, stmt->source_info);
       builder.insert(store);
     } else {
       ast::Type const* const lhs_type = stmt->lhs->evaluated_type;
       if(instanceof<ast::Type_Array>(lhs_type) ||
          instanceof<ast::Type_Struct>(lhs_type)) {
         auto const dst = get_address(ctx, builder, stmt->lhs);
-        auto const store = ir::make_instr_store(
-          ctx.allocator, ctx.get_next_id(), dst, rhs, stmt->source_info);
+        auto const store = ir::make_instr_store(ctx.allocator, ctx.next_id(),
+                                                dst, rhs, stmt->source_info);
         builder.insert(store);
       } else {
         ANTON_ASSERT(instanceof<ast::Type_Builtin>(lhs_type),
@@ -2162,20 +2157,20 @@ namespace vush {
           auto const target_type =
             convert_ast_to_ir_type(ctx, stmt->lhs->evaluated_type);
           auto const initial_target =
-            ir::make_instr_load(ctx.allocator, ctx.get_next_id(), target_type,
-                                dst, field_expr->base->source_info);
+            ir::make_instr_load(ctx.allocator, ctx.next_id(), target_type, dst,
+                                field_expr->base->source_info);
           builder.insert(initial_target);
           ir::ALU_Opcode const op = select_opcode(stmt);
           auto const alu = ir::make_instr_alu(
-            ctx.allocator, ctx.get_next_id(), target_type, op, initial_target,
+            ctx.allocator, ctx.next_id(), target_type, op, initial_target,
             converted_rhs.value(), stmt->source_info);
           builder.insert(alu);
-          auto const store = ir::make_instr_store(
-            ctx.allocator, ctx.get_next_id(), dst, alu, stmt->source_info);
+          auto const store = ir::make_instr_store(ctx.allocator, ctx.next_id(),
+                                                  dst, alu, stmt->source_info);
           builder.insert(store);
         } else {
-          auto const store = ir::make_instr_store(
-            ctx.allocator, ctx.get_next_id(), dst, rhs, stmt->source_info);
+          auto const store = ir::make_instr_store(ctx.allocator, ctx.next_id(),
+                                                  dst, rhs, stmt->source_info);
           builder.insert(store);
         }
       }
@@ -2193,13 +2188,12 @@ namespace vush {
         stmt->expression->evaluated_type, stmt->expression->source_info);
       // TODO: Propagate error up.
       ANTON_ASSERT(cvt_result.holds_value(), "conversion failed");
-      ir::Instr* const ret =
-        ir::make_instr_return(ctx.allocator, ctx.get_next_id(),
-                              cvt_result.value(), stmt->source_info);
+      ir::Instr* const ret = ir::make_instr_return(
+        ctx.allocator, ctx.next_id(), cvt_result.value(), stmt->source_info);
       builder.insert(ret);
     } else {
-      ir::Instr* const ret = ir::make_instr_return(
-        ctx.allocator, ctx.get_next_id(), stmt->source_info);
+      ir::Instr* const ret =
+        ir::make_instr_return(ctx.allocator, ctx.next_id(), stmt->source_info);
       builder.insert(ret);
     }
   }
@@ -2210,28 +2204,28 @@ namespace vush {
     ir::Value* const condition =
       lower_expression(ctx, builder, stmt->condition);
     auto const then_block =
-      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.get_next_id());
+      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
     auto const else_block =
-      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.get_next_id());
+      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
     auto const converge_block =
-      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.get_next_id());
+      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
     auto const brcond =
-      ir::make_instr_brcond(ctx.allocator, ctx.get_next_id(), condition,
-                            then_block, else_block, stmt->source_info);
+      ir::make_instr_brcond(ctx.allocator, ctx.next_id(), condition, then_block,
+                            else_block, stmt->source_info);
     builder.insert(brcond);
 
     // Lower then branch.
     builder.set_insert_block(then_block);
     lower_statement_block(ctx, builder, stmt->then_branch);
     auto const branch_from_then = ir::make_instr_branch(
-      ctx.allocator, ctx.get_next_id(), converge_block, stmt->source_info);
+      ctx.allocator, ctx.next_id(), converge_block, stmt->source_info);
     builder.insert(branch_from_then);
 
     // Lower else branch.
     builder.set_insert_block(else_block);
     lower_statement_block(ctx, builder, stmt->else_branch);
     auto const branch_from_else = ir::make_instr_branch(
-      ctx.allocator, ctx.get_next_id(), converge_block, stmt->source_info);
+      ctx.allocator, ctx.next_id(), converge_block, stmt->source_info);
     builder.insert(branch_from_else);
 
     builder.set_insert_block(converge_block);
@@ -2241,13 +2235,13 @@ namespace vush {
                              ast::Stmt_For const* const stmt)
   {
     auto const condition_block =
-      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.get_next_id());
+      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
     auto const loop_block =
-      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.get_next_id());
+      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
     auto const continuation_block =
-      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.get_next_id());
+      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
     auto const converge_block =
-      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.get_next_id());
+      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
 
     ctx.nearest_continuation_block = continuation_block;
     ctx.nearest_converge_block = converge_block;
@@ -2259,7 +2253,7 @@ namespace vush {
 
     // Branch to the condition block from wherever we are.
     ir::Instr* branch = ir::make_instr_branch(
-      ctx.allocator, ctx.get_next_id(), condition_block, stmt->source_info);
+      ctx.allocator, ctx.next_id(), condition_block, stmt->source_info);
     builder.insert(branch);
 
     // Lower the condition.
@@ -2267,15 +2261,15 @@ namespace vush {
     ir::Value* const condition =
       lower_expression(ctx, builder, stmt->condition);
     auto const brcond =
-      ir::make_instr_brcond(ctx.allocator, ctx.get_next_id(), condition,
-                            loop_block, converge_block, stmt->source_info);
+      ir::make_instr_brcond(ctx.allocator, ctx.next_id(), condition, loop_block,
+                            converge_block, stmt->source_info);
     builder.insert(brcond);
 
     // Lower the loop block and branch to continuation.
     builder.set_insert_block(loop_block);
     lower_statement_block(ctx, builder, stmt->statements);
     auto const branch_to_continuation = ir::make_instr_branch(
-      ctx.allocator, ctx.get_next_id(), continuation_block, stmt->source_info);
+      ctx.allocator, ctx.next_id(), continuation_block, stmt->source_info);
     builder.insert(branch_to_continuation);
 
     // Lower the actions in the continuation block.
@@ -2293,18 +2287,18 @@ namespace vush {
                                ast::Stmt_While const* const stmt)
   {
     auto const condition_block =
-      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.get_next_id());
+      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
     auto const loop_block =
-      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.get_next_id());
+      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
     auto const converge_block =
-      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.get_next_id());
+      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
 
     ctx.nearest_continuation_block = condition_block;
     ctx.nearest_converge_block = converge_block;
 
     // Branch to the condition block from wherever we are.
     ir::Instr* branch = ir::make_instr_branch(
-      ctx.allocator, ctx.get_next_id(), condition_block, stmt->source_info);
+      ctx.allocator, ctx.next_id(), condition_block, stmt->source_info);
     builder.insert(branch);
 
     // Lower the condition.
@@ -2312,15 +2306,15 @@ namespace vush {
     ir::Value* const condition =
       lower_expression(ctx, builder, stmt->condition);
     auto const brcond =
-      ir::make_instr_brcond(ctx.allocator, ctx.get_next_id(), condition,
-                            loop_block, converge_block, stmt->source_info);
+      ir::make_instr_brcond(ctx.allocator, ctx.next_id(), condition, loop_block,
+                            converge_block, stmt->source_info);
     builder.insert(brcond);
 
     // Lower the loop block.
     builder.set_insert_block(loop_block);
     lower_statement_block(ctx, builder, stmt->statements);
     auto const branch_to_condition = ir::make_instr_branch(
-      ctx.allocator, ctx.get_next_id(), condition_block, stmt->source_info);
+      ctx.allocator, ctx.next_id(), condition_block, stmt->source_info);
     builder.insert(branch_to_condition);
 
     builder.set_insert_block(converge_block);
@@ -2330,17 +2324,17 @@ namespace vush {
                                   ast::Stmt_Do_While const* const stmt)
   {
     auto const condition_block =
-      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.get_next_id());
+      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
     auto const loop_block =
-      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.get_next_id());
+      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
     auto const converge_block =
-      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.get_next_id());
+      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
 
     ctx.nearest_continuation_block = condition_block;
     ctx.nearest_converge_block = converge_block;
 
     // Branch to the loop block from wherever we are.
-    ir::Instr* branch = ir::make_instr_branch(ctx.allocator, ctx.get_next_id(),
+    ir::Instr* branch = ir::make_instr_branch(ctx.allocator, ctx.next_id(),
                                               loop_block, stmt->source_info);
     builder.insert(branch);
 
@@ -2348,7 +2342,7 @@ namespace vush {
     builder.set_insert_block(loop_block);
     lower_statement_block(ctx, builder, stmt->statements);
     auto const branch_to_condition = ir::make_instr_branch(
-      ctx.allocator, ctx.get_next_id(), condition_block, stmt->source_info);
+      ctx.allocator, ctx.next_id(), condition_block, stmt->source_info);
     builder.insert(branch_to_condition);
 
     // Lower the condition.
@@ -2356,8 +2350,8 @@ namespace vush {
     ir::Value* const condition =
       lower_expression(ctx, builder, stmt->condition);
     auto const brcond =
-      ir::make_instr_brcond(ctx.allocator, ctx.get_next_id(), condition,
-                            loop_block, converge_block, stmt->source_info);
+      ir::make_instr_brcond(ctx.allocator, ctx.next_id(), condition, loop_block,
+                            converge_block, stmt->source_info);
     builder.insert(brcond);
 
     builder.set_insert_block(converge_block);
@@ -2369,17 +2363,16 @@ namespace vush {
     ir::Value* const selector =
       lower_expression(ctx, builder, stmt->expression);
     auto const default_block =
-      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.get_next_id());
-    ir::Instr_switch* const instr_switch =
-      ir::make_instr_switch(ctx.allocator, ctx.get_next_id(), selector,
-                            default_block, stmt->source_info);
+      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
+    ir::Instr_switch* const instr_switch = ir::make_instr_switch(
+      ctx.allocator, ctx.next_id(), selector, default_block, stmt->source_info);
     builder.insert(instr_switch);
 
     for(ast::Switch_Arm const* const arm: stmt->arms) {
       ir::Basic_Block* current_block = default_block;
       if(!arm->has_default) {
         current_block =
-          VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.get_next_id());
+          VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
       }
 
       builder.set_insert_block(current_block);
@@ -2416,7 +2409,7 @@ namespace vush {
     } break;
 
     case ast::Node_Kind::stmt_discard: {
-      auto const instr = ir::make_instr_die(ctx.allocator, ctx.get_next_id(),
+      auto const instr = ir::make_instr_die(ctx.allocator, ctx.next_id(),
                                             generic_stmt->source_info);
       builder.insert(instr);
     } break;
@@ -2424,7 +2417,7 @@ namespace vush {
     case ast::Node_Kind::stmt_break: {
       ANTON_ASSERT(ctx.nearest_converge_block != nullptr,
                    "missing loop converge block");
-      auto const instr = ir::make_instr_branch(ctx.allocator, ctx.get_next_id(),
+      auto const instr = ir::make_instr_branch(ctx.allocator, ctx.next_id(),
                                                ctx.nearest_converge_block,
                                                generic_stmt->source_info);
       builder.insert(instr);
@@ -2433,7 +2426,7 @@ namespace vush {
     case ast::Node_Kind::stmt_continue: {
       ANTON_ASSERT(ctx.nearest_continuation_block != nullptr,
                    "missing loop continuation block");
-      auto const instr = ir::make_instr_branch(ctx.allocator, ctx.get_next_id(),
+      auto const instr = ir::make_instr_branch(ctx.allocator, ctx.next_id(),
                                                ctx.nearest_continuation_block,
                                                generic_stmt->source_info);
       builder.insert(instr);
@@ -2496,15 +2489,14 @@ namespace vush {
     // TODO: Unsized array parametrs.
     for(ast::Fn_Parameter const* const parameter: ast_fn->parameters) {
       ir::Type* const type = convert_ast_to_ir_type(ctx, parameter->type);
-      auto const argument =
-        VUSH_ALLOCATE(ir::Argument, ctx.allocator, ctx.get_next_id(), type, fn,
-                      ctx.allocator);
+      auto const argument = VUSH_ALLOCATE(
+        ir::Argument, ctx.allocator, ctx.next_id(), type, fn, ctx.allocator);
       fn->arguments.insert_back(*argument);
-      auto const alloc = ir::make_instr_alloc(ctx.allocator, ctx.get_next_id(),
+      auto const alloc = ir::make_instr_alloc(ctx.allocator, ctx.next_id(),
                                               type, parameter->source_info);
       builder.insert(alloc);
       auto const store =
-        ir::make_instr_store(ctx.allocator, ctx.get_next_id(), alloc, argument,
+        ir::make_instr_store(ctx.allocator, ctx.next_id(), alloc, argument,
                              parameter->identifier.source_info);
       builder.insert(store);
       ctx.symtable.add_entry(parameter->identifier.value, alloc);
@@ -2577,9 +2569,9 @@ namespace vush {
     // Stage always returns void.
     auto const return_type = ir::get_type_void();
     auto const entry_block =
-      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.get_next_id());
+      VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
     auto const fn = VUSH_ALLOCATE(
-      ir::Function, ctx.allocator, ctx.get_next_id(), return_type, entry_block,
+      ir::Function, ctx.allocator, ctx.next_id(), return_type, entry_block,
       anton::String("main"_sv, ctx.allocator), stage->source_info);
     ctx.current_function_return_type = stage->return_type;
     ctx.symtable.push_scope();
@@ -2589,20 +2581,19 @@ namespace vush {
     for(bool first = true;
         ast::Fn_Parameter const* const parameter: stage->parameters) {
       ir::Type* const type = convert_ast_to_ir_type(ctx, parameter->type);
-      auto const argument =
-        VUSH_ALLOCATE(ir::Argument, ctx.allocator, ctx.get_next_id(), type, fn,
-                      ctx.allocator);
+      auto const argument = VUSH_ALLOCATE(
+        ir::Argument, ctx.allocator, ctx.next_id(), type, fn, ctx.allocator);
       argument->storage_class = select_storage_class(parameter, first);
       if(parameter->buffer != nullptr) {
         argument->buffer = lower_buffer(ctx, parameter->buffer);
       }
       fn->arguments.insert_back(*argument);
 
-      auto const alloc = ir::make_instr_alloc(ctx.allocator, ctx.get_next_id(),
+      auto const alloc = ir::make_instr_alloc(ctx.allocator, ctx.next_id(),
                                               type, parameter->source_info);
       builder.insert(alloc);
       auto const store =
-        ir::make_instr_store(ctx.allocator, ctx.get_next_id(), alloc, argument,
+        ir::make_instr_store(ctx.allocator, ctx.next_id(), alloc, argument,
                              parameter->identifier.source_info);
       builder.insert(store);
       ctx.symtable.add_entry(parameter->identifier.value, alloc);
@@ -2628,10 +2619,10 @@ namespace vush {
         auto const return_type =
           convert_ast_to_ir_type(ctx, ast_fn->return_type);
         auto const entry_block =
-          VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.get_next_id());
+          VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
         anton::String identifier{ast_fn->identifier.value, ctx.allocator};
         auto const ir_fn = VUSH_ALLOCATE(
-          ir::Function, allocator, ctx.get_next_id(), return_type, entry_block,
+          ir::Function, allocator, ctx.next_id(), return_type, entry_block,
           ANTON_MOV(identifier), ast_fn->source_info);
         ctx.fntable.add_entry(ir_fn->identifier, ir_fn);
       }
