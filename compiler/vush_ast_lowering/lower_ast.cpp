@@ -1,4 +1,4 @@
-#include <vush_ast_lowering/ast_lowering.hpp>
+#include <vush_ast_lowering/lower_ast.hpp>
 
 #include <anton/expected.hpp>
 #include <anton/iterators/zip.hpp>

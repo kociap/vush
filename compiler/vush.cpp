@@ -12,7 +12,7 @@
 #include <anton/string_stream.hpp>
 
 #include <vush_ast/ast.hpp>
-#include <vush_ast_lowering/ast_lowering.hpp>
+#include <vush_ast_lowering/lower_ast.hpp>
 #include <vush_ast_opt/opts.hpp>
 #include <vush_core/context.hpp>
 #include <vush_core/memory.hpp>
