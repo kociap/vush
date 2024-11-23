@@ -1,4 +1,4 @@
-#include <vush_syntax_lowering/syntax_lowering.hpp>
+#include <vush_syntax_lowering/lower_syntax.hpp>
 
 #include <anton/expected.hpp>
 #include <anton/intrinsics.hpp>

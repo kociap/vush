@@ -196,6 +196,6 @@ target_sources(vush
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_spirv/lower_ir.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_syntax/syntax.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_syntax/syntax.hpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_syntax_lowering/syntax_lowering.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_syntax_lowering/syntax_lowering.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_syntax_lowering/lower_syntax.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_syntax_lowering/lower_syntax.hpp"
 )

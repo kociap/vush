@@ -25,7 +25,7 @@
 #include <vush_spirv/lower_ir.hpp>
 #include <vush_spirv/prettyprint.hpp>
 #include <vush_spirv/spirv.hpp>
-#include <vush_syntax_lowering/syntax_lowering.hpp>
+#include <vush_syntax_lowering/lower_syntax.hpp>
 
 namespace vush {
   using namespace anton::literals;
