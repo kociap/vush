@@ -22,6 +22,9 @@
 #include <vush_ir/prettyprint.hpp>
 #include <vush_parser/parser.hpp>
 #include <vush_sema/sema.hpp>
+#include <vush_spirv/lower_ir.hpp>
+#include <vush_spirv/prettyprint.hpp>
+#include <vush_spirv/spirv.hpp>
 #include <vush_syntax_lowering/syntax_lowering.hpp>
 
 namespace vush {
@@ -411,13 +414,15 @@ namespace vush {
       }
 
       Array<ir::Module> modules = lower_ast_to_ir(ctx.allocator, ast_nodes);
-      ir::Prettyprint_Options options{
+      ir::Prettyprint_Options ir_options{
         .function_location = true,
-        .instruction_location = false,
+        .instruction_location = true,
       };
+      spirv::Prettyprint_Options spirv_options{};
       for(ir::Module const& module: modules) {
+        spirv::Module spirv_module = lower_ir_module(ctx.allocator, &module);
         anton::STDOUT_Stream stdout;
-        prettyprint(ctx.allocator, stdout, options, module);
+        prettyprint(ctx.allocator, stdout, spirv_options, spirv_module);
       }
 
       return {anton::expected_error,

@@ -4,6 +4,6 @@
 #include <vush_spirv/spirv.hpp>
 
 namespace vush {
-  spirv::Instr* lower_ir_module(Allocator* const allocator,
-                                ir::Module const* const module);
+  [[nodiscard]] spirv::Module lower_ir_module(Allocator* const allocator,
+                                              ir::Module const* const module);
 }

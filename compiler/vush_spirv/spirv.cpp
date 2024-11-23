@@ -747,6 +747,247 @@ namespace vush::spirv {
     return instr->instr_kind == Instr_Kind::e_unreachable;
   }
 
+  Instr* get_result_type(Instr* const instruction)
+  {
+    switch(instruction->instr_kind) {
+    case Instr_Kind::e_ext_instr:
+      return static_cast<Instr_ext_instr*>(instruction)->result_type;
+    case Instr_Kind::e_constant_true:
+      return static_cast<Instr_constant_true*>(instruction)->result_type;
+    case Instr_Kind::e_constant_false:
+      return static_cast<Instr_constant_false*>(instruction)->result_type;
+    case Instr_Kind::e_constant:
+      return static_cast<Instr_constant*>(instruction)->result_type;
+    case Instr_Kind::e_constant_composite:
+      return static_cast<Instr_constant_composite*>(instruction)->result_type;
+    case Instr_Kind::e_variable:
+      return static_cast<Instr_variable*>(instruction)->result_type;
+    case Instr_Kind::e_load:
+      return static_cast<Instr_load*>(instruction)->result_type;
+    case Instr_Kind::e_access_chain:
+      return static_cast<Instr_access_chain*>(instruction)->result_type;
+    case Instr_Kind::e_function_parameter:
+      return static_cast<Instr_function_parameter*>(instruction)->result_type;
+    case Instr_Kind::e_function_call:
+      return static_cast<Instr_function_call*>(instruction)
+        ->function->function_type->return_type;
+    case Instr_Kind::e_convert_f2u:
+      return static_cast<Instr_convert_f2u*>(instruction)->result_type;
+    case Instr_Kind::e_convert_f2s:
+      return static_cast<Instr_convert_f2s*>(instruction)->result_type;
+    case Instr_Kind::e_convert_s2f:
+      return static_cast<Instr_convert_s2f*>(instruction)->result_type;
+    case Instr_Kind::e_convert_u2f:
+      return static_cast<Instr_convert_u2f*>(instruction)->result_type;
+    case Instr_Kind::e_uconvert:
+      return static_cast<Instr_uconvert*>(instruction)->result_type;
+    case Instr_Kind::e_sconvert:
+      return static_cast<Instr_sconvert*>(instruction)->result_type;
+    case Instr_Kind::e_fconvert:
+      return static_cast<Instr_fconvert*>(instruction)->result_type;
+    case Instr_Kind::e_convert_ptr2u:
+      return static_cast<Instr_convert_ptr2u*>(instruction)->result_type;
+    case Instr_Kind::e_convert_u2ptr:
+      return static_cast<Instr_convert_u2ptr*>(instruction)->result_type;
+    case Instr_Kind::e_composite_construct:
+      return static_cast<Instr_composite_construct*>(instruction)->result_type;
+    case Instr_Kind::e_composite_extract:
+      return static_cast<Instr_composite_extract*>(instruction)->result_type;
+    case Instr_Kind::e_composite_insert:
+      return static_cast<Instr_composite_insert*>(instruction)->result_type;
+    case Instr_Kind::e_copy_object:
+      return static_cast<Instr_copy_object*>(instruction)->result_type;
+    case Instr_Kind::e_transpose:
+      return static_cast<Instr_transpose*>(instruction)->result_type;
+    case Instr_Kind::e_snegate:
+      return static_cast<Instr_snegate*>(instruction)->result_type;
+    case Instr_Kind::e_fnegate:
+      return static_cast<Instr_fnegate*>(instruction)->result_type;
+    case Instr_Kind::e_iadd:
+      return static_cast<Instr_iadd*>(instruction)->result_type;
+    case Instr_Kind::e_fadd:
+      return static_cast<Instr_fadd*>(instruction)->result_type;
+    case Instr_Kind::e_isub:
+      return static_cast<Instr_isub*>(instruction)->result_type;
+    case Instr_Kind::e_fsub:
+      return static_cast<Instr_fsub*>(instruction)->result_type;
+    case Instr_Kind::e_imul:
+      return static_cast<Instr_imul*>(instruction)->result_type;
+    case Instr_Kind::e_fmul:
+      return static_cast<Instr_fmul*>(instruction)->result_type;
+    case Instr_Kind::e_udiv:
+      return static_cast<Instr_udiv*>(instruction)->result_type;
+    case Instr_Kind::e_sdiv:
+      return static_cast<Instr_sdiv*>(instruction)->result_type;
+    case Instr_Kind::e_fdiv:
+      return static_cast<Instr_fdiv*>(instruction)->result_type;
+    case Instr_Kind::e_umod:
+      return static_cast<Instr_umod*>(instruction)->result_type;
+    case Instr_Kind::e_srem:
+      return static_cast<Instr_srem*>(instruction)->result_type;
+    case Instr_Kind::e_smod:
+      return static_cast<Instr_smod*>(instruction)->result_type;
+    case Instr_Kind::e_frem:
+      return static_cast<Instr_frem*>(instruction)->result_type;
+    case Instr_Kind::e_fmod:
+      return static_cast<Instr_fmod*>(instruction)->result_type;
+    case Instr_Kind::e_vec_times_scalar:
+      return static_cast<Instr_vec_times_scalar*>(instruction)->result_type;
+    case Instr_Kind::e_mat_times_scalar:
+      return static_cast<Instr_mat_times_scalar*>(instruction)->result_type;
+    case Instr_Kind::e_vec_times_mat:
+      return static_cast<Instr_vec_times_mat*>(instruction)->result_type;
+    case Instr_Kind::e_mat_times_vec:
+      return static_cast<Instr_mat_times_vec*>(instruction)->result_type;
+    case Instr_Kind::e_mat_times_mat:
+      return static_cast<Instr_mat_times_mat*>(instruction)->result_type;
+    case Instr_Kind::e_outer_product:
+      return static_cast<Instr_outer_product*>(instruction)->result_type;
+    case Instr_Kind::e_dot:
+      return static_cast<Instr_dot*>(instruction)->result_type;
+    case Instr_Kind::e_shr_logical:
+      return static_cast<Instr_shr_logical*>(instruction)->result_type;
+    case Instr_Kind::e_shr_arithmetic:
+      return static_cast<Instr_shr_arithmetic*>(instruction)->result_type;
+    case Instr_Kind::e_shl:
+      return static_cast<Instr_shl*>(instruction)->result_type;
+    case Instr_Kind::e_bit_or:
+      return static_cast<Instr_bit_or*>(instruction)->result_type;
+    case Instr_Kind::e_bit_xor:
+      return static_cast<Instr_bit_xor*>(instruction)->result_type;
+    case Instr_Kind::e_bit_and:
+      return static_cast<Instr_bit_and*>(instruction)->result_type;
+    case Instr_Kind::e_bit_not:
+      return static_cast<Instr_bit_not*>(instruction)->result_type;
+    case Instr_Kind::e_logical_eq:
+      return static_cast<Instr_logical_eq*>(instruction)->result_type;
+    case Instr_Kind::e_logical_neq:
+      return static_cast<Instr_logical_neq*>(instruction)->result_type;
+    case Instr_Kind::e_logical_or:
+      return static_cast<Instr_logical_or*>(instruction)->result_type;
+    case Instr_Kind::e_logical_and:
+      return static_cast<Instr_logical_and*>(instruction)->result_type;
+    case Instr_Kind::e_logical_not:
+      return static_cast<Instr_logical_not*>(instruction)->result_type;
+    case Instr_Kind::e_select:
+      return static_cast<Instr_select*>(instruction)->result_type;
+    case Instr_Kind::e_ieq:
+      return static_cast<Instr_ieq*>(instruction)->result_type;
+    case Instr_Kind::e_ineq:
+      return static_cast<Instr_ineq*>(instruction)->result_type;
+    case Instr_Kind::e_ugt:
+      return static_cast<Instr_ugt*>(instruction)->result_type;
+    case Instr_Kind::e_sgt:
+      return static_cast<Instr_sgt*>(instruction)->result_type;
+    case Instr_Kind::e_uge:
+      return static_cast<Instr_uge*>(instruction)->result_type;
+    case Instr_Kind::e_sge:
+      return static_cast<Instr_sge*>(instruction)->result_type;
+    case Instr_Kind::e_ult:
+      return static_cast<Instr_ult*>(instruction)->result_type;
+    case Instr_Kind::e_slt:
+      return static_cast<Instr_slt*>(instruction)->result_type;
+    case Instr_Kind::e_ule:
+      return static_cast<Instr_ule*>(instruction)->result_type;
+    case Instr_Kind::e_sle:
+      return static_cast<Instr_sle*>(instruction)->result_type;
+    case Instr_Kind::e_foeq:
+      return static_cast<Instr_foeq*>(instruction)->result_type;
+    case Instr_Kind::e_fueq:
+      return static_cast<Instr_fueq*>(instruction)->result_type;
+    case Instr_Kind::e_foneq:
+      return static_cast<Instr_foneq*>(instruction)->result_type;
+    case Instr_Kind::e_funeq:
+      return static_cast<Instr_funeq*>(instruction)->result_type;
+    case Instr_Kind::e_folt:
+      return static_cast<Instr_folt*>(instruction)->result_type;
+    case Instr_Kind::e_fult:
+      return static_cast<Instr_fult*>(instruction)->result_type;
+    case Instr_Kind::e_fogt:
+      return static_cast<Instr_fogt*>(instruction)->result_type;
+    case Instr_Kind::e_fugt:
+      return static_cast<Instr_fugt*>(instruction)->result_type;
+    case Instr_Kind::e_fole:
+      return static_cast<Instr_fole*>(instruction)->result_type;
+    case Instr_Kind::e_fule:
+      return static_cast<Instr_fule*>(instruction)->result_type;
+    case Instr_Kind::e_foge:
+      return static_cast<Instr_foge*>(instruction)->result_type;
+    case Instr_Kind::e_fuge:
+      return static_cast<Instr_fuge*>(instruction)->result_type;
+    case Instr_Kind::e_dPdx:
+      return static_cast<Instr_dPdx*>(instruction)->result_type;
+    case Instr_Kind::e_dPdy:
+      return static_cast<Instr_dPdy*>(instruction)->result_type;
+    case Instr_Kind::e_fwidth:
+      return static_cast<Instr_fwidth*>(instruction)->result_type;
+    case Instr_Kind::e_dPdx_fine:
+      return static_cast<Instr_dPdx_fine*>(instruction)->result_type;
+    case Instr_Kind::e_dPdy_fine:
+      return static_cast<Instr_dPdy_fine*>(instruction)->result_type;
+    case Instr_Kind::e_fwidth_fine:
+      return static_cast<Instr_fwidth_fine*>(instruction)->result_type;
+    case Instr_Kind::e_dPdx_coarse:
+      return static_cast<Instr_dPdx_coarse*>(instruction)->result_type;
+    case Instr_Kind::e_dPdy_coarse:
+      return static_cast<Instr_dPdy_coarse*>(instruction)->result_type;
+    case Instr_Kind::e_fwidth_coarse:
+      return static_cast<Instr_fwidth_coarse*>(instruction)->result_type;
+    case Instr_Kind::e_phi:
+      return static_cast<Instr_phi*>(instruction)->result_type;
+
+    default:
+      return nullptr;
+    }
+  }
+
+  u32 calculate_bound(anton::IList<spirv::Instr> const& instructions)
+  {
+    u32 max = 0;
+    for(auto const& instruction: instructions) {
+      max = anton::math::max(max, instruction.id);
+    }
+    return max;
+  }
+
+  u32 calculate_bound(Module const& module)
+  {
+    // We do not check capabilities, extensions, declarations, annotations.
+    // Those sections do not contain instructions producing IDs.
+    u32 const max_imports = calculate_bound(module.imports);
+    u32 const max_debug = calculate_bound(module.debug);
+    u32 const max_types = calculate_bound(module.types);
+    u32 const max_functions = calculate_bound(module.functions);
+    return anton::math::max(max_imports, max_debug, max_types, max_functions);
+  }
+
+#define BINARY_INSTR_MAKE_FN(IDENTIFIER)                                \
+  Instr_##IDENTIFIER* make_instr_##IDENTIFIER(                          \
+    Allocator* allocator, u32 id, Instr* result_type, Instr* operand1,  \
+    Instr* operand2)                                                    \
+  {                                                                     \
+    auto const instr = VUSH_ALLOCATE(Instr_##IDENTIFIER, allocator, id, \
+                                     result_type, operand1, operand2);  \
+    return instr;                                                       \
+  }
+
+#define TYPED_INSTR_MAKE_FN(IDENTIFIER)                                     \
+  Instr_##IDENTIFIER* make_instr_##IDENTIFIER(Allocator* allocator, u32 id, \
+                                              Instr* result_type)           \
+  {                                                                         \
+    auto const instr =                                                      \
+      VUSH_ALLOCATE(Instr_##IDENTIFIER, allocator, id, result_type);        \
+    return instr;                                                           \
+  }
+
+  Instr_memory_model* make_instr_memory_model(Allocator* allocator,
+                                              Addressing_Model am,
+                                              Memory_Model mm)
+  {
+    auto const instr = VUSH_ALLOCATE(Instr_memory_model, allocator, am, mm);
+    return instr;
+  }
+
   Instr_entry_point* make_instr_entry_point(Allocator* allocator,
                                             Instr_function* entry_point,
                                             anton::String&& name,
@@ -758,7 +999,19 @@ namespace vush::spirv {
     return instr;
   }
 
-  Instr_type_int* make_instr_type_int(Allocator* allocator, i64 id, u32 width,
+  Instr_type_void* make_instr_type_void(Allocator* allocator, u32 id)
+  {
+    auto const instr = VUSH_ALLOCATE(Instr_type_void, allocator, id);
+    return instr;
+  }
+
+  Instr_type_bool* make_instr_type_bool(Allocator* allocator, u32 id)
+  {
+    auto const instr = VUSH_ALLOCATE(Instr_type_bool, allocator, id);
+    return instr;
+  }
+
+  Instr_type_int* make_instr_type_int(Allocator* allocator, u32 id, u32 width,
                                       bool signedness)
   {
     auto const instr =
@@ -766,21 +1019,21 @@ namespace vush::spirv {
     return instr;
   }
 
-  Instr_type_float* make_instr_type_float(Allocator* allocator, i64 id,
+  Instr_type_float* make_instr_type_float(Allocator* allocator, u32 id,
                                           u32 width)
   {
     auto const instr = VUSH_ALLOCATE(Instr_type_float, allocator, id, width);
     return instr;
   }
 
-  Instr_type_struct* make_instr_type_struct(Allocator* allocator, i64 id)
+  Instr_type_struct* make_instr_type_struct(Allocator* allocator, u32 id)
   {
     auto const instr =
       VUSH_ALLOCATE(Instr_type_struct, allocator, id, allocator);
     return instr;
   }
 
-  Instr_type_array* make_instr_type_array(Allocator* allocator, i64 id,
+  Instr_type_array* make_instr_type_array(Allocator* allocator, u32 id,
                                           Instr* element_type, Instr* length)
   {
     auto const instr =
@@ -789,7 +1042,7 @@ namespace vush::spirv {
   }
 
   Instr_type_runtime_array* make_instr_type_runtime_array(Allocator* allocator,
-                                                          i64 id,
+                                                          u32 id,
                                                           Instr* element_type)
   {
     auto const instr =
@@ -797,7 +1050,7 @@ namespace vush::spirv {
     return instr;
   }
 
-  Instr_type_vector* make_instr_type_vector(Allocator* allocator, i64 id,
+  Instr_type_vector* make_instr_type_vector(Allocator* allocator, u32 id,
                                             Instr* component_type,
                                             u32 component_count)
   {
@@ -806,7 +1059,7 @@ namespace vush::spirv {
     return instr;
   }
 
-  Instr_type_matrix* make_instr_type_matrix(Allocator* allocator, i64 id,
+  Instr_type_matrix* make_instr_type_matrix(Allocator* allocator, u32 id,
                                             Instr* column_type,
                                             u32 column_count)
   {
@@ -815,7 +1068,16 @@ namespace vush::spirv {
     return instr;
   }
 
-  Instr_type_function* make_instr_type_function(Allocator* allocator, i64 id,
+  Instr_type_pointer* make_instr_type_pointer(Allocator* allocator, u32 id,
+                                              Instr* type,
+                                              Storage_Class storage_class)
+  {
+    auto const instr =
+      VUSH_ALLOCATE(Instr_type_pointer, allocator, id, type, storage_class);
+    return instr;
+  }
+
+  Instr_type_function* make_instr_type_function(Allocator* allocator, u32 id,
                                                 Instr* return_type)
   {
     auto const instr =
@@ -823,7 +1085,18 @@ namespace vush::spirv {
     return instr;
   }
 
-  Instr_constant* make_instr_constant_u32(Allocator* allocator, i64 id,
+  TYPED_INSTR_MAKE_FN(constant_true)
+  TYPED_INSTR_MAKE_FN(constant_false)
+
+  Instr_constant* make_instr_constant_i32(Allocator* allocator, u32 id,
+                                          Instr* result_type, i32 value)
+  {
+    auto const instr =
+      VUSH_ALLOCATE(Instr_constant, allocator, id, result_type, 4, &value);
+    return instr;
+  }
+
+  Instr_constant* make_instr_constant_u32(Allocator* allocator, u32 id,
                                           Instr* result_type, u32 value)
   {
     auto const instr =
@@ -831,11 +1104,202 @@ namespace vush::spirv {
     return instr;
   }
 
-  Instr_function* make_instr_function(Allocator* allocator, i64 id,
+  Instr_constant* make_instr_constant_f32(Allocator* allocator, u32 id,
+                                          Instr* result_type, f32 value)
+  {
+    auto const instr =
+      VUSH_ALLOCATE(Instr_constant, allocator, id, result_type, 4, &value);
+    return instr;
+  }
+
+  Instr_constant* make_instr_constant_f64(Allocator* allocator, u32 id,
+                                          Instr* result_type, f64 value)
+  {
+    auto const instr =
+      VUSH_ALLOCATE(Instr_constant, allocator, id, result_type, 8, &value);
+    return instr;
+  }
+
+  Instr_variable* make_instr_variable(Allocator* allocator, u32 id,
+                                      Instr* result_type,
+                                      Storage_Class storage_class)
+  {
+    auto const instr =
+      VUSH_ALLOCATE(Instr_variable, allocator, id, result_type, storage_class);
+    return instr;
+  }
+
+  Instr_load* make_instr_load(Allocator* allocator, u32 id, Instr* result_type,
+                              Instr* pointer)
+  {
+    auto const instr =
+      VUSH_ALLOCATE(Instr_load, allocator, id, result_type, pointer);
+    return instr;
+  }
+
+  Instr_store* make_instr_store(Allocator* allocator, Instr* pointer,
+                                Instr* object)
+  {
+    auto const instr = VUSH_ALLOCATE(Instr_store, allocator, pointer, object);
+    return instr;
+  }
+
+  Instr_access_chain*
+  make_instr_access_chain(Allocator* allocator, u32 id, Instr* result_type,
+                          Instr* base, anton::Slice<Instr* const> indices)
+  {
+    auto const instr = VUSH_ALLOCATE(Instr_access_chain, allocator, id,
+                                     result_type, base, allocator, indices);
+    return instr;
+  }
+
+  Instr_function* make_instr_function(Allocator* allocator, u32 id,
                                       Instr_type_function* function_type)
   {
     auto const instr =
       VUSH_ALLOCATE(Instr_function, allocator, id, function_type);
+    return instr;
+  }
+
+  TYPED_INSTR_MAKE_FN(function_parameter)
+
+  Instr_function_end* make_instr_function_end(Allocator* allocator)
+  {
+    auto const instr = VUSH_ALLOCATE(Instr_function_end, allocator);
+    return instr;
+  }
+
+  Instr_composite_construct*
+  make_instr_composite_construct(Allocator* allocator, u32 id,
+                                 Instr* result_type)
+  {
+    auto const instr = VUSH_ALLOCATE(Instr_composite_construct, allocator, id,
+                                     result_type, allocator);
+    return instr;
+  }
+
+  Instr_composite_extract* make_instr_composite_extract(Allocator* allocator,
+                                                        u32 id,
+                                                        Instr* result_type,
+                                                        Instr* composite)
+  {
+    auto const instr = VUSH_ALLOCATE(Instr_composite_extract, allocator, id,
+                                     result_type, composite, allocator);
+    return instr;
+  }
+
+  Instr_composite_insert*
+  make_instr_composite_insert(Allocator* allocator, u32 id, Instr* result_type,
+                              Instr* composite, Instr* object)
+  {
+    auto const instr = VUSH_ALLOCATE(Instr_composite_insert, allocator, id,
+                                     result_type, composite, object, allocator);
+    return instr;
+  }
+
+  BINARY_INSTR_MAKE_FN(snegate);
+  BINARY_INSTR_MAKE_FN(fnegate);
+  BINARY_INSTR_MAKE_FN(iadd);
+  BINARY_INSTR_MAKE_FN(fadd);
+  BINARY_INSTR_MAKE_FN(isub);
+  BINARY_INSTR_MAKE_FN(fsub);
+  BINARY_INSTR_MAKE_FN(imul);
+  BINARY_INSTR_MAKE_FN(fmul);
+  BINARY_INSTR_MAKE_FN(udiv);
+  BINARY_INSTR_MAKE_FN(sdiv);
+  BINARY_INSTR_MAKE_FN(fdiv);
+  BINARY_INSTR_MAKE_FN(umod);
+  BINARY_INSTR_MAKE_FN(srem);
+  BINARY_INSTR_MAKE_FN(smod);
+  BINARY_INSTR_MAKE_FN(frem);
+  BINARY_INSTR_MAKE_FN(fmod);
+  BINARY_INSTR_MAKE_FN(vec_times_scalar);
+  BINARY_INSTR_MAKE_FN(mat_times_scalar);
+  BINARY_INSTR_MAKE_FN(vec_times_mat);
+  BINARY_INSTR_MAKE_FN(mat_times_vec);
+  BINARY_INSTR_MAKE_FN(mat_times_mat);
+  BINARY_INSTR_MAKE_FN(outer_product);
+  BINARY_INSTR_MAKE_FN(dot);
+  BINARY_INSTR_MAKE_FN(shr_logical);
+  BINARY_INSTR_MAKE_FN(shr_arithmetic);
+  BINARY_INSTR_MAKE_FN(shl); // ShiftLeftLogical
+  BINARY_INSTR_MAKE_FN(bit_or);
+  BINARY_INSTR_MAKE_FN(bit_xor);
+  BINARY_INSTR_MAKE_FN(bit_and);
+  BINARY_INSTR_MAKE_FN(bit_not);
+  BINARY_INSTR_MAKE_FN(logical_eq);
+  BINARY_INSTR_MAKE_FN(logical_neq);
+  BINARY_INSTR_MAKE_FN(logical_or);
+  BINARY_INSTR_MAKE_FN(logical_and);
+  BINARY_INSTR_MAKE_FN(logical_not);
+  BINARY_INSTR_MAKE_FN(ieq); // IEqual
+  BINARY_INSTR_MAKE_FN(ineq); // INotEqual
+  BINARY_INSTR_MAKE_FN(ugt); // UGreaterThan
+  BINARY_INSTR_MAKE_FN(sgt); // SGreaterThan
+  BINARY_INSTR_MAKE_FN(uge); // UGreaterThanEqual
+  BINARY_INSTR_MAKE_FN(sge); // SGreaterThanEqual
+  BINARY_INSTR_MAKE_FN(ult); // ULessThan
+  BINARY_INSTR_MAKE_FN(slt); // SLessThan
+  BINARY_INSTR_MAKE_FN(ule); // ULessThanEqual
+  BINARY_INSTR_MAKE_FN(sle); // SLessThanEqual
+  BINARY_INSTR_MAKE_FN(foeq); // FOrdEqual
+  BINARY_INSTR_MAKE_FN(fueq); // FUnordEqual
+  BINARY_INSTR_MAKE_FN(foneq); // FOrdNotEqual
+  BINARY_INSTR_MAKE_FN(funeq); // FUnordNotEqual
+  BINARY_INSTR_MAKE_FN(folt); // FOrdLessThan
+  BINARY_INSTR_MAKE_FN(fult); // FUnordLessThan
+  BINARY_INSTR_MAKE_FN(fogt); // FOrdGreaterThan
+  BINARY_INSTR_MAKE_FN(fugt); // FUnordGreaterThan
+  BINARY_INSTR_MAKE_FN(fole); // FOrdLessThanEqual
+  BINARY_INSTR_MAKE_FN(fule); // FUnordLessThanEqual
+  BINARY_INSTR_MAKE_FN(foge); // FOrdGreaterThanEqual
+  BINARY_INSTR_MAKE_FN(fuge); // FUnordGreaterThanEqual
+
+  Instr_label* make_instr_label(Allocator* allocator, u32 id)
+  {
+    auto const instr = VUSH_ALLOCATE(Instr_label, allocator, id);
+    return instr;
+  }
+
+  Instr_branch* make_instr_branch(Allocator* allocator, Instr_label* target)
+  {
+    auto const instr = VUSH_ALLOCATE(Instr_branch, allocator, target);
+    return instr;
+  }
+
+  Instr_brcond* make_instr_brcond(Allocator* allocator, Instr* condition,
+                                  Instr_label* true_label,
+                                  Instr_label* false_label)
+  {
+    auto const instr = VUSH_ALLOCATE(Instr_brcond, allocator, condition,
+                                     true_label, false_label);
+    return instr;
+  }
+
+  Instr_switch* make_instr_switch(Allocator* allocator, Instr* selector,
+                                  Instr_label* default_label)
+  {
+    auto const instr = VUSH_ALLOCATE(Instr_switch, allocator, selector,
+                                     default_label, allocator);
+    return instr;
+  }
+
+  Instr_return* make_instr_return(Allocator* allocator)
+  {
+    auto const instr = VUSH_ALLOCATE(Instr_return, allocator);
+    return instr;
+  }
+
+  Instr_return_value* make_instr_return_value(Allocator* allocator,
+                                              Instr* value)
+  {
+    auto const instr = VUSH_ALLOCATE(Instr_return_value, allocator, value);
+    return instr;
+  }
+
+  Instr_terminate* make_instr_terminate(Allocator* allocator)
+  {
+    auto const instr = VUSH_ALLOCATE(Instr_terminate, allocator);
     return instr;
   }
 } // namespace vush::spirv

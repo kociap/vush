@@ -45,6 +45,14 @@ namespace vush::ir {
   }
 
   template<>
+  bool instanceof<Constant_u32>(Value const* value)
+  {
+    return value->value_kind == Value_Kind::e_const &&
+           static_cast<Constant const*>(value)->constant_kind ==
+             Constant_Kind::e_constant_u32;
+  }
+
+  template<>
   bool instanceof<Constant_f32>(Value const* value)
   {
     return value->value_kind == Value_Kind::e_const &&

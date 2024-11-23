@@ -731,6 +731,7 @@ namespace vush {
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::kw_if, "expected 'if'"_sv, snots);
       // condition
+      // TODO: should this be expression-without-init?
       EXPECT_NODE(try_expression, snots);
       // then branch
       EXPECT_NODE(try_decl_block, snots);
@@ -795,6 +796,7 @@ namespace vush {
         snots.push_back(ANTON_MOV(attribute_list));
       }
 
+      // TODO: change grammar to type ':' identifier ';'
       EXPECT_NODE(try_type, snots);
       EXPECT_TOKEN_SKIP(Token_Kind::identifier, "expected identifier"_sv,
                         snots);
@@ -857,6 +859,7 @@ namespace vush {
         snots.push_back(ANTON_MOV(attribute_list));
       }
 
+      // TODO: change grammar to type ':' identifier ';'
       EXPECT_NODE(try_type, snots);
       EXPECT_TOKEN_SKIP(Token_Kind::identifier, "expected identifier"_sv,
                         snots);
@@ -981,6 +984,7 @@ namespace vush {
         return param_if;
       }
 
+      // TODO: change grammar to type ':' identifier ';'
       EXPECT_NODE(try_type, snots);
       // parameter identifier
       EXPECT_TOKEN_SKIP(Token_Kind::identifier, "expected identifier"_sv,
@@ -1004,6 +1008,7 @@ namespace vush {
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::kw_if, "expected 'if'"_sv, snots);
+      // TODO: should this be expression-without-init?
       EXPECT_NODE(try_expression, snots);
       EXPECT_TOKEN_SKIP(Token_Kind::tk_lbrace, "expected '{'"_sv, snots);
       EXPECT_NODE(try_fn_parameter, snots);
@@ -1310,6 +1315,7 @@ namespace vush {
       auto match_for_stmt_variable = [this]() -> Optional<Syntax_Node> {
         Lexer_State const begin_state = _lexer.get_current_state();
         Array<SNOT> snots{_allocator};
+        // TODO: consider changing to identifier ':' type
         EXPECT_NODE(try_type, snots);
         EXPECT_TOKEN_SKIP(Token_Kind::identifier, "expected 'identifier'"_sv,
                           snots);

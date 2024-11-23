@@ -153,10 +153,11 @@ namespace vush::spirv {
   };
 
   struct Instr: public anton::IList_DNode {
-    i64 id;
+    u32 id;
     Instr_Kind instr_kind;
+    Instr_label* label = nullptr;
 
-    Instr(Instr_Kind instr_kind, i64 id): id(id), instr_kind(instr_kind) {}
+    Instr(Instr_Kind instr_kind, u32 id): id(id), instr_kind(instr_kind) {}
   };
 
   template<typename T>
@@ -168,54 +169,86 @@ namespace vush::spirv {
     return instanceof<T>(&instr);
   }
 
+  // get_result_type
+  //
+  // Returns:
+  // The result_type member of the instruction if it has one or nullptr.
+  //
+  [[nodiscard]] Instr* get_result_type(Instr* instruction);
+
+  struct Module {
+    anton::IList<spirv::Instr> capabilities;
+    anton::IList<spirv::Instr> extensions;
+    anton::IList<spirv::Instr> imports;
+    // Memory model, entry points, execution modes.
+    anton::IList<spirv::Instr> declarations;
+    anton::IList<spirv::Instr> debug;
+    anton::IList<spirv::Instr> annotations;
+    anton::IList<spirv::Instr> types;
+    anton::IList<spirv::Instr> functions;
+  };
+
+  [[nodiscard]] u32 calculate_bound(Module const& module);
+
 #define UNARY_INSTR(IDENTIFIER, KIND)                          \
   struct IDENTIFIER: public Instr {                            \
     Instr* result_type;                                        \
     Instr* operand;                                            \
                                                                \
-    IDENTIFIER(i64 id, Instr* result_type, Instr* operand)     \
+    IDENTIFIER(u32 id, Instr* result_type, Instr* operand)     \
       : Instr(Instr_Kind::KIND, id), result_type(result_type), \
         operand(operand)                                       \
     {                                                          \
     }                                                          \
   };
 
-#define BINARY_INSTR(IDENTIFIER, KIND)                                       \
-  struct IDENTIFIER: public Instr {                                          \
-    Instr* result_type;                                                      \
-    Instr* operand1;                                                         \
-    Instr* operand2;                                                         \
-                                                                             \
-    IDENTIFIER(i64 id, Instr* result_type, Instr* operand1, Instr* operand2) \
-      : Instr(Instr_Kind::KIND, id), result_type(result_type),               \
-        operand1(operand1), operand2(operand2)                               \
-    {                                                                        \
-    }                                                                        \
-  };
+#define BINARY_INSTR(IDENTIFIER, KIND)                                 \
+  struct Instr_##IDENTIFIER: public Instr {                            \
+    Instr* result_type;                                                \
+    Instr* operand1;                                                   \
+    Instr* operand2;                                                   \
+                                                                       \
+    Instr_##IDENTIFIER(u32 id, Instr* result_type, Instr* operand1,    \
+                       Instr* operand2)                                \
+      : Instr(Instr_Kind::KIND, id), result_type(result_type),         \
+        operand1(operand1), operand2(operand2)                         \
+    {                                                                  \
+    }                                                                  \
+  };                                                                   \
+                                                                       \
+  [[nodiscard]] Instr_##IDENTIFIER* make_instr_##IDENTIFIER(           \
+    Allocator* allocator, u32 id, Instr* result_type, Instr* operand1, \
+    Instr* operand2);
 
 #define TYPED_INSTR(IDENTIFIER, KIND)                         \
-  struct IDENTIFIER: public Instr {                           \
+  struct Instr_##IDENTIFIER: public Instr {                   \
     Instr* result_type;                                       \
-    IDENTIFIER(i64 id, Instr* result_type)                    \
+    Instr_##IDENTIFIER(u32 id, Instr* result_type)            \
       : Instr(Instr_Kind::KIND, id), result_type(result_type) \
     {                                                         \
     }                                                         \
-  };
+  };                                                          \
+                                                              \
+  [[nodiscard]] Instr_##IDENTIFIER* make_instr_##IDENTIFIER(  \
+    Allocator* allocator, u32 id, Instr* result_type);
 
 #define ID_INSTR(IDENTIFIER, KIND)                     \
   struct IDENTIFIER: public Instr {                    \
-    IDENTIFIER(i64 id): Instr(Instr_Kind::KIND, id) {} \
+    IDENTIFIER(u32 id): Instr(Instr_Kind::KIND, id) {} \
   };
 
-#define NOTHING_INSTR(IDENTIFIER, KIND)          \
-  struct IDENTIFIER: public Instr {              \
-    IDENTIFIER(): Instr(Instr_Kind::KIND, -1) {} \
-  };
+#define NOTHING_INSTR(IDENTIFIER, KIND)                      \
+  struct Instr_##IDENTIFIER: public Instr {                  \
+    Instr_##IDENTIFIER(): Instr(Instr_Kind::KIND, 0) {}      \
+  };                                                         \
+                                                             \
+  [[nodiscard]] Instr_##IDENTIFIER* make_instr_##IDENTIFIER( \
+    Allocator* allocator);
 
   struct Instr_string: public Instr {
     anton::String string;
 
-    Instr_string(i64 id, anton::String&& string)
+    Instr_string(u32 id, anton::String&& string)
       : Instr(Instr_Kind::e_string, id), string(ANTON_MOV(string))
     {
     }
@@ -227,7 +260,7 @@ namespace vush::spirv {
     u32 column;
 
     Instr_line(Instr_string* file, u32 line, u32 column)
-      : Instr(Instr_Kind::e_line, -1), file(file), line(line), column(column)
+      : Instr(Instr_Kind::e_line, 0), file(file), line(line), column(column)
     {
     }
   };
@@ -236,7 +269,7 @@ namespace vush::spirv {
     anton::String name;
 
     Instr_extension(anton::String&& name)
-      : Instr(Instr_Kind::e_extension, -1), name(ANTON_MOV(name))
+      : Instr(Instr_Kind::e_extension, 0), name(ANTON_MOV(name))
     {
     }
   };
@@ -244,7 +277,7 @@ namespace vush::spirv {
   struct Instr_ext_instr_import: public Instr {
     anton::String name;
 
-    Instr_ext_instr_import(i64 id, anton::String&& name)
+    Instr_ext_instr_import(u32 id, anton::String&& name)
       : Instr(Instr_Kind::e_ext_instr_import, id), name(ANTON_MOV(name))
     {
     }
@@ -256,14 +289,14 @@ namespace vush::spirv {
     u32 instruction;
     Array<Instr*> operands;
 
-    Instr_ext_instr(i64 id, Instr* result_type, Instr_ext_instr_import* set,
+    Instr_ext_instr(u32 id, Instr* result_type, Instr_ext_instr_import* set,
                     u32 instruction, Allocator* allocator)
       : Instr(Instr_Kind::e_ext_instr, id), result_type(result_type), set(set),
         instruction(instruction), operands(allocator)
     {
     }
 
-    Instr_ext_instr(i64 id, Instr* result_type, Instr_ext_instr_import* set,
+    Instr_ext_instr(u32 id, Instr* result_type, Instr_ext_instr_import* set,
                     u32 instruction, Allocator* allocator,
                     anton::Slice<Instr* const> operands)
       : Instr(Instr_Kind::e_ext_instr, id), result_type(result_type), set(set),
@@ -291,11 +324,15 @@ namespace vush::spirv {
 
     Instr_memory_model(Addressing_Model addressing_model,
                        Memory_Model memory_model)
-      : Instr(Instr_Kind::e_memory_model, -1),
+      : Instr(Instr_Kind::e_memory_model, 0),
         addressing_model(addressing_model), memory_model(memory_model)
     {
     }
   };
+
+  [[nodiscard]] Instr_memory_model*
+  make_instr_memory_model(Allocator* allocator, Addressing_Model am,
+                          Memory_Model mm);
 
   enum struct Execution_Model {
     e_vertex = 0,
@@ -315,7 +352,7 @@ namespace vush::spirv {
 
     Instr_entry_point(Instr_function* entry_point, anton::String&& name,
                       Execution_Model execution_model, Allocator* allocator)
-      : Instr(Instr_Kind::e_entry_point, -1), entry_point(entry_point),
+      : Instr(Instr_Kind::e_entry_point, 0), entry_point(entry_point),
         name(ANTON_MOV(name)), interface(allocator),
         execution_model(execution_model)
     {
@@ -340,7 +377,7 @@ namespace vush::spirv {
     Capability capability;
 
     Instr_capability(Capability capability)
-      : Instr(Instr_Kind::e_capability, -1), capability(capability)
+      : Instr(Instr_Kind::e_capability, 0), capability(capability)
     {
     }
   };
@@ -348,44 +385,44 @@ namespace vush::spirv {
   ID_INSTR(Instr_type_void, e_type_void);
 
   [[nodiscard]] Instr_type_void* make_instr_type_void(Allocator* allocator,
-                                                      i64 id);
+                                                      u32 id);
 
   ID_INSTR(Instr_type_bool, e_type_bool);
 
   [[nodiscard]] Instr_type_bool* make_instr_type_bool(Allocator* allocator,
-                                                      i64 id);
+                                                      u32 id);
 
   struct Instr_type_int: public Instr {
     u32 width;
     bool signedness;
 
-    Instr_type_int(i64 id, u32 width, bool signedness)
+    Instr_type_int(u32 id, u32 width, bool signedness)
       : Instr(Instr_Kind::e_type_int, id), width(width), signedness(signedness)
     {
     }
   };
 
   [[nodiscard]] Instr_type_int*
-  make_instr_type_int(Allocator* allocator, i64 id, u32 width, bool signedness);
+  make_instr_type_int(Allocator* allocator, u32 id, u32 width, bool signedness);
 
   struct Instr_type_float: public Instr {
     u32 width;
     // There are no alternative FP encodings, hence we omit the member.
 
-    Instr_type_float(i64 id, u32 width)
+    Instr_type_float(u32 id, u32 width)
       : Instr(Instr_Kind::e_type_float, id), width(width)
     {
     }
   };
 
   [[nodiscard]] Instr_type_float* make_instr_type_float(Allocator* allocator,
-                                                        i64 id, u32 width);
+                                                        u32 id, u32 width);
 
   struct Instr_type_vector: public Instr {
     Instr* component_type;
     u32 component_count;
 
-    Instr_type_vector(i64 id, Instr* component_type, u32 component_count)
+    Instr_type_vector(u32 id, Instr* component_type, u32 component_count)
       : Instr(Instr_Kind::e_type_vector, id), component_type(component_type),
         component_count(component_count)
     {
@@ -393,7 +430,7 @@ namespace vush::spirv {
   };
 
   [[nodiscard]] Instr_type_vector* make_instr_type_vector(Allocator* allocator,
-                                                          i64 id,
+                                                          u32 id,
                                                           Instr* component_type,
                                                           u32 component_count);
 
@@ -401,7 +438,7 @@ namespace vush::spirv {
     Instr* column_type;
     u32 column_count;
 
-    Instr_type_matrix(i64 id, Instr* column_type, u32 column_count)
+    Instr_type_matrix(u32 id, Instr* column_type, u32 column_count)
       : Instr(Instr_Kind::e_type_matrix, id), column_type(column_type),
         column_count(column_count)
     {
@@ -409,7 +446,7 @@ namespace vush::spirv {
   };
 
   [[nodiscard]] Instr_type_matrix* make_instr_type_matrix(Allocator* allocator,
-                                                          i64 id,
+                                                          u32 id,
                                                           Instr* column_type,
                                                           u32 column_count);
 
@@ -493,7 +530,7 @@ namespace vush::spirv {
     // The type must not have a dimensionality of subpass_data or buffer.
     Instr_type_image* image_type;
 
-    Instr_type_sampled_image(i64 id, Instr_type_image* image_type)
+    Instr_type_sampled_image(u32 id, Instr_type_image* image_type)
       : Instr(Instr_Kind::e_type_sampled_image, id), image_type(image_type)
     {
     }
@@ -503,7 +540,7 @@ namespace vush::spirv {
     Instr* element_type;
     Instr* length;
 
-    Instr_type_array(i64 id, Instr* element_type, Instr* length)
+    Instr_type_array(u32 id, Instr* element_type, Instr* length)
       : Instr(Instr_Kind::e_type_array, id), element_type(element_type),
         length(length)
     {
@@ -511,34 +548,34 @@ namespace vush::spirv {
   };
 
   [[nodiscard]] Instr_type_array* make_instr_type_array(Allocator* allocator,
-                                                        i64 id,
+                                                        u32 id,
                                                         Instr* element_type,
                                                         Instr* length);
 
   struct Instr_type_runtime_array: public Instr {
     Instr* element_type;
 
-    Instr_type_runtime_array(i64 id, Instr* element_type)
+    Instr_type_runtime_array(u32 id, Instr* element_type)
       : Instr(Instr_Kind::e_type_runtime_array, id), element_type(element_type)
     {
     }
   };
 
   [[nodiscard]] Instr_type_runtime_array*
-  make_instr_type_runtime_array(Allocator* allocator, i64 id,
+  make_instr_type_runtime_array(Allocator* allocator, u32 id,
                                 Instr* element_type);
 
   struct Instr_type_struct: public Instr {
     Array<Instr*> field_types;
 
-    Instr_type_struct(i64 id, Allocator* allocator)
+    Instr_type_struct(u32 id, Allocator* allocator)
       : Instr(Instr_Kind::e_type_struct, id), field_types(allocator)
     {
     }
 
-    Instr_type_struct(i64 id, Allocator* allocator,
+    Instr_type_struct(u32 id, Allocator* allocator,
                       anton::Slice<Instr* const> field_types)
-      : Instr(Instr_Kind::e_phi, id),
+      : Instr(Instr_Kind::e_type_struct, id),
         field_types(allocator, anton::range_construct, field_types.begin(),
                     field_types.end())
     {
@@ -546,7 +583,7 @@ namespace vush::spirv {
   };
 
   [[nodiscard]] Instr_type_struct* make_instr_type_struct(Allocator* allocator,
-                                                          i64 id);
+                                                          u32 id);
 
   enum struct Storage_Class {
     e_uniform_constant = 0,
@@ -568,24 +605,28 @@ namespace vush::spirv {
     Instr* type;
     Storage_Class storage_class;
 
-    Instr_type_pointer(i64 id, Instr* type, Storage_Class storage_class)
+    Instr_type_pointer(u32 id, Instr* type, Storage_Class storage_class)
       : Instr(Instr_Kind::e_type_pointer, id), type(type),
         storage_class(storage_class)
     {
     }
   };
 
+  [[nodiscard]] Instr_type_pointer*
+  make_instr_type_pointer(Allocator* allocator, u32 id, Instr* type,
+                          Storage_Class storage_class);
+
   struct Instr_type_function: public Instr {
     Instr* return_type;
     Array<Instr*> parameter_types;
 
-    Instr_type_function(i64 id, Instr* return_type, Allocator* allocator)
+    Instr_type_function(u32 id, Instr* return_type, Allocator* allocator)
       : Instr(Instr_Kind::e_type_function, id), return_type(return_type),
         parameter_types(allocator)
     {
     }
 
-    Instr_type_function(i64 id, Instr* return_type, Allocator* allocator,
+    Instr_type_function(u32 id, Instr* return_type, Allocator* allocator,
                         anton::Slice<Instr* const> parameter_types)
       : Instr(Instr_Kind::e_type_function, id), return_type(return_type),
         parameter_types(allocator, anton::range_construct,
@@ -595,10 +636,10 @@ namespace vush::spirv {
   };
 
   [[nodiscard]] Instr_type_function*
-  make_instr_type_function(Allocator* allocator, i64 id, Instr* return_type);
+  make_instr_type_function(Allocator* allocator, u32 id, Instr* return_type);
 
-  TYPED_INSTR(Instr_constant_true, e_constant_true);
-  TYPED_INSTR(Instr_constant_false, e_constant_false);
+  TYPED_INSTR(constant_true, e_constant_true);
+  TYPED_INSTR(constant_false, e_constant_false);
 
   struct Instr_constant: public Instr {
     Instr* result_type;
@@ -606,7 +647,7 @@ namespace vush::spirv {
     u32 word1 = 0;
     u32 word2 = 0;
 
-    Instr_constant(i64 id, Instr* result_type, u8 byte_length, void* data)
+    Instr_constant(u32 id, Instr* result_type, u8 byte_length, void* data)
       : Instr(Instr_Kind::e_constant, id), result_type(result_type),
         byte_length(byte_length)
     {
@@ -614,27 +655,57 @@ namespace vush::spirv {
     }
   };
 
+  // make_instr_constant_i32
+  //
+  // Parameters:
+  // result_type - must be a i32 type.
+  //
+  [[nodiscard]] Instr_constant* make_instr_constant_i32(Allocator* allocator,
+                                                        u32 id,
+                                                        Instr* result_type,
+                                                        i32 value);
+
   // make_instr_constant_u32
   //
   // Parameters:
   // result_type - must be a u32 type.
   //
   [[nodiscard]] Instr_constant* make_instr_constant_u32(Allocator* allocator,
-                                                        i64 id,
+                                                        u32 id,
                                                         Instr* result_type,
                                                         u32 value);
+
+  // make_instr_constant_f32
+  //
+  // Parameters:
+  // result_type - must be a f32 type.
+  //
+  [[nodiscard]] Instr_constant* make_instr_constant_f32(Allocator* allocator,
+                                                        u32 id,
+                                                        Instr* result_type,
+                                                        f32 value);
+
+  // make_instr_constant_f64
+  //
+  // Parameters:
+  // result_type - must be a f64 type.
+  //
+  [[nodiscard]] Instr_constant* make_instr_constant_f64(Allocator* allocator,
+                                                        u32 id,
+                                                        Instr* result_type,
+                                                        f64 value);
 
   struct Instr_constant_composite: public Instr {
     Instr* result_type;
     Array<Instr*> constituents;
 
-    Instr_constant_composite(i64 id, Instr* result_type, Allocator* allocator)
+    Instr_constant_composite(u32 id, Instr* result_type, Allocator* allocator)
       : Instr(Instr_Kind::e_constant_composite, id), result_type(result_type),
         constituents(allocator)
     {
     }
 
-    Instr_constant_composite(i64 id, Instr* result_type, Allocator* allocator,
+    Instr_constant_composite(u32 id, Instr* result_type, Allocator* allocator,
                              anton::Slice<Instr* const> constituents)
       : Instr(Instr_Kind::e_constant_composite, id), result_type(result_type),
         constituents(allocator, anton::range_construct, constituents.begin(),
@@ -647,47 +718,57 @@ namespace vush::spirv {
     Instr* result_type;
     Storage_Class storage_class;
 
-    Instr_variable(i64 id, Instr* result_type, Storage_Class storage_class)
+    Instr_variable(u32 id, Instr* result_type, Storage_Class storage_class)
       : Instr(Instr_Kind::e_variable, id), result_type(result_type),
         storage_class(storage_class)
     {
     }
   };
 
+  [[nodiscard]] Instr_variable*
+  make_instr_variable(Allocator* allocator, u32 id, Instr* result_type,
+                      Storage_Class storage_class);
+
   struct Instr_load: public Instr {
     Instr* result_type;
     Instr* pointer;
 
-    Instr_load(i64 id, Instr* result_type, Instr* pointer)
+    Instr_load(u32 id, Instr* result_type, Instr* pointer)
       : Instr(Instr_Kind::e_load, id), result_type(result_type),
         pointer(pointer)
     {
     }
   };
 
+  [[nodiscard]] Instr_load* make_instr_load(Allocator* allocator, u32 id,
+                                            Instr* result_type, Instr* pointer);
+
   struct Instr_store: public Instr {
     Instr* pointer;
     Instr* object;
 
     Instr_store(Instr* pointer, Instr* object)
-      : Instr(Instr_Kind::e_store, -1), pointer(pointer), object(object)
+      : Instr(Instr_Kind::e_store, 0), pointer(pointer), object(object)
     {
     }
   };
+
+  [[nodiscard]] Instr_store* make_instr_store(Allocator* allocator,
+                                              Instr* pointer, Instr* object);
 
   struct Instr_access_chain: public Instr {
     Instr* result_type;
     Instr* base;
     Array<Instr*> indices;
 
-    Instr_access_chain(i64 id, Instr* result_type, Instr* base,
+    Instr_access_chain(u32 id, Instr* result_type, Instr* base,
                        Allocator* allocator)
       : Instr(Instr_Kind::e_access_chain, id), result_type(result_type),
         base(base), indices(allocator)
     {
     }
 
-    Instr_access_chain(i64 id, Instr* result_type, Instr* base,
+    Instr_access_chain(u32 id, Instr* result_type, Instr* base,
                        Allocator* allocator, anton::Slice<Instr* const> indices)
       : Instr(Instr_Kind::e_access_chain, id), result_type(result_type),
         base(base), indices(allocator, anton::range_construct, indices.begin(),
@@ -696,33 +777,52 @@ namespace vush::spirv {
     }
   };
 
+  [[nodiscard]] Instr_access_chain*
+  make_instr_access_chain(Allocator* allocator, u32 id, Instr* result_type,
+                          Instr* base, anton::Slice<Instr* const> indices);
+
+  template<typename... Ts>
+  [[nodiscard]] Instr_access_chain*
+  make_instr_access_chain(Allocator* allocator, u32 id, Instr* result_type,
+                          Instr* base, Ts*... indices)
+  {
+    Instr* array[sizeof...(indices)] = {indices...};
+    return make_instr_access_chain(allocator, id, result_type, base,
+                                   anton::Slice{array});
+  }
+
   struct Instr_function: public Instr {
     Instr_type_function* function_type;
 
-    Instr_function(i64 id, Instr_type_function* function_type)
+    Instr_function(u32 id, Instr_type_function* function_type)
       : Instr(Instr_Kind::e_function, id), function_type(function_type)
     {
     }
   };
 
   [[nodiscard]] Instr_function*
-  make_instr_function(Allocator* allocator, i64 id,
+  make_instr_function(Allocator* allocator, u32 id,
                       Instr_type_function* function_type);
 
-  TYPED_INSTR(Instr_function_parameter, e_function_parameter);
-  NOTHING_INSTR(Instr_function_end, e_function_end);
+  TYPED_INSTR(function_parameter, e_function_parameter);
+  NOTHING_INSTR(function_end, e_function_end);
 
+  // Instr_function_call
+  //
+  // We do not store the result_type in this structure as it is the exact same
+  // type as the return type of function.
+  //
   struct Instr_function_call: public Instr {
     Instr_function* function;
     Array<Instr*> arguments;
 
-    Instr_function_call(i64 id, Instr_function* function, Allocator* allocator)
+    Instr_function_call(u32 id, Instr_function* function, Allocator* allocator)
       : Instr(Instr_Kind::e_function_call, id), function(function),
         arguments(allocator)
     {
     }
 
-    Instr_function_call(i64 id, Instr_function* function, Allocator* allocator,
+    Instr_function_call(u32 id, Instr_function* function, Allocator* allocator,
                         anton::Slice<Instr* const> arguments)
       : Instr(Instr_Kind::e_function_call, id), function(function),
         arguments(allocator, anton::range_construct, arguments.begin(),
@@ -745,13 +845,13 @@ namespace vush::spirv {
     Instr* result_type;
     Array<Instr*> constituents;
 
-    Instr_composite_construct(i64 id, Instr* result_type, Allocator* allocator)
+    Instr_composite_construct(u32 id, Instr* result_type, Allocator* allocator)
       : Instr(Instr_Kind::e_composite_construct, id), result_type(result_type),
         constituents(allocator)
     {
     }
 
-    Instr_composite_construct(i64 id, Instr* result_type, Allocator* allocator,
+    Instr_composite_construct(u32 id, Instr* result_type, Allocator* allocator,
                               anton::Slice<Instr* const> constituents)
       : Instr(Instr_Kind::e_composite_construct, id), result_type(result_type),
         constituents(allocator, anton::range_construct, constituents.begin(),
@@ -760,19 +860,23 @@ namespace vush::spirv {
     }
   };
 
+  [[nodiscard]] Instr_composite_construct*
+  make_instr_composite_construct(Allocator* allocator, u32 id,
+                                 Instr* result_type);
+
   struct Instr_composite_extract: public Instr {
     Instr* result_type;
     Instr* composite;
     Array<u32> indices;
 
-    Instr_composite_extract(i64 id, Instr* result_type, Instr* composite,
+    Instr_composite_extract(u32 id, Instr* result_type, Instr* composite,
                             Allocator* allocator)
       : Instr(Instr_Kind::e_composite_extract, id), result_type(result_type),
         composite(composite), indices(allocator)
     {
     }
 
-    Instr_composite_extract(i64 id, Instr* result_type, Instr* composite,
+    Instr_composite_extract(u32 id, Instr* result_type, Instr* composite,
                             Allocator* allocator,
                             anton::Slice<u32 const> indices)
       : Instr(Instr_Kind::e_composite_extract, id), result_type(result_type),
@@ -782,20 +886,24 @@ namespace vush::spirv {
     }
   };
 
+  [[nodiscard]] Instr_composite_extract*
+  make_instr_composite_extract(Allocator* allocator, u32 id, Instr* result_type,
+                               Instr* composite);
+
   struct Instr_composite_insert: public Instr {
     Instr* result_type;
     Instr* composite;
     Instr* object;
     Array<u32> indices;
 
-    Instr_composite_insert(i64 id, Instr* result_type, Instr* composite,
+    Instr_composite_insert(u32 id, Instr* result_type, Instr* composite,
                            Instr* object, Allocator* allocator)
       : Instr(Instr_Kind::e_composite_insert, id), result_type(result_type),
         composite(composite), object(object), indices(allocator)
     {
     }
 
-    Instr_composite_insert(i64 id, Instr* result_type, Instr* composite,
+    Instr_composite_insert(u32 id, Instr* result_type, Instr* composite,
                            Instr* object, Allocator* allocator,
                            anton::Slice<u32 const> indices)
       : Instr(Instr_Kind::e_composite_insert, id), result_type(result_type),
@@ -806,44 +914,48 @@ namespace vush::spirv {
     }
   };
 
+  [[nodiscard]] Instr_composite_insert*
+  make_instr_composite_insert(Allocator* allocator, u32 id, Instr* result_type,
+                              Instr* composite, Instr* object);
+
   UNARY_INSTR(Instr_copy_object, e_copy_object);
   UNARY_INSTR(Instr_transpose, e_transpose);
 
-  BINARY_INSTR(Instr_snegate, e_snegate);
-  BINARY_INSTR(Instr_fnegate, e_fnegate);
-  BINARY_INSTR(Instr_iadd, e_iadd);
-  BINARY_INSTR(Instr_fadd, e_fadd);
-  BINARY_INSTR(Instr_isub, e_isub);
-  BINARY_INSTR(Instr_fsub, e_fsub);
-  BINARY_INSTR(Instr_imul, e_imul);
-  BINARY_INSTR(Instr_fmul, e_fmul);
-  BINARY_INSTR(Instr_udiv, e_udiv);
-  BINARY_INSTR(Instr_sdiv, e_sdiv);
-  BINARY_INSTR(Instr_fdiv, e_fdiv);
-  BINARY_INSTR(Instr_umod, e_umod);
-  BINARY_INSTR(Instr_srem, e_srem);
-  BINARY_INSTR(Instr_smod, e_smod);
-  BINARY_INSTR(Instr_frem, e_frem);
-  BINARY_INSTR(Instr_fmod, e_fmod);
-  BINARY_INSTR(Instr_vec_times_scalar, e_vec_times_scalar);
-  BINARY_INSTR(Instr_mat_times_scalar, e_mat_times_scalar);
-  BINARY_INSTR(Instr_vec_times_mat, e_vec_times_mat);
-  BINARY_INSTR(Instr_mat_times_vec, e_mat_times_vec);
-  BINARY_INSTR(Instr_mat_times_mat, e_mat_times_mat);
-  BINARY_INSTR(Instr_outer_product, e_outer_product);
-  BINARY_INSTR(Instr_dot, e_dot);
-  BINARY_INSTR(Instr_shr_logical, e_shr_logical);
-  BINARY_INSTR(Instr_shr_arithmetic, e_shr_arithmetic);
-  BINARY_INSTR(Instr_shl, e_shl);
-  BINARY_INSTR(Instr_bit_or, e_bit_or);
-  BINARY_INSTR(Instr_bit_xor, e_bit_xor);
-  BINARY_INSTR(Instr_bit_and, e_bit_and);
-  BINARY_INSTR(Instr_bit_not, e_bit_not);
-  BINARY_INSTR(Instr_logical_eq, e_logical_eq);
-  BINARY_INSTR(Instr_logical_neq, e_logical_neq);
-  BINARY_INSTR(Instr_logical_or, e_logical_or);
-  BINARY_INSTR(Instr_logical_and, e_logical_and);
-  BINARY_INSTR(Instr_logical_not, e_logical_not);
+  BINARY_INSTR(snegate, e_snegate);
+  BINARY_INSTR(fnegate, e_fnegate);
+  BINARY_INSTR(iadd, e_iadd);
+  BINARY_INSTR(fadd, e_fadd);
+  BINARY_INSTR(isub, e_isub);
+  BINARY_INSTR(fsub, e_fsub);
+  BINARY_INSTR(imul, e_imul);
+  BINARY_INSTR(fmul, e_fmul);
+  BINARY_INSTR(udiv, e_udiv);
+  BINARY_INSTR(sdiv, e_sdiv);
+  BINARY_INSTR(fdiv, e_fdiv);
+  BINARY_INSTR(umod, e_umod);
+  BINARY_INSTR(srem, e_srem);
+  BINARY_INSTR(smod, e_smod);
+  BINARY_INSTR(frem, e_frem);
+  BINARY_INSTR(fmod, e_fmod);
+  BINARY_INSTR(vec_times_scalar, e_vec_times_scalar);
+  BINARY_INSTR(mat_times_scalar, e_mat_times_scalar);
+  BINARY_INSTR(vec_times_mat, e_vec_times_mat);
+  BINARY_INSTR(mat_times_vec, e_mat_times_vec);
+  BINARY_INSTR(mat_times_mat, e_mat_times_mat);
+  BINARY_INSTR(outer_product, e_outer_product);
+  BINARY_INSTR(dot, e_dot);
+  BINARY_INSTR(shr_logical, e_shr_logical);
+  BINARY_INSTR(shr_arithmetic, e_shr_arithmetic);
+  BINARY_INSTR(shl, e_shl); // ShiftLeftLogical
+  BINARY_INSTR(bit_or, e_bit_or);
+  BINARY_INSTR(bit_xor, e_bit_xor);
+  BINARY_INSTR(bit_and, e_bit_and);
+  BINARY_INSTR(bit_not, e_bit_not);
+  BINARY_INSTR(logical_eq, e_logical_eq);
+  BINARY_INSTR(logical_neq, e_logical_neq);
+  BINARY_INSTR(logical_or, e_logical_or);
+  BINARY_INSTR(logical_and, e_logical_and);
+  BINARY_INSTR(logical_not, e_logical_not);
 
   struct Instr_select: public Instr {
     Instr* result_type;
@@ -851,7 +963,7 @@ namespace vush::spirv {
     Instr* operand1;
     Instr* operand2;
 
-    Instr_select(i64 id, Instr* result_type, Instr* condition, Instr* operand1,
+    Instr_select(u32 id, Instr* result_type, Instr* condition, Instr* operand1,
                  Instr* operand2)
       : Instr(Instr_Kind::e_select, id), result_type(result_type),
         condition(condition), operand1(operand1), operand2(operand2)
@@ -859,28 +971,28 @@ namespace vush::spirv {
     }
   };
 
-  BINARY_INSTR(Instr_ieq, e_ieq);
-  BINARY_INSTR(Instr_ineq, e_ineq);
-  BINARY_INSTR(Instr_ugt, e_ugt);
-  BINARY_INSTR(Instr_sgt, e_sgt);
-  BINARY_INSTR(Instr_uge, e_uge);
-  BINARY_INSTR(Instr_sge, e_sge);
-  BINARY_INSTR(Instr_ult, e_ult);
-  BINARY_INSTR(Instr_slt, e_slt);
-  BINARY_INSTR(Instr_ule, e_ule);
-  BINARY_INSTR(Instr_sle, e_sle);
-  BINARY_INSTR(Instr_foeq, e_foeq);
-  BINARY_INSTR(Instr_fueq, e_fueq);
-  BINARY_INSTR(Instr_foneq, e_foneq);
-  BINARY_INSTR(Instr_funeq, e_funeq);
-  BINARY_INSTR(Instr_folt, e_folt);
-  BINARY_INSTR(Instr_fult, e_fult);
-  BINARY_INSTR(Instr_fogt, e_fogt);
-  BINARY_INSTR(Instr_fugt, e_fugt);
-  BINARY_INSTR(Instr_fole, e_fole);
-  BINARY_INSTR(Instr_fule, e_fule);
-  BINARY_INSTR(Instr_foge, e_foge);
-  BINARY_INSTR(Instr_fuge, e_fuge);
+  BINARY_INSTR(ieq, e_ieq); // IEqual
+  BINARY_INSTR(ineq, e_ineq); // INotEqual
+  BINARY_INSTR(ugt, e_ugt); // UGreaterThan
+  BINARY_INSTR(sgt, e_sgt); // SGreaterThan
+  BINARY_INSTR(uge, e_uge); // UGreaterThanEqual
+  BINARY_INSTR(sge, e_sge); // SGreaterThanEqual
+  BINARY_INSTR(ult, e_ult); // ULessThan
+  BINARY_INSTR(slt, e_slt); // SLessThan
+  BINARY_INSTR(ule, e_ule); // ULessThanEqual
+  BINARY_INSTR(sle, e_sle); // SLessThanEqual
+  BINARY_INSTR(foeq, e_foeq); // FOrdEqual
+  BINARY_INSTR(fueq, e_fueq); // FUnordEqual
+  BINARY_INSTR(foneq, e_foneq); // FOrdNotEqual
+  BINARY_INSTR(funeq, e_funeq); // FUnordNotEqual
+  BINARY_INSTR(folt, e_folt); // FOrdLessThan
+  BINARY_INSTR(fult, e_fult); // FUnordLessThan
+  BINARY_INSTR(fogt, e_fogt); // FOrdGreaterThan
+  BINARY_INSTR(fugt, e_fugt); // FUnordGreaterThan
+  BINARY_INSTR(fole, e_fole); // FOrdLessThanEqual
+  BINARY_INSTR(fule, e_fule); // FUnordLessThanEqual
+  BINARY_INSTR(foge, e_foge); // FOrdGreaterThanEqual
+  BINARY_INSTR(fuge, e_fuge); // FUnordGreaterThanEqual
 
   UNARY_INSTR(Instr_dPdx, e_dPdx);
   UNARY_INSTR(Instr_dPdy, e_dPdy);
@@ -896,13 +1008,13 @@ namespace vush::spirv {
     Instr* result_type;
     Array<Instr*> operands;
 
-    Instr_phi(i64 id, Instr* result_type, Allocator* allocator)
+    Instr_phi(u32 id, Instr* result_type, Allocator* allocator)
       : Instr(Instr_Kind::e_phi, id), result_type(result_type),
         operands(allocator)
     {
     }
 
-    Instr_phi(i64 id, Instr* result_type, Allocator* allocator,
+    Instr_phi(u32 id, Instr* result_type, Allocator* allocator,
               anton::Slice<Instr* const> operands)
       : Instr(Instr_Kind::e_phi, id), result_type(result_type),
         operands(allocator, anton::range_construct, operands.begin(),
@@ -913,63 +1025,77 @@ namespace vush::spirv {
 
   ID_INSTR(Instr_label, e_label);
 
+  [[nodiscard]] Instr_label* make_instr_label(Allocator* allocator, u32 id);
+
   struct Instr_branch: public Instr {
     Instr_label* target;
 
     Instr_branch(Instr_label* target)
-      : Instr(Instr_Kind::e_branch, -1), target(target)
+      : Instr(Instr_Kind::e_branch, 0), target(target)
     {
     }
   };
 
+  [[nodiscard]] Instr_branch* make_instr_branch(Allocator* allocator,
+                                                Instr_label* target);
+
   struct Instr_brcond: public Instr {
     Instr* condition;
+    // TODO: Validate these labels are not the same.
     Instr_label* true_label;
     Instr_label* false_label;
 
     Instr_brcond(Instr* condition, Instr_label* true_label,
                  Instr_label* false_label)
-      : Instr(Instr_Kind::e_brcond, -1), condition(condition),
+      : Instr(Instr_Kind::e_brcond, 0), condition(condition),
         true_label(true_label), false_label(false_label)
     {
     }
   };
 
+  [[nodiscard]] Instr_brcond* make_instr_brcond(Allocator* allocator,
+                                                Instr* condition,
+                                                Instr_label* true_label,
+                                                Instr_label* false_label);
+
   struct Switch_Label {
-    Instr* literal;
+    u64 literal;
     Instr_label* label;
   };
 
   struct Instr_switch: public Instr {
     Instr* selector;
+    Instr_label* default_label;
     Array<Switch_Label> labels;
 
-    Instr_switch(Instr* selector, Allocator* allocator)
-      : Instr(Instr_Kind::e_switch, -1), selector(selector), labels(allocator)
-    {
-    }
-
-    Instr_switch(Instr* selector, Allocator* allocator,
-                 anton::Slice<Switch_Label const> labels)
-      : Instr(Instr_Kind::e_switch, -1), selector(selector),
-        labels(allocator, anton::range_construct, labels.begin(), labels.end())
+    Instr_switch(Instr* selector, Instr_label* default_label,
+                 Allocator* allocator)
+      : Instr(Instr_Kind::e_switch, 0), selector(selector),
+        default_label(default_label), labels(allocator)
     {
     }
   };
 
-  NOTHING_INSTR(Instr_return, e_return);
+  [[nodiscard]] Instr_switch* make_instr_switch(Allocator* allocator,
+                                                Instr* selector,
+                                                Instr_label* default_label);
+
+  NOTHING_INSTR(return, e_return);
 
   struct Instr_return_value: public Instr {
     Instr* value;
 
     Instr_return_value(Instr* value)
-      : Instr(Instr_Kind::e_return_value, -1), value(value)
+      : Instr(Instr_Kind::e_return_value, 0), value(value)
     {
     }
   };
 
-  NOTHING_INSTR(Instr_terminate, e_terminate);
-  NOTHING_INSTR(Instr_unreachable, e_unreachable);
+  [[nodiscard]] Instr_return_value*
+  make_instr_return_value(Allocator* allocator, Instr* value);
+
+  NOTHING_INSTR(terminate, e_terminate);
+  NOTHING_INSTR(unreachable, e_unreachable);
 
 #undef UNARY_INSTR
 #undef BINARY_INSTR

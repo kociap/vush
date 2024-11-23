@@ -349,6 +349,8 @@ namespace vush::ir {
   struct Instr_getptr: public Instr {
     Type* addressed_type;
     Instr* address;
+    // TODO: Verify that the index is constant integer and fits in i64 when
+    // type is composite. AND is positive.
     Value* index;
 
     Instr_getptr(i64 id, Type* addressed_type, Instr* address, Value* index,

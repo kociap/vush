@@ -17,58 +17,60 @@
 namespace vush {
   using namespace anton::literals;
 
-  using Fn_Table = Scoped_Map<anton::String_View, ir::Function*>;
-  using Symbol_Table = Scoped_Map<anton::String_View, ir::Instr*>;
-  // Maps namespace (pass) to table of symbols.
-  using Buffer_Table =
-    anton::Flat_Hash_Map<anton::String_View,
-                         anton::Flat_Hash_Map<anton::String_View, ir::Buffer*>>;
+  namespace {
+    using Fn_Table = Scoped_Map<anton::String_View, ir::Function*>;
+    using Symbol_Table = Scoped_Map<anton::String_View, ir::Instr*>;
+    // Maps namespace (pass) to table of symbols.
+    using Buffer_Table = anton::Flat_Hash_Map<
+      anton::String_View,
+      anton::Flat_Hash_Map<anton::String_View, ir::Buffer*>>;
 
-  struct Lowering_Context {
-  public:
-    Allocator* allocator;
-    Fn_Table fntable;
-    Symbol_Table symtable;
-    Buffer_Table buftable;
+    struct Lowering_Context {
+    public:
+      Allocator* allocator;
+      Fn_Table fntable;
+      Symbol_Table symtable;
+      Buffer_Table buftable;
 
-    ir::Basic_Block* nearest_converge_block = nullptr;
-    ir::Basic_Block* nearest_continuation_block = nullptr;
-    ast::Type const* current_function_return_type = nullptr;
+      ir::Basic_Block* nearest_converge_block = nullptr;
+      ir::Basic_Block* nearest_continuation_block = nullptr;
+      ast::Type const* current_function_return_type = nullptr;
 
-  private:
-    i64 id = 0;
+    private:
+      i64 id = 0;
 
-  public:
-    Lowering_Context(Allocator* allocator)
-      : allocator(allocator), fntable(allocator), symtable(allocator),
-        buftable(allocator)
-    {
-    }
+    public:
+      Lowering_Context(Allocator* allocator)
+        : allocator(allocator), fntable(allocator), symtable(allocator),
+          buftable(allocator)
+      {
+      }
 
-    [[nodiscard]] i64 next_id()
-    {
-      i64 const value = id;
-      id += 1;
-      return value;
-    }
-  };
+      [[nodiscard]] i64 next_id()
+      {
+        i64 const value = id;
+        id += 1;
+        return value;
+      }
+    };
 
-  struct Builder {
-  private:
-    ir::Basic_Block* insert_block = nullptr;
+    struct Builder {
+    private:
+      ir::Basic_Block* insert_block = nullptr;
 
-  public:
-    void set_insert_block(ir::Basic_Block* const bb)
-    {
-      insert_block = bb;
-    }
+    public:
+      void set_insert_block(ir::Basic_Block* const bb)
+      {
+        insert_block = bb;
+      }
 
-    void insert(ir::Instr* const node)
-    {
-      ANTON_ASSERT(insert_block != nullptr, "insert_block has not been set");
-      insert_block->insert(node);
-    }
-  };
+      void insert(ir::Instr* const node)
+      {
+        ANTON_ASSERT(insert_block != nullptr, "insert_block has not been set");
+        insert_block->insert(node);
+      }
+    };
+  } // namespace
 
   [[nodiscard]] static bool have_equal_element_count(ir::Type const& lhs,
                                                      ir::Type const& rhs)
