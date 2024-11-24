@@ -27,8 +27,11 @@ namespace vush::ir {
 
     void insert(Instr* node);
 
-    [[nodiscard]] Instr* get_first() const;
-    [[nodiscard]] Instr* get_last() const;
+    [[nodiscard]] bool empty() const;
+    [[nodiscard]] Instr* get_first();
+    [[nodiscard]] Instr const* get_first() const;
+    [[nodiscard]] Instr* get_last();
+    [[nodiscard]] Instr const* get_last() const;
   };
 
   // split_block
@@ -287,6 +290,8 @@ namespace vush::ir {
     {
     }
   };
+
+  [[nodiscard]] bool is_control_flow_instruction(Instr const* instruction);
 
   // Instr_alloc
   // Produces an address to the allocated stack memory.

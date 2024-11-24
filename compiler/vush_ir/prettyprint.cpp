@@ -1,5 +1,6 @@
 #include <vush_ir/prettyprint.hpp>
 
+#include <anton/flat_hash_set.hpp>
 #include <anton/format.hpp>
 #include <anton/math/math.hpp>
 
@@ -743,16 +744,46 @@ namespace vush::ir {
     printer.write("\n"_sv);
   }
 
+  using Block_Set = anton::Flat_Hash_Set<ir::Basic_Block const*>;
+
   static void print_block(Allocator* const allocator, Printer& printer,
                           Prettyprint_Options const& options,
+                          Block_Set& visited_blocks,
                           Basic_Block const* const block)
   {
+    // Ensure we do not print duplicates.
+    {
+      auto const iterator = visited_blocks.find(block);
+      if(iterator != visited_blocks.end()) {
+        return;
+      }
+
+      visited_blocks.emplace(block);
+    }
+
     printer.set_indent_level(options.block_indent_level);
     printer.indent();
     print_block_id(allocator, printer, block);
     printer.write(":\n"_sv);
     for(Instr const& instr: block->instructions) {
       print_instr(allocator, printer, options, &instr);
+    }
+
+    auto const last_instr = block->get_last();
+    if(instanceof<Instr_branch>(last_instr)) {
+      auto const instr = static_cast<Instr_branch const*>(last_instr);
+      print_block(allocator, printer, options, visited_blocks, instr->target);
+    } else if(instanceof<Instr_brcond>(last_instr)) {
+      auto const instr = static_cast<Instr_brcond const*>(last_instr);
+      print_block(allocator, printer, options, visited_blocks,
+                  instr->then_target);
+      print_block(allocator, printer, options, visited_blocks,
+                  instr->else_target);
+    } else if(instanceof<Instr_switch>(last_instr)) {
+      auto const instr = static_cast<Instr_switch const*>(last_instr);
+      for(auto const label: instr->labels) {
+        print_block(allocator, printer, options, visited_blocks, label.target);
+      }
     }
   }
 
@@ -766,7 +797,9 @@ namespace vush::ir {
       print_source_location(allocator, printer, function->source_info);
     }
     printer.write("\n"_sv);
-    print_block(allocator, printer, options, function->entry_block);
+    Block_Set visited_blocks(allocator);
+    print_block(allocator, printer, options, visited_blocks,
+                function->entry_block);
   }
 
   void prettyprint(Allocator* allocator, anton::Output_Stream& stream,

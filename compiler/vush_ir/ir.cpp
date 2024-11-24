@@ -10,6 +10,39 @@ namespace vush::ir {
     instructions.insert_back(*instruction);
   }
 
+  bool Basic_Block::empty() const
+  {
+    return instructions.begin() == instructions.end();
+  }
+
+  Instr* Basic_Block::get_first()
+  {
+    ANTON_ASSERT(instructions.begin() != instructions.end(),
+                 "get_first() called on empty Basic_Block");
+    return static_cast<Instr*>(instructions.begin().node);
+  }
+
+  Instr const* Basic_Block::get_first() const
+  {
+    ANTON_ASSERT(instructions.begin() != instructions.end(),
+                 "get_first() called on empty Basic_Block");
+    return static_cast<Instr const*>(instructions.begin().node);
+  }
+
+  Instr* Basic_Block::get_last()
+  {
+    ANTON_ASSERT(instructions.begin() != instructions.end(),
+                 "get_last() called on empty Basic_Block");
+    return static_cast<Instr*>((--instructions.end()).node);
+  }
+
+  Instr const* Basic_Block::get_last() const
+  {
+    ANTON_ASSERT(instructions.begin() != instructions.end(),
+                 "get_last() called on empty Basic_Block");
+    return static_cast<Instr const*>((--instructions.end()).node);
+  }
+
   template<>
   bool instanceof<Argument>(Value const* value)
   {
@@ -309,6 +342,15 @@ namespace vush::ir {
     auto const value =
       VUSH_ALLOCATE(Constant_undef, allocator, type, allocator);
     return value;
+  }
+
+  bool is_control_flow_instruction(Instr const* const instruction)
+  {
+    return instanceof<Instr_branch>(instruction) ||
+           instanceof<Instr_brcond>(instruction) ||
+           instanceof<Instr_switch>(instruction) ||
+           instanceof<Instr_return>(instruction) ||
+           instanceof<Instr_die>(instruction);
   }
 
   Instr_alloc* make_instr_alloc(Allocator* const allocator, i64 const id,

@@ -1,6 +1,7 @@
 #include <vush_ast_lowering/lower_ast.hpp>
 
 #include <anton/expected.hpp>
+#include <anton/flat_hash_set.hpp>
 #include <anton/iterators/zip.hpp>
 #include <anton/math/math.hpp>
 #include <anton/ranges.hpp>
@@ -2007,18 +2008,15 @@ namespace vush {
     }
   }
 
-  static void lower_statement(Lowering_Context& ctx, Builder& builder,
-                              ast::Node const* const generic_stmt);
-
-  static void lower_statement_block(Lowering_Context& ctx, Builder& builder,
-                                    ast::Node_List const stmts)
-  {
-    ctx.symtable.push_scope();
-    for(ast::Node* const stmt: stmts) {
-      lower_statement(ctx, builder, stmt);
-    }
-    ctx.symtable.pop_scope();
-  }
+  // lower_statement_block
+  //
+  // Returns:
+  // Whether the lowering was stopped due to a control-flow terminating
+  // instruction.
+  //
+  [[nodiscard]] static bool lower_statement_block(Lowering_Context& ctx,
+                                                  Builder& builder,
+                                                  ast::Node_List const stmts);
 
   static void lower_variable(Lowering_Context& ctx, Builder& builder,
                              ast::Variable const* const variable)
@@ -2200,8 +2198,15 @@ namespace vush {
     }
   }
 
-  static void lower_stmt_if(Lowering_Context& ctx, Builder& builder,
-                            ast::Stmt_If const* const stmt)
+  // lower_stmt_if
+  //
+  // Returns:
+  // Whether the lowering was stopped in both branches due to a control-flow
+  // terminating instruction.
+  //
+  [[nodiscard]] static bool lower_stmt_if(Lowering_Context& ctx,
+                                          Builder& builder,
+                                          ast::Stmt_If const* const stmt)
   {
     ir::Value* const condition =
       lower_expression(ctx, builder, stmt->condition);
@@ -2218,19 +2223,26 @@ namespace vush {
 
     // Lower then branch.
     builder.set_insert_block(then_block);
-    lower_statement_block(ctx, builder, stmt->then_branch);
-    auto const branch_from_then = ir::make_instr_branch(
-      ctx.allocator, ctx.next_id(), converge_block, stmt->source_info);
-    builder.insert(branch_from_then);
+    bool const stopped_then =
+      lower_statement_block(ctx, builder, stmt->then_branch);
+    if(!stopped_then) {
+      auto const branch = ir::make_instr_branch(
+        ctx.allocator, ctx.next_id(), converge_block, stmt->source_info);
+      builder.insert(branch);
+    }
 
     // Lower else branch.
     builder.set_insert_block(else_block);
-    lower_statement_block(ctx, builder, stmt->else_branch);
-    auto const branch_from_else = ir::make_instr_branch(
-      ctx.allocator, ctx.next_id(), converge_block, stmt->source_info);
-    builder.insert(branch_from_else);
+    bool const stopped_else =
+      lower_statement_block(ctx, builder, stmt->else_branch);
+    if(!stopped_else) {
+      auto const branch = ir::make_instr_branch(
+        ctx.allocator, ctx.next_id(), converge_block, stmt->source_info);
+      builder.insert(branch);
+    }
 
     builder.set_insert_block(converge_block);
+    return stopped_then && stopped_else;
   }
 
   static void lower_stmt_for(Lowering_Context& ctx, Builder& builder,
@@ -2245,6 +2257,21 @@ namespace vush {
     auto const converge_block =
       VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
 
+    // TODO: Nested loops will overwrite that and cause incorrrect jumps from
+    //       continue and break. Example:
+    //
+    //         for(...) { #1
+    //           if(x) {
+    //             break;
+    //           }
+    //           for(...) { #2
+    //             ...
+    //           }
+    //           if(y) {
+    //             break; <- jumps to the converge block of #2 instead of #1
+    //           }
+    //         }
+    //
     ctx.nearest_continuation_block = continuation_block;
     ctx.nearest_converge_block = converge_block;
 
@@ -2394,88 +2421,153 @@ namespace vush {
     }
   }
 
-  static void lower_statement(Lowering_Context& ctx, Builder& builder,
-                              ast::Node const* const generic_stmt)
+  static bool lower_statement_block(Lowering_Context& ctx, Builder& builder,
+                                    ast::Node_List const stmts)
   {
-    switch(generic_stmt->node_kind) {
-    case ast::Node_Kind::stmt_block: {
-      auto const stmt = static_cast<ast::Stmt_Block const*>(generic_stmt);
-      lower_statement_block(ctx, builder, stmt->statements);
-    } break;
+    ctx.symtable.push_scope();
+    for(ast::Node* const generic_stmt: stmts) {
+      switch(generic_stmt->node_kind) {
+      case ast::Node_Kind::stmt_discard: {
+        auto const instr = ir::make_instr_die(ctx.allocator, ctx.next_id(),
+                                              generic_stmt->source_info);
+        builder.insert(instr);
+        return true;
+      } break;
 
-    case ast::Node_Kind::stmt_expression: {
-      auto const stmt = static_cast<ast::Stmt_Expression const*>(generic_stmt);
-      ir::Value* const value = lower_expression(ctx, builder, stmt->expression);
-      // The result is discarded.
-      ANTON_UNUSED(value);
-    } break;
+      case ast::Node_Kind::stmt_return: {
+        auto const stmt = static_cast<ast::Stmt_Return const*>(generic_stmt);
+        lower_stmt_return(ctx, builder, stmt);
+        return true;
+      } break;
 
-    case ast::Node_Kind::stmt_discard: {
-      auto const instr = ir::make_instr_die(ctx.allocator, ctx.next_id(),
-                                            generic_stmt->source_info);
-      builder.insert(instr);
-    } break;
+      case ast::Node_Kind::stmt_block: {
+        auto const stmt = static_cast<ast::Stmt_Block const*>(generic_stmt);
+        bool const stopped =
+          lower_statement_block(ctx, builder, stmt->statements);
+        if(stopped) {
+          return true;
+        }
+      } break;
 
-    case ast::Node_Kind::stmt_break: {
-      ANTON_ASSERT(ctx.nearest_converge_block != nullptr,
-                   "missing loop converge block");
-      auto const instr = ir::make_instr_branch(ctx.allocator, ctx.next_id(),
-                                               ctx.nearest_converge_block,
-                                               generic_stmt->source_info);
-      builder.insert(instr);
-    } break;
+      case ast::Node_Kind::stmt_expression: {
+        auto const stmt =
+          static_cast<ast::Stmt_Expression const*>(generic_stmt);
+        ir::Value* const value =
+          lower_expression(ctx, builder, stmt->expression);
+        // The result is discarded.
+        ANTON_UNUSED(value);
+      } break;
 
-    case ast::Node_Kind::stmt_continue: {
-      ANTON_ASSERT(ctx.nearest_continuation_block != nullptr,
-                   "missing loop continuation block");
-      auto const instr = ir::make_instr_branch(ctx.allocator, ctx.next_id(),
-                                               ctx.nearest_continuation_block,
-                                               generic_stmt->source_info);
-      builder.insert(instr);
-    } break;
+      case ast::Node_Kind::stmt_break: {
+        ANTON_ASSERT(ctx.nearest_converge_block != nullptr,
+                     "missing loop converge block");
+        auto const instr = ir::make_instr_branch(ctx.allocator, ctx.next_id(),
+                                                 ctx.nearest_converge_block,
+                                                 generic_stmt->source_info);
+        builder.insert(instr);
+      } break;
 
-    case ast::Node_Kind::stmt_return: {
-      auto const stmt = static_cast<ast::Stmt_Return const*>(generic_stmt);
-      lower_stmt_return(ctx, builder, stmt);
-    } break;
+      case ast::Node_Kind::stmt_continue: {
+        ANTON_ASSERT(ctx.nearest_continuation_block != nullptr,
+                     "missing loop continuation block");
+        auto const instr = ir::make_instr_branch(ctx.allocator, ctx.next_id(),
+                                                 ctx.nearest_continuation_block,
+                                                 generic_stmt->source_info);
+        builder.insert(instr);
+      } break;
 
-    case ast::Node_Kind::variable: {
-      auto const stmt = static_cast<ast::Variable const*>(generic_stmt);
-      lower_variable(ctx, builder, stmt);
-    } break;
+      case ast::Node_Kind::variable: {
+        auto const stmt = static_cast<ast::Variable const*>(generic_stmt);
+        lower_variable(ctx, builder, stmt);
+      } break;
 
-    case ast::Node_Kind::stmt_assignment: {
-      auto const stmt = static_cast<ast::Stmt_Assignment const*>(generic_stmt);
-      lower_stmt_assignment(ctx, builder, stmt);
-    } break;
+      case ast::Node_Kind::stmt_assignment: {
+        auto const stmt =
+          static_cast<ast::Stmt_Assignment const*>(generic_stmt);
+        lower_stmt_assignment(ctx, builder, stmt);
+      } break;
 
-    case ast::Node_Kind::stmt_if: {
-      auto const stmt = static_cast<ast::Stmt_If const*>(generic_stmt);
-      lower_stmt_if(ctx, builder, stmt);
-    } break;
+      case ast::Node_Kind::stmt_if: {
+        auto const stmt = static_cast<ast::Stmt_If const*>(generic_stmt);
+        bool const stopped = lower_stmt_if(ctx, builder, stmt);
+        if(stopped) {
+          return true;
+        }
+      } break;
 
-    case ast::Node_Kind::stmt_for: {
-      auto const stmt = static_cast<ast::Stmt_For const*>(generic_stmt);
-      lower_stmt_for(ctx, builder, stmt);
-    } break;
+      case ast::Node_Kind::stmt_for: {
+        auto const stmt = static_cast<ast::Stmt_For const*>(generic_stmt);
+        lower_stmt_for(ctx, builder, stmt);
+      } break;
 
-    case ast::Node_Kind::stmt_while: {
-      auto const stmt = static_cast<ast::Stmt_While const*>(generic_stmt);
-      lower_stmt_while(ctx, builder, stmt);
-    } break;
+      case ast::Node_Kind::stmt_while: {
+        auto const stmt = static_cast<ast::Stmt_While const*>(generic_stmt);
+        lower_stmt_while(ctx, builder, stmt);
+      } break;
 
-    case ast::Node_Kind::stmt_do_while: {
-      auto const stmt = static_cast<ast::Stmt_Do_While const*>(generic_stmt);
-      lower_stmt_do_while(ctx, builder, stmt);
-    } break;
+      case ast::Node_Kind::stmt_do_while: {
+        auto const stmt = static_cast<ast::Stmt_Do_While const*>(generic_stmt);
+        lower_stmt_do_while(ctx, builder, stmt);
+      } break;
 
-    case ast::Node_Kind::stmt_switch: {
-      auto const stmt = static_cast<ast::Stmt_Switch const*>(generic_stmt);
-      lower_stmt_switch(ctx, builder, stmt);
-    } break;
+      case ast::Node_Kind::stmt_switch: {
+        auto const stmt = static_cast<ast::Stmt_Switch const*>(generic_stmt);
+        lower_stmt_switch(ctx, builder, stmt);
+      } break;
 
-    default:
-      ANTON_UNREACHABLE("unhandled statement node kind");
+      default:
+        ANTON_UNREACHABLE("unhandled statement node kind");
+      }
+    }
+    ctx.symtable.pop_scope();
+    return false;
+  }
+
+  using Block_Set = anton::Flat_Hash_Set<ir::Basic_Block*>;
+
+  static void insert_implicit_returns(Lowering_Context& ctx,
+                                      Block_Set& visited_blocks,
+                                      ir::Basic_Block* const block)
+  {
+    // Ensure we do not visit duplicates.
+    {
+      auto const iterator = visited_blocks.find(block);
+      if(iterator != visited_blocks.end()) {
+        return;
+      }
+
+      visited_blocks.emplace(block);
+    }
+
+    // Ensure the last block ends with a return instruction.
+    if(block->empty()) {
+      auto const instr =
+        ir::make_instr_return(ctx.allocator, ctx.next_id(), Source_Info{});
+      block->insert(instr);
+      return;
+    } else {
+      ir::Instr* const last_instr = block->get_last();
+      if(!ir::is_control_flow_instruction(last_instr)) {
+        auto const instr = ir::make_instr_return(ctx.allocator, ctx.next_id(),
+                                                 last_instr->source_info);
+        block->insert(instr);
+        return;
+      }
+    }
+
+    auto const last_instr = block->get_last();
+    if(instanceof<ir::Instr_branch>(last_instr)) {
+      auto const instr = static_cast<ir::Instr_branch const*>(last_instr);
+      insert_implicit_returns(ctx, visited_blocks, instr->target);
+    } else if(instanceof<ir::Instr_brcond>(last_instr)) {
+      auto const instr = static_cast<ir::Instr_brcond const*>(last_instr);
+      insert_implicit_returns(ctx, visited_blocks, instr->then_target);
+      insert_implicit_returns(ctx, visited_blocks, instr->else_target);
+    } else if(instanceof<ir::Instr_switch>(last_instr)) {
+      auto const instr = static_cast<ir::Instr_switch const*>(last_instr);
+      for(auto const label: instr->labels) {
+        insert_implicit_returns(ctx, visited_blocks, label.target);
+      }
     }
   }
 
@@ -2504,8 +2596,12 @@ namespace vush {
       ctx.symtable.add_entry(parameter->identifier.value, alloc);
     }
 
-    lower_statement_block(ctx, builder, ast_fn->body);
+    auto const stopped = lower_statement_block(ctx, builder, ast_fn->body);
+    ANTON_UNUSED(stopped);
     ctx.symtable.pop_scope();
+
+    Block_Set visited_blocks(ctx.allocator);
+    insert_implicit_returns(ctx, visited_blocks, fn->entry_block);
   }
 
   [[nodiscard]] ir::Storage_Class
@@ -2603,8 +2699,13 @@ namespace vush {
       first = false;
     }
 
-    lower_statement_block(ctx, builder, stage->body);
+    bool const stopped = lower_statement_block(ctx, builder, stage->body);
+    ANTON_UNUSED(stopped);
     ctx.symtable.pop_scope();
+
+    Block_Set visited_blocks(ctx.allocator);
+    insert_implicit_returns(ctx, visited_blocks, fn->entry_block);
+
     // TODO: transform module return to output variable.
     return ir::Module(anton::String(stage->pass.value, ctx.allocator),
                       stage->stage.value, fn);
