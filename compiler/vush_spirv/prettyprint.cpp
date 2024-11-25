@@ -49,6 +49,36 @@ namespace vush::spirv {
     }
   }
 
+  [[nodiscard]] static anton::String_View stringify(Decoration const decoration)
+  {
+    switch(decoration) {
+    case Decoration::e_relaxed_precision:
+      return "RelaxedPrecision"_sv;
+    case Decoration::e_block:
+      return "Block"_sv;
+    case Decoration::e_row_major:
+      return "RowMajor"_sv;
+    case Decoration::e_col_major:
+      return "ColMajor"_sv;
+    case Decoration::e_builtin:
+      return "Builtin"_sv;
+    case Decoration::e_no_perspective:
+      return "NoPerspective"_sv;
+    case Decoration::e_flat:
+      return "Flat"_sv;
+    case Decoration::e_patch:
+      return "Patch"_sv;
+    case Decoration::e_centroid:
+      return "Centroid"_sv;
+    case Decoration::e_invariant:
+      return "Invariant"_sv;
+    case Decoration::e_binding:
+      return "Binding"_sv;
+    case Decoration::e_descriptor_set:
+      return "DescriptorSet"_sv;
+    }
+  }
+
   [[nodiscard]] static anton::String_View
   stringify(Storage_Class const storage_class)
   {
@@ -208,6 +238,43 @@ namespace vush::spirv {
 
       CASE_GENERIC_INSTR(e_capability, Instr_capability, "OpCapability {}",
                          stringify(instruction->capability))
+
+    case Instr_Kind::e_decorate: {
+      auto const instruction = static_cast<Instr_decorate const*>(ginstruction);
+      stream.write(anton::format(allocator, "OpDecorate %{} {}",
+                                 instruction->target->id,
+                                 stringify(instruction->decoration)));
+      if(!instruction->argument.is_none()) {
+        if(instruction->argument.is_string()) {
+          stream.write(" ");
+          stream.write(instruction->argument.get_string());
+        } else {
+          stream.write(" ");
+          stream.write(
+            anton::to_string(allocator, instruction->argument.get_u32()));
+        }
+      }
+    } break;
+
+    case Instr_Kind::e_member_decorate: {
+      auto const instruction =
+        static_cast<Instr_member_decorate const*>(ginstruction);
+      stream.write(anton::format(allocator, "OpMemberDecorate %{} {} {}",
+                                 instruction->structure_type->id,
+                                 instruction->member,
+                                 stringify(instruction->decoration)));
+      if(!instruction->argument.is_none()) {
+        if(instruction->argument.is_string()) {
+          stream.write(" ");
+          stream.write(instruction->argument.get_string());
+        } else {
+          stream.write(" ");
+          stream.write(
+            anton::to_string(allocator, instruction->argument.get_u32()));
+        }
+      }
+    } break;
+
       CASE_ID_INSTR(e_type_void, Instr_type_void, "OpTypeVoid")
       CASE_ID_INSTR(e_type_bool, Instr_type_bool, "OpTypeBool")
       CASE_GENERIC_INSTR(e_type_int, Instr_type_int, "%{} = OpTypeInt %{} %{}",

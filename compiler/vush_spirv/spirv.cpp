@@ -1006,6 +1006,87 @@ namespace vush::spirv {
     return instr;
   }
 
+  Decoration_Argument::Decoration_Argument(Decoration_Argument&& other)
+    : kind(other.kind)
+  {
+    switch(kind) {
+    case e_string:
+      anton::construct(&value_string, ANTON_MOV(other.value_string));
+      break;
+    case e_u32:
+      value_u32 = other.value_u32;
+      break;
+    case e_none:
+      break;
+    }
+  }
+
+  Decoration_Argument::~Decoration_Argument()
+  {
+    if(kind == e_string) {
+      anton::destruct(&value_string);
+    }
+  }
+
+  bool Decoration_Argument::is_none() const
+  {
+    return kind == e_none;
+  }
+
+  bool Decoration_Argument::is_u32() const
+  {
+    return kind == e_u32;
+  }
+
+  bool Decoration_Argument::is_string() const
+  {
+    return kind == e_string;
+  }
+
+  u32 Decoration_Argument::get_u32()
+  {
+    ANTON_ASSERT(kind == e_u32, "literal is not u32");
+    return value_u32;
+  }
+
+  u32 Decoration_Argument::get_u32() const
+  {
+    ANTON_ASSERT(kind == e_u32, "literal is not u32");
+    return value_u32;
+  }
+
+  anton::String& Decoration_Argument::get_string()
+  {
+    ANTON_ASSERT(kind == e_string, "literal is not string");
+    return value_string;
+  }
+
+  anton::String const& Decoration_Argument::get_string() const
+  {
+    ANTON_ASSERT(kind == e_string, "literal is not string");
+    return value_string;
+  }
+
+  Instr_decorate* make_instr_decorate(Allocator* allocator, Instr* target,
+                                      Decoration decoration,
+                                      Decoration_Argument&& argument)
+  {
+    auto const instr = VUSH_ALLOCATE(Instr_decorate, allocator, target,
+                                     decoration, ANTON_MOV(argument));
+    return instr;
+  }
+
+  Instr_member_decorate*
+  make_instr_member_decorate(Allocator* allocator, Instr* structure_type,
+                             u32 member, Decoration decoration,
+                             Decoration_Argument&& argument)
+  {
+    auto const instr =
+      VUSH_ALLOCATE(Instr_member_decorate, allocator, structure_type, member,
+                    decoration, ANTON_MOV(argument));
+    return instr;
+  }
+
   Instr_type_void* make_instr_type_void(Allocator* allocator, u32 id)
   {
     auto const instr = VUSH_ALLOCATE(Instr_type_void, allocator, id);

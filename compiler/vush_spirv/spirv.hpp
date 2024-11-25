@@ -20,6 +20,9 @@ namespace vush::spirv {
     e_entry_point,
     // e_execution_mode,
     e_capability,
+    // Annotation instructions
+    e_decorate,
+    e_member_decorate,
     // Type instructions
     e_type_void,
     e_type_bool,
@@ -391,6 +394,141 @@ namespace vush::spirv {
 
   [[nodiscard]] Instr_capability* make_instr_capability(Allocator* allocator,
                                                         Capability capability);
+
+  enum struct Builtin {
+    e_position = 0,
+    e_point_size = 1,
+    e_clip_distance = 3,
+    e_cull_distance = 4,
+    e_vertex_id = 5,
+    e_instance_id = 6,
+    e_primitive_id = 7,
+    e_invocation_id = 8,
+    e_layer = 9,
+    e_viewport_index = 10,
+    e_tess_level_outer = 11,
+    e_tess_level_inner = 12,
+    e_tess_coord = 13,
+    e_patch_vertices = 14,
+    e_frag_coord = 15,
+    e_point_coord = 16,
+    e_front_facing = 17,
+    e_sample_id = 18,
+    e_sample_position = 19,
+    e_sample_mask = 20,
+    e_frag_depth = 22,
+    e_helper_invocation = 23,
+    e_num_workgroups = 24,
+    e_worgroup_size = 25,
+    e_workgroup_id = 26,
+    e_local_invocation_id = 27,
+    e_global_invocation_id = 28,
+    e_local_invocation_index = 29,
+    e_vertex_index = 42,
+    e_instance_index = 43,
+    e_base_vertex = 4424,
+    e_base_instance = 4425,
+    e_draw_index = 4426,
+    e_device_index = 4438,
+    e_view_index = 4440,
+  };
+
+  enum struct Decoration {
+    e_relaxed_precision = 0,
+    e_block = 2,
+    e_row_major = 4,
+    e_col_major = 5,
+    e_builtin = 11,
+    e_no_perspective = 13,
+    e_flat = 14,
+    e_patch = 15,
+    e_centroid = 16,
+    e_invariant = 18,
+    e_binding = 33,
+    e_descriptor_set = 34,
+  };
+
+  struct Decoration_Argument {
+  private:
+    union {
+      u32 value_u32;
+      anton::String value_string;
+    };
+
+    enum {
+      e_string,
+      e_u32,
+      e_none,
+    } kind;
+
+  public:
+    Decoration_Argument(): kind(e_none) {}
+    Decoration_Argument(u32 value): value_u32(value), kind(e_u32) {}
+    Decoration_Argument(anton::String&& value)
+      : value_string(ANTON_MOV(value)), kind(e_string)
+    {
+    }
+
+    Decoration_Argument(Decoration_Argument&& other);
+
+    ~Decoration_Argument();
+
+    [[nodiscard]] bool is_none() const;
+    [[nodiscard]] bool is_u32() const;
+    [[nodiscard]] bool is_string() const;
+    [[nodiscard]] u32 get_u32();
+    [[nodiscard]] u32 get_u32() const;
+    [[nodiscard]] anton::String& get_string();
+    [[nodiscard]] anton::String const& get_string() const;
+  };
+
+  struct Instr_decorate: public Instr {
+    Instr* target;
+    Decoration decoration;
+    Decoration_Argument argument;
+
+    Instr_decorate(Instr* target, Decoration decoration)
+      : Instr(Instr_Kind::e_decorate, 0), target(target), decoration(decoration)
+    {
+    }
+
+    Instr_decorate(Instr* target, Decoration decoration,
+                   Decoration_Argument&& argument)
+      : Instr(Instr_Kind::e_decorate, 0), target(target),
+        decoration(decoration), argument(ANTON_MOV(argument))
+    {
+    }
+  };
+
+  [[nodiscard]] Instr_decorate*
+  make_instr_decorate(Allocator* allocator, Instr* target,
+                      Decoration decoration, Decoration_Argument&& argument);
+
+  struct Instr_member_decorate: public Instr {
+    Instr* structure_type;
+    u32 member;
+    Decoration decoration;
+    Decoration_Argument argument;
+
+    Instr_member_decorate(Instr* structure_type, u32 member,
+                          Decoration decoration)
+      : Instr(Instr_Kind::e_member_decorate, 0), structure_type(structure_type),
+        member(member), decoration(decoration)
+    {
+    }
+
+    Instr_member_decorate(Instr* structure_type, u32 member,
+                          Decoration decoration, Decoration_Argument&& argument)
+      : Instr(Instr_Kind::e_member_decorate, 0), structure_type(structure_type),
+        member(member), decoration(decoration), argument(ANTON_MOV(argument))
+    {
+    }
+  };
+
+  [[nodiscard]] Instr_member_decorate*
+  make_instr_member_decorate(Allocator* allocator, Instr* structure_type,
+                             u32 member, Decoration decoration,
+                             Decoration_Argument&& argument);
 
   ID_INSTR(Instr_type_void, e_type_void);
 
