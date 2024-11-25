@@ -947,26 +947,37 @@ namespace vush {
                                 ir::Module const* const module)
   {
     Lowering_Context ctx(allocator);
-    spirv::Instr_function* entry = nullptr;
+    // Always add Shader and DrawParameters capabilities. We will dynamically
+    // select which capabilities to add later on.
     {
-      anton::IList<spirv::Instr> list = lower_function(ctx, module->entry);
-      entry = static_cast<spirv::Instr_function*>(list.begin().node);
-      ctx.functions.splice(list);
+      auto const capability_shader =
+        spirv::make_instr_capability(allocator, spirv::Capability::e_shader);
+      auto const capability_draw_parameters = spirv::make_instr_capability(
+        allocator, spirv::Capability::e_draw_parameters);
+      ctx.capabilities.insert_back(*capability_shader);
+      ctx.capabilities.insert_back(*capability_draw_parameters);
     }
     // The required memory model. We always use PhysicalStorageBuffer64 and
     // Vulkan.
-    spirv::Instr_memory_model* const memory_model =
-      spirv::make_instr_memory_model(
-        allocator, spirv::Addressing_Model::e_physical_storage_buffer64,
-        spirv::Memory_Model::e_vulkan);
-    ctx.declarations.insert_back(*memory_model);
-    // The single entry point.
-    spirv::Execution_Model const execution_model =
-      stage_to_execution(module->stage);
-    auto const entry_point = spirv::make_instr_entry_point(
-      allocator, entry, anton::String(module->pass_identifier, allocator),
-      execution_model);
-    ctx.declarations.insert_back(*entry_point);
+    {
+      spirv::Instr_memory_model* const memory_model =
+        spirv::make_instr_memory_model(
+          allocator, spirv::Addressing_Model::e_physical_storage_buffer64,
+          spirv::Memory_Model::e_vulkan);
+      ctx.declarations.insert_back(*memory_model);
+    }
+    // Lower the entry function and create the entry point.
+    {
+      anton::IList<spirv::Instr> list = lower_function(ctx, module->entry);
+      auto const entry = static_cast<spirv::Instr_function*>(list.begin().node);
+      ctx.functions.splice(list);
+      spirv::Execution_Model const execution_model =
+        stage_to_execution(module->stage);
+      auto const entry_point = spirv::make_instr_entry_point(
+        allocator, entry, anton::String(module->pass_identifier, allocator),
+        execution_model);
+      ctx.declarations.insert_back(*entry_point);
+    }
     spirv::Module spirv_module{
       .capabilities = ANTON_MOV(ctx.capabilities),
       .extensions = ANTON_MOV(ctx.extensions),

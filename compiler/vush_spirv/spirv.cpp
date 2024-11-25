@@ -999,6 +999,13 @@ namespace vush::spirv {
     return instr;
   }
 
+  Instr_capability* make_instr_capability(Allocator* allocator,
+                                          Capability capability)
+  {
+    auto const instr = VUSH_ALLOCATE(Instr_capability, allocator, capability);
+    return instr;
+  }
+
   Instr_type_void* make_instr_type_void(Allocator* allocator, u32 id)
   {
     auto const instr = VUSH_ALLOCATE(Instr_type_void, allocator, id);

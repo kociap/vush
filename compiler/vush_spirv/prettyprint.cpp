@@ -97,8 +97,22 @@ namespace vush::spirv {
       return "Addresses"_sv;
     case Capability::e_linkage:
       return "Linkage"_sv;
-    case Capability::e_kernel:
-      return "Kernel"_sv;
+    case Capability::e_float16:
+      return "Float16"_sv;
+    case Capability::e_float64:
+      return "Float64"_sv;
+    case Capability::e_int64:
+      return "Int64"_sv;
+    case Capability::e_int16:
+      return "Int16"_sv;
+    case Capability::e_clip_distance:
+      return "ClipDistance"_sv;
+    case Capability::e_cull_distance:
+      return "CullDistance"_sv;
+    case Capability::e_int8:
+      return "Int8"_sv;
+    case Capability::e_draw_parameters:
+      return "DrawParameters"_sv;
     }
   }
 
@@ -192,7 +206,7 @@ namespace vush::spirv {
       }
     } break;
 
-      CASE_GENERIC_INSTR(e_capability, Instr_capability, "OpCapability %{}",
+      CASE_GENERIC_INSTR(e_capability, Instr_capability, "OpCapability {}",
                          stringify(instruction->capability))
       CASE_ID_INSTR(e_type_void, Instr_type_void, "OpTypeVoid")
       CASE_ID_INSTR(e_type_bool, Instr_type_bool, "OpTypeBool")

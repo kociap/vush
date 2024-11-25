@@ -370,7 +370,14 @@ namespace vush::spirv {
     e_tessellation = 3,
     e_addresses = 4,
     e_linkage = 5,
-    e_kernel = 6,
+    e_float16 = 9,
+    e_float64 = 10,
+    e_int64 = 11,
+    e_int16 = 22,
+    e_clip_distance = 32,
+    e_cull_distance = 33,
+    e_int8 = 39,
+    e_draw_parameters = 4427,
   };
 
   struct Instr_capability: public Instr {
@@ -381,6 +388,9 @@ namespace vush::spirv {
     {
     }
   };
+
+  [[nodiscard]] Instr_capability* make_instr_capability(Allocator* allocator,
+                                                        Capability capability);
 
   ID_INSTR(Instr_type_void, e_type_void);
 
