@@ -276,6 +276,7 @@ namespace vush {
     case ir::Type_Kind::e_composite: {
       auto const t = static_cast<ir::Type_Composite const*>(type);
       hash.feed("composite");
+      hash.feed(t->identifier);
       for(ir::Type const* const element: t->elements) {
         hash_type(hash, element);
       }
