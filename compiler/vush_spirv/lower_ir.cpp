@@ -130,6 +130,8 @@ namespace vush {
       anton::Flat_Hash_Map<ir::Value const*, spirv::Instr*> instr_map;
       anton::Flat_Hash_Map<ir::Basic_Block const*, spirv::Instr_label*> bb_map;
       anton::Flat_Hash_Map<u64, spirv::Instr*> type_map;
+      anton::Flat_Hash_Map<ir::Buffer const*, spirv::Instr_variable*>
+        buffer_map;
       Array<spirv::Instr_label*> pending_blocks;
 
       anton::IList<spirv::Instr> capabilities;
@@ -138,7 +140,8 @@ namespace vush {
       // Memory model, entry points, execution modes.
       anton::IList<spirv::Instr> declarations;
       anton::IList<spirv::Instr> debug;
-      anton::IList<spirv::Instr> types;
+      anton::IList<spirv::Instr> annotations;
+      anton::IList<spirv::Instr> globals;
       anton::IList<spirv::Instr> functions;
 
     private:
@@ -147,7 +150,7 @@ namespace vush {
     public:
       Lowering_Context(Allocator* allocator)
         : allocator(allocator), instr_map(allocator), bb_map(allocator),
-          type_map(allocator), pending_blocks(allocator)
+          type_map(allocator), buffer_map(allocator), pending_blocks(allocator)
       {
       }
 
@@ -420,7 +423,7 @@ namespace vush {
     auto iter = ctx.type_map.find(value);
     if(iter == ctx.type_map.end()) {
       auto const instr = make_new_type_instance(ctx, type);
-      ctx.types.insert_back(*instr);
+      ctx.globals.insert_back(*instr);
       iter = ctx.type_map.emplace(value, instr);
     }
     return iter->value;
@@ -442,7 +445,7 @@ namespace vush {
       auto const return_type = lower_type(ctx, function->return_type);
       auto const instr =
         make_instr_type_function(ctx.allocator, ctx.next_id(), return_type);
-      ctx.types.insert_back(*instr);
+      ctx.globals.insert_back(*instr);
       iter = ctx.type_map.emplace(value, instr);
     }
     return safe_cast<spirv::Instr_type_function*>(iter->value);
@@ -455,6 +458,7 @@ namespace vush {
     Running_Hash hash;
     hash.start();
     hash.feed("ptr");
+    hash.feed(static_cast<u32>(storage_class));
     hash_type(hash, type);
     u64 const value = hash.finish();
     auto iter = ctx.type_map.find(value);
@@ -462,7 +466,7 @@ namespace vush {
       auto const pointee_type = lower_type(ctx, type);
       auto const instr = make_instr_type_pointer(ctx.allocator, ctx.next_id(),
                                                  pointee_type, storage_class);
-      ctx.types.insert_back(*instr);
+      ctx.globals.insert_back(*instr);
       iter = ctx.type_map.emplace(value, instr);
     }
     return safe_cast<spirv::Instr_type_pointer*>(iter->value);
@@ -564,10 +568,136 @@ namespace vush {
     auto iter = ctx.type_map.find(value);
     if(iter == ctx.type_map.end()) {
       auto const instr = make_new_constant_instance(ctx, constant);
-      ctx.types.insert_back(*instr);
+      ctx.globals.insert_back(*instr);
       iter = ctx.type_map.emplace(value, instr);
     }
     return iter->value;
+  }
+
+  [[nodiscard]] static spirv::Instr*
+  lower_u32_to_constant(Lowering_Context& ctx, u32 const constant)
+  {
+    Running_Hash hash;
+    hash.start();
+    hash.feed("constant_u32");
+    hash.feed(constant);
+    u64 const value = hash.finish();
+    auto iter = ctx.type_map.find(value);
+    if(iter == ctx.type_map.end()) {
+      auto const type = lower_type(ctx, ir::get_type_uint32());
+      auto const instr = spirv::make_instr_constant_u32(
+        ctx.allocator, ctx.next_id(), type, constant);
+      ctx.globals.insert_back(*instr);
+      iter = ctx.type_map.emplace(value, instr);
+    }
+    return iter->value;
+  }
+
+  [[nodiscard]] static u32 calculate_type_stride(ir::Type const* const type)
+  {
+    switch(type->kind) {
+    case ir::Type_Kind::e_void:
+    case ir::Type_Kind::e_ptr:
+    case ir::Type_Kind::e_sampler:
+    case ir::Type_Kind::e_image:
+    case ir::Type_Kind::e_texture:
+      return 0;
+    case ir::Type_Kind::e_bool:
+      return 1;
+    case ir::Type_Kind::e_int8:
+      return 1;
+    case ir::Type_Kind::e_int16:
+      return 2;
+    case ir::Type_Kind::e_int32:
+      return 4;
+    case ir::Type_Kind::e_uint8:
+      return 1;
+    case ir::Type_Kind::e_uint16:
+      return 2;
+    case ir::Type_Kind::e_uint32:
+      return 4;
+    case ir::Type_Kind::e_fp16:
+      return 2;
+    case ir::Type_Kind::e_fp32:
+      return 4;
+    case ir::Type_Kind::e_fp64:
+      return 8;
+
+    case ir::Type_Kind::e_composite: {
+      ANTON_UNREACHABLE("unimplemented");
+      return 0;
+    }
+
+    case ir::Type_Kind::e_array: {
+      ANTON_UNREACHABLE("unimplemented");
+      return 0;
+    }
+
+    case ir::Type_Kind::e_vec: {
+      auto const vec = static_cast<ir::Type_Vec const*>(type);
+      u32 const element_stride = calculate_type_stride(vec->element_type);
+      return element_stride * vec->rows;
+    }
+
+    case ir::Type_Kind::e_mat: {
+      ANTON_UNREACHABLE("unimplemented");
+      return 0;
+    }
+    }
+  }
+
+  [[nodiscard]] static spirv::Instr_variable*
+  lower_buffer(Lowering_Context& ctx, ir::Buffer const* const buffer)
+  {
+    {
+      auto const iterator = ctx.buffer_map.find(buffer);
+      if(iterator != ctx.buffer_map.end()) {
+        return iterator->value;
+      }
+    }
+
+    // TODO: Always lowers as storage buffer.
+    // TODO: Requires a new type instance due to decorations.
+    auto const buffer_type = lower_type(ctx, buffer->type);
+    // Mandatory Block decoration for the buffer type.
+    auto const decoration_block = spirv::make_instr_decorate(
+      ctx.allocator, buffer_type, spirv::Decoration::e_block);
+    ctx.annotations.insert_back(*decoration_block);
+    // Decorate the members with offsets.
+    {
+      u32 offset = 0;
+      u32 index = 0;
+      auto const composite = safe_cast<ir::Type_Composite const*>(buffer->type);
+      for(auto const type: composite->elements) {
+        auto const decoration = spirv::make_instr_member_decorate(
+          ctx.allocator, buffer_type, index, spirv::Decoration::e_offset,
+          spirv::Decoration_Argument(offset));
+        ctx.annotations.insert_back(*decoration);
+
+        index += 1;
+        offset += calculate_type_stride(type);
+      }
+    }
+    // Make the variable.
+    auto const pointer_type =
+      spirv::make_instr_type_pointer(ctx.allocator, ctx.next_id(), buffer_type,
+                                     spirv::Storage_Class::e_storage_buffer);
+    ctx.globals.insert_back(*pointer_type);
+    auto const variable =
+      spirv::make_instr_variable(ctx.allocator, ctx.next_id(), pointer_type,
+                                 spirv::Storage_Class::e_storage_buffer);
+    ctx.globals.insert_back(*variable);
+    ctx.buffer_map.emplace(buffer, variable);
+    // Binding and DescriptorSet decorations.
+    auto const decoration_set = spirv::make_instr_decorate(
+      ctx.allocator, variable, spirv::Decoration::e_descriptor_set,
+      spirv::Decoration_Argument{buffer->descriptor_set});
+    ctx.annotations.insert_back(*decoration_set);
+    auto const decoration_binding = spirv::make_instr_decorate(
+      ctx.allocator, variable, spirv::Decoration::e_binding,
+      spirv::Decoration_Argument{buffer->binding});
+    ctx.annotations.insert_back(*decoration_binding);
+    return variable;
   }
 
   [[nodiscard]] static i64
@@ -899,6 +1029,30 @@ namespace vush {
     return label;
   }
 
+  static void hoist_variables(spirv::Instr* instruction)
+  {
+    spirv::Instr* label = nullptr;
+    while(!instanceof<spirv::Instr_function_end>(instruction)) {
+      if(instanceof<spirv::Instr_label>(instruction)) {
+        label = instruction;
+        break;
+      }
+      instruction = ilist_next(instruction);
+    }
+
+    while(!instanceof<spirv::Instr_function_end>(instruction)) {
+      if(!instanceof<spirv::Instr_variable>(instruction)) {
+        instruction = ilist_next(instruction);
+        continue;
+      }
+
+      auto const next_instruction = ilist_next(instruction);
+      anton::ilist_erase(instruction);
+      anton::ilist_insert_after(label, instruction);
+      instruction = next_instruction;
+    }
+  }
+
   [[nodiscard]] static anton::IList<spirv::Instr>
   lower_function(Lowering_Context& ctx, ir::Function const* const function)
   {
@@ -928,7 +1082,111 @@ namespace vush {
     auto const instr_end = spirv::make_instr_function_end(ctx.allocator);
     builder.insert(instr_end);
 
+    hoist_variables(instr_function);
+
     return {instr_function, instr_end};
+  }
+
+  [[nodiscard]] static spirv::Instr_type_function*
+  make_entry_function_type(Lowering_Context& ctx)
+  {
+    auto const ir_return_type = ir::get_type_void();
+    Running_Hash hash;
+    hash.start();
+    hash.feed("function");
+    hash_type(hash, ir_return_type);
+    u64 const value = hash.finish();
+    auto iter = ctx.type_map.find(value);
+    if(iter == ctx.type_map.end()) {
+      auto const return_type = lower_type(ctx, ir_return_type);
+      auto const instr =
+        make_instr_type_function(ctx.allocator, ctx.next_id(), return_type);
+      ctx.globals.insert_back(*instr);
+      iter = ctx.type_map.emplace(value, instr);
+    }
+    return safe_cast<spirv::Instr_type_function*>(iter->value);
+  }
+
+  struct Module_Entry {
+    Array<spirv::Instr_variable*> interface;
+    spirv::Instr_function* entry_begin;
+    spirv::Instr_function_end* entry_end;
+  };
+
+  [[nodiscard]] static Module_Entry
+  lower_module_entry(Lowering_Context& ctx, ir::Function const* const function)
+  {
+    auto const function_type = make_entry_function_type(ctx);
+    auto const instr_function =
+      spirv::make_instr_function(ctx.allocator, ctx.next_id(), function_type);
+    Builder builder;
+    builder.set_current_instruction(instr_function);
+    Array<spirv::Instr_variable*> interface(ctx.allocator);
+    // Module has no parameters. All function inputs are sourced, hence they are
+    // global OpVariable. We have to construct pointers via OpAccessChain to
+    // the members of the buffers.
+    Array<spirv::Instr*> parameter_pointers(ctx.allocator);
+    for(auto const& argument: function->arguments) {
+      if(argument.buffer == nullptr) {
+        ANTON_ASSERT(argument.storage_class == ir::Storage_Class::e_output ||
+                       argument.storage_class == ir::Storage_Class::e_input,
+                     "argument without buffer is not input/output");
+        // We always lower the input/output parameters as variables.
+        auto const storage_class =
+          argument.storage_class == ir::Storage_Class::e_output
+            ? spirv::Storage_Class::e_output
+            : spirv::Storage_Class::e_input;
+        // TODO: Requires new type instance due to decorations.
+        auto const value_type = lower_type(ctx, argument.pointee_type);
+        // The mandatory Block decoration.
+        auto const decoration_block = spirv::make_instr_decorate(
+          ctx.allocator, value_type, spirv::Decoration::e_block);
+        ctx.annotations.insert_back(*decoration_block);
+        // Make the variable.
+        auto const pointer_type = spirv::make_instr_type_pointer(
+          ctx.allocator, ctx.next_id(), value_type, storage_class);
+        ctx.globals.insert_back(*pointer_type);
+        auto const variable = spirv::make_instr_variable(
+          ctx.allocator, ctx.next_id(), pointer_type, storage_class);
+        interface.push_back(variable);
+        ctx.globals.insert_back(*variable);
+        ctx.instr_map.emplace(&argument, variable);
+      } else {
+        auto const buffer = lower_buffer(ctx, argument.buffer);
+        interface.push_back(buffer);
+        // Make pointer type to the buffer field.
+        auto const pointer_type = lower_type_as_pointer(
+          ctx, argument.pointee_type, buffer->storage_class);
+        // Make AccessChain to the field.
+        auto const index = lower_u32_to_constant(ctx, argument.buffer_index);
+        auto const field_pointer = spirv::make_instr_access_chain(
+          ctx.allocator, ctx.next_id(), pointer_type, buffer, index);
+        // Store the AccessChains to insert them after the entry label.
+        parameter_pointers.push_back(field_pointer);
+        ctx.instr_map.emplace(&argument, field_pointer);
+      }
+    }
+
+    auto const entry_label = lower_block(ctx, function->entry_block);
+    // We intentionally ignore the entry_label as it is automatically added to
+    // the list of pending blocks at the first position.
+    for(auto const label: ctx.pending_blocks) {
+      builder.splice(label);
+    }
+    ctx.pending_blocks.clear();
+
+    // Insert the missing parameter pointers.
+    for(auto const pointer: parameter_pointers) {
+      ilist_insert_after(entry_label, pointer);
+    }
+    parameter_pointers.clear();
+
+    auto const instr_end = spirv::make_instr_function_end(ctx.allocator);
+    builder.insert(instr_end);
+
+    hoist_variables(instr_function);
+
+    return {ANTON_MOV(interface), instr_function, instr_end};
   }
 
   [[nodiscard]] static spirv::Execution_Model
@@ -948,15 +1206,21 @@ namespace vush {
                                 ir::Module const* const module)
   {
     Lowering_Context ctx(allocator);
-    // Always add Shader and DrawParameters capabilities. We will dynamically
+    // Always add Shader, DrawParameters, PSBA, VMM capabilities. We will dynamically
     // select which capabilities to add later on.
     {
       auto const capability_shader =
         spirv::make_instr_capability(allocator, spirv::Capability::e_shader);
       auto const capability_draw_parameters = spirv::make_instr_capability(
         allocator, spirv::Capability::e_draw_parameters);
+      auto const capability_PSBA = spirv::make_instr_capability(
+        allocator, spirv::Capability::e_physical_storage_buffer_addresses);
+      auto const capability_VMM = spirv::make_instr_capability(
+        allocator, spirv::Capability::e_vulkan_memory_model);
       ctx.capabilities.insert_back(*capability_shader);
       ctx.capabilities.insert_back(*capability_draw_parameters);
+      ctx.capabilities.insert_back(*capability_PSBA);
+      ctx.capabilities.insert_back(*capability_VMM);
     }
     // The required memory model. We always use PhysicalStorageBuffer64 and
     // Vulkan.
@@ -969,15 +1233,22 @@ namespace vush {
     }
     // Lower the entry function and create the entry point.
     {
-      anton::IList<spirv::Instr> list = lower_function(ctx, module->entry);
-      auto const entry = static_cast<spirv::Instr_function*>(list.begin().node);
-      ctx.functions.splice(list);
+      Module_Entry entry = lower_module_entry(ctx, module->entry);
+      anton::IList<spirv::Instr> instructions{entry.entry_begin,
+                                              entry.entry_end};
+      ctx.functions.splice(instructions);
       spirv::Execution_Model const execution_model =
         stage_to_execution(module->stage);
       auto const entry_point = spirv::make_instr_entry_point(
-        allocator, entry, anton::String(module->pass_identifier, allocator),
-        execution_model);
+        allocator, entry.entry_begin,
+        anton::String(module->pass_identifier, allocator), execution_model);
+      entry_point->interface = ANTON_MOV(entry.interface);
       ctx.declarations.insert_back(*entry_point);
+      // Add execution modes.
+      auto const origin = spirv::make_instr_execution_mode(
+        ctx.allocator, entry.entry_begin,
+        spirv::Execution_Mode::e_origin_upper_left);
+      ctx.declarations.insert_back(*origin);
     }
     spirv::Module spirv_module{
       .capabilities = ANTON_MOV(ctx.capabilities),
@@ -985,7 +1256,8 @@ namespace vush {
       .imports = ANTON_MOV(ctx.imports),
       .declarations = ANTON_MOV(ctx.declarations),
       .debug = ANTON_MOV(ctx.debug),
-      .types = ANTON_MOV(ctx.types),
+      .annotations = ANTON_MOV(ctx.annotations),
+      .globals = ANTON_MOV(ctx.globals),
       .functions = ANTON_MOV(ctx.functions),
     };
     return spirv_module;

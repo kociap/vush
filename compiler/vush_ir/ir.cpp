@@ -1,6 +1,7 @@
 #include <vush_ir/ir.hpp>
 
 #include <vush_core/memory.hpp>
+#include <vush_core/utility.hpp>
 #include <vush_ir/opcodes.hpp>
 
 namespace vush::ir {
@@ -363,7 +364,7 @@ namespace vush::ir {
   }
 
   Instr_load* make_instr_load(Allocator* const allocator, i64 const id,
-                              Type* const type, Instr* const address,
+                              Type* const type, Value* const address,
                               Source_Info const& source_info)
   {
     auto const instr = VUSH_ALLOCATE(Instr_load, allocator, id, type, address,
@@ -373,7 +374,7 @@ namespace vush::ir {
   }
 
   Instr_store* make_instr_store(Allocator* const allocator, i64 const id,
-                                Instr* const dst, Value* const src,
+                                Value* const dst, Value* const src,
                                 Source_Info const& source_info)
   {
     auto const instr = VUSH_ALLOCATE(Instr_store, allocator, id, dst, src,
@@ -384,7 +385,7 @@ namespace vush::ir {
   }
 
   Instr_getptr* make_instr_getptr(Allocator* const allocator, i64 const id,
-                                  Type* addressed_type, Instr* const address,
+                                  Type* addressed_type, Value* const address,
                                   Value* const index,
                                   Source_Info const& source_info)
   {

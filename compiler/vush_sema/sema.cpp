@@ -1438,7 +1438,11 @@ namespace vush {
       return anton::expected_value;
     }
 
-    if(ast::is_vertex_input_parameter(*p)) {
+    if(ast::is_input_parameter(*p)) {
+      return anton::expected_value;
+    }
+
+    if(ast::is_output_parameter(*p)) {
       return anton::expected_value;
     }
 
@@ -1471,6 +1475,7 @@ namespace vush {
 
     p->buffer = symbol->value_buffer;
 
+    // Verify that a field with the given name and type exists.
     auto const field_iter = anton::find_if(
       p->buffer->fields.begin(), p->buffer->fields.end(),
       [identifier = p->identifier.value](ast::Buffer_Field const* const field) {
@@ -1539,13 +1544,9 @@ namespace vush {
                  "symbol for namespace is not namespace");
     Symbol_Table& ns_symtable = namespace_symbol->value_namespace->symtable;
     // Validate parameters:
-    // - vertex: only vertex input parameters and sourced parameters are
-    //   allowed. vertex input parameters must not be opaque.
-    // - fragment: all parameters must be sourced with the exception of the
-    //   first one which might be an ordinary parameter that is used as an input
-    //   from the previous stage.
+    // - vertex: input, output and sourced parameters.
+    // - fragment: input, output and sourced parameters.
     // - compute: only sourced parameters are allowed.
-    bool first = true;
     for(ast::Fn_Parameter* const parameter: fn->parameters) {
       RETURN_ON_FAIL(namebind_type, ctx, symtable, parameter->type);
       RETURN_ON_FAIL(add_symbol, ctx, symtable,
@@ -1558,32 +1559,13 @@ namespace vush {
                     ctx, parameter->source_info)};
         }
 
-        if(is_vertex_input_parameter(*parameter)) {
-          if(is_opaque_type(*parameter->type)) {
-            return {anton::expected_error,
-                    err_vertex_vin_must_not_be_opaque(
-                      ctx, parameter->type->source_info)};
-          }
-
-          if(parameter->type->type_kind == ast::Type_Kind::type_array) {
-            return {anton::expected_error,
-                    err_vertex_vin_must_not_be_array(
-                      ctx, parameter->type->source_info)};
-          }
-        }
       } break;
 
       case Stage_Kind::fragment: {
-        bool const ordinary_parameter = !ast::is_sourced_parameter(*parameter);
-        if(!first && ordinary_parameter) {
+        if(!ast::is_sourced_parameter(*parameter)) {
           return {anton::expected_error,
                   err_fragment_ordinary_parameter_not_allowed(
                     ctx, parameter->source_info)};
-        }
-
-        if(ast::is_vertex_input_parameter(*parameter)) {
-          return {anton::expected_error, err_fragment_vin_not_allowed(
-                                           ctx, parameter->source.source_info)};
         }
       } break;
 
@@ -1594,55 +1576,50 @@ namespace vush {
                     ctx, parameter->source_info)};
         }
 
-        if(ast::is_vertex_input_parameter(*parameter)) {
-          return {anton::expected_error, err_compute_vin_not_allowed_on_stage(
-                                           ctx, parameter->source_info)};
+        if(ast::is_input_parameter(*parameter)) {
+          return {anton::expected_error,
+                  err_compute_input_not_allowed(ctx, parameter->source_info)};
+        } else if(ast::is_output_parameter(*parameter)) {
+          return {anton::expected_error,
+                  err_compute_output_not_allowed(ctx, parameter->source_info)};
         }
       } break;
       }
 
-      RETURN_ON_FAIL(analyse_parameter_source, ctx, ns_symtable, parameter);
+      if(is_input_parameter(*parameter)) {
+        if(is_opaque_type(*parameter->type)) {
+          return {anton::expected_error, err_input_must_not_be_opaque(
+                                           ctx, parameter->type->source_info)};
+        }
 
-      first = false;
+        if(parameter->type->type_kind == ast::Type_Kind::type_array) {
+          return {anton::expected_error, err_input_must_not_be_array(
+                                           ctx, parameter->type->source_info)};
+        }
+      } else if(is_output_parameter(*parameter)) {
+        if(is_opaque_type(*parameter->type)) {
+          return {anton::expected_error, err_output_must_not_be_opaque(
+                                           ctx, parameter->type->source_info)};
+        }
+
+        if(parameter->type->type_kind == ast::Type_Kind::type_array) {
+          return {anton::expected_error, err_output_must_not_be_array(
+                                           ctx, parameter->type->source_info)};
+        }
+      }
+
+      RETURN_ON_FAIL(analyse_parameter_source, ctx, ns_symtable, parameter);
     }
 
-    // Validate the return type:
-    // - vertex: must be builtin or struct.
-    // - fragment: must be builtin or struct.
-    // - compute: must be void.
+    // Validate the return type - must be void.
+    // TODO: Remove return from stages.
     {
       RETURN_ON_FAIL(namebind_type, ctx, symtable, fn->return_type);
       bool const void_return = ast::is_void(*fn->return_type);
-      bool const builtin_return =
-        fn->return_type->type_kind == ast::Type_Kind::type_builtin;
-      bool const struct_return =
-        fn->return_type->type_kind == ast::Type_Kind::type_struct;
-      switch(fn->stage.value) {
-      case Stage_Kind::vertex: {
-        if(!builtin_return && !struct_return) {
-          return {anton::expected_error,
-                  err_stage_return_must_be_builtin_or_struct(
-                    ctx, fn->pass.value, fn->stage.source_info,
-                    fn->return_type->source_info)};
-        }
-      } break;
-
-      case Stage_Kind::fragment: {
-        if(!builtin_return && !struct_return) {
-          return {anton::expected_error,
-                  err_stage_return_must_be_builtin_or_struct(
-                    ctx, fn->pass.value, fn->stage.source_info,
-                    fn->return_type->source_info)};
-        }
-      } break;
-
-      case Stage_Kind::compute: {
-        if(!void_return) {
-          return {anton::expected_error,
-                  err_compute_return_must_be_void(
-                    ctx, fn->pass.value, fn->return_type->source_info)};
-        }
-      } break;
+      if(!void_return) {
+        return {anton::expected_error,
+                err_stage_return_must_be_void(ctx, fn->pass.value,
+                                              fn->return_type->source_info)};
       }
     }
 

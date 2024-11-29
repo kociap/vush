@@ -167,6 +167,8 @@ target_sources(vush
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_diagnostics/error.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_diagnostics/utility.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_diagnostics/utility.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ir/decoration.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ir/decoration.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ir/ir.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ir/ir.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ir/ir_fwd.hpp"

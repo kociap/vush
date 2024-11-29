@@ -1009,7 +1009,7 @@ namespace vush {
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::kw_if, "expected 'if'"_sv, snots);
       // TODO: should this be expression-without-init?
-      EXPECT_NODE(try_expression, snots);
+      EXPECT_NODE(try_expression_without_init, snots);
       EXPECT_TOKEN_SKIP(Token_Kind::tk_lbrace, "expected '{'"_sv, snots);
       EXPECT_NODE(try_fn_parameter, snots);
       EXPECT_TOKEN_SKIP(Token_Kind::tk_rbrace, "expected '}'"_sv, snots);

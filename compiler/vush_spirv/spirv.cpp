@@ -956,7 +956,7 @@ namespace vush::spirv {
     // Those sections do not contain instructions producing IDs.
     u32 const max_imports = calculate_bound(module.imports);
     u32 const max_debug = calculate_bound(module.debug);
-    u32 const max_types = calculate_bound(module.types);
+    u32 const max_types = calculate_bound(module.globals);
     u32 const max_functions = calculate_bound(module.functions);
     return anton::math::max(max_imports, max_debug, max_types, max_functions);
   }
@@ -996,6 +996,15 @@ namespace vush::spirv {
     auto const instr =
       VUSH_ALLOCATE(Instr_entry_point, allocator, entry_point, ANTON_MOV(name),
                     execution_model, allocator);
+    return instr;
+  }
+
+  Instr_execution_mode* make_instr_execution_mode(Allocator* allocator,
+                                                  Instr_function* entry_point,
+                                                  Execution_Mode execution_mode)
+  {
+    auto const instr = VUSH_ALLOCATE(Instr_execution_mode, allocator,
+                                     entry_point, execution_mode);
     return instr;
   }
 
@@ -1065,6 +1074,14 @@ namespace vush::spirv {
   {
     ANTON_ASSERT(kind == e_string, "literal is not string");
     return value_string;
+  }
+
+  Instr_decorate* make_instr_decorate(Allocator* allocator, Instr* target,
+                                      Decoration decoration)
+  {
+    auto const instr =
+      VUSH_ALLOCATE(Instr_decorate, allocator, target, decoration);
+    return instr;
   }
 
   Instr_decorate* make_instr_decorate(Allocator* allocator, Instr* target,

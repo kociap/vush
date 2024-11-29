@@ -85,9 +85,9 @@ namespace vush {
     Context const& ctx, anton::String_View pass_name, Source_Info const& stage,
     Source_Info const& return_type);
   [[nodiscard]] Error
-  err_compute_return_must_be_void(Context const& ctx,
-                                  anton::String_View pass_name,
-                                  Source_Info const& return_type);
+  err_stage_return_must_be_void(Context const& ctx,
+                                anton::String_View pass_name,
+                                Source_Info const& return_type);
   [[nodiscard]] Error err_duplicate_attribute(Context const& ctx,
                                               Source_Info const& old_attr,
                                               Source_Info const& new_attr);
@@ -177,20 +177,33 @@ namespace vush {
     return Error{.diagnostic =
                    anton::String("err_vertex_ordinary_parameter_not_allowed")};
   }
-  [[nodiscard]] inline Error err_vertex_vin_must_not_be_opaque(
+
+  [[nodiscard]] inline Error err_input_must_not_be_opaque(
     [[maybe_unused]] Context const& ctx,
     [[maybe_unused]] Source_Info const& parameter_type)
   {
-    return Error{.diagnostic =
-                   anton::String("err_vertex_vin_must_not_be_opaque")};
+    return Error{.diagnostic = anton::String("err_input_must_not_be_opaque")};
   }
-  [[nodiscard]] inline Error err_vertex_vin_must_not_be_array(
+  [[nodiscard]] inline Error err_input_must_not_be_array(
     [[maybe_unused]] Context const& ctx,
     [[maybe_unused]] Source_Info const& parameter_type)
   {
-    return Error{.diagnostic =
-                   anton::String("err_vertex_vin_must_not_be_array")};
+    return Error{.diagnostic = anton::String("err_input_must_not_be_array")};
   }
+
+  [[nodiscard]] inline Error err_output_must_not_be_opaque(
+    [[maybe_unused]] Context const& ctx,
+    [[maybe_unused]] Source_Info const& parameter_type)
+  {
+    return Error{.diagnostic = anton::String("err_output_must_not_be_opaque")};
+  }
+  [[nodiscard]] inline Error err_output_must_not_be_array(
+    [[maybe_unused]] Context const& ctx,
+    [[maybe_unused]] Source_Info const& parameter_type)
+  {
+    return Error{.diagnostic = anton::String("err_output_must_not_be_array")};
+  }
+
   [[nodiscard]] inline Error err_fragment_ordinary_parameter_not_allowed(
     [[maybe_unused]] Context const& ctx,
     [[maybe_unused]] Source_Info const& parameter)
@@ -211,12 +224,17 @@ namespace vush {
     return Error{.diagnostic =
                    anton::String("err_compute_ordinary_parameter_not_allowed")};
   }
-  [[nodiscard]] inline Error err_compute_vin_not_allowed_on_stage(
-    [[maybe_unused]] Context const& ctx,
-    [[maybe_unused]] Source_Info const& parameter)
+  [[nodiscard]] inline Error
+  err_compute_input_not_allowed([[maybe_unused]] Context const& ctx,
+                                [[maybe_unused]] Source_Info const& parameter)
   {
-    return Error{.diagnostic =
-                   anton::String("err_compute_vin_not_allowed_on_stage")};
+    return Error{.diagnostic = anton::String("err_compute_input_allowed")};
+  }
+  [[nodiscard]] inline Error
+  err_compute_output_not_allowed([[maybe_unused]] Context const& ctx,
+                                 [[maybe_unused]] Source_Info const& parameter)
+  {
+    return Error{.diagnostic = anton::String("err_compute_outut_allowed")};
   }
 
   [[nodiscard]] inline Error err_condition_not_of_bool_type(

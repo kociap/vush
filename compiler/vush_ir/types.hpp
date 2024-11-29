@@ -3,6 +3,7 @@
 #include <anton/string.hpp>
 
 #include <vush_core/types.hpp>
+#include <vush_ir/decoration.hpp>
 
 namespace vush::ir {
   enum struct Type_Kind {
@@ -27,8 +28,10 @@ namespace vush::ir {
     e_mat,
   };
 
-  struct Type {
+  struct Type: public Decorable {
     Type_Kind kind;
+
+    Type(Type_Kind kind): kind(kind) {}
   };
 
   template<typename T>

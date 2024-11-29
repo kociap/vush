@@ -20,7 +20,7 @@ namespace vush {
 
   namespace {
     using Fn_Table = Scoped_Map<anton::String_View, ir::Function*>;
-    using Symbol_Table = Scoped_Map<anton::String_View, ir::Instr*>;
+    using Symbol_Table = Scoped_Map<anton::String_View, ir::Value*>;
     // Maps namespace (pass) to table of symbols.
     using Buffer_Table = anton::Flat_Hash_Map<
       anton::String_View,
@@ -1097,19 +1097,33 @@ namespace vush {
     return -1;
   }
 
-  [[nodiscard]] static ir::Instr*
+  [[nodiscard]] static i32 get_field_index(ast::Decl_Buffer const* const decl,
+                                           anton::String_View const identifier)
+  {
+    i32 index = 0;
+    for(ast::Buffer_Field* const field: decl->fields) {
+      if(field->identifier.value == identifier) {
+        return index;
+      }
+      index += 1;
+    }
+
+    return -1;
+  }
+
+  [[nodiscard]] static ir::Value*
   get_address(Lowering_Context& ctx, Builder& builder, ast::Expr const* expr);
 
   [[nodiscard]] static ir::Value*
   lower_expression(Lowering_Context& ctx, Builder& builder,
                    ast::Expr const* generic_expr);
 
-  [[nodiscard]] static ir::Instr*
+  [[nodiscard]] static ir::Value*
   address_expr_identifier(Lowering_Context& ctx, Builder& builder,
                           ast::Expr_Identifier const* const expr)
   {
     ANTON_UNUSED(builder);
-    ir::Instr* const* const address = ctx.symtable.find_entry(expr->value);
+    auto const* const address = ctx.symtable.find_entry(expr->value);
     ANTON_ASSERT(address != nullptr, "missing entry in symbol table");
     return *address;
   }
@@ -1123,7 +1137,7 @@ namespace vush {
                  "cannot address fields of a non-struct type");
     auto const base_type = static_cast<ast::Type_Struct const*>(base_eval_type);
     ir::Type* const addressed_type = convert_ast_to_ir_type(ctx, base_type);
-    ir::Instr* const address = get_address(ctx, builder, expr->base);
+    ir::Value* const address = get_address(ctx, builder, expr->base);
     i32 const index = get_field_index(base_type->definition, expr->field.value);
     ANTON_ASSERT(index >= 0, "type has no field");
     ir::Value* const index_value = ir::make_constant_i32(ctx.allocator, index);
@@ -1140,7 +1154,7 @@ namespace vush {
   {
     ir::Type* const addressed_type =
       convert_ast_to_ir_type(ctx, expr->base->evaluated_type);
-    ir::Instr* const address = get_address(ctx, builder, expr->base);
+    ir::Value* const address = get_address(ctx, builder, expr->base);
     ir::Value* const index = lower_expression(ctx, builder, expr->index);
     ir::Instr* const getptr =
       ir::make_instr_getptr(ctx.allocator, ctx.next_id(), addressed_type,
@@ -1168,14 +1182,14 @@ namespace vush {
 
     // Lower then branch.
     builder.set_insert_block(then_block);
-    ir::Instr* const then_result = get_address(ctx, builder, expr->then_branch);
+    ir::Value* const then_result = get_address(ctx, builder, expr->then_branch);
     auto const branch_from_then = ir::make_instr_branch(
       ctx.allocator, ctx.next_id(), converge_block, expr->source_info);
     builder.insert(branch_from_then);
 
     // Lower else branch.
     builder.set_insert_block(else_block);
-    ir::Instr* const else_result = get_address(ctx, builder, expr->else_branch);
+    ir::Value* const else_result = get_address(ctx, builder, expr->else_branch);
     auto const branch_from_else = ir::make_instr_branch(
       ctx.allocator, ctx.next_id(), converge_block, expr->source_info);
     builder.insert(branch_from_else);
@@ -1204,7 +1218,7 @@ namespace vush {
     return nullptr;
   }
 
-  ir::Instr* get_address(Lowering_Context& ctx, Builder& builder,
+  ir::Value* get_address(Lowering_Context& ctx, Builder& builder,
                          ast::Expr const* const generic_expr)
   {
     switch(generic_expr->node_kind) {
@@ -1288,7 +1302,7 @@ namespace vush {
                         ast::Expr_Identifier const* const expr)
   {
     ir::Type* const type = convert_ast_to_ir_type(ctx, expr->evaluated_type);
-    ir::Instr* const address = get_address(ctx, builder, expr);
+    ir::Value* const address = get_address(ctx, builder, expr);
     ir::Instr* const load = ir::make_instr_load(
       ctx.allocator, ctx.next_id(), type, address, expr->source_info);
     builder.insert(load);
@@ -1301,7 +1315,7 @@ namespace vush {
   {
     auto const base_type = expr->base->evaluated_type;
     if(instanceof<ast::Type_Struct>(base_type)) {
-      ir::Instr* const address = get_address(ctx, builder, expr);
+      ir::Value* const address = get_address(ctx, builder, expr);
       ir::Type* const type = convert_ast_to_ir_type(ctx, expr->evaluated_type);
       ir::Instr* const load = ir::make_instr_load(
         ctx.allocator, ctx.next_id(), type, address, expr->source_info);
@@ -1348,7 +1362,7 @@ namespace vush {
   lower_expr_index(Lowering_Context& ctx, Builder& builder,
                    ast::Expr_Index const* const expr)
   {
-    ir::Instr* const address = get_address(ctx, builder, expr);
+    ir::Value* const address = get_address(ctx, builder, expr);
     ir::Type* const type = convert_ast_to_ir_type(ctx, expr->evaluated_type);
     ir::Instr* const load = ir::make_instr_load(
       ctx.allocator, ctx.next_id(), type, address, expr->source_info);
@@ -2605,15 +2619,14 @@ namespace vush {
   }
 
   [[nodiscard]] ir::Storage_Class
-  select_storage_class(ast::Fn_Parameter const* const parameter,
-                       bool const first)
+  select_storage_class(ast::Fn_Parameter const* const parameter)
   {
-    if(first && !ast::is_sourced_parameter(*parameter)) {
+    if(ast::is_input_parameter(*parameter)) {
       return ir::Storage_Class::e_input;
     }
 
-    if(ast::is_vertex_input_parameter(*parameter)) {
-      return ir::Storage_Class::e_input;
+    if(ast::is_output_parameter(*parameter)) {
+      return ir::Storage_Class::e_output;
     }
 
     if(parameter->buffer != nullptr) {
@@ -2651,9 +2664,13 @@ namespace vush {
       }
 
       auto const result =
-        VUSH_ALLOCATE(ir::Buffer, ctx.allocator, nullptr,
+        VUSH_ALLOCATE(ir::Buffer, ctx.allocator, composite,
                       anton::String(buffer->identifier.value, ctx.allocator),
                       buffer->source_info);
+      // TODO: Smarter assignment of bindings, etc.
+      result->binding = 0;
+      result->descriptor_set = 0;
+
       entry = bufspace.emplace(buffer->identifier.value, result);
     }
 
@@ -2675,38 +2692,32 @@ namespace vush {
     ctx.symtable.push_scope();
     Builder builder;
     builder.set_insert_block(fn->entry_block);
-    // Generate allocas for the parameters.
-    for(bool first = true;
-        ast::Fn_Parameter const* const parameter: stage->parameters) {
-      ir::Type* const type = convert_ast_to_ir_type(ctx, parameter->type);
-      auto const argument = VUSH_ALLOCATE(
-        ir::Argument, ctx.allocator, ctx.next_id(), type, fn, ctx.allocator);
-      argument->storage_class = select_storage_class(parameter, first);
+    // Generate arguments as pointers.
+    for(ast::Fn_Parameter const* const parameter: stage->parameters) {
+      auto const argument =
+        VUSH_ALLOCATE(ir::Argument, ctx.allocator, ctx.next_id(),
+                      ir::get_type_ptr(), fn, ctx.allocator);
+      argument->storage_class = select_storage_class(parameter);
+      argument->pointee_type = convert_ast_to_ir_type(ctx, parameter->type);
       if(parameter->buffer != nullptr) {
         argument->buffer = lower_buffer(ctx, parameter->buffer);
+        // TODO: Consider moving this to SEMA.
+        argument->buffer_index =
+          get_field_index(parameter->buffer, parameter->identifier.value);
       }
       fn->arguments.insert_back(*argument);
-
-      auto const alloc = ir::make_instr_alloc(ctx.allocator, ctx.next_id(),
-                                              type, parameter->source_info);
-      builder.insert(alloc);
-      auto const store =
-        ir::make_instr_store(ctx.allocator, ctx.next_id(), alloc, argument,
-                             parameter->identifier.source_info);
-      builder.insert(store);
-      ctx.symtable.add_entry(parameter->identifier.value, alloc);
-
-      first = false;
+      ctx.symtable.add_entry(parameter->identifier.value, argument);
     }
 
     bool const stopped = lower_statement_block(ctx, builder, stage->body);
     ANTON_UNUSED(stopped);
     ctx.symtable.pop_scope();
 
+    // TODO: This could be done during lowering. Check whether a block ends with
+    //       a CF instruction, if not, insert return.
     Block_Set visited_blocks(ctx.allocator);
     insert_implicit_returns(ctx, visited_blocks, fn->entry_block);
 
-    // TODO: transform module return to output variable.
     return ir::Module(anton::String(stage->pass.value, ctx.allocator),
                       stage->stage.value, fn);
   }

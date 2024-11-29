@@ -18,7 +18,7 @@ namespace vush::spirv {
     // Mode instructions
     e_memory_model,
     e_entry_point,
-    // e_execution_mode,
+    e_execution_mode,
     e_capability,
     // Annotation instructions
     e_decorate,
@@ -187,7 +187,7 @@ namespace vush::spirv {
     anton::IList<spirv::Instr> declarations;
     anton::IList<spirv::Instr> debug;
     anton::IList<spirv::Instr> annotations;
-    anton::IList<spirv::Instr> types;
+    anton::IList<spirv::Instr> globals;
     anton::IList<spirv::Instr> functions;
   };
 
@@ -350,7 +350,7 @@ namespace vush::spirv {
   struct Instr_entry_point: public Instr {
     Instr_function* entry_point;
     anton::String name;
-    Array<Instr*> interface;
+    Array<Instr_variable*> interface;
     Execution_Model execution_model;
 
     Instr_entry_point(Instr_function* entry_point, anton::String&& name,
@@ -365,6 +365,28 @@ namespace vush::spirv {
   [[nodiscard]] Instr_entry_point*
   make_instr_entry_point(Allocator* allocator, Instr_function* entry_point,
                          anton::String&& name, Execution_Model execution_model);
+
+  enum struct Execution_Mode {
+    e_origin_upper_left = 7,
+    e_origin_lower_left = 8,
+  };
+
+  struct Instr_execution_mode: public Instr {
+    Instr_function* entry_point;
+    Execution_Mode execution_mode;
+    // TODO: Arguments.
+
+    Instr_execution_mode(Instr_function* entry_point,
+                         Execution_Mode execution_mode)
+      : Instr(Instr_Kind::e_execution_mode, 0), entry_point(entry_point),
+        execution_mode(execution_mode)
+    {
+    }
+  };
+
+  [[nodiscard]] Instr_execution_mode*
+  make_instr_execution_mode(Allocator* allocator, Instr_function* entry_point,
+                            Execution_Mode execution_mode);
 
   enum struct Capability {
     e_matrix = 0,
@@ -381,6 +403,8 @@ namespace vush::spirv {
     e_cull_distance = 33,
     e_int8 = 39,
     e_draw_parameters = 4427,
+    e_vulkan_memory_model = 5345,
+    e_physical_storage_buffer_addresses = 5347,
   };
 
   struct Instr_capability: public Instr {
@@ -446,6 +470,7 @@ namespace vush::spirv {
     e_invariant = 18,
     e_binding = 33,
     e_descriptor_set = 34,
+    e_offset = 35,
   };
 
   struct Decoration_Argument {
@@ -499,6 +524,10 @@ namespace vush::spirv {
     {
     }
   };
+
+  [[nodiscard]] Instr_decorate* make_instr_decorate(Allocator* allocator,
+                                                    Instr* target,
+                                                    Decoration decoration);
 
   [[nodiscard]] Instr_decorate*
   make_instr_decorate(Allocator* allocator, Instr* target,
@@ -747,6 +776,7 @@ namespace vush::spirv {
     e_atomic_counter = 10,
     e_image = 11,
     e_storage_buffer = 12,
+    e_physical_storage_buffer = 5349,
   };
 
   struct Instr_type_pointer: public Instr {

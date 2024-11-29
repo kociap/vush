@@ -43,7 +43,7 @@ namespace vush::ir {
   [[nodiscard]] Basic_Block* split_block(i64 label, Instr* instruction,
                                          Instr* end, bool before = false);
 
-  struct Module {
+  struct Module: Decorable {
     anton::String pass_identifier;
     Stage_Kind stage;
 
@@ -56,7 +56,7 @@ namespace vush::ir {
   };
 
   struct Function {
-    anton::IList<Argument> arguments;
+    anton::IList<Argument, Argument> arguments;
     Type* return_type;
     Basic_Block* entry_block;
     // IR identifier of the function.
@@ -76,6 +76,8 @@ namespace vush::ir {
 
   struct Buffer {
     Type* type;
+    u32 descriptor_set = -1;
+    u32 binding = -1;
 
     // Source code string identifier of the buffer.
     anton::String identifier;
@@ -138,11 +140,19 @@ namespace vush::ir {
   // Argument
   // Represents the formal parameter of a function and, when used within the
   // body, the value passed to the function.
+  // When used in a module's parameter list, represents the pointer to the
+  // location of a member of the buffer.
   //
-  struct Argument: public Value, anton::IList_DNode {
+  // Parameters:
+  // type - when sourced, always a pointer type.
+  // pointee_type - when sourced, the pointed to type. Otherwise, nullptr.
+  //
+  struct Argument: public Value, anton::IList_Node<Argument>, Decorable {
     i64 id = -1;
     Function* function;
     Buffer* buffer = nullptr;
+    i64 buffer_index = -1;
+    Type* pointee_type = nullptr;
     Storage_Class storage_class = Storage_Class::e_automatic;
 
     Argument(i64 id, Type* type, Function* function, Allocator* allocator)
@@ -312,9 +322,9 @@ namespace vush::ir {
                                               Source_Info const& source_info);
 
   struct Instr_load: public Instr {
-    Instr* address;
+    Value* address;
 
-    Instr_load(i64 id, Type* type, Instr* address, Allocator* allocator,
+    Instr_load(i64 id, Type* type, Value* address, Allocator* allocator,
                Source_Info const& source_info)
       : Instr(id, Instr_Kind::e_load, type, allocator, source_info),
         address(address)
@@ -323,7 +333,7 @@ namespace vush::ir {
   };
 
   [[nodiscard]] Instr_load* make_instr_load(Allocator* allocator, i64 id,
-                                            Type* type, Instr* address,
+                                            Type* type, Value* address,
                                             Source_Info const& source_info);
 
   // Instr_store
@@ -331,11 +341,11 @@ namespace vush::ir {
   //
   struct Instr_store: public Instr {
     // Address to store to.
-    Instr* dst;
+    Value* dst;
     // Value to be stored.
     Value* src;
 
-    Instr_store(i64 id, Instr* dst, Value* src, Allocator* allocator,
+    Instr_store(i64 id, Value* dst, Value* src, Allocator* allocator,
                 Source_Info const& source_info)
       : Instr(id, Instr_Kind::e_store, get_type_void(), allocator, source_info),
         dst(dst), src(src)
@@ -344,7 +354,7 @@ namespace vush::ir {
   };
 
   [[nodiscard]] Instr_store* make_instr_store(Allocator* allocator, i64 id,
-                                              Instr* dst, Value* src,
+                                              Value* dst, Value* src,
                                               Source_Info const& source_info);
 
   // getptr
@@ -353,12 +363,12 @@ namespace vush::ir {
   //
   struct Instr_getptr: public Instr {
     Type* addressed_type;
-    Instr* address;
+    Value* address;
     // TODO: Verify that the index is constant integer and fits in i64 when
     // type is composite. AND is positive.
     Value* index;
 
-    Instr_getptr(i64 id, Type* addressed_type, Instr* address, Value* index,
+    Instr_getptr(i64 id, Type* addressed_type, Value* address, Value* index,
                  Allocator* allocator, Source_Info const& source_info)
       : Instr(id, Instr_Kind::e_getptr, get_type_ptr(), allocator, source_info),
         addressed_type(addressed_type), address(address), index(index)
@@ -368,7 +378,7 @@ namespace vush::ir {
 
   [[nodiscard]] Instr_getptr* make_instr_getptr(Allocator* allocator, i64 id,
                                                 Type* addressed_type,
-                                                Instr* address, Value* index,
+                                                Value* address, Value* index,
                                                 Source_Info const& source_info);
 
   struct Instr_ALU: public Instr {

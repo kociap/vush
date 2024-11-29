@@ -260,15 +260,13 @@ namespace vush {
     return error;
   }
 
-  Error err_compute_return_must_be_void(Context const& ctx,
-                                        anton::String_View const pass_name,
-                                        Source_Info const& return_type)
+  Error err_stage_return_must_be_void(Context const& ctx,
+                                      anton::String_View const pass_name,
+                                      Source_Info const& return_type)
   {
     Error error = error_from_source(ctx.allocator, return_type);
     error.diagnostic += anton::format(
-      ctx.allocator,
-      "error: the return type of the compute stage of '{}' must be void\n"_sv,
-      pass_name);
+      ctx.allocator, "error: the return type of a stage must be void\n"_sv);
     anton::String_View const source =
       ctx.source_registry->find_source(return_type.source_path)->data;
     print_source_snippet(ctx, error.extended_diagnostic, source, return_type);

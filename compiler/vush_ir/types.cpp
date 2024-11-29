@@ -129,6 +129,12 @@ namespace vush::ir {
   }
 
   template<>
+  bool instanceof<Type_Composite>(Type const& type)
+  {
+    return type.kind == Type_Kind::e_composite;
+  }
+
+  template<>
   bool instanceof<Type_Vec>(Type const& type)
   {
     return type.kind == Type_Kind::e_vec;

@@ -76,6 +76,8 @@ namespace vush::spirv {
       return "Binding"_sv;
     case Decoration::e_descriptor_set:
       return "DescriptorSet"_sv;
+    case Decoration::e_offset:
+      return "Offset"_sv;
     }
   }
 
@@ -109,6 +111,19 @@ namespace vush::spirv {
       return "Image"_sv;
     case Storage_Class::e_storage_buffer:
       return "StorageBuffer"_sv;
+    case Storage_Class::e_physical_storage_buffer:
+      return "PhysicalStorageBuffer"_sv;
+    }
+  }
+
+  [[nodiscard]] static anton::String_View
+  stringify(Execution_Mode const execution_mode)
+  {
+    switch(execution_mode) {
+    case Execution_Mode::e_origin_lower_left:
+      return "OriginLowerLeft"_sv;
+    case Execution_Mode::e_origin_upper_left:
+      return "OriginUpperLeft"_sv;
     }
   }
 
@@ -143,6 +158,10 @@ namespace vush::spirv {
       return "Int8"_sv;
     case Capability::e_draw_parameters:
       return "DrawParameters"_sv;
+    case Capability::e_vulkan_memory_model:
+      return "VulkanMemoryModel"_sv;
+    case Capability::e_physical_storage_buffer_addresses:
+      return "PhysicalStorageBufferAddresses"_sv;
     }
   }
 
@@ -216,13 +235,10 @@ namespace vush::spirv {
       }
     } break;
 
-    case Instr_Kind::e_memory_model: {
-      auto const instruction =
-        static_cast<Instr_memory_model const*>(ginstruction);
-      stream.write(anton::format(allocator, "OpMemoryModel {} {}",
-                                 stringify(instruction->addressing_model),
-                                 stringify(instruction->memory_model)));
-    } break;
+      CASE_GENERIC_INSTR(e_memory_model, Instr_memory_model,
+                         "OpMemoryModel {} {}",
+                         stringify(instruction->addressing_model),
+                         stringify(instruction->memory_model))
 
     case Instr_Kind::e_entry_point: {
       auto const instruction =
@@ -236,6 +252,9 @@ namespace vush::spirv {
       }
     } break;
 
+      CASE_GENERIC_INSTR(e_execution_mode, Instr_execution_mode,
+                         "OpExecutionMode %{} {}", instruction->entry_point->id,
+                         stringify(instruction->execution_mode))
       CASE_GENERIC_INSTR(e_capability, Instr_capability, "OpCapability {}",
                          stringify(instruction->capability))
 
@@ -277,18 +296,17 @@ namespace vush::spirv {
 
       CASE_ID_INSTR(e_type_void, Instr_type_void, "OpTypeVoid")
       CASE_ID_INSTR(e_type_bool, Instr_type_bool, "OpTypeBool")
-      CASE_GENERIC_INSTR(e_type_int, Instr_type_int, "%{} = OpTypeInt %{} %{}",
+      CASE_GENERIC_INSTR(e_type_int, Instr_type_int, "%{} = OpTypeInt {} {}",
                          instruction->id, instruction->width,
-                         instruction->signedness)
-      CASE_GENERIC_INSTR(e_type_float, Instr_type_float,
-                         "%{} = OpTypeFloat %{}", instruction->id,
-                         instruction->width)
+                         static_cast<u32>(instruction->signedness))
+      CASE_GENERIC_INSTR(e_type_float, Instr_type_float, "%{} = OpTypeFloat {}",
+                         instruction->id, instruction->width)
       CASE_GENERIC_INSTR(e_type_vector, Instr_type_vector,
-                         "%{} = OpTypeVector %{} %{}", instruction->id,
+                         "%{} = OpTypeVector %{} {}", instruction->id,
                          instruction->component_type->id,
                          instruction->component_count)
       CASE_GENERIC_INSTR(e_type_matrix, Instr_type_matrix,
-                         "%{} = OpTypeMatrix %{} %{}", instruction->id,
+                         "%{} = OpTypeMatrix %{} {}", instruction->id,
                          instruction->column_type->id,
                          instruction->column_count)
       CASE_GENERIC_INSTR(e_type_image, Instr_type_image,
@@ -397,8 +415,10 @@ namespace vush::spirv {
       }
     } break;
 
-      CASE_GENERIC_INSTR(e_function, Instr_function, "%{} = OpFunction %{}",
-                         instruction->id, instruction->function_type->id)
+      CASE_GENERIC_INSTR(e_function, Instr_function,
+                         "%{} = OpFunction %{} None %{}", instruction->id,
+                         instruction->function_type->return_type->id,
+                         instruction->function_type->id)
       CASE_TYPED_INSTR(e_function_parameter, Instr_function_parameter,
                        "OpFunctionParameter")
       CASE_NOTHING_INSTR(e_function_end, Instr_function_end, "OpFunctionEnd")
@@ -617,7 +637,7 @@ namespace vush::spirv {
     print_instructions(allocator, stream, options, module.declarations);
     print_instructions(allocator, stream, options, module.debug);
     print_instructions(allocator, stream, options, module.annotations);
-    print_instructions(allocator, stream, options, module.types);
+    print_instructions(allocator, stream, options, module.globals);
     print_instructions(allocator, stream, options, module.functions);
   }
 } // namespace vush::spirv

@@ -502,9 +502,14 @@ namespace vush::ast {
     return parameter.source.value.size_bytes() != 0;
   }
 
-  bool is_vertex_input_parameter(Fn_Parameter const& parameter)
+  bool is_input_parameter(Fn_Parameter const& parameter)
   {
-    return parameter.source.value == u8"in";
+    return parameter.source.value == "in"_sv;
+  }
+
+  bool is_output_parameter(Fn_Parameter const& parameter)
+  {
+    return parameter.source.value == "out"_sv;
   }
 
   anton::Optional<Type_Builtin_Kind>

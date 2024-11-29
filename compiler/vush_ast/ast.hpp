@@ -415,7 +415,7 @@ namespace vush::ast {
   };
 
   struct Attribute_Parameter {
-    // empty if the parameters positional.
+    // empty if the parameter is positional.
     Identifier key;
     Expr* value;
   };
@@ -513,7 +513,8 @@ namespace vush::ast {
     Identifier identifier;
     Type* type;
     // Empty when the parameter has no source.
-    // "in" when the parameter is a vertex input parameter.
+    // "in" when the parameter is an input parameter.
+    // "out" when the parameter is an output parameter.
     Identifier source;
     Decl_Buffer* buffer = nullptr;
 
@@ -526,7 +527,8 @@ namespace vush::ast {
   };
 
   [[nodiscard]] bool is_sourced_parameter(Fn_Parameter const& parameter);
-  [[nodiscard]] bool is_vertex_input_parameter(Fn_Parameter const& parameter);
+  [[nodiscard]] bool is_input_parameter(Fn_Parameter const& parameter);
+  [[nodiscard]] bool is_output_parameter(Fn_Parameter const& parameter);
 
   struct Decl_Function: public Node {
     Attr_List attributes;
