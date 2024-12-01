@@ -1113,6 +1113,47 @@ namespace vush {
     spirv::Instr_function_end* entry_end;
   };
 
+  static void decorate_interface(Lowering_Context& ctx,
+                                 ir::Decoration const* decoration,
+                                 spirv::Instr_variable* const variable,
+                                 spirv::Instr* const type)
+  {
+    while(decoration != nullptr) {
+      switch(anton::hash(decoration->identifier)) {
+      case anton::hash("builtin"): {
+        spirv::Builtin value;
+        switch(anton::hash(decoration->argument.get_string())) {
+        case anton::hash("position"):
+          value = spirv::Builtin::e_position;
+          break;
+        case anton::hash("vertex_index"):
+          value = spirv::Builtin::e_vertex_index;
+          break;
+        default:
+          ANTON_UNREACHABLE("unimplemented");
+        }
+
+        auto const instr = spirv::make_instr_decorate(
+          ctx.allocator, variable, spirv::Decoration::e_builtin,
+          spirv::Decoration_Argument(static_cast<u32>(value)));
+        ctx.annotations.insert_back(*instr);
+      } break;
+
+      case anton::hash("location"): {
+        auto const instr = spirv::make_instr_decorate(
+          ctx.allocator, variable, spirv::Decoration::e_location,
+          spirv::Decoration_Argument(decoration->argument.get_u64()));
+        ctx.annotations.insert_back(*instr);
+      } break;
+
+      default:
+        break;
+      }
+
+      decoration = ilist_next<anton::IList_Node<ir::Decoration>>(decoration);
+    }
+  }
+
   [[nodiscard]] static Module_Entry
   lower_module_entry(Lowering_Context& ctx, ir::Function const* const function)
   {

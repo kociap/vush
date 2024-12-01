@@ -1032,9 +1032,7 @@ namespace vush::spirv {
 
   Decoration_Argument::~Decoration_Argument()
   {
-    if(kind == e_string) {
-      anton::destruct(&value_string);
-    }
+    reset();
   }
 
   bool Decoration_Argument::is_none() const
@@ -1074,6 +1072,22 @@ namespace vush::spirv {
   {
     ANTON_ASSERT(kind == e_string, "literal is not string");
     return value_string;
+  }
+
+  void Decoration_Argument::set(u32 const value)
+  {
+    reset();
+    kind = e_u32;
+    value_u32 = value;
+  }
+
+  void Decoration_Argument::reset()
+  {
+    switch(kind) {
+    case e_string: {
+      anton::destruct(&value_string);
+    } break;
+    }
   }
 
   Instr_decorate* make_instr_decorate(Allocator* allocator, Instr* target,

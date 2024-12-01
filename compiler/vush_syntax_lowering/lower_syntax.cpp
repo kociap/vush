@@ -928,6 +928,8 @@ namespace vush {
   transform_parameter(Context const& ctx, Syntax_Node const& node)
   {
     if(node.kind == Syntax_Node_Kind::fn_parameter) {
+      RETURN_ON_FAIL(attribute_list, transform_attribute_list, ctx,
+                     get_fn_parameter_attribute_list(node));
       ast::Identifier const identifier =
         transform_identifier(ctx, get_fn_parameter_identifier(node));
       RETURN_ON_FAIL(type, transform_type, ctx, get_fn_parameter_type(node));
@@ -937,8 +939,9 @@ namespace vush {
       }
 
       return {anton::expected_value,
-              VUSH_ALLOCATE(ast::Fn_Parameter, ctx.allocator, identifier,
-                            type.value(), source, node.source_info)};
+              VUSH_ALLOCATE(ast::Fn_Parameter, ctx.allocator,
+                            attribute_list.value(), identifier, type.value(),
+                            source, node.source_info)};
     } else if(node.kind == Syntax_Node_Kind::fn_parameter_if) {
       RETURN_ON_FAIL(condition, evaluate_constant_expression, ctx,
                      get_fn_parameter_if_condition(node));

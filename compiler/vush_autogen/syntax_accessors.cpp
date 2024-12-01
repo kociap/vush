@@ -496,14 +496,14 @@ namespace vush {
     return node.children[8].left();
   }
 
-  Syntax_Node const& get_fn_parameter_type(Syntax_Node const& node)
+  Syntax_Node const& get_fn_parameter_attribute_list(Syntax_Node const& node)
   {
     ANTON_ASSERT(node.kind == Syntax_Node_Kind::fn_parameter,
                  "node is not fn_parameter");
     ANTON_ASSERT(node.children.size() > (0),
                  "fn_parameter has too few children");
     ANTON_ASSERT(node.children[0].is_left(),
-                 "type in fn_parameter is not Syntax_Node");
+                 "attribute_list in fn_parameter is not Syntax_Node");
     return node.children[0].left();
   }
 
@@ -518,15 +518,26 @@ namespace vush {
     return node.children[1].right();
   }
 
+  Syntax_Node const& get_fn_parameter_type(Syntax_Node const& node)
+  {
+    ANTON_ASSERT(node.kind == Syntax_Node_Kind::fn_parameter,
+                 "node is not fn_parameter");
+    ANTON_ASSERT(node.children.size() > (3),
+                 "fn_parameter has too few children");
+    ANTON_ASSERT(node.children[3].is_left(),
+                 "type in fn_parameter is not Syntax_Node");
+    return node.children[3].left();
+  }
+
   anton::Optional<Syntax_Token const&>
   get_fn_parameter_source(Syntax_Node const& node)
   {
     ANTON_ASSERT(node.kind == Syntax_Node_Kind::fn_parameter,
                  "node is not fn_parameter");
-    if(node.children.size() > (3)) {
-      ANTON_ASSERT(node.children[3].is_right(),
+    if(node.children.size() > (5)) {
+      ANTON_ASSERT(node.children[5].is_right(),
                    "source in fn_parameter is not Syntax_Token");
-      return node.children[3].right();
+      return node.children[5].right();
     } else {
       return anton::null_optional;
     }

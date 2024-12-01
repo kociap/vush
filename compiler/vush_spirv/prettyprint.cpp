@@ -72,6 +72,8 @@ namespace vush::spirv {
       return "Centroid"_sv;
     case Decoration::e_invariant:
       return "Invariant"_sv;
+    case Decoration::e_location:
+      return "Location"_sv;
     case Decoration::e_binding:
       return "Binding"_sv;
     case Decoration::e_descriptor_set:

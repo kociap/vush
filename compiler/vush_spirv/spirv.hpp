@@ -468,6 +468,7 @@ namespace vush::spirv {
     e_patch = 15,
     e_centroid = 16,
     e_invariant = 18,
+    e_location = 30,
     e_binding = 33,
     e_descriptor_set = 34,
     e_offset = 35,
@@ -505,6 +506,9 @@ namespace vush::spirv {
     [[nodiscard]] u32 get_u32() const;
     [[nodiscard]] anton::String& get_string();
     [[nodiscard]] anton::String const& get_string() const;
+
+    void reset();
+    void set(u32 value);
   };
 
   struct Instr_decorate: public Instr {

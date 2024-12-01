@@ -510,6 +510,7 @@ namespace vush::ast {
   [[nodiscard]] bool is_push_constant(Decl_Buffer const* buffer);
 
   struct Fn_Parameter: public Node {
+    Attr_List attributes;
     Identifier identifier;
     Type* type;
     // Empty when the parameter has no source.
@@ -518,10 +519,11 @@ namespace vush::ast {
     Identifier source;
     Decl_Buffer* buffer = nullptr;
 
-    constexpr Fn_Parameter(Identifier identifier, Type* type, Identifier source,
+    constexpr Fn_Parameter(Attr_List attributes, Identifier identifier,
+                           Type* type, Identifier source,
                            Source_Info const& source_info)
-      : Node(source_info, Node_Kind::fn_parameter), identifier(identifier),
-        type(type), source(source)
+      : Node(source_info, Node_Kind::fn_parameter), attributes(attributes),
+        identifier(identifier), type(type), source(source)
     {
     }
   };

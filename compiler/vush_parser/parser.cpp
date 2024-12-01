@@ -984,11 +984,16 @@ namespace vush {
         return param_if;
       }
 
-      // TODO: change grammar to type ':' identifier ';'
-      EXPECT_NODE(try_type, snots);
-      // parameter identifier
+      {
+        Syntax_Node attribute_list = try_attribute_list();
+        snots.push_back(ANTON_MOV(attribute_list));
+      }
+
+      // identifier ':' type
       EXPECT_TOKEN_SKIP(Token_Kind::identifier, "expected identifier"_sv,
                         snots);
+      EXPECT_TOKEN_SKIP(Token_Kind::tk_colon, "expected ':'"_sv, snots);
+      EXPECT_NODE(try_type, snots);
 
       if(Optional kw_from = skipmatch(Token_Kind::kw_from)) {
         snots.push_back(ANTON_MOV(*kw_from));

@@ -134,9 +134,10 @@ syntax_nodes = [
     {
         "syntax_name": "fn_parameter",
         "members": [
-            Syntax_Member(Node_Kind.node, "type", Lookup_Kind.index, 0),
+            Syntax_Member(Node_Kind.node, "attribute_list", Lookup_Kind.index, 0),
             Syntax_Member(Node_Kind.token, "identifier", Lookup_Kind.index, 1),
-            Syntax_Member(Node_Kind.token, "source", Lookup_Kind.index, 3, optional = True)
+            Syntax_Member(Node_Kind.node, "type", Lookup_Kind.index, 3),
+            Syntax_Member(Node_Kind.token, "source", Lookup_Kind.index, 5, optional = True)
         ]
     },
     {

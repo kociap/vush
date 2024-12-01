@@ -5,6 +5,7 @@
 #include <anton/iterators/zip.hpp>
 #include <anton/math/math.hpp>
 #include <anton/ranges.hpp>
+#include <anton/string.hpp>
 #include <anton/string7_view.hpp>
 
 #include <vush_ast/ast.hpp>
@@ -1109,6 +1110,39 @@ namespace vush {
     }
 
     return -1;
+  }
+
+  [[nodiscard]] static ir::Decoration*
+  lower_attribute(Lowering_Context& ctx, ast::Attribute const* const attribute)
+  {
+    auto identifier = anton::String{attribute->identifier.value, ctx.allocator};
+    ir::Decoration_Argument argument;
+    // TODO: We only lower the first argument.
+    if(attribute->parameters.size() > 0) {
+      auto const& parameter = attribute->parameters[0];
+      // TODO: We ignore the key.
+      // TODO: Other kinds of expressions are ignored.
+      switch(parameter.value->node_kind) {
+      case ast::Node_Kind::expr_identifier: {
+        auto const value =
+          static_cast<ast::Expr_Identifier const*>(parameter.value);
+        argument.set(anton::String{value->value, ctx.allocator});
+      } break;
+
+      case ast::Node_Kind::lt_integer: {
+        auto const value = static_cast<ast::Lt_Integer const*>(parameter.value);
+        // TODO: This probs not right.
+        argument.set(value->u32_value);
+      } break;
+
+      default:
+        ANTON_UNREACHABLE("invalid attribute argument expression");
+      }
+    }
+    auto const decoration =
+      VUSH_ALLOCATE(ir::Decoration, ctx.allocator, ANTON_MOV(identifier),
+                    ANTON_MOV(argument));
+    return decoration;
   }
 
   [[nodiscard]] static ir::Value*
@@ -2705,6 +2739,12 @@ namespace vush {
         argument->buffer_index =
           get_field_index(parameter->buffer, parameter->identifier.value);
       }
+      // Lower attributes.
+      for(auto const attribute: parameter->attributes) {
+        auto const decoration = lower_attribute(ctx, attribute);
+        argument->decorate(decoration);
+      }
+
       fn->arguments.insert_back(*argument);
       ctx.symtable.add_entry(parameter->identifier.value, argument);
     }

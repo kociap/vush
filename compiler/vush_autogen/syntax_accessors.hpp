@@ -92,9 +92,11 @@ namespace vush {
   [[nodiscard]] Syntax_Node const&
   get_decl_stage_function_body(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const&
-  get_fn_parameter_type(Syntax_Node const& node);
+  get_fn_parameter_attribute_list(Syntax_Node const& node);
   [[nodiscard]] Syntax_Token const&
   get_fn_parameter_identifier(Syntax_Node const& node);
+  [[nodiscard]] Syntax_Node const&
+  get_fn_parameter_type(Syntax_Node const& node);
   [[nodiscard]] anton::Optional<Syntax_Token const&>
   get_fn_parameter_source(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const&

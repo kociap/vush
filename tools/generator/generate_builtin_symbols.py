@@ -137,7 +137,7 @@ def write_preamble_builtin_functions(file):
 
 #define BUILTIN_TYPE(identifier, value) \\
     static ast::Type_Builtin identifier(Source_Info{}, ast::Type_Builtin_Kind::value)
-#define ALLOC_PARAM(name, type) VUSH_ALLOCATE(ast::Fn_Parameter, allocator, ast::Identifier{name, {}}, type, ast::Identifier{""_sv, {}}, Source_Info{})
+#define ALLOC_PARAM(name, type) VUSH_ALLOCATE(ast::Fn_Parameter, allocator, ast::Attr_List{}, ast::Identifier{name, {}}, type, ast::Identifier{""_sv, {}}, Source_Info{})
 #define ALLOC_ARRAY_PARAM(...) VUSH_ALLOCATE(Array<ast::Fn_Parameter*>, allocator, allocator, anton::variadic_construct __VA_OPT__(,) __VA_ARGS__)
 #define ALLOC_FUNCTION(identifier, return_type, parameter_array) \\
     VUSH_ALLOCATE(ast::Decl_Function, allocator, ast::Attr_List{}, ast::Identifier{identifier, {}}, \\
