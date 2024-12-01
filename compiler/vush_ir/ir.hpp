@@ -259,6 +259,7 @@ namespace vush::ir {
                                                     Type* type);
 
   enum struct Instr_Kind : u8 {
+    e_intrinsic,
     e_alloc,
     e_load,
     e_store,
@@ -302,6 +303,41 @@ namespace vush::ir {
   };
 
   [[nodiscard]] bool is_control_flow_instruction(Instr const* instruction);
+
+  enum struct Intrinsic_Kind {
+    // Structured Control Flow
+    e_scf_branch_head,
+    // e_scf_loop_head,
+  };
+
+  struct Instr_intrinsic: public Instr {
+    Intrinsic_Kind intrinsic_kind;
+
+    Instr_intrinsic(Intrinsic_Kind kind, Allocator* allocator)
+      : Instr(0, Instr_Kind::e_intrinsic, get_type_void(), allocator,
+              Source_Info{}),
+        intrinsic_kind(kind)
+    {
+    }
+  };
+
+  // Intrinsic_scf_branch_head
+  //
+  // Structured Control Flow branch head.
+  //
+  struct Intrinsic_scf_branch_head: public Instr_intrinsic {
+    Basic_Block* converge_block;
+
+    Intrinsic_scf_branch_head(Basic_Block* converge_block, Allocator* allocator)
+      : Instr_intrinsic(Intrinsic_Kind::e_scf_branch_head, allocator),
+        converge_block(converge_block)
+    {
+    }
+  };
+
+  [[nodiscard]] Intrinsic_scf_branch_head*
+  make_intrinsic_scf_branch_head(Allocator* allocator,
+                                 Basic_Block* converge_block);
 
   // Instr_alloc
   // Produces an address to the allocated stack memory.

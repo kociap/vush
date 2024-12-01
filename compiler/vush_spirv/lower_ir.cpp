@@ -730,6 +730,25 @@ namespace vush {
     builder.set_current_instruction(label);
     for(auto const& instruction: block->instructions) {
       switch(instruction.instr_kind) {
+      case ir::Instr_Kind::e_intrinsic: {
+        auto const instr_intrinsic =
+          static_cast<ir::Instr_intrinsic const*>(&instruction);
+        switch(instr_intrinsic->intrinsic_kind) {
+        case ir::Intrinsic_Kind::e_scf_branch_head: {
+          auto const intrinsic =
+            static_cast<ir::Intrinsic_scf_branch_head const*>(instr_intrinsic);
+          auto const converge_block =
+            lower_block(ctx, intrinsic->converge_block);
+          // We do not add this instruction to the instruction map - it is not
+          // referenced by anything.
+          auto const selection_merge =
+            spirv::make_instr_selection_merge(ctx.allocator, converge_block);
+          builder.insert(selection_merge);
+          selection_merge->block = label;
+        } break;
+        }
+      } break;
+
       case ir::Instr_Kind::e_alloc: {
         auto const instr_alloc =
           static_cast<ir::Instr_alloc const*>(&instruction);

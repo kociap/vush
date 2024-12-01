@@ -354,6 +354,15 @@ namespace vush::ir {
            instanceof<Instr_die>(instruction);
   }
 
+  Intrinsic_scf_branch_head*
+  make_intrinsic_scf_branch_head(Allocator* allocator,
+                                 Basic_Block* converge_block)
+  {
+    auto const instr = VUSH_ALLOCATE(Intrinsic_scf_branch_head, allocator,
+                                     converge_block, allocator);
+    return instr;
+  }
+
   Instr_alloc* make_instr_alloc(Allocator* const allocator, i64 const id,
                                 Type* const alloc_type,
                                 Source_Info const& source_info)

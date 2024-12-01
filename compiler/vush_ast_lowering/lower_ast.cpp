@@ -1209,6 +1209,10 @@ namespace vush {
       VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
     auto const converge_block =
       VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
+
+    auto const scf_branch_head =
+      ir::make_intrinsic_scf_branch_head(ctx.allocator, converge_block);
+    builder.insert(scf_branch_head);
     auto const brcond =
       ir::make_instr_brcond(ctx.allocator, ctx.next_id(), condition, then_block,
                             else_block, expr->source_info);
@@ -1818,6 +1822,9 @@ namespace vush {
         VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
       auto const then_block = operator_is_and ? rhs_block : converge_block;
       auto const else_block = operator_is_and ? converge_block : rhs_block;
+      auto const scf_branch_head =
+        ir::make_intrinsic_scf_branch_head(ctx.allocator, converge_block);
+      builder.insert(scf_branch_head);
       auto const brcond =
         ir::make_instr_brcond(ctx.allocator, ctx.next_id(), lhs, then_block,
                               else_block, expr->source_info);
@@ -1930,6 +1937,9 @@ namespace vush {
       VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
     auto const converge_block =
       VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
+    auto const scf_branch_head =
+      ir::make_intrinsic_scf_branch_head(ctx.allocator, converge_block);
+    builder.insert(scf_branch_head);
     auto const brcond =
       ir::make_instr_brcond(ctx.allocator, ctx.next_id(), condition, then_block,
                             else_block, expr->source_info);
@@ -2264,6 +2274,9 @@ namespace vush {
       VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
     auto const converge_block =
       VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
+    auto const scf_branch_head =
+      ir::make_intrinsic_scf_branch_head(ctx.allocator, converge_block);
+    builder.insert(scf_branch_head);
     auto const brcond =
       ir::make_instr_brcond(ctx.allocator, ctx.next_id(), condition, then_block,
                             else_block, stmt->source_info);

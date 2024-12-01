@@ -473,6 +473,20 @@ namespace vush::ir {
     }
   }
 
+  static void print_intrinsic(Allocator* const allocator, Printer& printer,
+                              Prettyprint_Options const& options,
+                              Instr_intrinsic const* const instr)
+  {
+    switch(instr->intrinsic_kind) {
+    case Intrinsic_Kind::e_scf_branch_head: {
+      auto const intrinsic =
+        static_cast<Intrinsic_scf_branch_head const*>(instr);
+      printer.write("@vush.scf_branch_head "_sv);
+      print_block_id(allocator, printer, intrinsic->converge_block);
+    } break;
+    }
+  }
+
   static void print_instr(Allocator* const allocator, Printer& printer,
                           Prettyprint_Options const& options,
                           Instr const* const generic_instr)
@@ -480,6 +494,11 @@ namespace vush::ir {
     printer.set_indent_level(options.instruction_indent_level);
     printer.indent();
     switch(generic_instr->instr_kind) {
+    case Instr_Kind::e_intrinsic: {
+      auto const instr = static_cast<Instr_intrinsic const*>(generic_instr);
+      print_intrinsic(allocator, printer, options, instr);
+    } break;
+
     case Instr_Kind::e_alloc: {
       auto const instr = static_cast<Instr_alloc const*>(generic_instr);
       print_value(allocator, printer, options, instr);
