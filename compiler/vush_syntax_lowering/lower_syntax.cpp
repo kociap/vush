@@ -652,9 +652,17 @@ namespace vush {
       ast::Node_List else_branch;
       if(anton::Optional<Syntax_Node const&> else_node =
            get_stmt_if_else_branch(node)) {
-        RETURN_ON_FAIL(result, transform_stmt_block_child_stmts, ctx,
-                       else_node.value());
-        else_branch = result.value();
+        if(else_node.value().kind == Syntax_Node_Kind::stmt_block) {
+          RETURN_ON_FAIL(result, transform_stmt_block_child_stmts, ctx,
+                         else_node.value());
+          else_branch = result.value();
+        } else {
+          RETURN_ON_FAIL(result, transform_stmt, ctx, else_node.value());
+          auto& statements =
+            *VUSH_ALLOCATE(Array<ast::Node*>, ctx.allocator, ctx.allocator);
+          statements.push_back(result.value());
+          else_branch = statements;
+        }
       }
 
       return {anton::expected_value,
