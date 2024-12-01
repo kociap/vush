@@ -90,7 +90,7 @@ syntax_nodes = [
         "members": [
             Syntax_Member(Node_Kind.node, "attribute_list", Lookup_Kind.index, 0),
             Syntax_Member(Node_Kind.token, "identifier", Lookup_Kind.index, 2),
-            Syntax_Member(Node_Kind.node, "members", Lookup_Kind.index, 3)
+            Syntax_Member(Node_Kind.node, "fields", Lookup_Kind.index, 3)
         ]
     },
     {

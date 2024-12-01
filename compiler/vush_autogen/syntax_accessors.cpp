@@ -291,7 +291,7 @@ namespace vush {
     ANTON_ASSERT(node.children.size() > (3),
                  "decl_struct has too few children");
     ANTON_ASSERT(node.children[3].is_left(),
-                 "members in decl_struct is not Syntax_Node");
+                 "fields in decl_struct is not Syntax_Node");
     return node.children[3].left();
   }
 
