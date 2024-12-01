@@ -5,6 +5,8 @@
 #include <vush_spirv/spirv.hpp>
 
 namespace vush {
+  using namespace anton::literals;
+
   namespace {
     // Running_Hash
     // Implements the murmurhash.
@@ -1285,20 +1287,20 @@ namespace vush {
         allocator, spirv::Capability::e_draw_parameters);
       auto const capability_PSBA = spirv::make_instr_capability(
         allocator, spirv::Capability::e_physical_storage_buffer_addresses);
-      auto const capability_VMM = spirv::make_instr_capability(
-        allocator, spirv::Capability::e_vulkan_memory_model);
+      // auto const capability_VMM = spirv::make_instr_capability(
+      //   allocator, spirv::Capability::e_vulkan_memory_model);
       ctx.capabilities.insert_back(*capability_shader);
       ctx.capabilities.insert_back(*capability_draw_parameters);
       ctx.capabilities.insert_back(*capability_PSBA);
-      ctx.capabilities.insert_back(*capability_VMM);
+      // ctx.capabilities.insert_back(*capability_VMM);
     }
     // The required memory model. We always use PhysicalStorageBuffer64 and
-    // Vulkan.
+    // GLSL450.
     {
       spirv::Instr_memory_model* const memory_model =
         spirv::make_instr_memory_model(
           allocator, spirv::Addressing_Model::e_physical_storage_buffer64,
-          spirv::Memory_Model::e_vulkan);
+          spirv::Memory_Model::e_glsl450);
       ctx.declarations.insert_back(*memory_model);
     }
     // Lower the entry function and create the entry point.
@@ -1309,9 +1311,10 @@ namespace vush {
       ctx.functions.splice(instructions);
       spirv::Execution_Model const execution_model =
         stage_to_execution(module->stage);
+      // Always call the entry point "main".
       auto const entry_point = spirv::make_instr_entry_point(
-        allocator, entry.entry_begin,
-        anton::String(module->pass_identifier, allocator), execution_model);
+        allocator, entry.entry_begin, anton::String("main"_sv, allocator),
+        execution_model);
       entry_point->interface = ANTON_MOV(entry.interface);
       ctx.declarations.insert_back(*entry_point);
       // Add execution modes.
