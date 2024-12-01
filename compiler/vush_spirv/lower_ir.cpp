@@ -1186,10 +1186,12 @@ namespace vush {
             : spirv::Storage_Class::e_input;
         // TODO: Requires new type instance due to decorations.
         auto const value_type = lower_type(ctx, argument.pointee_type);
-        // The mandatory Block decoration.
-        auto const decoration_block = spirv::make_instr_decorate(
-          ctx.allocator, value_type, spirv::Decoration::e_block);
-        ctx.annotations.insert_back(*decoration_block);
+        if(instanceof<spirv::Instr_type_struct>(value_type)) {
+          // The block decoration is only required on structure types.
+          auto const decoration_block = spirv::make_instr_decorate(
+            ctx.allocator, value_type, spirv::Decoration::e_block);
+          ctx.annotations.insert_back(*decoration_block);
+        }
         // Make the variable.
         auto const pointer_type = spirv::make_instr_type_pointer(
           ctx.allocator, ctx.next_id(), value_type, storage_class);
@@ -1293,10 +1295,12 @@ namespace vush {
       entry_point->interface = ANTON_MOV(entry.interface);
       ctx.declarations.insert_back(*entry_point);
       // Add execution modes.
-      auto const origin = spirv::make_instr_execution_mode(
-        ctx.allocator, entry.entry_begin,
-        spirv::Execution_Mode::e_origin_upper_left);
-      ctx.declarations.insert_back(*origin);
+      if(module->stage == Stage_Kind::fragment) {
+        auto const origin = spirv::make_instr_execution_mode(
+          ctx.allocator, entry.entry_begin,
+          spirv::Execution_Mode::e_origin_upper_left);
+        ctx.declarations.insert_back(*origin);
+      }
     }
     spirv::Module spirv_module{
       .capabilities = ANTON_MOV(ctx.capabilities),
