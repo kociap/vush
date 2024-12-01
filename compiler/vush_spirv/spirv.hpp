@@ -158,7 +158,7 @@ namespace vush::spirv {
   struct Instr: public anton::IList_DNode {
     u32 id;
     Instr_Kind instr_kind;
-    Instr_label* label = nullptr;
+    Instr_label* block = nullptr;
 
     Instr(Instr_Kind instr_kind, u32 id): id(id), instr_kind(instr_kind) {}
   };

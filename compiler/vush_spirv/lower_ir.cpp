@@ -739,7 +739,7 @@ namespace vush {
           spirv::make_instr_variable(ctx.allocator, ctx.next_id(), result_type,
                                      spirv::Storage_Class::e_function);
         builder.insert(instr);
-        instr->label = label;
+        instr->block = label;
         ctx.instr_map.emplace(&instruction, instr);
       } break;
 
@@ -751,7 +751,7 @@ namespace vush {
         auto const instr =
           spirv::make_instr_load(ctx.allocator, ctx.next_id(), type, address);
         builder.insert(instr);
-        instr->label = label;
+        instr->block = label;
         ctx.instr_map.emplace(&instruction, instr);
       } break;
 
@@ -763,7 +763,7 @@ namespace vush {
         auto const instr =
           spirv::make_instr_store(ctx.allocator, pointer, object);
         builder.insert(instr);
-        instr->label = label;
+        instr->block = label;
         ctx.instr_map.emplace(&instruction, instr);
       } break;
 
@@ -817,7 +817,7 @@ namespace vush {
         auto const instr = spirv::make_instr_access_chain(
           ctx.allocator, ctx.next_id(), result_type, base, index);
         builder.insert(instr);
-        instr->label = label;
+        instr->block = label;
         ctx.instr_map.emplace(&instruction, instr);
       } break;
 
@@ -881,7 +881,7 @@ namespace vush {
           ALU_CASE_UNREACHABLE(e_fma)
         }
         builder.insert(instr);
-        instr->label = label;
+        instr->block = label;
         ctx.instr_map.emplace(&instruction, instr);
       } break;
 
@@ -895,7 +895,7 @@ namespace vush {
         // TODO: Verify that the indices fit within 32 bits.
         instr->indices.push_back(instr_extract->index);
         builder.insert(instr);
-        instr->label = label;
+        instr->block = label;
         ctx.instr_map.emplace(&instruction, instr);
       } break;
 
@@ -910,7 +910,7 @@ namespace vush {
         // TODO: Verify that the indices fit within 32 bits.
         instr->indices.push_back(instr_insert->index);
         builder.insert(instr);
-        instr->label = label;
+        instr->block = label;
         ctx.instr_map.emplace(&instruction, instr);
       } break;
 
@@ -926,7 +926,7 @@ namespace vush {
           instr->indices.push_back(index);
         }
         builder.insert(instr);
-        instr->label = label;
+        instr->block = label;
         ctx.instr_map.emplace(&instruction, instr);
       } break;
 
@@ -941,7 +941,7 @@ namespace vush {
           instr->constituents.push_back(constituent);
         }
         builder.insert(instr);
-        instr->label = label;
+        instr->block = label;
         ctx.instr_map.emplace(&instruction, instr);
       } break;
 
@@ -968,12 +968,12 @@ namespace vush {
           auto const instr =
             spirv::make_instr_return_value(ctx.allocator, value);
           builder.insert(instr);
-          instr->label = label;
+          instr->block = label;
           ctx.instr_map.emplace(&instruction, instr);
         } else {
           auto const instr = spirv::make_instr_return(ctx.allocator);
           builder.insert(instr);
-          instr->label = label;
+          instr->block = label;
           ctx.instr_map.emplace(&instruction, instr);
         }
       } break;
@@ -981,7 +981,7 @@ namespace vush {
       case ir::Instr_Kind::e_die: {
         auto const instr = spirv::make_instr_terminate(ctx.allocator);
         builder.insert(instr);
-        instr->label = label;
+        instr->block = label;
         ctx.instr_map.emplace(&instruction, instr);
       } break;
 
@@ -991,7 +991,7 @@ namespace vush {
         auto const label = lower_block(ctx, instr_branch->target);
         auto const instr = spirv::make_instr_branch(ctx.allocator, label);
         builder.insert(instr);
-        instr->label = label;
+        instr->block = label;
         ctx.instr_map.emplace(&instruction, instr);
       } break;
 
@@ -1004,7 +1004,7 @@ namespace vush {
         auto const instr = spirv::make_instr_brcond(ctx.allocator, condition,
                                                     then_label, else_label);
         builder.insert(instr);
-        instr->label = label;
+        instr->block = label;
         ctx.instr_map.emplace(&instruction, instr);
       } break;
 
@@ -1017,7 +1017,7 @@ namespace vush {
         auto const instr =
           spirv::make_instr_switch(ctx.allocator, selector, default_label);
         builder.insert(instr);
-        instr->label = label;
+        instr->block = label;
         ctx.instr_map.emplace(&instruction, instr);
         for(auto const label: instr_switch->labels) {
           auto const target = lower_block(ctx, label.target);

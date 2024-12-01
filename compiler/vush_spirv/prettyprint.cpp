@@ -570,7 +570,7 @@ namespace vush::spirv {
                                  instruction->result_type->id));
       for(auto const variable: instruction->operands) {
         stream.write(anton::format(allocator, " %{} %{}", variable->id,
-                                   variable->label->id));
+                                   variable->block->id));
       }
     } break;
 
