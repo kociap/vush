@@ -823,16 +823,23 @@ namespace vush {
 
       case ir::Instr_Kind::e_alu: {
         auto const instr_alu = static_cast<ir::Instr_ALU const*>(&instruction);
-        auto const operand1 = ctx.get_instr(instr_alu->src1);
-        auto const operand2 = ctx.get_instr(instr_alu->src2);
         auto const result_type = lower_type(ctx, instr_alu->type);
         spirv::Instr* instr;
 
-#define ALU_CASE(OPCODE, INSTR)                                         \
-  case ir::ALU_Opcode::OPCODE:                                          \
+#define ALU_UNARY_CASE(OPCODE, INSTR)                               \
+  case ir::ALU_Opcode::OPCODE: {                                    \
+    auto const operand = ctx.get_instr(instr_alu->src1);            \
+    instr = spirv::make_instr_##INSTR(ctx.allocator, ctx.next_id(), \
+                                      result_type, operand);        \
+  } break;
+
+#define ALU_BINARY_CASE(OPCODE, INSTR)                                  \
+  case ir::ALU_Opcode::OPCODE: {                                        \
+    auto const operand1 = ctx.get_instr(instr_alu->src1);               \
+    auto const operand2 = ctx.get_instr(instr_alu->src2);               \
     instr = spirv::make_instr_##INSTR(ctx.allocator, ctx.next_id(),     \
                                       result_type, operand1, operand2); \
-    break;
+  } break;
 
 #define ALU_CASE_UNREACHABLE(OPCODE)                                    \
   case ir::ALU_Opcode::OPCODE:                                          \
@@ -840,42 +847,42 @@ namespace vush {
     break;
 
         switch(instr_alu->op) {
-          ALU_CASE(e_inv, bit_not)
-          ALU_CASE(e_and, bit_and)
-          ALU_CASE(e_or, bit_or)
-          ALU_CASE(e_xor, bit_xor)
-          ALU_CASE(e_shl, shl)
+          ALU_UNARY_CASE(e_inv, bit_not)
+          ALU_BINARY_CASE(e_and, bit_and)
+          ALU_BINARY_CASE(e_or, bit_or)
+          ALU_BINARY_CASE(e_xor, bit_xor)
+          ALU_BINARY_CASE(e_shl, shl)
           // All SHR operations are logical for now.
-          ALU_CASE(e_shr, shr_logical)
-          ALU_CASE(e_neg, snegate)
-          ALU_CASE(e_iadd, iadd)
-          ALU_CASE(e_imul, imul)
-          ALU_CASE(e_uadd, iadd)
-          ALU_CASE(e_umul, imul)
-          ALU_CASE(e_idiv, sdiv)
-          ALU_CASE(e_udiv, udiv)
-          ALU_CASE(e_irem, srem)
-          ALU_CASE(e_urem, umod)
-          ALU_CASE(e_fneg, fnegate)
-          ALU_CASE(e_fadd, fadd)
-          ALU_CASE(e_fmul, fmul)
-          ALU_CASE(e_fdiv, fdiv)
-          ALU_CASE(e_icmp_eq, ieq)
-          ALU_CASE(e_icmp_neq, ineq)
-          ALU_CASE(e_icmp_ugt, ugt)
-          ALU_CASE(e_icmp_ult, ult)
-          ALU_CASE(e_icmp_uge, uge)
-          ALU_CASE(e_icmp_ule, ule)
-          ALU_CASE(e_icmp_sgt, sgt)
-          ALU_CASE(e_icmp_slt, slt)
-          ALU_CASE(e_icmp_sge, sge)
-          ALU_CASE(e_icmp_sle, sle)
-          ALU_CASE(e_fcmp_eq, foeq)
-          ALU_CASE(e_fcmp_neq, foneq)
-          ALU_CASE(e_fcmp_gt, fogt)
-          ALU_CASE(e_fcmp_lt, folt)
-          ALU_CASE(e_fcmp_ge, foge)
-          ALU_CASE(e_fcmp_le, fole)
+          ALU_BINARY_CASE(e_shr, shr_logical)
+          ALU_UNARY_CASE(e_neg, snegate)
+          ALU_BINARY_CASE(e_iadd, iadd)
+          ALU_BINARY_CASE(e_imul, imul)
+          ALU_BINARY_CASE(e_uadd, iadd)
+          ALU_BINARY_CASE(e_umul, imul)
+          ALU_BINARY_CASE(e_idiv, sdiv)
+          ALU_BINARY_CASE(e_udiv, udiv)
+          ALU_BINARY_CASE(e_irem, srem)
+          ALU_BINARY_CASE(e_urem, umod)
+          ALU_UNARY_CASE(e_fneg, fnegate)
+          ALU_BINARY_CASE(e_fadd, fadd)
+          ALU_BINARY_CASE(e_fmul, fmul)
+          ALU_BINARY_CASE(e_fdiv, fdiv)
+          ALU_BINARY_CASE(e_icmp_eq, ieq)
+          ALU_BINARY_CASE(e_icmp_neq, ineq)
+          ALU_BINARY_CASE(e_icmp_ugt, ugt)
+          ALU_BINARY_CASE(e_icmp_ult, ult)
+          ALU_BINARY_CASE(e_icmp_uge, uge)
+          ALU_BINARY_CASE(e_icmp_ule, ule)
+          ALU_BINARY_CASE(e_icmp_sgt, sgt)
+          ALU_BINARY_CASE(e_icmp_slt, slt)
+          ALU_BINARY_CASE(e_icmp_sge, sge)
+          ALU_BINARY_CASE(e_icmp_sle, sle)
+          ALU_BINARY_CASE(e_fcmp_eq, foeq)
+          ALU_BINARY_CASE(e_fcmp_neq, foneq)
+          ALU_BINARY_CASE(e_fcmp_gt, fogt)
+          ALU_BINARY_CASE(e_fcmp_lt, folt)
+          ALU_BINARY_CASE(e_fcmp_ge, foge)
+          ALU_BINARY_CASE(e_fcmp_le, fole)
           // No FMA instruction in SPIR-V. There's FMA in the extended
           // instructions for GLSL.
           ALU_CASE_UNREACHABLE(e_fma)

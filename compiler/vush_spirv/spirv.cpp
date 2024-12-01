@@ -961,6 +961,15 @@ namespace vush::spirv {
     return anton::math::max(max_imports, max_debug, max_types, max_functions);
   }
 
+#define UNARY_INSTR_MAKE_FN(IDENTIFIER)                                       \
+  Instr_##IDENTIFIER* make_instr_##IDENTIFIER(                                \
+    Allocator* allocator, u32 id, Instr* result_type, Instr* operand)         \
+  {                                                                           \
+    auto const instr =                                                        \
+      VUSH_ALLOCATE(Instr_##IDENTIFIER, allocator, id, result_type, operand); \
+    return instr;                                                             \
+  }
+
 #define BINARY_INSTR_MAKE_FN(IDENTIFIER)                                \
   Instr_##IDENTIFIER* make_instr_##IDENTIFIER(                          \
     Allocator* allocator, u32 id, Instr* result_type, Instr* operand1,  \
@@ -1316,8 +1325,8 @@ namespace vush::spirv {
     return instr;
   }
 
-  BINARY_INSTR_MAKE_FN(snegate);
-  BINARY_INSTR_MAKE_FN(fnegate);
+  UNARY_INSTR_MAKE_FN(snegate);
+  UNARY_INSTR_MAKE_FN(fnegate);
   BINARY_INSTR_MAKE_FN(iadd);
   BINARY_INSTR_MAKE_FN(fadd);
   BINARY_INSTR_MAKE_FN(isub);
@@ -1345,7 +1354,7 @@ namespace vush::spirv {
   BINARY_INSTR_MAKE_FN(bit_or);
   BINARY_INSTR_MAKE_FN(bit_xor);
   BINARY_INSTR_MAKE_FN(bit_and);
-  BINARY_INSTR_MAKE_FN(bit_not);
+  UNARY_INSTR_MAKE_FN(bit_not);
   BINARY_INSTR_MAKE_FN(logical_eq);
   BINARY_INSTR_MAKE_FN(logical_neq);
   BINARY_INSTR_MAKE_FN(logical_or);

@@ -484,8 +484,9 @@ namespace vush::spirv {
       CASE_UNARY_INSTR(e_copy_object, Instr_copy_object, "OpCopyObject")
       CASE_UNARY_INSTR(e_transpose, Instr_transpose, "OpTranspose")
 
-      CASE_BINARY_INSTR(e_snegate, Instr_snegate, "OpSNegate")
-      CASE_BINARY_INSTR(e_fnegate, Instr_fnegate, "OpFNegate")
+      CASE_UNARY_INSTR(e_snegate, Instr_snegate, "OpSNegate")
+      CASE_UNARY_INSTR(e_fnegate, Instr_fnegate, "OpFNegate")
+
       CASE_BINARY_INSTR(e_iadd, Instr_iadd, "OpIAdd")
       CASE_BINARY_INSTR(e_fadd, Instr_fadd, "OpFAdd")
       CASE_BINARY_INSTR(e_isub, Instr_isub, "OpISub")
@@ -519,7 +520,7 @@ namespace vush::spirv {
       CASE_BINARY_INSTR(e_bit_or, Instr_bit_or, "OpBitwiseOr")
       CASE_BINARY_INSTR(e_bit_xor, Instr_bit_xor, "OpBitwiseXor")
       CASE_BINARY_INSTR(e_bit_and, Instr_bit_and, "OpBitwiseAnd")
-      CASE_BINARY_INSTR(e_bit_not, Instr_bit_not, "OpNot")
+      CASE_UNARY_INSTR(e_bit_not, Instr_bit_not, "OpNot")
       CASE_BINARY_INSTR(e_logical_eq, Instr_logical_eq, "OpLogicalEqual")
       CASE_BINARY_INSTR(e_logical_neq, Instr_logical_neq, "OpLogicalNotEqual")
       CASE_BINARY_INSTR(e_logical_or, Instr_logical_or, "OpLogicalOr")

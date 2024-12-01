@@ -1103,8 +1103,16 @@ namespace vush::spirv {
   UNARY_INSTR(Instr_copy_object, e_copy_object);
   UNARY_INSTR(Instr_transpose, e_transpose);
 
-  BINARY_INSTR(snegate, e_snegate);
-  BINARY_INSTR(fnegate, e_fnegate);
+  UNARY_INSTR(Instr_snegate, e_snegate);
+  [[nodiscard]] Instr_snegate* make_instr_snegate(Allocator* allocator, u32 id,
+                                                  Instr* result_type,
+                                                  Instr* operand);
+
+  UNARY_INSTR(Instr_fnegate, e_fnegate);
+  [[nodiscard]] Instr_fnegate* make_instr_fnegate(Allocator* allocator, u32 id,
+                                                  Instr* result_type,
+                                                  Instr* operand);
+
   BINARY_INSTR(iadd, e_iadd);
   BINARY_INSTR(fadd, e_fadd);
   BINARY_INSTR(isub, e_isub);
@@ -1132,7 +1140,12 @@ namespace vush::spirv {
   BINARY_INSTR(bit_or, e_bit_or);
   BINARY_INSTR(bit_xor, e_bit_xor);
   BINARY_INSTR(bit_and, e_bit_and);
-  BINARY_INSTR(bit_not, e_bit_not);
+
+  UNARY_INSTR(Instr_bit_not, e_bit_not);
+  [[nodiscard]] Instr_bit_not* make_instr_bit_not(Allocator* allocator, u32 id,
+                                                  Instr* result_type,
+                                                  Instr* operand);
+
   BINARY_INSTR(logical_eq, e_logical_eq);
   BINARY_INSTR(logical_neq, e_logical_neq);
   BINARY_INSTR(logical_or, e_logical_or);
