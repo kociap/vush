@@ -1122,8 +1122,7 @@ namespace vush {
 
   static void decorate_interface(Lowering_Context& ctx,
                                  ir::Decoration const* decoration,
-                                 spirv::Instr_variable* const variable,
-                                 spirv::Instr* const type)
+                                 spirv::Instr_variable* const variable)
   {
     while(decoration != nullptr) {
       switch(anton::hash(decoration->identifier)) {
@@ -1198,12 +1197,14 @@ namespace vush {
         ctx.globals.insert_back(*pointer_type);
         auto const variable = spirv::make_instr_variable(
           ctx.allocator, ctx.next_id(), pointer_type, storage_class);
+        decorate_interface(ctx, argument.decorations, variable);
         interface.push_back(variable);
         ctx.globals.insert_back(*variable);
         ctx.instr_map.emplace(&argument, variable);
       } else {
         auto const buffer = lower_buffer(ctx, argument.buffer);
         interface.push_back(buffer);
+        decorate_interface(ctx, argument.decorations, buffer);
         // Make pointer type to the buffer field.
         auto const pointer_type = lower_type_as_pointer(
           ctx, argument.pointee_type, buffer->storage_class);
