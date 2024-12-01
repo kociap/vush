@@ -61,7 +61,7 @@ namespace vush::spirv {
     case Decoration::e_col_major:
       return "ColMajor"_sv;
     case Decoration::e_builtin:
-      return "Builtin"_sv;
+      return "BuiltIn"_sv;
     case Decoration::e_no_perspective:
       return "NoPerspective"_sv;
     case Decoration::e_flat:
@@ -80,6 +80,82 @@ namespace vush::spirv {
       return "DescriptorSet"_sv;
     case Decoration::e_offset:
       return "Offset"_sv;
+    }
+  }
+
+  [[nodiscard]] static anton::String_View stringify(Builtin const builtin)
+  {
+    switch(builtin) {
+    case Builtin::e_position:
+      return "Position"_sv;
+    case Builtin::e_point_size:
+      return "PointSize"_sv;
+    case Builtin::e_clip_distance:
+      return "ClipDistance"_sv;
+    case Builtin::e_cull_distance:
+      return "CullDistance"_sv;
+    case Builtin::e_vertex_id:
+      return "VertexId"_sv;
+    case Builtin::e_instance_id:
+      return "InstanceId"_sv;
+    case Builtin::e_primitive_id:
+      return "PrimitiveId"_sv;
+    case Builtin::e_invocation_id:
+      return "InvocationId"_sv;
+    case Builtin::e_layer:
+      return "Layer"_sv;
+    case Builtin::e_viewport_index:
+      return "ViewportIndex"_sv;
+    case Builtin::e_tess_level_outer:
+      return "TessLevelOuter"_sv;
+    case Builtin::e_tess_level_inner:
+      return "TessLevelInner"_sv;
+    case Builtin::e_tess_coord:
+      return "TessCoord"_sv;
+    case Builtin::e_patch_vertices:
+      return "PatchVertices"_sv;
+    case Builtin::e_frag_coord:
+      return "FragCoord"_sv;
+    case Builtin::e_point_coord:
+      return "PointCoord"_sv;
+    case Builtin::e_front_facing:
+      return "FrontFacing"_sv;
+    case Builtin::e_sample_id:
+      return "SampleId"_sv;
+    case Builtin::e_sample_position:
+      return "SamplePosition"_sv;
+    case Builtin::e_sample_mask:
+      return "SampleMask"_sv;
+    case Builtin::e_frag_depth:
+      return "FragDepth"_sv;
+    case Builtin::e_helper_invocation:
+      return "HelperInvocation"_sv;
+    case Builtin::e_num_workgroups:
+      return "NumWorkgroups"_sv;
+    case Builtin::e_worgroup_size:
+      return "WorgroupSize"_sv;
+    case Builtin::e_workgroup_id:
+      return "WorkgroupId"_sv;
+    case Builtin::e_local_invocation_id:
+      return "LocalInvocationId"_sv;
+    case Builtin::e_global_invocation_id:
+      return "GlobalInvocationId"_sv;
+    case Builtin::e_local_invocation_index:
+      return "LocalInvocationIndex"_sv;
+    case Builtin::e_vertex_index:
+      return "VertexIndex"_sv;
+    case Builtin::e_instance_index:
+      return "InstanceIndex"_sv;
+    case Builtin::e_base_vertex:
+      return "BaseVertex"_sv;
+    case Builtin::e_base_instance:
+      return "BaseInstance"_sv;
+    case Builtin::e_draw_index:
+      return "DrawIndex"_sv;
+    case Builtin::e_device_index:
+      return "DeviceIndex"_sv;
+    case Builtin::e_view_index:
+      return "ViewIndex"_sv;
     }
   }
 
@@ -270,9 +346,15 @@ namespace vush::spirv {
           stream.write(" ");
           stream.write(instruction->argument.get_string());
         } else {
-          stream.write(" ");
-          stream.write(
-            anton::to_string(allocator, instruction->argument.get_u32()));
+          if(instruction->decoration == Decoration::e_builtin) {
+            stream.write(" ");
+            stream.write(
+              stringify(static_cast<Builtin>(instruction->argument.get_u32())));
+          } else {
+            stream.write(" ");
+            stream.write(
+              anton::to_string(allocator, instruction->argument.get_u32()));
+          }
         }
       }
     } break;
