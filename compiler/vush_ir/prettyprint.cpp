@@ -811,10 +811,35 @@ namespace vush::ir {
                              Function const* const function)
   {
     printer.write(function->identifier);
+    printer.write("("_sv);
+    for(bool first = true; Argument const& argument: function->arguments) {
+      if(!first) {
+        printer.write(", "_sv);
+      }
+      print_value(allocator, printer, options, &argument);
+      if(argument.storage_class == Storage_Class::e_input) {
+        printer.write(" "_sv);
+        print_type_inline(allocator, printer, options, argument.pointee_type);
+        printer.write(" input"_sv);
+      } else if(argument.storage_class == Storage_Class::e_output) {
+        printer.write(" "_sv);
+        print_type_inline(allocator, printer, options, argument.pointee_type);
+        printer.write(" output"_sv);
+      } else if(argument.buffer != nullptr) {
+        printer.write(" "_sv);
+        print_type_inline(allocator, printer, options, argument.pointee_type);
+        printer.write(argument.buffer->identifier);
+      }
+      first = false;
+    }
+    printer.write(") -> "_sv);
+    print_type_inline(allocator, printer, options, function->return_type);
+
     if(options.function_location) {
       printer.write(" @ "_sv);
       print_source_location(allocator, printer, function->source_info);
     }
+
     printer.write("\n"_sv);
     Block_Set visited_blocks(allocator);
     print_block(allocator, printer, options, visited_blocks,
