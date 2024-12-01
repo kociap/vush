@@ -1383,6 +1383,14 @@ namespace vush::spirv {
   BINARY_INSTR_MAKE_FN(foge); // FOrdGreaterThanEqual
   BINARY_INSTR_MAKE_FN(fuge); // FUnordGreaterThanEqual
 
+  Instr_selection_merge* make_instr_selection_merge(Allocator* allocator,
+                                                    Instr_label* merge_block)
+  {
+    auto const instr =
+      VUSH_ALLOCATE(Instr_selection_merge, allocator, merge_block);
+    return instr;
+  }
+
   Instr_label* make_instr_label(Allocator* allocator, u32 id)
   {
     auto const instr = VUSH_ALLOCATE(Instr_label, allocator, id);

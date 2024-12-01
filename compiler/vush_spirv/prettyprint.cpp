@@ -575,8 +575,10 @@ namespace vush::spirv {
       }
     } break;
 
+      CASE_GENERIC_INSTR(e_selection_merge, Instr_selection_merge,
+                         "OpSelectionMerge %{} None",
+                         instruction->merge_block->id)
       CASE_ID_INSTR(e_label, Instr_label, "OpLabel")
-
       CASE_GENERIC_INSTR(e_branch, Instr_branch, "OpBranch %{}",
                          instruction->target->id)
       CASE_GENERIC_INSTR(

@@ -144,7 +144,7 @@ namespace vush::spirv {
     // Control-flow instructions
     e_phi,
     // e_loop_merge,
-    // e_selection_merge,
+    e_selection_merge,
     e_label,
     e_branch,
     e_brcond,
@@ -1217,6 +1217,19 @@ namespace vush::spirv {
     {
     }
   };
+
+  struct Instr_selection_merge: public Instr {
+    Instr_label* merge_block;
+    // Selection control omitted.
+
+    Instr_selection_merge(Instr_label* merge_block)
+      : Instr(Instr_Kind::e_selection_merge, 0), merge_block(merge_block)
+    {
+    }
+  };
+
+  [[nodiscard]] Instr_selection_merge*
+  make_instr_selection_merge(Allocator* allocator, Instr_label* merge_block);
 
   ID_INSTR(Instr_label, e_label);
 
