@@ -1413,10 +1413,12 @@ namespace vush {
                   ast::Expr_Init const* const expr)
   {
     auto const type = convert_ast_to_ir_type(ctx, expr->evaluated_type);
-    auto const temporary = ir::make_instr_alloc(ctx.allocator, ctx.next_id(),
-                                                type, expr->source_info);
-    builder.insert(temporary);
     if(instanceof<ast::Type_Struct>(expr->evaluated_type)) {
+      // TODO: This could most likely do with composite insert instead of a
+      //       temporary variable.
+      auto const temporary = ir::make_instr_alloc(ctx.allocator, ctx.next_id(),
+                                                  type, expr->source_info);
+      builder.insert(temporary);
       auto const constructed_type =
         static_cast<ast::Type_Struct const*>(expr->evaluated_type);
       for(auto const ginitializer: expr->initializers) {
@@ -1440,6 +1442,11 @@ namespace vush {
                                initializer->source_info);
         builder.insert(store);
       }
+      // We load the struct and pass it farther down.
+      auto const instr_load = ir::make_instr_load(
+        ctx.allocator, ctx.next_id(), type, temporary, expr->source_info);
+      builder.insert(instr_load);
+      return instr_load;
     } else if(is_vector(*expr->evaluated_type)) {
       auto const constructed_type = static_cast<ir::Type_Vec*>(type);
       auto const construct = ir::make_instr_composite_construct(
@@ -1520,6 +1527,7 @@ namespace vush {
         }
       }
       builder.insert(construct);
+      return construct;
     } else if(is_matrix(*expr->evaluated_type)) {
       auto const construct = ir::make_instr_composite_construct(
         ctx.allocator, ctx.next_id(), type, expr->source_info);
@@ -1641,14 +1649,10 @@ namespace vush {
         builder.insert(column);
       }
       builder.insert(construct);
+      return construct;
     } else {
       ANTON_UNREACHABLE("unreachable");
     }
-    // We load the struct and pass it farther down.
-    auto const instr_load = ir::make_instr_load(
-      ctx.allocator, ctx.next_id(), type, temporary, expr->source_info);
-    builder.insert(instr_load);
-    return instr_load;
   }
 
   [[nodiscard]] static ir::ALU_Opcode
