@@ -8,6 +8,7 @@
 
 #include <vush_core/types.hpp>
 #include <vush_diagnostics/error.hpp>
+#include <vush_spirv/spirv.hpp>
 
 namespace vush {
   struct Constant_Define {
@@ -94,43 +95,40 @@ namespace vush {
     anton::Expected<Source_Import_Result, anton::String> (*)(
       Allocator& allocator, anton::String_View path, void* user_data);
 
-  namespace spirv {
-    struct Shader {
-      anton::String data;
-      Stage_Kind stage_kind;
-    };
+  struct Shader {
+    anton::String pass_identifier;
+    Stage_Kind stage_kind;
+    // TODO: Replace with binary spirv once we have an assembler and disassembler.
+    spirv::Module spirv;
+  };
 
-    struct Pass_Data {
-      anton::String name;
-      Array<Shader> shaders;
-    };
+  struct Build_Result {
+    Array<Pass_Settings> settings;
+    Array<Shader> shaders;
+  };
 
-    struct Build_Result {
-      Array<Pass_Settings> settings;
-      Array<Pass_Data> passes;
-    };
+  // compile_to_spirv
+  //
+  // Compiles the given vush shader to SPIR-V. Uses the callback to import
+  // sources.
+  //
+  // Returns:
+  // Compiled SPIR-V files or an error.
+  //
+  anton::Expected<Build_Result, Error>
+  compile_to_spirv(Configuration const& config, Allocator& allocator,
+                   source_import_callback callback, void* user_data);
 
-    // compile
-    // Compiles given vush shader to a spirv shader. Uses the callback to import
-    // sources.
-    //
-    // Returns:
-    // Compiled spirv files or an error.
-    //
-    anton::Expected<Build_Result, Error>
-    compile(Configuration const& config, Allocator& allocator,
-            source_import_callback callback, void* user_data);
-
-    // compile
-    // Compiles given vush shader to a spirv shader. Reads the source files from
-    // the disk. Uses the import paths provided in import_directories to resolve
-    // import directives.
-    //
-    // Returns:
-    // Compiled spirv files or an error.
-    //
-    anton::Expected<Build_Result, Error>
-    compile(Configuration const& config, Allocator& allocator,
-            anton::Slice<anton::String const> const& import_directories);
-  } // namespace spirv
+  // compile_to_spirv
+  //
+  // Compiles the given vush shader to SPIR-V. Reads the source files from the
+  // disk. Uses the import paths provided in import_directories to resolve
+  // import directives.
+  //
+  // Returns:
+  // Compiled SPIR-V files or an error.
+  //
+  anton::Expected<Build_Result, Error>
+  compile_to_spirv(Configuration const& config, Allocator& allocator,
+                   anton::Slice<anton::String const> const& import_directories);
 } // namespace vush

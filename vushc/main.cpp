@@ -7,6 +7,7 @@
 #include <anton/string_view.hpp>
 
 #include <vush.hpp>
+#include <vush_spirv/prettyprint.hpp>
 
 namespace vush {
   using namespace anton::literals;
@@ -272,14 +273,18 @@ namespace vush {
 
     config.source_name = string7_to_string(arguments[0], &allocator);
 
-    anton::Expected<vush::spirv::Build_Result, vush::Error> compilation_result =
-      vush::spirv::compile(config, allocator, import_directories);
+    anton::Expected<vush::Build_Result, vush::Error> compilation_result =
+      vush::compile_to_spirv(config, allocator, import_directories);
     if(!compilation_result) {
       anton::print(compilation_result.error().format(&allocator, true));
       return EXIT_FAILURE;
     }
 
-    allocator.reset();
+    for(auto const& shader: compilation_result->shaders) {
+      anton::STDOUT_Stream stdout;
+      spirv::Prettyprint_Options options;
+      spirv::prettyprint(&allocator, stdout, options, shader.spirv);
+    }
 
     return EXIT_SUCCESS;
   }
