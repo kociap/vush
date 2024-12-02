@@ -15,13 +15,6 @@ namespace vush {
     i32 value;
   };
 
-  enum struct Extension_Behaviour { require, enable, warn, disable };
-
-  struct Extension {
-    anton::String name;
-    Extension_Behaviour behaviour;
-  };
-
   struct Sourced_Variable {
     anton::String name;
     anton::String type;
@@ -87,7 +80,6 @@ namespace vush {
   struct Configuration {
     anton::String source_name;
     Array<Constant_Define> defines;
-    Array<Extension> extensions;
     buffer_definition_callback buffer_definition_cb = nullptr;
     void* buffer_definition_user_data = nullptr;
     Diagnostics_Options diagnostics;

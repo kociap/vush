@@ -117,9 +117,11 @@ endif()
 FetchContent_Declare(
   anton_core
   GIT_REPOSITORY https://github.com/kociap/anton_core.git
-  GIT_TAG 90c60507d43dba8562ae911987b6b16f8f4be62e
+  GIT_TAG 4edf56b06141e113f341d44523f9ef6225166a22
 )
 FetchContent_MakeAvailable(anton_core)
+
+# LIBVUSH
 
 add_library(vush)
 set_target_properties(vush PROPERTIES CXX_STANDARD 20 CXX_EXTENSIONS OFF)
@@ -201,3 +203,12 @@ target_sources(vush
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_syntax_lowering/lower_syntax.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_syntax_lowering/lower_syntax.hpp"
 )
+
+# VUSHC
+
+add_executable(vushc
+  "${CMAKE_CURRENT_SOURCE_DIR}/vushc/main.cpp"
+)
+set_target_properties(vushc PROPERTIES CXX_STANDARD 20 CXX_EXTENSIONS OFF)
+target_compile_options(vushc PRIVATE ${VUSH_COMPILE_FLAGS})
+target_link_libraries(vushc PRIVATE vush anton_core)
