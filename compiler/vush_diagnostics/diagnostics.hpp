@@ -84,10 +84,6 @@ namespace vush {
   [[nodiscard]] Error err_stage_return_must_be_builtin_or_struct(
     Context const& ctx, anton::String_View pass_name, Source_Info const& stage,
     Source_Info const& return_type);
-  [[nodiscard]] Error
-  err_stage_return_must_be_void(Context const& ctx,
-                                anton::String_View pass_name,
-                                Source_Info const& return_type);
   [[nodiscard]] Error err_duplicate_attribute(Context const& ctx,
                                               Source_Info const& old_attr,
                                               Source_Info const& new_attr);

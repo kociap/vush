@@ -1084,12 +1084,6 @@ namespace vush {
 
       EXPECT_NODE(try_fn_parameter_list, snots);
 
-      EXPECT_TOKEN2_SKIP(Syntax_Node_Kind::tk_thin_arrow, Token_Kind::tk_minus,
-                         Token_Kind::tk_rangle, "expected '->'"_sv, snots);
-
-      // return type
-      EXPECT_NODE(try_type, snots);
-
       EXPECT_NODE(try_stmt_block, snots);
 
       snots.insert(snots.begin(), ANTON_MOV(attribute_list));

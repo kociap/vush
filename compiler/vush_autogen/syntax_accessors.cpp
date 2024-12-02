@@ -473,27 +473,15 @@ namespace vush {
     return node.children[5].left();
   }
 
-  Syntax_Node const&
-  get_decl_stage_function_return_type(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::decl_stage_function,
-                 "node is not decl_stage_function");
-    ANTON_ASSERT(node.children.size() > (7),
-                 "decl_stage_function has too few children");
-    ANTON_ASSERT(node.children[7].is_left(),
-                 "return_type in decl_stage_function is not Syntax_Node");
-    return node.children[7].left();
-  }
-
   Syntax_Node const& get_decl_stage_function_body(Syntax_Node const& node)
   {
     ANTON_ASSERT(node.kind == Syntax_Node_Kind::decl_stage_function,
                  "node is not decl_stage_function");
-    ANTON_ASSERT(node.children.size() > (8),
+    ANTON_ASSERT(node.children.size() > (6),
                  "decl_stage_function has too few children");
-    ANTON_ASSERT(node.children[8].is_left(),
+    ANTON_ASSERT(node.children[6].is_left(),
                  "body in decl_stage_function is not Syntax_Node");
-    return node.children[8].left();
+    return node.children[6].left();
   }
 
   Syntax_Node const& get_fn_parameter_attribute_list(Syntax_Node const& node)

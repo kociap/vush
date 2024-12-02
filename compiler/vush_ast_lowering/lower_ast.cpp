@@ -2739,7 +2739,8 @@ namespace vush {
     auto const fn = VUSH_ALLOCATE(
       ir::Function, ctx.allocator, ctx.next_id(), return_type, entry_block,
       anton::String("main"_sv, ctx.allocator), stage->source_info);
-    ctx.current_function_return_type = stage->return_type;
+    // TODO: Do we need the current return type when lowering modules?
+    // ctx.current_function_return_type = stage->return_type;
     ctx.symtable.push_scope();
     Builder builder;
     builder.set_insert_block(fn->entry_block);

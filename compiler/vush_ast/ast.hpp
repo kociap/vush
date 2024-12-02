@@ -571,17 +571,15 @@ namespace vush::ast {
     Identifier pass;
     With_Source<Stage_Kind> stage;
     Fn_Parameter_List parameters;
-    Type* return_type;
     Node_List body;
 
     constexpr Decl_Stage_Function(Attr_List attributes, Identifier pass,
                                   With_Source<Stage_Kind> stage,
-                                  Fn_Parameter_List parameters,
-                                  Type* return_type, Node_List body,
+                                  Fn_Parameter_List parameters, Node_List body,
                                   Source_Info const& source_info)
       : Node(source_info, Node_Kind::decl_stage_function),
         attributes(attributes), pass(pass), stage(stage),
-        parameters(parameters), return_type(return_type), body(body)
+        parameters(parameters), body(body)
     {
     }
   };

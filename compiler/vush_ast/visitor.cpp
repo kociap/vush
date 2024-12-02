@@ -103,11 +103,6 @@ namespace vush::ast {
         return CONT_PARENT_TO_CONT(node_status);
       }
 
-      Visitor_Status const return_status = visit(node->return_type);
-      if(return_status != Visitor_Status::e_continue) {
-        return CONT_PARENT_TO_CONT(return_status);
-      }
-
       for(Fn_Parameter* const parameter: node->parameters) {
         Visitor_Status const status = visit(parameter->type);
         if(status == Visitor_Status::e_stop) {

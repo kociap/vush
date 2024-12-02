@@ -1611,18 +1611,6 @@ namespace vush {
       RETURN_ON_FAIL(analyse_parameter_source, ctx, ns_symtable, parameter);
     }
 
-    // Validate the return type - must be void.
-    // TODO: Remove return from stages.
-    {
-      RETURN_ON_FAIL(namebind_type, ctx, symtable, fn->return_type);
-      bool const void_return = ast::is_void(*fn->return_type);
-      if(!void_return) {
-        return {anton::expected_error,
-                err_stage_return_must_be_void(ctx, fn->pass.value,
-                                              fn->return_type->source_info)};
-      }
-    }
-
     Sema_Context semactx{Stmt_Ctx::e_none};
     RETURN_ON_FAIL(analyse_statements, ctx, symtable, fn->body, semactx);
 

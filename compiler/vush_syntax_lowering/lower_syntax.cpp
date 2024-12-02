@@ -1028,15 +1028,12 @@ namespace vush {
       transform_stage_kind(get_decl_stage_function_stage(node));
     RETURN_ON_FAIL(parameters, transform_parameter_list, ctx,
                    get_decl_stage_function_parameter_list(node));
-    RETURN_ON_FAIL(return_type, transform_type, ctx,
-                   get_decl_stage_function_return_type(node));
     RETURN_ON_FAIL(body, transform_stmt_block_child_stmts, ctx,
                    get_decl_stage_function_body(node));
     return {anton::expected_value,
             VUSH_ALLOCATE(ast::Decl_Stage_Function, ctx.allocator,
                           attribute_list.value(), pass, stage,
-                          parameters.value(), return_type.value(), body.value(),
-                          node.source_info)};
+                          parameters.value(), body.value(), node.source_info)};
   }
 
   anton::Expected<ast::Node_List, Error>

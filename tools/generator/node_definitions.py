@@ -127,8 +127,7 @@ syntax_nodes = [
             Syntax_Member(Node_Kind.token, "pass", Lookup_Kind.index, 2),
             Syntax_Member(Node_Kind.token, "stage", Lookup_Kind.index, 4),
             Syntax_Member(Node_Kind.node, "parameter_list", Lookup_Kind.index, 5),
-            Syntax_Member(Node_Kind.node, "return_type", Lookup_Kind.index, 7),
-            Syntax_Member(Node_Kind.node, "body", Lookup_Kind.index, 8)
+            Syntax_Member(Node_Kind.node, "body", Lookup_Kind.index, 6)
         ]
     },
     {

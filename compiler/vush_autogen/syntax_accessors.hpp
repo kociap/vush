@@ -88,8 +88,6 @@ namespace vush {
   [[nodiscard]] Syntax_Node const&
   get_decl_stage_function_parameter_list(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const&
-  get_decl_stage_function_return_type(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
   get_decl_stage_function_body(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const&
   get_fn_parameter_attribute_list(Syntax_Node const& node);
