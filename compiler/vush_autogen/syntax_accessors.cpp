@@ -226,26 +226,26 @@ namespace vush {
     return node.children[0].left();
   }
 
-  Syntax_Node const& get_struct_field_type(Syntax_Node const& node)
+  Syntax_Token const& get_struct_field_identifier(Syntax_Node const& node)
   {
     ANTON_ASSERT(node.kind == Syntax_Node_Kind::struct_field,
                  "node is not struct_field");
     ANTON_ASSERT(node.children.size() > (1),
                  "struct_field has too few children");
-    ANTON_ASSERT(node.children[1].is_left(),
-                 "type in struct_field is not Syntax_Node");
-    return node.children[1].left();
+    ANTON_ASSERT(node.children[1].is_right(),
+                 "identifier in struct_field is not Syntax_Token");
+    return node.children[1].right();
   }
 
-  Syntax_Token const& get_struct_field_identifier(Syntax_Node const& node)
+  Syntax_Node const& get_struct_field_type(Syntax_Node const& node)
   {
     ANTON_ASSERT(node.kind == Syntax_Node_Kind::struct_field,
                  "node is not struct_field");
-    ANTON_ASSERT(node.children.size() > (2),
+    ANTON_ASSERT(node.children.size() > (3),
                  "struct_field has too few children");
-    ANTON_ASSERT(node.children[2].is_right(),
-                 "identifier in struct_field is not Syntax_Token");
-    return node.children[2].right();
+    ANTON_ASSERT(node.children[3].is_left(),
+                 "type in struct_field is not Syntax_Node");
+    return node.children[3].left();
   }
 
   anton::Optional<Syntax_Node const&>
@@ -253,10 +253,10 @@ namespace vush {
   {
     ANTON_ASSERT(node.kind == Syntax_Node_Kind::struct_field,
                  "node is not struct_field");
-    if(node.children.size() > (4)) {
-      ANTON_ASSERT(node.children[4].is_left(),
+    if(node.children.size() > (5)) {
+      ANTON_ASSERT(node.children[5].is_left(),
                    "initializer in struct_field is not Syntax_Node");
-      return node.children[4].left();
+      return node.children[5].left();
     } else {
       return anton::null_optional;
     }

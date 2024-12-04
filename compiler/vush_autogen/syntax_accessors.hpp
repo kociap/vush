@@ -43,10 +43,10 @@ namespace vush {
   get_decl_import_path(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const&
   get_struct_field_attribute_list(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_struct_field_type(Syntax_Node const& node);
   [[nodiscard]] Syntax_Token const&
   get_struct_field_identifier(Syntax_Node const& node);
+  [[nodiscard]] Syntax_Node const&
+  get_struct_field_type(Syntax_Node const& node);
   [[nodiscard]] anton::Optional<Syntax_Node const&>
   get_struct_field_initializer(Syntax_Node const& node);
   [[nodiscard]] Syntax_Node const&

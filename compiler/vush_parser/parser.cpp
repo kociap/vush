@@ -796,10 +796,11 @@ namespace vush {
         snots.push_back(ANTON_MOV(attribute_list));
       }
 
-      // TODO: change grammar to type ':' identifier ';'
-      EXPECT_NODE(try_type, snots);
+      // identifier ':' type
       EXPECT_TOKEN_SKIP(Token_Kind::identifier, "expected identifier"_sv,
                         snots);
+      EXPECT_TOKEN_SKIP(Token_Kind::tk_colon, "expected ':'"_sv, snots);
+      EXPECT_NODE(try_type, snots);
 
       if(Optional tk_equals = skipmatch(Token_Kind::tk_equals)) {
         snots.push_back(ANTON_MOV(*tk_equals));
