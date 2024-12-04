@@ -132,8 +132,8 @@ target_include_directories(vush PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/compiler")
 set_source_files_properties(
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_autogen/builtin_functions.cpp"
   PROPERTIES
-  COMPILE_OPTIONS ${VUSH_BUILTINS_NO_OPTIMISATIONS}
   COMPILE_OPTIONS ${VUSH_BUILTINS_NO_WARNINGS}
+  COMPILE_FLAGS ${VUSH_BUILTINS_NO_OPTIMISATIONS}
 )
 target_sources(vush
   PRIVATE
