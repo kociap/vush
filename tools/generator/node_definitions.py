@@ -80,9 +80,9 @@ syntax_nodes = [
         "syntax_name": "struct_field",
         "members": [
             Syntax_Member(Node_Kind.node, "attribute_list", Lookup_Kind.index, 0),
-            Syntax_Member(Node_Kind.node, "type", Lookup_Kind.index, 1),
-            Syntax_Member(Node_Kind.token, "identifier", Lookup_Kind.index, 2),
-            Syntax_Member(Node_Kind.node, "initializer", Lookup_Kind.index, 4, optional = True)
+            Syntax_Member(Node_Kind.token, "identifier", Lookup_Kind.index, 1),
+            Syntax_Member(Node_Kind.node, "type", Lookup_Kind.index, 3),
+            Syntax_Member(Node_Kind.node, "initializer", Lookup_Kind.index, 5, optional = True)
         ]
     },
     {
