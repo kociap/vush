@@ -13,10 +13,9 @@
 #include <vush_core/context.hpp>
 #include <vush_core/memory.hpp>
 
-// TODO: add constructors (currently function call which will break if we use an
-// array type).
-
 namespace vush {
+#define ANNOTATE_FUNCTION()
+
   using anton::Optional;
   using namespace anton::literals;
 
@@ -171,6 +170,7 @@ namespace vush {
 
     anton::Expected<Array<SNOT>, Error> build_syntax_tree()
     {
+      ANNOTATE_FUNCTION()
       Array<SNOT> syntax_tree{_allocator};
       while(true) {
         if(_lexer.match_eof()) {
@@ -514,6 +514,7 @@ namespace vush {
     //
     [[nodiscard]] Optional<Syntax_Token> match_setting_string()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state_noskip();
       anton::String value{_allocator};
       // We require at least one token to be present.
@@ -550,6 +551,7 @@ namespace vush {
     // TODO: Error inside try_attribute does not bubble upward.
     Optional<Syntax_Node> try_attribute()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::tk_at, "expected '@'"_sv, snots);
@@ -618,6 +620,7 @@ namespace vush {
 
     Syntax_Node try_attribute_list()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       while(Optional attribute = try_attribute()) {
@@ -632,6 +635,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_declaration()
     {
+      ANNOTATE_FUNCTION()
 
       _lexer.ignore_whitespace_and_comments();
       Optional<Token> lookahead = _lexer.peek_token();
@@ -698,6 +702,7 @@ namespace vush {
     //
     Optional<Syntax_Node> try_decl_block()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state_noskip();
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::tk_lbrace, "expected '{'"_sv, snots);
@@ -719,6 +724,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_decl_import()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state_noskip();
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::kw_import, "expected 'import'"_sv, snots);
@@ -731,6 +737,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_decl_if()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state_noskip();
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::kw_if, "expected 'if'"_sv, snots);
@@ -758,6 +765,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_variable()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Source_Info const source = src_info(begin_state, begin_state);
       Syntax_Node dummy_attribute_list{
@@ -767,6 +775,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_variable(Syntax_Node& attribute_list)
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::kw_var, "expected 'var'"_sv, snots);
@@ -791,6 +800,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_struct_field()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       // TODO: Attribute list does not propagate errors correctly.
@@ -819,6 +829,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_struct_field_block()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::tk_lbrace, "expected '{'"_sv, snots);
@@ -839,6 +850,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_decl_struct(Syntax_Node& attribute_list)
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state_noskip();
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::kw_struct, "expected 'struct'"_sv, snots);
@@ -855,6 +867,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_buffer_field()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       // TODO: Attribute list does not propagate errors correctly.
@@ -882,6 +895,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_buffer_field_block()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::tk_lbrace, "expected '{'"_sv, snots);
@@ -902,6 +916,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_decl_buffer(Syntax_Node& attribute_list)
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state_noskip();
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::kw_buffer, "expected 'buffer'"_sv, snots);
@@ -922,6 +937,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_setting()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       EXPECT_NODE(match_setting_string, snots);
@@ -947,6 +963,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_setting_block()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::tk_lbrace, "expected '{'"_sv, snots);
@@ -967,6 +984,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_decl_settings()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state_noskip();
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::kw_settings, "expected 'settings'"_sv, snots);
@@ -982,6 +1000,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_fn_parameter()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       if(Optional param_if = try_fn_parameter_if()) {
@@ -1014,6 +1033,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_fn_parameter_if()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::kw_if, "expected 'if'"_sv, snots);
@@ -1041,6 +1061,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_fn_parameter_list()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::tk_lparen, "expected '('"_sv, snots);
@@ -1071,6 +1092,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_decl_stage_function(Syntax_Node& attribute_list)
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state_noskip();
       Array<SNOT> snots{_allocator};
 
@@ -1100,6 +1122,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_decl_function(Syntax_Node& attribute_list)
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state_noskip();
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::kw_fn, "expected 'fn'"_sv, snots);
@@ -1124,6 +1147,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_statement()
     {
+      ANNOTATE_FUNCTION()
 
       _lexer.ignore_whitespace_and_comments();
       Optional<Token> lookahead = _lexer.peek_token();
@@ -1219,6 +1243,7 @@ namespace vush {
     //   '{' statements '}'
     Optional<Syntax_Node> try_stmt_block()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::tk_lbrace, "expected '{'"_sv, snots);
@@ -1238,6 +1263,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_stmt_if()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::kw_if, "expected 'if'"_sv, snots);
@@ -1260,6 +1286,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_stmt_switch()
     {
+      ANNOTATE_FUNCTION()
       auto match_switch_arm_list = [this]() -> Optional<Syntax_Node> {
         auto match_switch_arm = [this]() -> Optional<Syntax_Node> {
           Lexer_State const begin_state = _lexer.get_current_state();
@@ -1330,6 +1357,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_stmt_for()
     {
+      ANNOTATE_FUNCTION()
       auto match_for_stmt_variable = [this]() -> Optional<Syntax_Node> {
         Lexer_State const begin_state = _lexer.get_current_state();
         Array<SNOT> snots{_allocator};
@@ -1382,6 +1410,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_stmt_while()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::kw_while, "expected 'while'"_sv, snots);
@@ -1395,6 +1424,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_stmt_do_while()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::kw_do, "expected 'do'"_sv, snots);
@@ -1410,6 +1440,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_stmt_return()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::kw_return, "expected 'return'"_sv, snots);
@@ -1429,6 +1460,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_stmt_assignment()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       EXPECT_NODE(try_expression, snots);
@@ -1490,6 +1522,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_stmt_expression()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       EXPECT_NODE(try_expression, snots);
@@ -1502,11 +1535,13 @@ namespace vush {
 
     Optional<Syntax_Node> try_expression()
     {
+      ANNOTATE_FUNCTION()
       return try_expr_binary(false);
     }
 
     Optional<Syntax_Node> try_expression_without_init()
     {
+      ANNOTATE_FUNCTION()
       return try_expr_binary(true);
     }
 
@@ -1518,6 +1553,7 @@ namespace vush {
     //
     Optional<Syntax_Node> try_expr_binary(bool const disable_init)
     {
+      ANNOTATE_FUNCTION()
       // Parsing binary expressions consists primarily of repeatedly calling two
       // procedures to construct the expression trees - insert_operator and
       // insert_expression.
@@ -1790,6 +1826,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_expr_prefix(bool const disable_init)
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       if(Optional plus = match(Token_Kind::tk_plus)) {
@@ -1819,6 +1856,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_expr_postfix(bool const disable_init)
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Optional expr = try_primary_expression(disable_init);
       if(!expr) {
@@ -1876,6 +1914,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_primary_expression(bool const disable_init)
     {
+      ANNOTATE_FUNCTION()
 
       _lexer.ignore_whitespace_and_comments();
       Optional<Token> lookahead = _lexer.peek_token();
@@ -1954,6 +1993,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_expr_reinterpret()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::kw_reinterpret, "expected 'reinterpret'"_sv,
@@ -1972,6 +2012,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_expr_block()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::tk_lbrace, "expected '{'"_sv, snots);
@@ -1985,6 +2026,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_expr_if()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::kw_if, "expected 'if'"_sv, snots);
@@ -2008,6 +2050,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_field_initializer()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::tk_dot, "expected '.'"_sv, snots);
@@ -2023,6 +2066,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_index_initializer()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::tk_lbracket, "expected '['"_sv, snots);
@@ -2038,6 +2082,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_basic_initializer()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       EXPECT_NODE(try_expression, snots);
@@ -2049,6 +2094,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_init_initializer_list()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::tk_lbrace, "expected '{'"_sv, snots);
@@ -2091,6 +2137,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_expr_init()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       EXPECT_NODE(try_type, snots);
@@ -2102,6 +2149,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_call_arg_list()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::tk_lparen, "expected '('"_sv, snots);
@@ -2134,6 +2182,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_expr_call()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::identifier, "expected identifier"_sv, snots);
@@ -2145,6 +2194,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_expr_identifier()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::identifier, "expected identifier"_sv, snots);
@@ -2156,6 +2206,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_expr_lt_integer()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       if(Optional lt_bin_integer = match(Token_Kind::lt_bin_integer)) {
@@ -2182,6 +2233,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_expr_lt_string()
     {
+      ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Array<SNOT> snots{_allocator};
       EXPECT_TOKEN(Token_Kind::lt_string, "expected string literal"_sv, snots);
@@ -2193,6 +2245,7 @@ namespace vush {
 
     Optional<Syntax_Node> try_type()
     {
+      ANNOTATE_FUNCTION()
       auto try_type_array = [this]() -> Optional<Syntax_Node> {
         Lexer_State const begin_state = _lexer.get_current_state();
         Array<SNOT> snots{_allocator};
