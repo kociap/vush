@@ -12,7 +12,6 @@
 
 #include <vush_core/context.hpp>
 #include <vush_core/memory.hpp>
-#include <vush_lexer/lexer.hpp>
 
 // TODO: add constructors (currently function call which will break if we use an
 // array type).
@@ -163,9 +162,10 @@ namespace vush {
 
   class Parser {
   public:
-    Parser(Allocator* allocator, anton::String_View source_name, Lexer&& lexer)
+    Parser(Allocator* allocator, anton::String_View source_name,
+           char8 const* const source_data, Lexer&& lexer)
       : _allocator(allocator), _source_name(source_name),
-        _lexer(ANTON_MOV(lexer))
+        _source_data(source_data), _lexer(ANTON_MOV(lexer))
     {
     }
 
@@ -204,6 +204,7 @@ namespace vush {
 
     Allocator* _allocator;
     anton::String_View _source_name;
+    char8 const* _source_data;
     Lexer _lexer;
     Parse_Error _last_error;
 
@@ -212,8 +213,8 @@ namespace vush {
       if(_lexer.is_state_end(state)) {
         Token const& token = *(state.current - 1);
         _last_error.message = message;
-        _last_error.line = token.end_line;
-        _last_error.column = token.end_column;
+        // _last_error.line = token.end_line;
+        // _last_error.column = token.end_column;
         _last_error.stream_offset = token.end_offset;
       }
 
@@ -232,8 +233,8 @@ namespace vush {
       if(_lexer.is_state_end(state)) {
         Token const& token = *(state.current - 1);
         _last_error.message = message;
-        _last_error.line = token.end_line;
-        _last_error.column = token.end_column;
+        // _last_error.line = token.end_line;
+        // _last_error.column = token.end_column;
         _last_error.stream_offset = token.end_offset;
       }
 
@@ -255,8 +256,8 @@ namespace vush {
                          .line = start_token.line,
                          .column = start_token.column,
                          .offset = start_token.offset,
-                         .end_line = end_token.end_line,
-                         .end_column = end_token.end_column,
+                         // .end_line = end_token.end_line,
+                         // .end_column = end_token.end_column,
                          .end_offset = end_token.end_offset};
     }
 
@@ -282,7 +283,7 @@ namespace vush {
       if(token_kind == type) {
         _lexer.advance_token();
         Lexer_State const end_state = _lexer.get_current_state_noskip();
-        anton::String7_View const value = token->value;
+        anton::String7_View const value = token->get_value(_source_data);
         // Token_Kind and Syntax_Node_Kind have overlapping values, therefore we
         // convert one to the other via a cast.
         Syntax_Node_Kind const syntax_kind =
@@ -333,7 +334,7 @@ namespace vush {
       }
 
       Token_Kind const token_kind = token->kind;
-      anton::String7_View const token_value = token->value;
+      anton::String7_View const token_value = token->get_value(_source_data);
       if(token_kind == Token_Kind::identifier && token_value == value) {
         _lexer.advance_token();
         Lexer_State const end_state = _lexer.get_current_state_noskip();
@@ -389,10 +390,6 @@ namespace vush {
         anton::math::min(token1.source_info.column, token2.source_info.column);
       source_info.offset =
         anton::math::min(token1.source_info.offset, token2.source_info.offset);
-      source_info.end_line = anton::math::max(token1.source_info.end_line,
-                                              token2.source_info.end_line);
-      source_info.end_column = anton::math::max(token1.source_info.end_column,
-                                                token2.source_info.end_column);
       source_info.end_offset = anton::math::max(token1.source_info.end_offset,
                                                 token2.source_info.end_offset);
       return Syntax_Token(result_type,
@@ -429,12 +426,6 @@ namespace vush {
       source_info.offset =
         anton::math::min(token1.source_info.offset, token2.source_info.offset,
                          token3.source_info.offset);
-      source_info.end_line = anton::math::max(token1.source_info.end_line,
-                                              token2.source_info.end_line,
-                                              token3.source_info.end_line);
-      source_info.end_column = anton::math::max(token1.source_info.end_column,
-                                                token2.source_info.end_column,
-                                                token3.source_info.end_column);
       source_info.end_offset = anton::math::max(token1.source_info.end_offset,
                                                 token2.source_info.end_offset,
                                                 token3.source_info.end_offset);
@@ -545,7 +536,8 @@ namespace vush {
           break;
         }
 
-        value += anton::String_View{token->value.begin(), token->value.end()};
+        anton::String7_View const token_value = token->get_value(_source_data);
+        value += anton::String_View{token_value.begin(), token_value.end()};
         _lexer.advance_token();
       }
 
@@ -1785,8 +1777,6 @@ namespace vush {
         node.source_info.line = left.line;
         node.source_info.column = left.column;
         node.source_info.offset = left.offset;
-        node.source_info.end_line = right.end_line;
-        node.source_info.end_column = right.end_column;
         node.source_info.end_offset = right.end_offset;
       };
 
@@ -2321,14 +2311,12 @@ namespace vush {
           .line = token.line,
           .column = token.column,
           .offset = token.offset,
-          .end_line = token.end_line,
-          .end_column = token.end_column,
           .end_offset = token.end_offset,
         };
-        Syntax_Token syntax_token(
-          static_cast<Syntax_Node_Kind>(token.kind),
-          anton::String(token.value.begin(), token.value.end(), p.allocator),
-          source_info);
+        // TODO: Fix syntax token source.
+        Syntax_Token syntax_token(static_cast<Syntax_Node_Kind>(token.kind),
+                                  anton::String(nullptr, nullptr, p.allocator),
+                                  source_info);
         Insert_Location const insert =
           find_insert_location(p.tl_node, syntax_token);
         insert.array->insert(insert.location, ANTON_MOV(syntax_token));
@@ -2338,24 +2326,19 @@ namespace vush {
 
   anton::Expected<Array<SNOT>, Error> parse_source_to_syntax_tree(
     Context const& ctx, anton::String_View const source_path,
-    anton::String_View const source_code, Parse_Syntax_Options const options)
+    char8 const* const source_data, anton::Slice<Token const> tokens,
+    Parse_Syntax_Options const options)
   {
-    anton::Expected<Array<Token>, Error> lex_result = lex_source(
-      ctx, source_path,
-      anton::String7_View{source_code.bytes_begin(), source_code.bytes_end()});
-    if(!lex_result) {
-      return {anton::expected_error, ANTON_MOV(lex_result.error())};
-    }
-    Parser parser(ctx.allocator, source_path,
-                  Lexer(lex_result->cbegin(), lex_result->cend()));
+    Parser parser(ctx.allocator, source_path, source_data,
+                  Lexer(tokens.cbegin(), tokens.cend()));
     anton::Expected<Array<SNOT>, Error> ast = parser.build_syntax_tree();
     if(ast && options.include_whitespace_and_comments) {
       Insert_Comments_And_Whitespace_Parameters p{
         .allocator = ctx.allocator,
         .source_path = source_path,
         .tl_node = ast.value(),
-        .begin = lex_result->cbegin(),
-        .end = lex_result->cend(),
+        .begin = tokens.cbegin(),
+        .end = tokens.cend(),
       };
       insert_comments_and_whitespace(p);
     }

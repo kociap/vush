@@ -72,13 +72,21 @@ namespace vush {
 
   struct Token {
     Token_Kind kind;
-    anton::String7_View value;
-    i64 offset;
-    i64 line;
-    i64 column;
-    i64 end_offset;
-    i64 end_line;
-    i64 end_column;
+    i32 offset;
+    i32 end_offset;
+    i32 line;
+    i32 column;
+
+    Token(Token_Kind kind, i32 offset, i32 line, i32 column, i32 end_offset)
+      : kind(kind), offset(offset), end_offset(end_offset), line(line),
+        column(column)
+    {
+    }
+
+    [[nodiscard]] anton::String7_View get_value(char8 const* const source) const
+    {
+      return {source + offset, source + end_offset};
+    }
   };
 
   [[nodiscard]] anton::Expected<Array<Token>, Error>

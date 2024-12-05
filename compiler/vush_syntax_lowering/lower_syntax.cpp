@@ -10,6 +10,7 @@
 #include <vush_core/context.hpp>
 #include <vush_core/memory.hpp>
 #include <vush_diagnostics/diagnostics.hpp>
+#include <vush_lexer/lexer.hpp>
 #include <vush_parser/parser.hpp>
 
 namespace vush {
@@ -46,11 +47,30 @@ namespace vush {
                          ANTON_MOV(request_res.data)};
       anton::String_View const source_name = source.name;
       anton::String_View const source_data = source.data;
+      isize const source_size = source_data.size_bytes();
+      if(source_size > anton::limits::maximum_i32) {
+        if(source_info) {
+          return {
+            anton::expected_error,
+            err_source_too_large(ctx, *source_info, source_name, source_size)};
+        } else {
+          return {anton::expected_error, err_source_too_large_no_location(
+                                           ctx, source_name, source_size)};
+        }
+      }
+
       ctx.source_registry->add_source(ANTON_MOV(source));
 
       Parse_Syntax_Options options{.include_whitespace_and_comments = false};
+
+      RETURN_ON_FAIL(lex_result, lex_source, ctx, source_name,
+                     anton::String7_View{source_data.bytes_begin(),
+                                         source_data.bytes_end()});
+
       RETURN_ON_FAIL(parse_result, parse_source_to_syntax_tree, ctx,
-                     source_name, source_data, options);
+                     source_name, source_data.bytes_begin(), lex_result.value(),
+                     options);
+
       RETURN_ON_FAIL(transform_result, lower_syntax_to_ast, ctx,
                      parse_result.value());
       return {anton::expected_value, ANTON_MOV(transform_result.value())};

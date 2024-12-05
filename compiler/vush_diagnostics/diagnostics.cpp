@@ -25,6 +25,36 @@ namespace vush {
     return message;
   }
 
+  Error err_source_too_large(Context& ctx, Source_Info const& source,
+                             anton::String_View source_name, i64 source_size)
+  {
+    Error error = error_from_source(ctx.allocator, source);
+    anton::String_View const source_code =
+      ctx.source_registry->find_source(source.source_path)->data;
+    error.diagnostic = anton::format(
+      ctx.allocator,
+      "error: source \"{}\" is too large ({}B). The maximum allowed size is {}B"_sv,
+      source_name, source_size, anton::limits::maximum_i32);
+    print_source_snippet(ctx, error.extended_diagnostic, source_code, source);
+    error.extended_diagnostic += " source imported here"_sv;
+    return error;
+  }
+
+  Error err_source_too_large_no_location(Context& ctx,
+                                         anton::String_View source_name,
+                                         i64 source_size)
+  {
+    Error error;
+    error.line = 1;
+    error.column = 1;
+    error.source = anton::String("<vush>"_sv, ctx.allocator);
+    error.diagnostic = anton::format(
+      ctx.allocator,
+      "error: source \"{}\" is too large ({}B). The maximum allowed size is {}B"_sv,
+      source_name, source_size, anton::limits::maximum_i32);
+    return error;
+  }
+
   // anton::String format_called_symbol_does_not_name_function(Context const& ctx, Source_Info const& symbol) {
   //     anton::String_View const source = ctx.source_registry->find_source(symbol.source_path)->data;
   //     anton::String message = format_diagnostic_location(ctx.allocator, symbol);
@@ -374,8 +404,6 @@ namespace vush {
     Error error;
     error.line = 1;
     error.column = 1;
-    error.end_line = 1;
-    error.end_column = 1;
     error.source = anton::String("<vush>"_sv, ctx.allocator);
     error.diagnostic =
       anton::String("error: source import failed with the following error: "_sv,

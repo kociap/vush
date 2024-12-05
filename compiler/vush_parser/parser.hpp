@@ -5,6 +5,7 @@
 
 #include <vush_core/types.hpp>
 #include <vush_diagnostics/error.hpp>
+#include <vush_lexer/lexer.hpp>
 #include <vush_syntax/syntax.hpp>
 
 namespace vush {
@@ -18,17 +19,21 @@ namespace vush {
   };
 
   // parse_source_to_syntax_tree
-  // Builds syntax tree from source code.
+  //
+  // Builds the syntax tree from a tokenised source code.
   //
   // Parameters:
   // source_path - Name of the source. Must be address-stable and persist for at
   //               least as long as the syntax tree.
-  // source_code - The source code to be parsed. Must consist of ASCII only.
-  //               Must be address-stable and persist for at least as long as
-  //               the syntax tree.
-  //     options - additional options to use while generating the syntax tree.
+  // source_data - Pointer to the beginning of a source data used to extract
+  //               token information.
+  //      tokens - The tokenised source code to be parsed. Must be
+  //               address-stable and persist for at least as long as the syntax
+  //               tree.
+  //     options - Additional options to use while generating the syntax tree.
   //
   anton::Expected<Array<SNOT>, Error> parse_source_to_syntax_tree(
     Context const& ctx, anton::String_View source_path,
-    anton::String_View source_code, Parse_Syntax_Options options);
+    char8 const* source_data, anton::Slice<Token const> tokens,
+    Parse_Syntax_Options options);
 } // namespace vush

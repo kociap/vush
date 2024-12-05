@@ -15,8 +15,7 @@ namespace vush {
     anton::String extended_diagnostic;
     i64 line;
     i64 column;
-    i64 end_line;
-    i64 end_column;
+    // TODO: Add source offset.
 
     // format
     // Format diagnostic message with source, line and column.

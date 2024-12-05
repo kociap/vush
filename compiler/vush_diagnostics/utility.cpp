@@ -10,8 +10,6 @@ namespace vush {
   {
     return Error{.line = info.line,
                  .column = info.column,
-                 .end_line = info.end_line,
-                 .end_column = info.end_column,
                  .source = anton::String(info.source_path, allocator),
                  .diagnostic = anton::String(allocator),
                  .extended_diagnostic = anton::String(allocator)};
@@ -23,8 +21,6 @@ namespace vush {
   {
     return Error{.line = line,
                  .column = column,
-                 .end_line = line,
-                 .end_column = column + 1,
                  .source = anton::String(source_path, allocator),
                  .diagnostic = anton::String(allocator),
                  .extended_diagnostic = anton::String(allocator)};

@@ -28,6 +28,14 @@ namespace vush {
   [[deprecated("use err_undefined_symbol instead")]] [[nodiscard]] anton::String
   format_undefined_symbol(Context const& ctx, Source_Info const& symbol);
 
+  [[nodiscard]] Error err_source_too_large(Context& ctx,
+                                           Source_Info const& source,
+                                           anton::String_View source_name,
+                                           i64 source_size);
+  [[nodiscard]] Error
+  err_source_too_large_no_location(Context& ctx, anton::String_View source_name,
+                                   i64 source_size);
+
   // TODO: Implement.
   [[nodiscard]] inline Error err_called_symbol_does_not_name_function(
     [[maybe_unused]] Context const& ctx,

@@ -11,8 +11,6 @@ namespace vush {
     i64 column = 0;
     // The offset into the source at which the matched node starts.
     i64 offset = 0;
-    i64 end_line = 0;
-    i64 end_column = 0;
     // The offset into the source at which the matched node ends.
     i64 end_offset = 0;
   };
