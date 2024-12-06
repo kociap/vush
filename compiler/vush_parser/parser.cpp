@@ -2377,10 +2377,10 @@ namespace vush {
     }
   }
 
-  anton::Expected<Array<SNOT>, Error> parse_source_to_syntax_tree(
-    Context const& ctx, anton::String_View const source_path,
-    char8 const* const source_data, anton::Slice<Token const> tokens,
-    Parse_Syntax_Options const options)
+  anton::Expected<Array<SNOT>, Error>
+  parse_tokens(Context const& ctx, anton::String_View const source_path,
+               char8 const* const source_data, anton::Slice<Token const> tokens,
+               Parse_Syntax_Options const options)
   {
     Parser parser(ctx.allocator, source_path, source_data,
                   Lexer(tokens.cbegin(), tokens.cend()));

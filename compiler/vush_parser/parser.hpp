@@ -18,7 +18,7 @@ namespace vush {
     bool include_whitespace_and_comments = false;
   };
 
-  // parse_source_to_syntax_tree
+  // parse_tokens
   //
   // Builds the syntax tree from a tokenised source code.
   //
@@ -32,8 +32,8 @@ namespace vush {
   //               tree.
   //     options - Additional options to use while generating the syntax tree.
   //
-  anton::Expected<Array<SNOT>, Error> parse_source_to_syntax_tree(
-    Context const& ctx, anton::String_View source_path,
-    char8 const* source_data, anton::Slice<Token const> tokens,
-    Parse_Syntax_Options options);
+  anton::Expected<Array<SNOT>, Error>
+  parse_tokens(Context const& ctx, anton::String_View source_path,
+               char8 const* source_data, anton::Slice<Token const> tokens,
+               Parse_Syntax_Options options);
 } // namespace vush

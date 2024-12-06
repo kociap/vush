@@ -78,6 +78,15 @@ namespace vush {
     bool display_line_numbers = true;
   };
 
+  using source_query_callback =
+    anton::Expected<anton::String, anton::String> (*)(Allocator* allocator,
+                                                      anton::String_View name,
+                                                      void* user_data);
+  using source_import_callback =
+    anton::Expected<anton::String, anton::String> (*)(Allocator* allocator,
+                                                      anton::String_View path,
+                                                      void* user_data);
+
   struct Configuration {
     anton::String source_name;
     Array<Constant_Define> defines;
@@ -86,14 +95,14 @@ namespace vush {
     Diagnostics_Options diagnostics;
   };
 
-  struct Source_Import_Result {
-    anton::String source_name;
-    anton::String data;
+  struct Source_Callbacks {
+    source_query_callback query_source_cb;
+    void* query_main_source_user_data;
+    void* query_source_user_data;
+    source_import_callback import_source_cb;
+    void* import_main_source_user_data;
+    void* import_source_user_data;
   };
-
-  using source_import_callback =
-    anton::Expected<Source_Import_Result, anton::String> (*)(
-      Allocator& allocator, anton::String_View path, void* user_data);
 
   struct Shader {
     anton::String pass_identifier;
@@ -117,7 +126,7 @@ namespace vush {
   //
   anton::Expected<Build_Result, Error>
   compile_to_spirv(Configuration const& config, Allocator& allocator,
-                   source_import_callback callback, void* user_data);
+                   Source_Callbacks callbacks);
 
   // compile_to_spirv
   //
@@ -130,5 +139,6 @@ namespace vush {
   //
   anton::Expected<Build_Result, Error>
   compile_to_spirv(Configuration const& config, Allocator& allocator,
-                   anton::Slice<anton::String const> const& import_directories);
+                   anton::String_View current_working_directory,
+                   anton::Slice<anton::String const> import_directories);
 } // namespace vush

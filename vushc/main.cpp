@@ -1,7 +1,10 @@
 #include <stdlib.h>
+// TODO: non-portable
+#include <unistd.h>
 
 #include <anton/filesystem.hpp>
 #include <anton/format.hpp>
+#include <anton/optional.hpp>
 #include <anton/stdio.hpp>
 #include <anton/string7_view.hpp>
 #include <anton/string_view.hpp>
@@ -221,6 +224,18 @@ namespace vush {
     return anton::String(string.begin(), string.end(), allocator);
   }
 
+  anton::String get_cwd(Allocator* allocator)
+  {
+    char* buffer = getcwd(nullptr, 0);
+    if(buffer == nullptr) {
+      return anton::String{allocator};
+    }
+
+    anton::String cwd(buffer, allocator);
+    free(buffer);
+    return ANTON_MOV(cwd);
+  }
+
   i32 vushc_main(i32 const argc, char const* const* const argv)
 
   {
@@ -273,8 +288,9 @@ namespace vush {
 
     config.source_name = string7_to_string(arguments[0], &allocator);
 
+    anton::String_View const cwd = get_cwd(&allocator);
     anton::Expected<vush::Build_Result, vush::Error> compilation_result =
-      vush::compile_to_spirv(config, allocator, import_directories);
+      vush::compile_to_spirv(config, allocator, cwd, import_directories);
     if(!compilation_result) {
       anton::print(compilation_result.error().format(&allocator, true));
       return EXIT_FAILURE;

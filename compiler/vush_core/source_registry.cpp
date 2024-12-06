@@ -14,8 +14,9 @@ namespace vush {
     }
   }
 
-  void Source_Registry::add_source(Source_Data source)
+  Source_Data const* Source_Registry::add_source(Source_Data source)
   {
-    sources.emplace(source.name, ANTON_MOV(source));
+    auto result = sources.emplace(source.name, ANTON_MOV(source));
+    return &result->value;
   }
 } // namespace vush

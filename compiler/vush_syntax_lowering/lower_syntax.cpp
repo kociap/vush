@@ -22,62 +22,6 @@ namespace vush {
     return {anton::expected_error, ANTON_MOV(variable.error())}; \
   }
 
-  anton::Expected<ast::Node_List, Error>
-  import_source_code(Context& ctx, anton::String_View const source_name,
-                     anton::Optional<Source_Info> const source_info)
-  {
-    anton::Expected<Source_Import_Result, anton::String> source_request_res =
-      ctx.source_import_cb(*ctx.allocator, source_name,
-                           ctx.source_import_user_data);
-    if(!source_request_res) {
-      if(source_info) {
-        return {anton::expected_error,
-                err_source_import_failed(ctx, *source_info,
-                                         source_request_res.error())};
-      } else {
-        return {anton::expected_error, err_source_import_failed_no_location(
-                                         ctx, source_request_res.error())};
-      }
-    }
-
-    Source_Import_Result& request_res = source_request_res.value();
-    // Ensure we're not importing the same source multiple times.
-    if(ctx.source_registry->find_source(request_res.source_name) == nullptr) {
-      Source_Data source{ANTON_MOV(request_res.source_name),
-                         ANTON_MOV(request_res.data)};
-      anton::String_View const source_name = source.name;
-      anton::String_View const source_data = source.data;
-      isize const source_size = source_data.size_bytes();
-      if(source_size > anton::limits::maximum_i32) {
-        if(source_info) {
-          return {
-            anton::expected_error,
-            err_source_too_large(ctx, *source_info, source_name, source_size)};
-        } else {
-          return {anton::expected_error, err_source_too_large_no_location(
-                                           ctx, source_name, source_size)};
-        }
-      }
-
-      ctx.source_registry->add_source(ANTON_MOV(source));
-
-      Parse_Syntax_Options options{.include_whitespace_and_comments = false};
-
-      RETURN_ON_FAIL(lex_result, lex_source, ctx, source_name,
-                     anton::String7_View{source_data.bytes_begin(),
-                                         source_data.bytes_end()});
-
-      RETURN_ON_FAIL(parse_result, parse_source_to_syntax_tree, ctx,
-                     source_name, source_data.bytes_begin(), lex_result.value(),
-                     options);
-
-      RETURN_ON_FAIL(transform_result, lower_syntax_to_ast, ctx,
-                     parse_result.value());
-      return {anton::expected_value, ANTON_MOV(transform_result.value())};
-    } else {
-      return {anton::expected_value, ast::Node_List{}};
-    }
-  }
 
   [[nodiscard]] static ast::Identifier
   transform_identifier(Context const& ctx, Syntax_Token const& token)
@@ -451,8 +395,9 @@ namespace vush {
     } break;
 
     case Syntax_Node_Kind::expr_lt_string: {
-      // There are no string literals in the language besides the ones used by decl_import which
-      // we have special handling for in place, therefore we leave this unimplemented.
+      // There are no string literals in the language besides the ones used by
+      // decl_import which we have special handling for in place, therefore we
+      // leave this unimplemented.
       ANTON_UNREACHABLE("unimplemented");
     } break;
 
@@ -827,43 +772,6 @@ namespace vush {
     }
   }
 
-  [[nodiscard]] static anton::Expected<bool, Error>
-  evaluate_constant_expression(Context const& ctx, Syntax_Node const& node)
-  {
-    // TODO: Implement.
-    return {anton::expected_value, true};
-  }
-
-  [[nodiscard]] static anton::Expected<ast::Node_List, Error>
-  transform_decl_if(Context& ctx, Syntax_Node const& node)
-  {
-    RETURN_ON_FAIL(condition, evaluate_constant_expression, ctx,
-                   get_decl_if_condition(node));
-    if(condition.value()) {
-      Syntax_Node const& then_node = get_decl_if_then_branch(node);
-      return lower_syntax_to_ast(ctx, then_node.children);
-    } else {
-      anton::Optional<Syntax_Node const&> else_node =
-        get_decl_if_else_branch(node);
-      if(else_node) {
-        return lower_syntax_to_ast(ctx, else_node.value().children);
-      } else {
-        return {anton::expected_value, ast::Node_List{}};
-      }
-    }
-  }
-
-  [[nodiscard]] static anton::Expected<ast::Node_List, Error>
-  transform_decl_import(Context& ctx, Syntax_Node const& node)
-  {
-    Syntax_Node const& path_node = get_decl_import_path(node);
-    Syntax_Token const& path_token = get_expr_lt_string_value(path_node);
-    // Trim the double quotation marks.
-    anton::String_View const source_name{path_token.value.bytes_begin() + 1,
-                                         path_token.value.bytes_end() - 1};
-    return import_source_code(ctx, source_name, node.source_info);
-  }
-
   [[nodiscard]] static anton::Expected<ast::Decl_Struct*, Error>
   transform_decl_struct(Context const& ctx, Syntax_Node const& node)
   {
@@ -955,35 +863,20 @@ namespace vush {
   [[nodiscard]] static anton::Expected<ast::Fn_Parameter*, Error>
   transform_parameter(Context const& ctx, Syntax_Node const& node)
   {
-    if(node.kind == Syntax_Node_Kind::fn_parameter) {
-      RETURN_ON_FAIL(attribute_list, transform_attribute_list, ctx,
-                     get_fn_parameter_attribute_list(node));
-      ast::Identifier const identifier =
-        transform_identifier(ctx, get_fn_parameter_identifier(node));
-      RETURN_ON_FAIL(type, transform_type, ctx, get_fn_parameter_type(node));
-      ast::Identifier source;
-      if(anton::Optional result = get_fn_parameter_source(node)) {
-        source = transform_identifier(ctx, result.value());
-      }
-
-      return {anton::expected_value,
-              VUSH_ALLOCATE(ast::Fn_Parameter, ctx.allocator,
-                            attribute_list.value(), identifier, type.value(),
-                            source, node.source_info)};
-    } else if(node.kind == Syntax_Node_Kind::fn_parameter_if) {
-      RETURN_ON_FAIL(condition, evaluate_constant_expression, ctx,
-                     get_fn_parameter_if_condition(node));
-      if(condition.value()) {
-        Syntax_Node const& then_node = get_fn_parameter_if_then_branch(node);
-        return transform_parameter(ctx, then_node);
-      } else {
-        Syntax_Node const& else_node = get_fn_parameter_if_else_branch(node);
-        return transform_parameter(ctx, else_node);
-      }
-    } else {
-      // TODO: Error.
-      ANTON_UNREACHABLE("unreachable");
+    RETURN_ON_FAIL(attribute_list, transform_attribute_list, ctx,
+                   get_fn_parameter_attribute_list(node));
+    ast::Identifier const identifier =
+      transform_identifier(ctx, get_fn_parameter_identifier(node));
+    RETURN_ON_FAIL(type, transform_type, ctx, get_fn_parameter_type(node));
+    ast::Identifier source;
+    if(anton::Optional result = get_fn_parameter_source(node)) {
+      source = transform_identifier(ctx, result.value());
     }
+
+    return {anton::expected_value,
+            VUSH_ALLOCATE(ast::Fn_Parameter, ctx.allocator,
+                          attribute_list.value(), identifier, type.value(),
+                          source, node.source_info)};
   }
 
   [[nodiscard]] static anton::Expected<ast::Fn_Parameter_List, Error>
@@ -1056,8 +949,8 @@ namespace vush {
                           parameters.value(), body.value(), node.source_info)};
   }
 
-  anton::Expected<ast::Node_List, Error>
-  lower_syntax_to_ast(Context& ctx, Array<SNOT> const& syntax)
+  anton::Expected<ast::Node_List, Error> lower_syntax(Context& ctx,
+                                                      Array<SNOT> const& syntax)
   {
     auto& abstract =
       *VUSH_ALLOCATE(Array<ast::Node*>, ctx.allocator, ctx.allocator);
@@ -1068,18 +961,6 @@ namespace vush {
 
       Syntax_Node const& syntax_node = snot.left();
       switch(syntax_node.kind) {
-      case Syntax_Node_Kind::decl_if: {
-        RETURN_ON_FAIL(result, transform_decl_if, ctx, syntax_node);
-        ast::Node_List const decls = result.value();
-        abstract.insert(abstract.end(), decls.begin(), decls.end());
-      } break;
-
-      case Syntax_Node_Kind::decl_import: {
-        RETURN_ON_FAIL(result, transform_decl_import, ctx, syntax_node);
-        ast::Node_List const decls = result.value();
-        abstract.insert(abstract.end(), decls.begin(), decls.end());
-      } break;
-
       case Syntax_Node_Kind::variable: {
         RETURN_ON_FAIL(result, transform_variable, ctx, syntax_node);
         abstract.insert(abstract.end(), result.value());
@@ -1113,6 +994,8 @@ namespace vush {
         abstract.insert(abstract.end(), decl);
       } break;
 
+      case Syntax_Node_Kind::decl_if:
+      case Syntax_Node_Kind::decl_import:
       default:
         ANTON_UNREACHABLE("unreachable");
       }
