@@ -10,14 +10,13 @@ class Node_Kind(Enum):
 
 class Syntax_Member:
     # unwrap has effect only when node_kind is node and lookup is search.
-    def __init__(self, node_kind, name, lookup, index, optional = False, unwrap = False, offset = False):
+    def __init__(self, node_kind, name, lookup, index, optional = False, unwrap = False):
         self.node_kind = node_kind
         self.name = name
         self.lookup = lookup
         self.index = index
         self.optional = optional
         self.unwrap = unwrap
-        self.offset = offset
 
 syntax_nodes = [
     {

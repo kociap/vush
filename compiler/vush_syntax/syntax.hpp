@@ -1,16 +1,17 @@
 #pragma once
 
+#include <anton/ilist.hpp>
 #include <anton/string.hpp>
 
-#include <vush_core/either.hpp>
 #include <vush_core/source_info.hpp>
 #include <vush_core/types.hpp>
 
 namespace vush {
-  // Syntax_Node_Kind
+  // Syntax Node Or Token Kind (SNOT_Kind)
+  //
   // Overlaps with lexer's Token_Kind.
   //
-  enum struct Syntax_Node_Kind {
+  enum struct SNOT_Kind {
     identifier,
     comment,
     whitespace,
@@ -94,6 +95,7 @@ namespace vush {
     tk_colon2, // ::
 
     // tk_setting_string
+    //
     // A special type of string only used by setting key and values. This token contains anything
     // other than comments, whitespace, colons, left braces or right braces.
     //
@@ -159,6 +161,7 @@ namespace vush {
     expr_lt_float,
     expr_lt_string,
     // expr_default
+    //
     // The 'default' label in stmt_case.
     //
     expr_default,
@@ -186,30 +189,40 @@ namespace vush {
     for_expression,
   };
 
-  struct Syntax_Token;
-  struct Syntax_Node;
-
-  // Syntax Node Or Token
-  using SNOT = Either<Syntax_Node, Syntax_Token>;
-
-  struct Syntax_Token {
-    anton::String value;
-    Source_Info source_info;
-    Syntax_Node_Kind kind;
-
-    Syntax_Token(Syntax_Node_Kind kind, anton::String value,
-                 Source_Info const& source_info);
-  };
-
-  // Syntax_Node
-  // Untyped syntax node containing syntax information.
+  // Syntax Node Or Token (SNOT)
   //
-  struct Syntax_Node {
-    Array<SNOT> children;
+  struct SNOT: public anton::IList_DNode {
+    SNOT_Kind kind;
     Source_Info source_info;
-    Syntax_Node_Kind kind;
+    union {
+      char8 const* source;
+      SNOT* children;
+    };
 
-    Syntax_Node(Syntax_Node_Kind kind, Array<SNOT> array,
-                Source_Info const& source_info);
+    SNOT(SNOT_Kind kind, Source_Info source_info, char8 const* source)
+      : kind(kind), source_info(source_info), source(source)
+    {
+    }
+
+    SNOT(SNOT_Kind kind, Source_Info source_info, SNOT* children)
+      : kind(kind), source_info(source_info), children(children)
+    {
+    }
+
+    [[nodiscard]] bool is_token() const
+    {
+      return static_cast<u32>(kind) <=
+             static_cast<u32>(SNOT_Kind::tk_setting_string);
+    }
+
+    [[nodiscard]] bool is_node() const
+    {
+      return !is_token();
+    }
+
+    [[nodiscard]] anton::String_View get_value() const
+    {
+      return {source + source_info.offset, source + source_info.end_offset};
+    }
   };
 } // namespace vush

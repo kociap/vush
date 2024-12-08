@@ -5,1101 +5,1633 @@
 #include <vush_syntax/syntax.hpp>
 
 namespace vush {
-  anton::Optional<Syntax_Token const&>
-  get_type_named_mut(Syntax_Node const& node)
+  SNOT const* get_type_named_mut(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::type_named,
-                 "node is not type_named");
-    for(SNOT const& snot: node.children) {
-      if(snot.is_right() && snot.right().kind == Syntax_Node_Kind::kw_mut) {
-        return snot.right();
+    ANTON_ASSERT(node->kind == SNOT_Kind::type_named, "node is not type_named");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(child->kind == SNOT_Kind::kw_mut) {
+        return child;
       }
+      child = anton::ilist_next(child);
+      index += 1;
     }
-    return anton::null_optional;
-  };
-
-  Syntax_Token const& get_type_named_value(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::type_named,
-                 "node is not type_named");
-    for(SNOT const& snot: node.children) {
-      if(snot.is_right() && snot.right().kind == Syntax_Node_Kind::identifier) {
-        return snot.right();
-      }
-    }
-    ANTON_UNREACHABLE("identifier not present in type_named");
-  };
-
-  anton::Optional<Syntax_Token const&>
-  get_type_array_mut(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::type_array,
-                 "node is not type_array");
-    for(SNOT const& snot: node.children) {
-      if(snot.is_right() && snot.right().kind == Syntax_Node_Kind::kw_mut) {
-        return snot.right();
-      }
-    }
-    return anton::null_optional;
-  };
-
-  Syntax_Node const& get_type_array_base(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::type_array,
-                 "node is not type_array");
-    for(SNOT const& snot: node.children) {
-      if(snot.is_left() &&
-         snot.left().kind == Syntax_Node_Kind::type_array_base) {
-        return snot.left().children[0].left();
-      }
-    }
-    ANTON_UNREACHABLE("type_array_base not present in type_array");
-  };
-
-  anton::Optional<Syntax_Node const&>
-  get_type_array_size(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::type_array,
-                 "node is not type_array");
-    for(SNOT const& snot: node.children) {
-      if(snot.is_left() &&
-         snot.left().kind == Syntax_Node_Kind::type_array_size) {
-        return snot.left().children[0].left();
-      }
-    }
-    return anton::null_optional;
-  };
-
-  Syntax_Token const& get_attribute_identifier(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::attribute,
-                 "node is not attribute");
-    ANTON_ASSERT(node.children.size() > (1), "attribute has too few children");
-    ANTON_ASSERT(node.children[1].is_right(),
-                 "identifier in attribute is not Syntax_Token");
-    return node.children[1].right();
+    return nullptr;
   }
 
-  anton::Optional<Syntax_Node const&>
-  get_attribute_parameter_list(Syntax_Node const& node)
+  SNOT const* get_type_named_value(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::attribute,
-                 "node is not attribute");
-    if(node.children.size() > (2)) {
-      ANTON_ASSERT(node.children[2].is_left(),
-                   "parameter_list in attribute is not Syntax_Node");
-      return node.children[2].left();
-    } else {
-      return anton::null_optional;
+    ANTON_ASSERT(node->kind == SNOT_Kind::type_named, "node is not type_named");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(child->kind == SNOT_Kind::identifier) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
     }
+    ANTON_UNREACHABLE("member identifier not present in type_named");
   }
 
-  Syntax_Token const& get_attribute_parameter_keyed_key(Syntax_Node const& node)
+  SNOT const* get_type_array_mut(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::attribute_parameter_keyed,
+    ANTON_ASSERT(node->kind == SNOT_Kind::type_array, "node is not type_array");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(child->kind == SNOT_Kind::kw_mut) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    return nullptr;
+  }
+
+  SNOT const* get_type_array_base(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::type_array, "node is not type_array");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(child->kind == SNOT_Kind::type_array_base) {
+        return child->children;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member type_array_base not present in type_array");
+  }
+
+  SNOT const* get_type_array_size(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::type_array, "node is not type_array");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(child->kind == SNOT_Kind::type_array_size) {
+        return child->children;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    return nullptr;
+  }
+
+  SNOT const* get_attribute_identifier(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::attribute, "node is not attribute");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 1) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 1 not present in attribute");
+  }
+
+  SNOT const* get_attribute_parameter_list(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::attribute, "node is not attribute");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 2) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    return nullptr;
+  }
+
+  SNOT const* get_attribute_parameter_keyed_key(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::attribute_parameter_keyed,
                  "node is not attribute_parameter_keyed");
-    ANTON_ASSERT(node.children.size() > (0),
-                 "attribute_parameter_keyed has too few children");
-    ANTON_ASSERT(node.children[0].is_right(),
-                 "key in attribute_parameter_keyed is not Syntax_Token");
-    return node.children[0].right();
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 0) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 0 not present in attribute_parameter_keyed");
   }
 
-  Syntax_Node const&
-  get_attribute_parameter_keyed_value(Syntax_Node const& node)
+  SNOT const* get_attribute_parameter_keyed_value(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::attribute_parameter_keyed,
+    ANTON_ASSERT(node->kind == SNOT_Kind::attribute_parameter_keyed,
                  "node is not attribute_parameter_keyed");
-    ANTON_ASSERT(node.children.size() > (2),
-                 "attribute_parameter_keyed has too few children");
-    ANTON_ASSERT(node.children[2].is_left(),
-                 "value in attribute_parameter_keyed is not Syntax_Node");
-    return node.children[2].left();
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 2) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 2 not present in attribute_parameter_keyed");
   }
 
-  Syntax_Node const&
-  get_attribute_parameter_positional_value(Syntax_Node const& node)
+  SNOT const* get_attribute_parameter_positional_value(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::attribute_parameter_positional,
+    ANTON_ASSERT(node->kind == SNOT_Kind::attribute_parameter_positional,
                  "node is not attribute_parameter_positional");
-    ANTON_ASSERT(node.children.size() > (0),
-                 "attribute_parameter_positional has too few children");
-    ANTON_ASSERT(node.children[0].is_left(),
-                 "value in attribute_parameter_positional is not Syntax_Node");
-    return node.children[0].left();
-  }
-
-  Syntax_Node const& get_variable_attribute_list(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::variable,
-                 "node is not variable");
-    ANTON_ASSERT(node.children.size() > (0), "variable has too few children");
-    ANTON_ASSERT(node.children[0].is_left(),
-                 "attribute_list in variable is not Syntax_Node");
-    return node.children[0].left();
-  }
-
-  Syntax_Token const& get_variable_identifier(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::variable,
-                 "node is not variable");
-    ANTON_ASSERT(node.children.size() > (2), "variable has too few children");
-    ANTON_ASSERT(node.children[2].is_right(),
-                 "identifier in variable is not Syntax_Token");
-    return node.children[2].right();
-  }
-
-  Syntax_Node const& get_variable_type(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::variable,
-                 "node is not variable");
-    ANTON_ASSERT(node.children.size() > (4), "variable has too few children");
-    ANTON_ASSERT(node.children[4].is_left(),
-                 "type in variable is not Syntax_Node");
-    return node.children[4].left();
-  }
-
-  anton::Optional<Syntax_Node const&>
-  get_variable_initializer(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::variable,
-                 "node is not variable");
-    if(node.children.size() > (6)) {
-      ANTON_ASSERT(node.children[6].is_left(),
-                   "initializer in variable is not Syntax_Node");
-      return node.children[6].left();
-    } else {
-      return anton::null_optional;
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 0) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
     }
+    ANTON_UNREACHABLE("member 0 not present in attribute_parameter_positional");
   }
 
-  Syntax_Node const& get_decl_if_condition(Syntax_Node const& node)
+  SNOT const* get_variable_attribute_list(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::decl_if, "node is not decl_if");
-    ANTON_ASSERT(node.children.size() > (1), "decl_if has too few children");
-    ANTON_ASSERT(node.children[1].is_left(),
-                 "condition in decl_if is not Syntax_Node");
-    return node.children[1].left();
-  }
-
-  Syntax_Node const& get_decl_if_then_branch(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::decl_if, "node is not decl_if");
-    ANTON_ASSERT(node.children.size() > (2), "decl_if has too few children");
-    ANTON_ASSERT(node.children[2].is_left(),
-                 "then_branch in decl_if is not Syntax_Node");
-    return node.children[2].left();
-  }
-
-  anton::Optional<Syntax_Node const&>
-  get_decl_if_else_branch(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::decl_if, "node is not decl_if");
-    if(node.children.size() > (4)) {
-      ANTON_ASSERT(node.children[4].is_left(),
-                   "else_branch in decl_if is not Syntax_Node");
-      return node.children[4].left();
-    } else {
-      return anton::null_optional;
+    ANTON_ASSERT(node->kind == SNOT_Kind::variable, "node is not variable");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 0) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
     }
+    ANTON_UNREACHABLE("member 0 not present in variable");
   }
 
-  Syntax_Node const& get_decl_import_path(Syntax_Node const& node)
+  SNOT const* get_variable_identifier(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::decl_import,
+    ANTON_ASSERT(node->kind == SNOT_Kind::variable, "node is not variable");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 2) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 2 not present in variable");
+  }
+
+  SNOT const* get_variable_type(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::variable, "node is not variable");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 4) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 4 not present in variable");
+  }
+
+  SNOT const* get_variable_initializer(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::variable, "node is not variable");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 6) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    return nullptr;
+  }
+
+  SNOT const* get_decl_if_condition(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::decl_if, "node is not decl_if");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 1) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 1 not present in decl_if");
+  }
+
+  SNOT const* get_decl_if_then_branch(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::decl_if, "node is not decl_if");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 2) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 2 not present in decl_if");
+  }
+
+  SNOT const* get_decl_if_else_branch(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::decl_if, "node is not decl_if");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 4) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    return nullptr;
+  }
+
+  SNOT const* get_decl_import_path(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::decl_import,
                  "node is not decl_import");
-    ANTON_ASSERT(node.children.size() > (1),
-                 "decl_import has too few children");
-    ANTON_ASSERT(node.children[1].is_left(),
-                 "path in decl_import is not Syntax_Node");
-    return node.children[1].left();
-  }
-
-  Syntax_Node const& get_struct_field_attribute_list(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::struct_field,
-                 "node is not struct_field");
-    ANTON_ASSERT(node.children.size() > (0),
-                 "struct_field has too few children");
-    ANTON_ASSERT(node.children[0].is_left(),
-                 "attribute_list in struct_field is not Syntax_Node");
-    return node.children[0].left();
-  }
-
-  Syntax_Token const& get_struct_field_identifier(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::struct_field,
-                 "node is not struct_field");
-    ANTON_ASSERT(node.children.size() > (1),
-                 "struct_field has too few children");
-    ANTON_ASSERT(node.children[1].is_right(),
-                 "identifier in struct_field is not Syntax_Token");
-    return node.children[1].right();
-  }
-
-  Syntax_Node const& get_struct_field_type(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::struct_field,
-                 "node is not struct_field");
-    ANTON_ASSERT(node.children.size() > (3),
-                 "struct_field has too few children");
-    ANTON_ASSERT(node.children[3].is_left(),
-                 "type in struct_field is not Syntax_Node");
-    return node.children[3].left();
-  }
-
-  anton::Optional<Syntax_Node const&>
-  get_struct_field_initializer(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::struct_field,
-                 "node is not struct_field");
-    if(node.children.size() > (5)) {
-      ANTON_ASSERT(node.children[5].is_left(),
-                   "initializer in struct_field is not Syntax_Node");
-      return node.children[5].left();
-    } else {
-      return anton::null_optional;
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 1) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
     }
+    ANTON_UNREACHABLE("member 1 not present in decl_import");
   }
 
-  Syntax_Node const& get_decl_struct_attribute_list(Syntax_Node const& node)
+  SNOT const* get_struct_field_attribute_list(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::decl_struct,
-                 "node is not decl_struct");
-    ANTON_ASSERT(node.children.size() > (0),
-                 "decl_struct has too few children");
-    ANTON_ASSERT(node.children[0].is_left(),
-                 "attribute_list in decl_struct is not Syntax_Node");
-    return node.children[0].left();
-  }
-
-  Syntax_Token const& get_decl_struct_identifier(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::decl_struct,
-                 "node is not decl_struct");
-    ANTON_ASSERT(node.children.size() > (2),
-                 "decl_struct has too few children");
-    ANTON_ASSERT(node.children[2].is_right(),
-                 "identifier in decl_struct is not Syntax_Token");
-    return node.children[2].right();
-  }
-
-  Syntax_Node const& get_decl_struct_fields(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::decl_struct,
-                 "node is not decl_struct");
-    ANTON_ASSERT(node.children.size() > (3),
-                 "decl_struct has too few children");
-    ANTON_ASSERT(node.children[3].is_left(),
-                 "fields in decl_struct is not Syntax_Node");
-    return node.children[3].left();
-  }
-
-  Syntax_Node const& get_buffer_field_attribute_list(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::buffer_field,
-                 "node is not buffer_field");
-    ANTON_ASSERT(node.children.size() > (0),
-                 "buffer_field has too few children");
-    ANTON_ASSERT(node.children[0].is_left(),
-                 "attribute_list in buffer_field is not Syntax_Node");
-    return node.children[0].left();
-  }
-
-  Syntax_Node const& get_buffer_field_type(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::buffer_field,
-                 "node is not buffer_field");
-    ANTON_ASSERT(node.children.size() > (1),
-                 "buffer_field has too few children");
-    ANTON_ASSERT(node.children[1].is_left(),
-                 "type in buffer_field is not Syntax_Node");
-    return node.children[1].left();
-  }
-
-  Syntax_Token const& get_buffer_field_identifier(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::buffer_field,
-                 "node is not buffer_field");
-    ANTON_ASSERT(node.children.size() > (2),
-                 "buffer_field has too few children");
-    ANTON_ASSERT(node.children[2].is_right(),
-                 "identifier in buffer_field is not Syntax_Token");
-    return node.children[2].right();
-  }
-
-  Syntax_Node const& get_decl_buffer_attribute_list(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::decl_buffer,
-                 "node is not decl_buffer");
-    ANTON_ASSERT(node.children.size() > (0),
-                 "decl_buffer has too few children");
-    ANTON_ASSERT(node.children[0].is_left(),
-                 "attribute_list in decl_buffer is not Syntax_Node");
-    return node.children[0].left();
-  }
-
-  Syntax_Token const& get_decl_buffer_pass(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::decl_buffer,
-                 "node is not decl_buffer");
-    ANTON_ASSERT(node.children.size() > (2),
-                 "decl_buffer has too few children");
-    ANTON_ASSERT(node.children[2].is_right(),
-                 "pass in decl_buffer is not Syntax_Token");
-    return node.children[2].right();
-  }
-
-  Syntax_Token const& get_decl_buffer_identifier(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::decl_buffer,
-                 "node is not decl_buffer");
-    ANTON_ASSERT(node.children.size() > (4),
-                 "decl_buffer has too few children");
-    ANTON_ASSERT(node.children[4].is_right(),
-                 "identifier in decl_buffer is not Syntax_Token");
-    return node.children[4].right();
-  }
-
-  Syntax_Node const& get_decl_buffer_fields(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::decl_buffer,
-                 "node is not decl_buffer");
-    ANTON_ASSERT(node.children.size() > (5),
-                 "decl_buffer has too few children");
-    ANTON_ASSERT(node.children[5].is_left(),
-                 "fields in decl_buffer is not Syntax_Node");
-    return node.children[5].left();
-  }
-
-  Syntax_Node const& get_decl_function_attribute_list(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::decl_function,
-                 "node is not decl_function");
-    ANTON_ASSERT(node.children.size() > (0),
-                 "decl_function has too few children");
-    ANTON_ASSERT(node.children[0].is_left(),
-                 "attribute_list in decl_function is not Syntax_Node");
-    return node.children[0].left();
-  }
-
-  Syntax_Token const& get_decl_function_identifier(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::decl_function,
-                 "node is not decl_function");
-    ANTON_ASSERT(node.children.size() > (2),
-                 "decl_function has too few children");
-    ANTON_ASSERT(node.children[2].is_right(),
-                 "identifier in decl_function is not Syntax_Token");
-    return node.children[2].right();
-  }
-
-  Syntax_Node const& get_decl_function_parameter_list(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::decl_function,
-                 "node is not decl_function");
-    ANTON_ASSERT(node.children.size() > (3),
-                 "decl_function has too few children");
-    ANTON_ASSERT(node.children[3].is_left(),
-                 "parameter_list in decl_function is not Syntax_Node");
-    return node.children[3].left();
-  }
-
-  Syntax_Node const& get_decl_function_return_type(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::decl_function,
-                 "node is not decl_function");
-    ANTON_ASSERT(node.children.size() > (5),
-                 "decl_function has too few children");
-    ANTON_ASSERT(node.children[5].is_left(),
-                 "return_type in decl_function is not Syntax_Node");
-    return node.children[5].left();
-  }
-
-  Syntax_Node const& get_decl_function_body(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::decl_function,
-                 "node is not decl_function");
-    ANTON_ASSERT(node.children.size() > (6),
-                 "decl_function has too few children");
-    ANTON_ASSERT(node.children[6].is_left(),
-                 "body in decl_function is not Syntax_Node");
-    return node.children[6].left();
-  }
-
-  Syntax_Node const&
-  get_decl_stage_function_attribute_list(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::decl_stage_function,
-                 "node is not decl_stage_function");
-    ANTON_ASSERT(node.children.size() > (0),
-                 "decl_stage_function has too few children");
-    ANTON_ASSERT(node.children[0].is_left(),
-                 "attribute_list in decl_stage_function is not Syntax_Node");
-    return node.children[0].left();
-  }
-
-  Syntax_Token const& get_decl_stage_function_pass(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::decl_stage_function,
-                 "node is not decl_stage_function");
-    ANTON_ASSERT(node.children.size() > (2),
-                 "decl_stage_function has too few children");
-    ANTON_ASSERT(node.children[2].is_right(),
-                 "pass in decl_stage_function is not Syntax_Token");
-    return node.children[2].right();
-  }
-
-  Syntax_Token const& get_decl_stage_function_stage(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::decl_stage_function,
-                 "node is not decl_stage_function");
-    ANTON_ASSERT(node.children.size() > (4),
-                 "decl_stage_function has too few children");
-    ANTON_ASSERT(node.children[4].is_right(),
-                 "stage in decl_stage_function is not Syntax_Token");
-    return node.children[4].right();
-  }
-
-  Syntax_Node const&
-  get_decl_stage_function_parameter_list(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::decl_stage_function,
-                 "node is not decl_stage_function");
-    ANTON_ASSERT(node.children.size() > (5),
-                 "decl_stage_function has too few children");
-    ANTON_ASSERT(node.children[5].is_left(),
-                 "parameter_list in decl_stage_function is not Syntax_Node");
-    return node.children[5].left();
-  }
-
-  Syntax_Node const& get_decl_stage_function_body(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::decl_stage_function,
-                 "node is not decl_stage_function");
-    ANTON_ASSERT(node.children.size() > (6),
-                 "decl_stage_function has too few children");
-    ANTON_ASSERT(node.children[6].is_left(),
-                 "body in decl_stage_function is not Syntax_Node");
-    return node.children[6].left();
-  }
-
-  Syntax_Node const& get_fn_parameter_attribute_list(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::fn_parameter,
-                 "node is not fn_parameter");
-    ANTON_ASSERT(node.children.size() > (0),
-                 "fn_parameter has too few children");
-    ANTON_ASSERT(node.children[0].is_left(),
-                 "attribute_list in fn_parameter is not Syntax_Node");
-    return node.children[0].left();
-  }
-
-  Syntax_Token const& get_fn_parameter_identifier(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::fn_parameter,
-                 "node is not fn_parameter");
-    ANTON_ASSERT(node.children.size() > (1),
-                 "fn_parameter has too few children");
-    ANTON_ASSERT(node.children[1].is_right(),
-                 "identifier in fn_parameter is not Syntax_Token");
-    return node.children[1].right();
-  }
-
-  Syntax_Node const& get_fn_parameter_type(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::fn_parameter,
-                 "node is not fn_parameter");
-    ANTON_ASSERT(node.children.size() > (3),
-                 "fn_parameter has too few children");
-    ANTON_ASSERT(node.children[3].is_left(),
-                 "type in fn_parameter is not Syntax_Node");
-    return node.children[3].left();
-  }
-
-  anton::Optional<Syntax_Token const&>
-  get_fn_parameter_source(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::fn_parameter,
-                 "node is not fn_parameter");
-    if(node.children.size() > (5)) {
-      ANTON_ASSERT(node.children[5].is_right(),
-                   "source in fn_parameter is not Syntax_Token");
-      return node.children[5].right();
-    } else {
-      return anton::null_optional;
+    ANTON_ASSERT(node->kind == SNOT_Kind::struct_field,
+                 "node is not struct_field");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 0) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
     }
+    ANTON_UNREACHABLE("member 0 not present in struct_field");
   }
 
-  Syntax_Node const& get_fn_parameter_if_condition(Syntax_Node const& node)
+  SNOT const* get_struct_field_identifier(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::fn_parameter_if,
+    ANTON_ASSERT(node->kind == SNOT_Kind::struct_field,
+                 "node is not struct_field");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 1) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 1 not present in struct_field");
+  }
+
+  SNOT const* get_struct_field_type(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::struct_field,
+                 "node is not struct_field");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 3) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 3 not present in struct_field");
+  }
+
+  SNOT const* get_struct_field_initializer(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::struct_field,
+                 "node is not struct_field");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 5) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    return nullptr;
+  }
+
+  SNOT const* get_decl_struct_attribute_list(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::decl_struct,
+                 "node is not decl_struct");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 0) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 0 not present in decl_struct");
+  }
+
+  SNOT const* get_decl_struct_identifier(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::decl_struct,
+                 "node is not decl_struct");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 2) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 2 not present in decl_struct");
+  }
+
+  SNOT const* get_decl_struct_fields(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::decl_struct,
+                 "node is not decl_struct");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 3) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 3 not present in decl_struct");
+  }
+
+  SNOT const* get_buffer_field_attribute_list(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::buffer_field,
+                 "node is not buffer_field");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 0) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 0 not present in buffer_field");
+  }
+
+  SNOT const* get_buffer_field_type(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::buffer_field,
+                 "node is not buffer_field");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 1) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 1 not present in buffer_field");
+  }
+
+  SNOT const* get_buffer_field_identifier(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::buffer_field,
+                 "node is not buffer_field");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 2) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 2 not present in buffer_field");
+  }
+
+  SNOT const* get_decl_buffer_attribute_list(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::decl_buffer,
+                 "node is not decl_buffer");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 0) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 0 not present in decl_buffer");
+  }
+
+  SNOT const* get_decl_buffer_pass(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::decl_buffer,
+                 "node is not decl_buffer");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 2) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 2 not present in decl_buffer");
+  }
+
+  SNOT const* get_decl_buffer_identifier(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::decl_buffer,
+                 "node is not decl_buffer");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 4) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 4 not present in decl_buffer");
+  }
+
+  SNOT const* get_decl_buffer_fields(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::decl_buffer,
+                 "node is not decl_buffer");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 5) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 5 not present in decl_buffer");
+  }
+
+  SNOT const* get_decl_function_attribute_list(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::decl_function,
+                 "node is not decl_function");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 0) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 0 not present in decl_function");
+  }
+
+  SNOT const* get_decl_function_identifier(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::decl_function,
+                 "node is not decl_function");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 2) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 2 not present in decl_function");
+  }
+
+  SNOT const* get_decl_function_parameter_list(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::decl_function,
+                 "node is not decl_function");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 3) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 3 not present in decl_function");
+  }
+
+  SNOT const* get_decl_function_return_type(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::decl_function,
+                 "node is not decl_function");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 5) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 5 not present in decl_function");
+  }
+
+  SNOT const* get_decl_function_body(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::decl_function,
+                 "node is not decl_function");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 6) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 6 not present in decl_function");
+  }
+
+  SNOT const* get_decl_stage_function_attribute_list(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::decl_stage_function,
+                 "node is not decl_stage_function");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 0) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 0 not present in decl_stage_function");
+  }
+
+  SNOT const* get_decl_stage_function_pass(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::decl_stage_function,
+                 "node is not decl_stage_function");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 2) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 2 not present in decl_stage_function");
+  }
+
+  SNOT const* get_decl_stage_function_stage(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::decl_stage_function,
+                 "node is not decl_stage_function");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 4) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 4 not present in decl_stage_function");
+  }
+
+  SNOT const* get_decl_stage_function_parameter_list(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::decl_stage_function,
+                 "node is not decl_stage_function");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 5) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 5 not present in decl_stage_function");
+  }
+
+  SNOT const* get_decl_stage_function_body(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::decl_stage_function,
+                 "node is not decl_stage_function");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 6) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 6 not present in decl_stage_function");
+  }
+
+  SNOT const* get_fn_parameter_attribute_list(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::fn_parameter,
+                 "node is not fn_parameter");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 0) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 0 not present in fn_parameter");
+  }
+
+  SNOT const* get_fn_parameter_identifier(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::fn_parameter,
+                 "node is not fn_parameter");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 1) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 1 not present in fn_parameter");
+  }
+
+  SNOT const* get_fn_parameter_type(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::fn_parameter,
+                 "node is not fn_parameter");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 3) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 3 not present in fn_parameter");
+  }
+
+  SNOT const* get_fn_parameter_source(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::fn_parameter,
+                 "node is not fn_parameter");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 5) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    return nullptr;
+  }
+
+  SNOT const* get_fn_parameter_if_condition(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::fn_parameter_if,
                  "node is not fn_parameter_if");
-    ANTON_ASSERT(node.children.size() > (1),
-                 "fn_parameter_if has too few children");
-    ANTON_ASSERT(node.children[1].is_left(),
-                 "condition in fn_parameter_if is not Syntax_Node");
-    return node.children[1].left();
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 1) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 1 not present in fn_parameter_if");
   }
 
-  Syntax_Node const& get_fn_parameter_if_then_branch(Syntax_Node const& node)
+  SNOT const* get_fn_parameter_if_then_branch(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::fn_parameter_if,
+    ANTON_ASSERT(node->kind == SNOT_Kind::fn_parameter_if,
                  "node is not fn_parameter_if");
-    ANTON_ASSERT(node.children.size() > (3),
-                 "fn_parameter_if has too few children");
-    ANTON_ASSERT(node.children[3].is_left(),
-                 "then_branch in fn_parameter_if is not Syntax_Node");
-    return node.children[3].left();
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 3) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 3 not present in fn_parameter_if");
   }
 
-  Syntax_Node const& get_fn_parameter_if_else_branch(Syntax_Node const& node)
+  SNOT const* get_fn_parameter_if_else_branch(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::fn_parameter_if,
+    ANTON_ASSERT(node->kind == SNOT_Kind::fn_parameter_if,
                  "node is not fn_parameter_if");
-    ANTON_ASSERT(node.children.size() > (7),
-                 "fn_parameter_if has too few children");
-    ANTON_ASSERT(node.children[7].is_left(),
-                 "else_branch in fn_parameter_if is not Syntax_Node");
-    return node.children[7].left();
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 7) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 7 not present in fn_parameter_if");
   }
 
-  Syntax_Node const& get_expr_if_condition(Syntax_Node const& node)
+  SNOT const* get_expr_if_condition(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_if, "node is not expr_if");
-    ANTON_ASSERT(node.children.size() > (1), "expr_if has too few children");
-    ANTON_ASSERT(node.children[1].is_left(),
-                 "condition in expr_if is not Syntax_Node");
-    return node.children[1].left();
+    ANTON_ASSERT(node->kind == SNOT_Kind::expr_if, "node is not expr_if");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 1) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 1 not present in expr_if");
   }
 
-  Syntax_Node const& get_expr_if_then_branch(Syntax_Node const& node)
+  SNOT const* get_expr_if_then_branch(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_if, "node is not expr_if");
-    ANTON_ASSERT(node.children.size() > (2), "expr_if has too few children");
-    ANTON_ASSERT(node.children[2].is_left(),
-                 "then_branch in expr_if is not Syntax_Node");
-    return node.children[2].left();
+    ANTON_ASSERT(node->kind == SNOT_Kind::expr_if, "node is not expr_if");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 2) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 2 not present in expr_if");
   }
 
-  Syntax_Node const& get_expr_if_else_branch(Syntax_Node const& node)
+  SNOT const* get_expr_if_else_branch(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_if, "node is not expr_if");
-    ANTON_ASSERT(node.children.size() > (4), "expr_if has too few children");
-    ANTON_ASSERT(node.children[4].is_left(),
-                 "else_branch in expr_if is not Syntax_Node");
-    return node.children[4].left();
+    ANTON_ASSERT(node->kind == SNOT_Kind::expr_if, "node is not expr_if");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 4) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 4 not present in expr_if");
   }
 
-  Syntax_Node const& get_expr_binary_lhs(Syntax_Node const& node)
+  SNOT const* get_expr_binary_lhs(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_binary,
+    ANTON_ASSERT(node->kind == SNOT_Kind::expr_binary,
                  "node is not expr_binary");
-    ANTON_ASSERT(node.children.size() > (0),
-                 "expr_binary has too few children");
-    ANTON_ASSERT(node.children[0].is_left(),
-                 "lhs in expr_binary is not Syntax_Node");
-    return node.children[0].left();
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 0) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 0 not present in expr_binary");
   }
 
-  Syntax_Token const& get_expr_binary_operator(Syntax_Node const& node)
+  SNOT const* get_expr_binary_operator(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_binary,
+    ANTON_ASSERT(node->kind == SNOT_Kind::expr_binary,
                  "node is not expr_binary");
-    ANTON_ASSERT(node.children.size() > (1),
-                 "expr_binary has too few children");
-    ANTON_ASSERT(node.children[1].is_right(),
-                 "operator in expr_binary is not Syntax_Token");
-    return node.children[1].right();
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 1) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 1 not present in expr_binary");
   }
 
-  Syntax_Node const& get_expr_binary_rhs(Syntax_Node const& node)
+  SNOT const* get_expr_binary_rhs(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_binary,
+    ANTON_ASSERT(node->kind == SNOT_Kind::expr_binary,
                  "node is not expr_binary");
-    ANTON_ASSERT(node.children.size() > (2),
-                 "expr_binary has too few children");
-    ANTON_ASSERT(node.children[2].is_left(),
-                 "rhs in expr_binary is not Syntax_Node");
-    return node.children[2].left();
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 2) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 2 not present in expr_binary");
   }
 
-  Syntax_Node const& get_expr_block_expression(Syntax_Node const& node)
+  SNOT const* get_expr_block_expression(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_block,
-                 "node is not expr_block");
-    ANTON_ASSERT(node.children.size() > (1), "expr_block has too few children");
-    ANTON_ASSERT(node.children[1].is_left(),
-                 "expression in expr_block is not Syntax_Node");
-    return node.children[1].left();
+    ANTON_ASSERT(node->kind == SNOT_Kind::expr_block, "node is not expr_block");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 1) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 1 not present in expr_block");
   }
 
-  Syntax_Token const& get_expr_identifier_value(Syntax_Node const& node)
+  SNOT const* get_expr_identifier_value(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_identifier,
+    ANTON_ASSERT(node->kind == SNOT_Kind::expr_identifier,
                  "node is not expr_identifier");
-    ANTON_ASSERT(node.children.size() > (0),
-                 "expr_identifier has too few children");
-    ANTON_ASSERT(node.children[0].is_right(),
-                 "value in expr_identifier is not Syntax_Token");
-    return node.children[0].right();
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 0) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 0 not present in expr_identifier");
   }
 
-  Syntax_Token const& get_expr_prefix_operator(Syntax_Node const& node)
+  SNOT const* get_expr_prefix_operator(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_prefix,
+    ANTON_ASSERT(node->kind == SNOT_Kind::expr_prefix,
                  "node is not expr_prefix");
-    ANTON_ASSERT(node.children.size() > (0),
-                 "expr_prefix has too few children");
-    ANTON_ASSERT(node.children[0].is_right(),
-                 "operator in expr_prefix is not Syntax_Token");
-    return node.children[0].right();
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 0) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 0 not present in expr_prefix");
   }
 
-  Syntax_Node const& get_expr_prefix_expression(Syntax_Node const& node)
+  SNOT const* get_expr_prefix_expression(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_prefix,
+    ANTON_ASSERT(node->kind == SNOT_Kind::expr_prefix,
                  "node is not expr_prefix");
-    ANTON_ASSERT(node.children.size() > (1),
-                 "expr_prefix has too few children");
-    ANTON_ASSERT(node.children[1].is_left(),
-                 "expression in expr_prefix is not Syntax_Node");
-    return node.children[1].left();
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 1) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 1 not present in expr_prefix");
   }
 
-  Syntax_Node const& get_expr_field_expression(Syntax_Node const& node)
+  SNOT const* get_expr_field_expression(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_field,
-                 "node is not expr_field");
-    ANTON_ASSERT(node.children.size() > (0), "expr_field has too few children");
-    ANTON_ASSERT(node.children[0].is_left(),
-                 "expression in expr_field is not Syntax_Node");
-    return node.children[0].left();
+    ANTON_ASSERT(node->kind == SNOT_Kind::expr_field, "node is not expr_field");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 0) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 0 not present in expr_field");
   }
 
-  Syntax_Token const& get_expr_field_identifier(Syntax_Node const& node)
+  SNOT const* get_expr_field_identifier(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_field,
-                 "node is not expr_field");
-    ANTON_ASSERT(node.children.size() > (2), "expr_field has too few children");
-    ANTON_ASSERT(node.children[2].is_right(),
-                 "identifier in expr_field is not Syntax_Token");
-    return node.children[2].right();
+    ANTON_ASSERT(node->kind == SNOT_Kind::expr_field, "node is not expr_field");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 2) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 2 not present in expr_field");
   }
 
-  Syntax_Node const& get_expr_index_expression(Syntax_Node const& node)
+  SNOT const* get_expr_index_expression(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_index,
-                 "node is not expr_index");
-    ANTON_ASSERT(node.children.size() > (0), "expr_index has too few children");
-    ANTON_ASSERT(node.children[0].is_left(),
-                 "expression in expr_index is not Syntax_Node");
-    return node.children[0].left();
+    ANTON_ASSERT(node->kind == SNOT_Kind::expr_index, "node is not expr_index");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 0) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 0 not present in expr_index");
   }
 
-  Syntax_Node const& get_expr_index_index(Syntax_Node const& node)
+  SNOT const* get_expr_index_index(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_index,
-                 "node is not expr_index");
-    ANTON_ASSERT(node.children.size() > (2), "expr_index has too few children");
-    ANTON_ASSERT(node.children[2].is_left(),
-                 "index in expr_index is not Syntax_Node");
-    return node.children[2].left();
+    ANTON_ASSERT(node->kind == SNOT_Kind::expr_index, "node is not expr_index");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 2) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 2 not present in expr_index");
   }
 
-  Syntax_Node const& get_expr_parentheses_expression(Syntax_Node const& node)
+  SNOT const* get_expr_parentheses_expression(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_parentheses,
+    ANTON_ASSERT(node->kind == SNOT_Kind::expr_parentheses,
                  "node is not expr_parentheses");
-    ANTON_ASSERT(node.children.size() > (1),
-                 "expr_parentheses has too few children");
-    ANTON_ASSERT(node.children[1].is_left(),
-                 "expression in expr_parentheses is not Syntax_Node");
-    return node.children[1].left();
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 1) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 1 not present in expr_parentheses");
   }
 
-  Syntax_Token const& get_field_initializer_identifier(Syntax_Node const& node)
+  SNOT const* get_field_initializer_identifier(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::field_initializer,
+    ANTON_ASSERT(node->kind == SNOT_Kind::field_initializer,
                  "node is not field_initializer");
-    ANTON_ASSERT(node.children.size() > (1),
-                 "field_initializer has too few children");
-    ANTON_ASSERT(node.children[1].is_right(),
-                 "identifier in field_initializer is not Syntax_Token");
-    return node.children[1].right();
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 1) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 1 not present in field_initializer");
   }
 
-  Syntax_Node const& get_field_initializer_expression(Syntax_Node const& node)
+  SNOT const* get_field_initializer_expression(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::field_initializer,
+    ANTON_ASSERT(node->kind == SNOT_Kind::field_initializer,
                  "node is not field_initializer");
-    ANTON_ASSERT(node.children.size() > (3),
-                 "field_initializer has too few children");
-    ANTON_ASSERT(node.children[3].is_left(),
-                 "expression in field_initializer is not Syntax_Node");
-    return node.children[3].left();
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 3) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 3 not present in field_initializer");
   }
 
-  Syntax_Node const& get_index_initializer_index(Syntax_Node const& node)
+  SNOT const* get_index_initializer_index(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::index_initializer,
+    ANTON_ASSERT(node->kind == SNOT_Kind::index_initializer,
                  "node is not index_initializer");
-    ANTON_ASSERT(node.children.size() > (0),
-                 "index_initializer has too few children");
-    ANTON_ASSERT(node.children[0].is_left(),
-                 "index in index_initializer is not Syntax_Node");
-    return node.children[0].left();
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 0) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 0 not present in index_initializer");
   }
 
-  Syntax_Node const& get_index_initializer_expression(Syntax_Node const& node)
+  SNOT const* get_index_initializer_expression(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::index_initializer,
+    ANTON_ASSERT(node->kind == SNOT_Kind::index_initializer,
                  "node is not index_initializer");
-    ANTON_ASSERT(node.children.size() > (2),
-                 "index_initializer has too few children");
-    ANTON_ASSERT(node.children[2].is_left(),
-                 "expression in index_initializer is not Syntax_Node");
-    return node.children[2].left();
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 2) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 2 not present in index_initializer");
   }
 
-  Syntax_Node const& get_basic_initializer_expression(Syntax_Node const& node)
+  SNOT const* get_basic_initializer_expression(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::basic_initializer,
+    ANTON_ASSERT(node->kind == SNOT_Kind::basic_initializer,
                  "node is not basic_initializer");
-    ANTON_ASSERT(node.children.size() > (0),
-                 "basic_initializer has too few children");
-    ANTON_ASSERT(node.children[0].is_left(),
-                 "expression in basic_initializer is not Syntax_Node");
-    return node.children[0].left();
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 0) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 0 not present in basic_initializer");
   }
 
-  Syntax_Node const& get_expr_init_type(Syntax_Node const& node)
+  SNOT const* get_expr_init_type(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_init,
-                 "node is not expr_init");
-    ANTON_ASSERT(node.children.size() > (0), "expr_init has too few children");
-    ANTON_ASSERT(node.children[0].is_left(),
-                 "type in expr_init is not Syntax_Node");
-    return node.children[0].left();
+    ANTON_ASSERT(node->kind == SNOT_Kind::expr_init, "node is not expr_init");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 0) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 0 not present in expr_init");
   }
 
-  Syntax_Node const& get_expr_init_initializers(Syntax_Node const& node)
+  SNOT const* get_expr_init_initializers(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_init,
-                 "node is not expr_init");
-    ANTON_ASSERT(node.children.size() > (1), "expr_init has too few children");
-    ANTON_ASSERT(node.children[1].is_left(),
-                 "initializers in expr_init is not Syntax_Node");
-    return node.children[1].left();
+    ANTON_ASSERT(node->kind == SNOT_Kind::expr_init, "node is not expr_init");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 1) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 1 not present in expr_init");
   }
 
-  Syntax_Token const& get_expr_call_identifier(Syntax_Node const& node)
+  SNOT const* get_expr_call_identifier(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_call,
-                 "node is not expr_call");
-    ANTON_ASSERT(node.children.size() > (0), "expr_call has too few children");
-    ANTON_ASSERT(node.children[0].is_right(),
-                 "identifier in expr_call is not Syntax_Token");
-    return node.children[0].right();
+    ANTON_ASSERT(node->kind == SNOT_Kind::expr_call, "node is not expr_call");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 0) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 0 not present in expr_call");
   }
 
-  Syntax_Node const& get_expr_call_arguments(Syntax_Node const& node)
+  SNOT const* get_expr_call_arguments(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_call,
-                 "node is not expr_call");
-    ANTON_ASSERT(node.children.size() > (1), "expr_call has too few children");
-    ANTON_ASSERT(node.children[1].is_left(),
-                 "arguments in expr_call is not Syntax_Node");
-    return node.children[1].left();
+    ANTON_ASSERT(node->kind == SNOT_Kind::expr_call, "node is not expr_call");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 1) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 1 not present in expr_call");
   }
 
-  Syntax_Token const& get_expr_lt_bool_value(Syntax_Node const& node)
+  SNOT const* get_expr_lt_bool_value(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_lt_bool,
+    ANTON_ASSERT(node->kind == SNOT_Kind::expr_lt_bool,
                  "node is not expr_lt_bool");
-    ANTON_ASSERT(node.children.size() > (0),
-                 "expr_lt_bool has too few children");
-    ANTON_ASSERT(node.children[0].is_right(),
-                 "value in expr_lt_bool is not Syntax_Token");
-    return node.children[0].right();
-  }
-
-  Syntax_Token const& get_expr_lt_integer_value(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_lt_integer,
-                 "node is not expr_lt_integer");
-    ANTON_ASSERT(node.children.size() > (0),
-                 "expr_lt_integer has too few children");
-    ANTON_ASSERT(node.children[0].is_right(),
-                 "value in expr_lt_integer is not Syntax_Token");
-    return node.children[0].right();
-  }
-
-  anton::Optional<Syntax_Token const&>
-  get_expr_lt_integer_suffix(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_lt_integer,
-                 "node is not expr_lt_integer");
-    if(node.children.size() > (1)) {
-      ANTON_ASSERT(node.children[1].is_right(),
-                   "suffix in expr_lt_integer is not Syntax_Token");
-      return node.children[1].right();
-    } else {
-      return anton::null_optional;
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 0) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
     }
+    ANTON_UNREACHABLE("member 0 not present in expr_lt_bool");
   }
 
-  Syntax_Token const& get_expr_lt_float_value(Syntax_Node const& node)
+  SNOT const* get_expr_lt_integer_value(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_lt_float,
-                 "node is not expr_lt_float");
-    ANTON_ASSERT(node.children.size() > (0),
-                 "expr_lt_float has too few children");
-    ANTON_ASSERT(node.children[0].is_right(),
-                 "value in expr_lt_float is not Syntax_Token");
-    return node.children[0].right();
-  }
-
-  anton::Optional<Syntax_Token const&>
-  get_expr_lt_float_suffix(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_lt_float,
-                 "node is not expr_lt_float");
-    if(node.children.size() > (1)) {
-      ANTON_ASSERT(node.children[1].is_right(),
-                   "suffix in expr_lt_float is not Syntax_Token");
-      return node.children[1].right();
-    } else {
-      return anton::null_optional;
+    ANTON_ASSERT(node->kind == SNOT_Kind::expr_lt_integer,
+                 "node is not expr_lt_integer");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 0) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
     }
+    ANTON_UNREACHABLE("member 0 not present in expr_lt_integer");
   }
 
-  Syntax_Token const& get_expr_lt_string_value(Syntax_Node const& node)
+  SNOT const* get_expr_lt_integer_suffix(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::expr_lt_string,
+    ANTON_ASSERT(node->kind == SNOT_Kind::expr_lt_integer,
+                 "node is not expr_lt_integer");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 1) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    return nullptr;
+  }
+
+  SNOT const* get_expr_lt_float_value(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::expr_lt_float,
+                 "node is not expr_lt_float");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 0) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 0 not present in expr_lt_float");
+  }
+
+  SNOT const* get_expr_lt_float_suffix(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::expr_lt_float,
+                 "node is not expr_lt_float");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 1) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    return nullptr;
+  }
+
+  SNOT const* get_expr_lt_string_value(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::expr_lt_string,
                  "node is not expr_lt_string");
-    ANTON_ASSERT(node.children.size() > (0),
-                 "expr_lt_string has too few children");
-    ANTON_ASSERT(node.children[0].is_right(),
-                 "value in expr_lt_string is not Syntax_Token");
-    return node.children[0].right();
-  }
-
-  Syntax_Node const& get_stmt_assignment_lhs(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::stmt_assignment,
-                 "node is not stmt_assignment");
-    ANTON_ASSERT(node.children.size() > (0),
-                 "stmt_assignment has too few children");
-    ANTON_ASSERT(node.children[0].is_left(),
-                 "lhs in stmt_assignment is not Syntax_Node");
-    return node.children[0].left();
-  }
-
-  Syntax_Token const& get_stmt_assignment_operator(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::stmt_assignment,
-                 "node is not stmt_assignment");
-    ANTON_ASSERT(node.children.size() > (1),
-                 "stmt_assignment has too few children");
-    ANTON_ASSERT(node.children[1].is_right(),
-                 "operator in stmt_assignment is not Syntax_Token");
-    return node.children[1].right();
-  }
-
-  Syntax_Node const& get_stmt_assignment_rhs(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::stmt_assignment,
-                 "node is not stmt_assignment");
-    ANTON_ASSERT(node.children.size() > (2),
-                 "stmt_assignment has too few children");
-    ANTON_ASSERT(node.children[2].is_left(),
-                 "rhs in stmt_assignment is not Syntax_Node");
-    return node.children[2].left();
-  }
-
-  Syntax_Node const& get_stmt_if_condition(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::stmt_if, "node is not stmt_if");
-    ANTON_ASSERT(node.children.size() > (1), "stmt_if has too few children");
-    ANTON_ASSERT(node.children[1].is_left(),
-                 "condition in stmt_if is not Syntax_Node");
-    return node.children[1].left();
-  }
-
-  Syntax_Node const& get_stmt_if_then_branch(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::stmt_if, "node is not stmt_if");
-    ANTON_ASSERT(node.children.size() > (2), "stmt_if has too few children");
-    ANTON_ASSERT(node.children[2].is_left(),
-                 "then_branch in stmt_if is not Syntax_Node");
-    return node.children[2].left();
-  }
-
-  anton::Optional<Syntax_Node const&>
-  get_stmt_if_else_branch(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::stmt_if, "node is not stmt_if");
-    if(node.children.size() > (4)) {
-      ANTON_ASSERT(node.children[4].is_left(),
-                   "else_branch in stmt_if is not Syntax_Node");
-      return node.children[4].left();
-    } else {
-      return anton::null_optional;
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 0) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
     }
+    ANTON_UNREACHABLE("member 0 not present in expr_lt_string");
   }
 
-  Syntax_Node const& get_stmt_switch_expression(Syntax_Node const& node)
+  SNOT const* get_stmt_assignment_lhs(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::stmt_switch,
+    ANTON_ASSERT(node->kind == SNOT_Kind::stmt_assignment,
+                 "node is not stmt_assignment");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 0) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 0 not present in stmt_assignment");
+  }
+
+  SNOT const* get_stmt_assignment_operator(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::stmt_assignment,
+                 "node is not stmt_assignment");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 1) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 1 not present in stmt_assignment");
+  }
+
+  SNOT const* get_stmt_assignment_rhs(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::stmt_assignment,
+                 "node is not stmt_assignment");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 2) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 2 not present in stmt_assignment");
+  }
+
+  SNOT const* get_stmt_if_condition(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::stmt_if, "node is not stmt_if");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 1) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 1 not present in stmt_if");
+  }
+
+  SNOT const* get_stmt_if_then_branch(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::stmt_if, "node is not stmt_if");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 2) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 2 not present in stmt_if");
+  }
+
+  SNOT const* get_stmt_if_else_branch(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::stmt_if, "node is not stmt_if");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 4) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    return nullptr;
+  }
+
+  SNOT const* get_stmt_switch_expression(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::stmt_switch,
                  "node is not stmt_switch");
-    ANTON_ASSERT(node.children.size() > (1),
-                 "stmt_switch has too few children");
-    ANTON_ASSERT(node.children[1].is_left(),
-                 "expression in stmt_switch is not Syntax_Node");
-    return node.children[1].left();
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 1) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 1 not present in stmt_switch");
   }
 
-  Syntax_Node const& get_stmt_switch_arm_list(Syntax_Node const& node)
+  SNOT const* get_stmt_switch_arm_list(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::stmt_switch,
+    ANTON_ASSERT(node->kind == SNOT_Kind::stmt_switch,
                  "node is not stmt_switch");
-    ANTON_ASSERT(node.children.size() > (2),
-                 "stmt_switch has too few children");
-    ANTON_ASSERT(node.children[2].is_left(),
-                 "arm_list in stmt_switch is not Syntax_Node");
-    return node.children[2].left();
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 2) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 2 not present in stmt_switch");
   }
 
-  Syntax_Node const& get_switch_arm_body(Syntax_Node const& node)
+  SNOT const* get_switch_arm_body(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::switch_arm,
-                 "node is not switch_arm");
-    for(SNOT const& snot: node.children) {
-      if(snot.is_left() && snot.left().kind == Syntax_Node_Kind::stmt_block) {
-        return snot.left();
+    ANTON_ASSERT(node->kind == SNOT_Kind::switch_arm, "node is not switch_arm");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(child->kind == SNOT_Kind::stmt_block) {
+        return child;
       }
+      child = anton::ilist_next(child);
+      index += 1;
     }
-    ANTON_UNREACHABLE("stmt_block not present in switch_arm");
-  };
-
-  Syntax_Node const& get_stmt_while_condition(Syntax_Node const& node)
-  {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::stmt_while,
-                 "node is not stmt_while");
-    ANTON_ASSERT(node.children.size() > (1), "stmt_while has too few children");
-    ANTON_ASSERT(node.children[1].is_left(),
-                 "condition in stmt_while is not Syntax_Node");
-    return node.children[1].left();
+    ANTON_UNREACHABLE("member stmt_block not present in switch_arm");
   }
 
-  Syntax_Node const& get_stmt_while_statements(Syntax_Node const& node)
+  SNOT const* get_stmt_while_condition(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::stmt_while,
-                 "node is not stmt_while");
-    ANTON_ASSERT(node.children.size() > (2), "stmt_while has too few children");
-    ANTON_ASSERT(node.children[2].is_left(),
-                 "statements in stmt_while is not Syntax_Node");
-    return node.children[2].left();
+    ANTON_ASSERT(node->kind == SNOT_Kind::stmt_while, "node is not stmt_while");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 1) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 1 not present in stmt_while");
   }
 
-  anton::Optional<Syntax_Node const&>
-  get_stmt_for_variable(Syntax_Node const& node)
+  SNOT const* get_stmt_while_statements(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::stmt_for,
-                 "node is not stmt_for");
-    for(SNOT const& snot: node.children) {
-      if(snot.is_left() && snot.left().kind == Syntax_Node_Kind::for_variable) {
-        return snot.left().children[0].left();
+    ANTON_ASSERT(node->kind == SNOT_Kind::stmt_while, "node is not stmt_while");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 2) {
+        return child;
       }
+      child = anton::ilist_next(child);
+      index += 1;
     }
-    return anton::null_optional;
-  };
+    ANTON_UNREACHABLE("member 2 not present in stmt_while");
+  }
 
-  anton::Optional<Syntax_Node const&>
-  get_stmt_for_condition(Syntax_Node const& node)
+  SNOT const* get_stmt_for_variable(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::stmt_for,
-                 "node is not stmt_for");
-    for(SNOT const& snot: node.children) {
-      if(snot.is_left() &&
-         snot.left().kind == Syntax_Node_Kind::for_condition) {
-        return snot.left().children[0].left();
+    ANTON_ASSERT(node->kind == SNOT_Kind::stmt_for, "node is not stmt_for");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(child->kind == SNOT_Kind::for_variable) {
+        return child->children;
       }
+      child = anton::ilist_next(child);
+      index += 1;
     }
-    return anton::null_optional;
-  };
+    return nullptr;
+  }
 
-  anton::Optional<Syntax_Node const&>
-  get_stmt_for_expression(Syntax_Node const& node)
+  SNOT const* get_stmt_for_condition(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::stmt_for,
-                 "node is not stmt_for");
-    for(SNOT const& snot: node.children) {
-      if(snot.is_left() &&
-         snot.left().kind == Syntax_Node_Kind::for_expression) {
-        return snot.left().children[0].left();
+    ANTON_ASSERT(node->kind == SNOT_Kind::stmt_for, "node is not stmt_for");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(child->kind == SNOT_Kind::for_condition) {
+        return child->children;
       }
+      child = anton::ilist_next(child);
+      index += 1;
     }
-    return anton::null_optional;
-  };
+    return nullptr;
+  }
 
-  Syntax_Node const& get_stmt_for_body(Syntax_Node const& node)
+  SNOT const* get_stmt_for_expression(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::stmt_for,
-                 "node is not stmt_for");
-    for(SNOT const& snot: node.children) {
-      if(snot.is_left() && snot.left().kind == Syntax_Node_Kind::stmt_block) {
-        return snot.left();
+    ANTON_ASSERT(node->kind == SNOT_Kind::stmt_for, "node is not stmt_for");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(child->kind == SNOT_Kind::for_expression) {
+        return child->children;
       }
+      child = anton::ilist_next(child);
+      index += 1;
     }
-    ANTON_UNREACHABLE("stmt_block not present in stmt_for");
-  };
+    return nullptr;
+  }
 
-  Syntax_Node const& get_stmt_do_while_body(Syntax_Node const& node)
+  SNOT const* get_stmt_for_body(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::stmt_do_while,
+    ANTON_ASSERT(node->kind == SNOT_Kind::stmt_for, "node is not stmt_for");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(child->kind == SNOT_Kind::stmt_block) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member stmt_block not present in stmt_for");
+  }
+
+  SNOT const* get_stmt_do_while_body(SNOT const* node)
+  {
+    ANTON_ASSERT(node->kind == SNOT_Kind::stmt_do_while,
                  "node is not stmt_do_while");
-    ANTON_ASSERT(node.children.size() > (1),
-                 "stmt_do_while has too few children");
-    ANTON_ASSERT(node.children[1].is_left(),
-                 "body in stmt_do_while is not Syntax_Node");
-    return node.children[1].left();
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 1) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 1 not present in stmt_do_while");
   }
 
-  Syntax_Node const& get_stmt_do_while_condition(Syntax_Node const& node)
+  SNOT const* get_stmt_do_while_condition(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::stmt_do_while,
+    ANTON_ASSERT(node->kind == SNOT_Kind::stmt_do_while,
                  "node is not stmt_do_while");
-    ANTON_ASSERT(node.children.size() > (3),
-                 "stmt_do_while has too few children");
-    ANTON_ASSERT(node.children[3].is_left(),
-                 "condition in stmt_do_while is not Syntax_Node");
-    return node.children[3].left();
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 3) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 3 not present in stmt_do_while");
   }
 
-  anton::Optional<Syntax_Node const&>
-  get_stmt_return_expression(Syntax_Node const& node)
+  SNOT const* get_stmt_return_expression(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::stmt_return,
+    ANTON_ASSERT(node->kind == SNOT_Kind::stmt_return,
                  "node is not stmt_return");
-    for(SNOT const& snot: node.children) {
-      if(snot.is_left() &&
-         snot.left().kind == Syntax_Node_Kind::return_expression) {
-        return snot.left().children[0].left();
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(child->kind == SNOT_Kind::return_expression) {
+        return child->children;
       }
+      child = anton::ilist_next(child);
+      index += 1;
     }
-    return anton::null_optional;
-  };
+    return nullptr;
+  }
 
-  Syntax_Node const& get_stmt_expression_expression(Syntax_Node const& node)
+  SNOT const* get_stmt_expression_expression(SNOT const* node)
   {
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::stmt_expression,
+    ANTON_ASSERT(node->kind == SNOT_Kind::stmt_expression,
                  "node is not stmt_expression");
-    ANTON_ASSERT(node.children.size() > (0),
-                 "stmt_expression has too few children");
-    ANTON_ASSERT(node.children[0].is_left(),
-                 "expression in stmt_expression is not Syntax_Node");
-    return node.children[0].left();
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {
+      if(index == 0) {
+        return child;
+      }
+      child = anton::ilist_next(child);
+      index += 1;
+    }
+    ANTON_UNREACHABLE("member 0 not present in stmt_expression");
   }
 } // namespace vush

@@ -13,5 +13,5 @@ namespace vush {
   // lower_syntax
   //
   [[nodiscard]] anton::Expected<ast::Node_List, Error>
-  lower_syntax(Context& ctx, Array<SNOT> const& syntax);
+  lower_syntax(Context& ctx, SNOT* syntax);
 } // namespace vush

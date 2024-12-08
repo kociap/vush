@@ -9,6 +9,6 @@
 namespace vush {
   struct Context;
 
-  [[nodiscard]] anton::Expected<Array<SNOT>, Error>
-  full_expand(Context& ctx, Array<SNOT> snots);
+  [[nodiscard]] anton::Expected<SNOT*, Error> full_expand(Context& ctx,
+                                                          SNOT* snots);
 } // namespace vush

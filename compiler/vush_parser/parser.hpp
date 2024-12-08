@@ -32,8 +32,9 @@ namespace vush {
   //               tree.
   //     options - Additional options to use while generating the syntax tree.
   //
-  anton::Expected<Array<SNOT>, Error>
-  parse_tokens(Context const& ctx, anton::String_View source_path,
-               char8 const* source_data, anton::Slice<Token const> tokens,
-               Parse_Syntax_Options options);
+  anton::Expected<SNOT*, Error> parse_tokens(Context const& ctx,
+                                             anton::String_View source_path,
+                                             char8 const* source_data,
+                                             anton::Slice<Token const> tokens,
+                                             Parse_Syntax_Options options);
 } // namespace vush

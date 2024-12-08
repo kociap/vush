@@ -2,121 +2,35 @@ import subprocess
 
 from node_definitions import syntax_nodes, Node_Kind, Lookup_Kind
 
-def format_node_accessor(syntax_name, member):
-    def create_search_accessor(syntax_name, member):
-        if member.optional:
-            return f"[[nodiscard]] anton::Optional<Syntax_Node const&> get_{syntax_name}_{member.name}(Syntax_Node const& node);", f'''\
-anton::Optional<Syntax_Node const&> get_{syntax_name}_{member.name}(Syntax_Node const& node) {{
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::{syntax_name}, "node is not {syntax_name}");
-    for(SNOT const& snot: node.children) {{
-        if(snot.is_left() && snot.left().kind == Syntax_Node_Kind::{member.index}) {{
-            return snot.left(){".children[0].left()" if member.unwrap else ""};
-        }}
-    }}
-    return anton::null_optional;
-}};'''
-        else:
-            return f"[[nodiscard]] Syntax_Node const& get_{syntax_name}_{member.name}(Syntax_Node const& node);", f'''\
-Syntax_Node const& get_{syntax_name}_{member.name}(Syntax_Node const& node) {{
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::{syntax_name}, "node is not {syntax_name}");
-    for(SNOT const& snot: node.children) {{
-        if(snot.is_left() && snot.left().kind == Syntax_Node_Kind::{member.index}) {{
-            return snot.left(){".children[0].left()" if member.unwrap else ""};
-        }}
-    }}
-    ANTON_UNREACHABLE("{member.index} not present in {syntax_name}");
-}};'''
-
-    def create_index_accessor(syntax_name, member):
-        offset_parameter = ", i64 const offset" if member.offset else ""
-        offset_expression = "offset + " if member.offset else ""
-        if member.optional:
-            return f"[[nodiscard]] anton::Optional<Syntax_Node const&> get_{syntax_name}_{member.name}(Syntax_Node const& node {offset_parameter});", f'''\
-anton::Optional<Syntax_Node const&> get_{syntax_name}_{member.name}(Syntax_Node const& node {offset_parameter}) {{
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::{syntax_name}, "node is not {syntax_name}");
-    if(node.children.size() > ({offset_expression}{member.index})) {{
-        ANTON_ASSERT(node.children[{offset_expression}{member.index}].is_left(), "{member.name} in {syntax_name} is not Syntax_Node");
-        return node.children[{offset_expression}{member.index}].left();
-    }} else {{
-        return anton::null_optional;
-    }}
-}}'''
-        else:
-            return f"[[nodiscard]] Syntax_Node const& get_{syntax_name}_{member.name}(Syntax_Node const& node {offset_parameter});", f'''\
-Syntax_Node const& get_{syntax_name}_{member.name}(Syntax_Node const& node {offset_parameter}) {{
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::{syntax_name}, "node is not {syntax_name}");
-    ANTON_ASSERT(node.children.size() > ({offset_expression}{member.index}), "{syntax_name} has too few children");
-    ANTON_ASSERT(node.children[{offset_expression}{member.index}].is_left(), "{member.name} in {syntax_name} is not Syntax_Node");
-    return node.children[{offset_expression}{member.index}].left();
-}}'''
-
-    if member.lookup == Lookup_Kind.search:
-        return create_search_accessor(syntax_name, member)
-    else:
-        return create_index_accessor(syntax_name, member)
-
-def format_token_accessor(syntax_name, member):
-    def create_search_accessor(syntax_name, member):
-        if member.optional:
-            return f"[[nodiscard]] anton::Optional<Syntax_Token const&> get_{syntax_name}_{member.name}(Syntax_Node const& node);", f'''\
-anton::Optional<Syntax_Token const&> get_{syntax_name}_{member.name}(Syntax_Node const& node) {{
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::{syntax_name}, "node is not {syntax_name}");
-    for(SNOT const& snot: node.children) {{
-        if(snot.is_right() && snot.right().kind == Syntax_Node_Kind::{member.index}) {{
-            return snot.right();
-        }}
-    }}
-    return anton::null_optional;
-}};'''
-        else:
-            return f"[[nodiscard]] Syntax_Token const& get_{syntax_name}_{member.name}(Syntax_Node const& node);", f'''\
-Syntax_Token const& get_{syntax_name}_{member.name}(Syntax_Node const& node) {{
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::{syntax_name}, "node is not {syntax_name}");
-    for(SNOT const& snot: node.children) {{
-        if(snot.is_right() && snot.right().kind == Syntax_Node_Kind::{member.index}) {{
-            return snot.right();
-        }}
-    }}
-    ANTON_UNREACHABLE("{member.index} not present in {syntax_name}");
-}};'''
-
-
-    def create_index_accessor(syntax_name, member):
-        offset_parameter = ", i64 const offset" if member.offset else ""
-        offset_expression = "offset + " if member.offset else ""
-        if member.optional:
-            return f"[[nodiscard]] anton::Optional<Syntax_Token const&> get_{syntax_name}_{member.name}(Syntax_Node const& node {offset_parameter});", f'''\
-anton::Optional<Syntax_Token const&> get_{syntax_name}_{member.name}(Syntax_Node const& node {offset_parameter}) {{
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::{syntax_name}, "node is not {syntax_name}");
-    if(node.children.size() > ({offset_expression}{member.index})) {{
-        ANTON_ASSERT(node.children[{offset_expression}{member.index}].is_right(), "{member.name} in {syntax_name} is not Syntax_Token");
-        return node.children[{offset_expression}{member.index}].right();
-    }} else {{
-        return anton::null_optional;
-    }}
-}}'''
-        else:
-            return f"[[nodiscard]] Syntax_Token const& get_{syntax_name}_{member.name}(Syntax_Node const& node {offset_parameter});", f'''\
-Syntax_Token const& get_{syntax_name}_{member.name}(Syntax_Node const& node {offset_parameter}) {{
-    ANTON_ASSERT(node.kind == Syntax_Node_Kind::{syntax_name}, "node is not {syntax_name}");
-    ANTON_ASSERT(node.children.size() > ({offset_expression}{member.index}), "{syntax_name} has too few children");
-    ANTON_ASSERT(node.children[{offset_expression}{member.index}].is_right(), "{member.name} in {syntax_name} is not Syntax_Token");
-    return node.children[{offset_expression}{member.index}].right();
-}}'''
-
-    if member.lookup == Lookup_Kind.search:
-        return create_search_accessor(syntax_name, member)
-    else:
-        return create_index_accessor(syntax_name, member)
-
 def generate_accessors(parameters):
     for member in parameters["members"]:
-        if member.node_kind == Node_Kind.token:
-            accessor = format_token_accessor(parameters["syntax_name"], member)
-            yield accessor
+        syntax_name = parameters["syntax_name"]
+        declaration = f"[[nodiscard]] SNOT const* get_{syntax_name}_{member.name}(SNOT const* node);"
+        if member.optional:
+            function_end = "return nullptr;"
         else:
-            accessor = format_node_accessor(parameters["syntax_name"], member)
-            yield accessor
+            function_end = f'ANTON_UNREACHABLE("member {member.index} not present in {syntax_name}");'
+
+        if member.lookup == Lookup_Kind.search:
+            condition = f'child->kind == SNOT_Kind::{member.index}'
+        else:
+            condition = f'index == {member.index}'
+        definition = f'''\
+SNOT const* get_{syntax_name}_{member.name}(SNOT const* node) {{
+    ANTON_ASSERT(node->kind == SNOT_Kind::{syntax_name}, "node is not {syntax_name}");
+    SNOT* child = node->children;
+    i64 index = 0;
+    ANTON_UNUSED(index);
+    while(child != nullptr) {{
+      if({condition}) {{
+        return child{"->children" if member.unwrap else ""};
+      }}
+      child = anton::ilist_next(child);
+      index += 1;
+    }}
+    {function_end}
+}}'''
+        yield declaration, definition
 
 def write_header_preamble(file):
     preamble = '''\

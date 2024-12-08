@@ -7,193 +7,106 @@
 #include <vush_syntax/syntax.hpp>
 
 namespace vush {
-  [[nodiscard]] anton::Optional<Syntax_Token const&>
-  get_type_named_mut(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Token const&
-  get_type_named_value(Syntax_Node const& node);
-  [[nodiscard]] anton::Optional<Syntax_Token const&>
-  get_type_array_mut(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const& get_type_array_base(Syntax_Node const& node);
-  [[nodiscard]] anton::Optional<Syntax_Node const&>
-  get_type_array_size(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Token const&
-  get_attribute_identifier(Syntax_Node const& node);
-  [[nodiscard]] anton::Optional<Syntax_Node const&>
-  get_attribute_parameter_list(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Token const&
-  get_attribute_parameter_keyed_key(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_attribute_parameter_keyed_value(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_attribute_parameter_positional_value(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_variable_attribute_list(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Token const&
-  get_variable_identifier(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const& get_variable_type(Syntax_Node const& node);
-  [[nodiscard]] anton::Optional<Syntax_Node const&>
-  get_variable_initializer(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_decl_if_condition(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_decl_if_then_branch(Syntax_Node const& node);
-  [[nodiscard]] anton::Optional<Syntax_Node const&>
-  get_decl_if_else_branch(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_decl_import_path(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_struct_field_attribute_list(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Token const&
-  get_struct_field_identifier(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_struct_field_type(Syntax_Node const& node);
-  [[nodiscard]] anton::Optional<Syntax_Node const&>
-  get_struct_field_initializer(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_decl_struct_attribute_list(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Token const&
-  get_decl_struct_identifier(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_decl_struct_fields(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_buffer_field_attribute_list(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_buffer_field_type(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Token const&
-  get_buffer_field_identifier(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_decl_buffer_attribute_list(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Token const&
-  get_decl_buffer_pass(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Token const&
-  get_decl_buffer_identifier(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_decl_buffer_fields(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_decl_function_attribute_list(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Token const&
-  get_decl_function_identifier(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_decl_function_parameter_list(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_decl_function_return_type(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_decl_function_body(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_decl_stage_function_attribute_list(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Token const&
-  get_decl_stage_function_pass(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Token const&
-  get_decl_stage_function_stage(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_decl_stage_function_parameter_list(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_decl_stage_function_body(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_fn_parameter_attribute_list(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Token const&
-  get_fn_parameter_identifier(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_fn_parameter_type(Syntax_Node const& node);
-  [[nodiscard]] anton::Optional<Syntax_Token const&>
-  get_fn_parameter_source(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_fn_parameter_if_condition(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_fn_parameter_if_then_branch(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_fn_parameter_if_else_branch(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_expr_if_condition(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_expr_if_then_branch(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_expr_if_else_branch(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const& get_expr_binary_lhs(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Token const&
-  get_expr_binary_operator(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const& get_expr_binary_rhs(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_expr_block_expression(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Token const&
-  get_expr_identifier_value(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Token const&
-  get_expr_prefix_operator(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_expr_prefix_expression(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_expr_field_expression(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Token const&
-  get_expr_field_identifier(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_expr_index_expression(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_expr_index_index(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_expr_parentheses_expression(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Token const&
-  get_field_initializer_identifier(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_field_initializer_expression(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_index_initializer_index(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_index_initializer_expression(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_basic_initializer_expression(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const& get_expr_init_type(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_expr_init_initializers(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Token const&
-  get_expr_call_identifier(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_expr_call_arguments(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Token const&
-  get_expr_lt_bool_value(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Token const&
-  get_expr_lt_integer_value(Syntax_Node const& node);
-  [[nodiscard]] anton::Optional<Syntax_Token const&>
-  get_expr_lt_integer_suffix(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Token const&
-  get_expr_lt_float_value(Syntax_Node const& node);
-  [[nodiscard]] anton::Optional<Syntax_Token const&>
-  get_expr_lt_float_suffix(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Token const&
-  get_expr_lt_string_value(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_stmt_assignment_lhs(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Token const&
-  get_stmt_assignment_operator(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_stmt_assignment_rhs(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_stmt_if_condition(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_stmt_if_then_branch(Syntax_Node const& node);
-  [[nodiscard]] anton::Optional<Syntax_Node const&>
-  get_stmt_if_else_branch(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_stmt_switch_expression(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_stmt_switch_arm_list(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const& get_switch_arm_body(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_stmt_while_condition(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_stmt_while_statements(Syntax_Node const& node);
-  [[nodiscard]] anton::Optional<Syntax_Node const&>
-  get_stmt_for_variable(Syntax_Node const& node);
-  [[nodiscard]] anton::Optional<Syntax_Node const&>
-  get_stmt_for_condition(Syntax_Node const& node);
-  [[nodiscard]] anton::Optional<Syntax_Node const&>
-  get_stmt_for_expression(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const& get_stmt_for_body(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_stmt_do_while_body(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_stmt_do_while_condition(Syntax_Node const& node);
-  [[nodiscard]] anton::Optional<Syntax_Node const&>
-  get_stmt_return_expression(Syntax_Node const& node);
-  [[nodiscard]] Syntax_Node const&
-  get_stmt_expression_expression(Syntax_Node const& node);
+  [[nodiscard]] SNOT const* get_type_named_mut(SNOT const* node);
+  [[nodiscard]] SNOT const* get_type_named_value(SNOT const* node);
+  [[nodiscard]] SNOT const* get_type_array_mut(SNOT const* node);
+  [[nodiscard]] SNOT const* get_type_array_base(SNOT const* node);
+  [[nodiscard]] SNOT const* get_type_array_size(SNOT const* node);
+  [[nodiscard]] SNOT const* get_attribute_identifier(SNOT const* node);
+  [[nodiscard]] SNOT const* get_attribute_parameter_list(SNOT const* node);
+  [[nodiscard]] SNOT const* get_attribute_parameter_keyed_key(SNOT const* node);
+  [[nodiscard]] SNOT const*
+  get_attribute_parameter_keyed_value(SNOT const* node);
+  [[nodiscard]] SNOT const*
+  get_attribute_parameter_positional_value(SNOT const* node);
+  [[nodiscard]] SNOT const* get_variable_attribute_list(SNOT const* node);
+  [[nodiscard]] SNOT const* get_variable_identifier(SNOT const* node);
+  [[nodiscard]] SNOT const* get_variable_type(SNOT const* node);
+  [[nodiscard]] SNOT const* get_variable_initializer(SNOT const* node);
+  [[nodiscard]] SNOT const* get_decl_if_condition(SNOT const* node);
+  [[nodiscard]] SNOT const* get_decl_if_then_branch(SNOT const* node);
+  [[nodiscard]] SNOT const* get_decl_if_else_branch(SNOT const* node);
+  [[nodiscard]] SNOT const* get_decl_import_path(SNOT const* node);
+  [[nodiscard]] SNOT const* get_struct_field_attribute_list(SNOT const* node);
+  [[nodiscard]] SNOT const* get_struct_field_identifier(SNOT const* node);
+  [[nodiscard]] SNOT const* get_struct_field_type(SNOT const* node);
+  [[nodiscard]] SNOT const* get_struct_field_initializer(SNOT const* node);
+  [[nodiscard]] SNOT const* get_decl_struct_attribute_list(SNOT const* node);
+  [[nodiscard]] SNOT const* get_decl_struct_identifier(SNOT const* node);
+  [[nodiscard]] SNOT const* get_decl_struct_fields(SNOT const* node);
+  [[nodiscard]] SNOT const* get_buffer_field_attribute_list(SNOT const* node);
+  [[nodiscard]] SNOT const* get_buffer_field_type(SNOT const* node);
+  [[nodiscard]] SNOT const* get_buffer_field_identifier(SNOT const* node);
+  [[nodiscard]] SNOT const* get_decl_buffer_attribute_list(SNOT const* node);
+  [[nodiscard]] SNOT const* get_decl_buffer_pass(SNOT const* node);
+  [[nodiscard]] SNOT const* get_decl_buffer_identifier(SNOT const* node);
+  [[nodiscard]] SNOT const* get_decl_buffer_fields(SNOT const* node);
+  [[nodiscard]] SNOT const* get_decl_function_attribute_list(SNOT const* node);
+  [[nodiscard]] SNOT const* get_decl_function_identifier(SNOT const* node);
+  [[nodiscard]] SNOT const* get_decl_function_parameter_list(SNOT const* node);
+  [[nodiscard]] SNOT const* get_decl_function_return_type(SNOT const* node);
+  [[nodiscard]] SNOT const* get_decl_function_body(SNOT const* node);
+  [[nodiscard]] SNOT const*
+  get_decl_stage_function_attribute_list(SNOT const* node);
+  [[nodiscard]] SNOT const* get_decl_stage_function_pass(SNOT const* node);
+  [[nodiscard]] SNOT const* get_decl_stage_function_stage(SNOT const* node);
+  [[nodiscard]] SNOT const*
+  get_decl_stage_function_parameter_list(SNOT const* node);
+  [[nodiscard]] SNOT const* get_decl_stage_function_body(SNOT const* node);
+  [[nodiscard]] SNOT const* get_fn_parameter_attribute_list(SNOT const* node);
+  [[nodiscard]] SNOT const* get_fn_parameter_identifier(SNOT const* node);
+  [[nodiscard]] SNOT const* get_fn_parameter_type(SNOT const* node);
+  [[nodiscard]] SNOT const* get_fn_parameter_source(SNOT const* node);
+  [[nodiscard]] SNOT const* get_fn_parameter_if_condition(SNOT const* node);
+  [[nodiscard]] SNOT const* get_fn_parameter_if_then_branch(SNOT const* node);
+  [[nodiscard]] SNOT const* get_fn_parameter_if_else_branch(SNOT const* node);
+  [[nodiscard]] SNOT const* get_expr_if_condition(SNOT const* node);
+  [[nodiscard]] SNOT const* get_expr_if_then_branch(SNOT const* node);
+  [[nodiscard]] SNOT const* get_expr_if_else_branch(SNOT const* node);
+  [[nodiscard]] SNOT const* get_expr_binary_lhs(SNOT const* node);
+  [[nodiscard]] SNOT const* get_expr_binary_operator(SNOT const* node);
+  [[nodiscard]] SNOT const* get_expr_binary_rhs(SNOT const* node);
+  [[nodiscard]] SNOT const* get_expr_block_expression(SNOT const* node);
+  [[nodiscard]] SNOT const* get_expr_identifier_value(SNOT const* node);
+  [[nodiscard]] SNOT const* get_expr_prefix_operator(SNOT const* node);
+  [[nodiscard]] SNOT const* get_expr_prefix_expression(SNOT const* node);
+  [[nodiscard]] SNOT const* get_expr_field_expression(SNOT const* node);
+  [[nodiscard]] SNOT const* get_expr_field_identifier(SNOT const* node);
+  [[nodiscard]] SNOT const* get_expr_index_expression(SNOT const* node);
+  [[nodiscard]] SNOT const* get_expr_index_index(SNOT const* node);
+  [[nodiscard]] SNOT const* get_expr_parentheses_expression(SNOT const* node);
+  [[nodiscard]] SNOT const* get_field_initializer_identifier(SNOT const* node);
+  [[nodiscard]] SNOT const* get_field_initializer_expression(SNOT const* node);
+  [[nodiscard]] SNOT const* get_index_initializer_index(SNOT const* node);
+  [[nodiscard]] SNOT const* get_index_initializer_expression(SNOT const* node);
+  [[nodiscard]] SNOT const* get_basic_initializer_expression(SNOT const* node);
+  [[nodiscard]] SNOT const* get_expr_init_type(SNOT const* node);
+  [[nodiscard]] SNOT const* get_expr_init_initializers(SNOT const* node);
+  [[nodiscard]] SNOT const* get_expr_call_identifier(SNOT const* node);
+  [[nodiscard]] SNOT const* get_expr_call_arguments(SNOT const* node);
+  [[nodiscard]] SNOT const* get_expr_lt_bool_value(SNOT const* node);
+  [[nodiscard]] SNOT const* get_expr_lt_integer_value(SNOT const* node);
+  [[nodiscard]] SNOT const* get_expr_lt_integer_suffix(SNOT const* node);
+  [[nodiscard]] SNOT const* get_expr_lt_float_value(SNOT const* node);
+  [[nodiscard]] SNOT const* get_expr_lt_float_suffix(SNOT const* node);
+  [[nodiscard]] SNOT const* get_expr_lt_string_value(SNOT const* node);
+  [[nodiscard]] SNOT const* get_stmt_assignment_lhs(SNOT const* node);
+  [[nodiscard]] SNOT const* get_stmt_assignment_operator(SNOT const* node);
+  [[nodiscard]] SNOT const* get_stmt_assignment_rhs(SNOT const* node);
+  [[nodiscard]] SNOT const* get_stmt_if_condition(SNOT const* node);
+  [[nodiscard]] SNOT const* get_stmt_if_then_branch(SNOT const* node);
+  [[nodiscard]] SNOT const* get_stmt_if_else_branch(SNOT const* node);
+  [[nodiscard]] SNOT const* get_stmt_switch_expression(SNOT const* node);
+  [[nodiscard]] SNOT const* get_stmt_switch_arm_list(SNOT const* node);
+  [[nodiscard]] SNOT const* get_switch_arm_body(SNOT const* node);
+  [[nodiscard]] SNOT const* get_stmt_while_condition(SNOT const* node);
+  [[nodiscard]] SNOT const* get_stmt_while_statements(SNOT const* node);
+  [[nodiscard]] SNOT const* get_stmt_for_variable(SNOT const* node);
+  [[nodiscard]] SNOT const* get_stmt_for_condition(SNOT const* node);
+  [[nodiscard]] SNOT const* get_stmt_for_expression(SNOT const* node);
+  [[nodiscard]] SNOT const* get_stmt_for_body(SNOT const* node);
+  [[nodiscard]] SNOT const* get_stmt_do_while_body(SNOT const* node);
+  [[nodiscard]] SNOT const* get_stmt_do_while_condition(SNOT const* node);
+  [[nodiscard]] SNOT const* get_stmt_return_expression(SNOT const* node);
+  [[nodiscard]] SNOT const* get_stmt_expression_expression(SNOT const* node);
 } // namespace vush

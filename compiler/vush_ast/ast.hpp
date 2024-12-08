@@ -5,7 +5,6 @@
 #include <anton/string.hpp>
 
 #include <vush_ast/ast_fwd.hpp>
-#include <vush_core/either.hpp>
 #include <vush_core/source_info.hpp>
 #include <vush_core/types.hpp>
 
