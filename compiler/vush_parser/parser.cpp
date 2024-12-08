@@ -1823,7 +1823,7 @@ namespace vush {
     {
       ANNOTATE_FUNCTION()
 
-      _lexer.ignore_whitespace_and_comments();
+      Lexer_State const begin_state = _lexer.get_current_state();
       Optional<Token> lookahead = _lexer.peek_token();
       if(!lookahead) {
         return nullptr;
@@ -1831,7 +1831,6 @@ namespace vush {
 
       switch(lookahead->kind) {
       case Token_Kind::tk_lparen: {
-        Lexer_State const begin_state = _lexer.get_current_state_noskip();
         anton::IList<SNOT> snots;
         EXPECT_TOKEN(Token_Kind::tk_lparen, "expected '('"_sv, snots);
         EXPECT_NODE(try_expression, snots);
@@ -1850,9 +1849,9 @@ namespace vush {
         return try_expr_if();
 
       case Token_Kind::lt_float: {
-        Lexer_State const begin_state = _lexer.get_current_state_noskip();
+        _lexer.advance_token();
         anton::IList<SNOT> snots;
-        EXPECT_TOKEN(Token_Kind::lt_float, "expected float literal"_sv, snots);
+        snots.insert_back(token_to_SNOT(*lookahead));
         // We validate the suffix in later stages.
         if(auto suffix = match(Token_Kind::identifier)) {
           snots.insert_back(suffix);
@@ -1866,11 +1865,23 @@ namespace vush {
 
       case Token_Kind::lt_bin_integer:
       case Token_Kind::lt_dec_integer:
-      case Token_Kind::lt_hex_integer:
-        return try_expr_lt_integer();
+      case Token_Kind::lt_hex_integer: {
+        _lexer.advance_token();
+        anton::IList<SNOT> snots;
+        snots.insert_back(token_to_SNOT(*lookahead));
+
+        // We validate suffix on the literals in later stages.
+        if(auto suffix = match(Token_Kind::identifier)) {
+          snots.insert_back(suffix);
+        }
+
+        Lexer_State const end_state = _lexer.get_current_state_noskip();
+        Source_Info const source = src_info(begin_state, end_state);
+        return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::expr_lt_integer,
+                             source, snots.unlink());
+      }
 
       case Token_Kind::lt_bool: {
-        Lexer_State const begin_state = _lexer.get_current_state_noskip();
         anton::IList<SNOT> snots;
         EXPECT_TOKEN(Token_Kind::lt_bool, "expected bool literal"_sv, snots);
         Lexer_State const end_state = _lexer.get_current_state_noskip();
@@ -1879,23 +1890,55 @@ namespace vush {
                              snots.unlink());
       }
 
+      case Token_Kind::identifier: {
+        _lexer.advance_token();
+        _lexer.ignore_whitespace_and_comments();
+        Optional<Token> lookahead2 = _lexer.peek_token();
+        // We want to unify the control flow a bit, hence we choose a token
+        // that cannot occur. If any other token does not match, it's an
+        // identifier expression.
+        Token_Kind const kind =
+          lookahead2 ? lookahead2->kind : Token_Kind::comment;
+        switch(kind) {
+        case Token_Kind::tk_lparen: {
+          anton::IList<SNOT> snots;
+          snots.insert_back(token_to_SNOT(*lookahead));
+          EXPECT_NODE(try_call_arg_list, snots);
+          Lexer_State const end_state = _lexer.get_current_state_noskip();
+          Source_Info const source = src_info(begin_state, end_state);
+          return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::expr_call, source,
+                               snots.unlink());
+        }
+
+        case Token_Kind::tk_lbrace: {
+          if(!disable_init) {
+            // To match expr init here, we must undo all token advances.
+            _lexer.restore_state(begin_state);
+            if(auto expr_init = try_expr_init()) {
+              return expr_init;
+            }
+          }
+        } break;
+
+        default: {
+          Lexer_State const end_state = _lexer.get_current_state_noskip();
+          Source_Info const source = src_info(begin_state, end_state);
+          return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::expr_identifier,
+                               source, token_to_SNOT(*lookahead));
+        }
+        }
+      } break;
+
       default: {
         if(!disable_init) {
           if(auto expr_init = try_expr_init()) {
-            return ANTON_MOV(expr_init);
+            return expr_init;
           }
         }
-
-        if(auto expr_call = try_expr_call()) {
-          return ANTON_MOV(expr_call);
-        }
-
-        if(auto expr_identifier = try_expr_identifier()) {
-          return ANTON_MOV(expr_identifier);
-        }
       }
       }
 
+      _lexer.restore_state(begin_state);
       return nullptr;
     }
 
@@ -2001,56 +2044,56 @@ namespace vush {
                            source, snots.unlink());
     }
 
-    SNOT* try_init_initializer_list()
-    {
-      ANNOTATE_FUNCTION()
-      Lexer_State const begin_state = _lexer.get_current_state();
-      anton::IList<SNOT> snots;
-      EXPECT_TOKEN(Token_Kind::tk_lbrace, "expected '{'"_sv, snots);
-
-      // Match closing paren to allow empty parameter lists.
-      if(auto tk_rbrace = skipmatch(Token_Kind::tk_rbrace)) {
-        snots.insert_back(tk_rbrace);
-        Lexer_State const end_state = _lexer.get_current_state_noskip();
-        Source_Info const source = src_info(begin_state, end_state);
-        return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::init_initializer_list,
-                             source, snots.unlink());
-      }
-
-      while(true) {
-        if(auto field_initializer = try_field_initializer()) {
-          snots.insert_back(field_initializer);
-        } else if(auto index_initializer = try_index_initializer()) {
-          snots.insert_back(index_initializer);
-        } else if(auto basic_initializer = try_basic_initializer()) {
-          snots.insert_back(basic_initializer);
-        } else {
-          set_error("expected initializer"_sv);
-          _lexer.restore_state(begin_state);
-          return nullptr;
-        }
-
-        if(auto tk_comma = skipmatch(Token_Kind::tk_comma)) {
-          snots.insert_back(tk_comma);
-        } else {
-          break;
-        }
-      }
-
-      EXPECT_TOKEN_SKIP(Token_Kind::tk_rbrace, "expected '}'"_sv, snots);
-      Lexer_State const end_state = _lexer.get_current_state_noskip();
-      Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::init_initializer_list,
-                           source, snots.unlink());
-    }
-
     SNOT* try_expr_init()
     {
       ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       anton::IList<SNOT> snots;
       EXPECT_NODE(try_type, snots);
-      EXPECT_NODE(try_init_initializer_list, snots);
+
+      {
+        anton::IList<SNOT> list_snots;
+        EXPECT_TOKEN(Token_Kind::tk_lbrace, "expected '{'"_sv, list_snots);
+
+        // Match closing paren to allow empty parameter lists.
+        if(auto tk_rbrace = skipmatch(Token_Kind::tk_rbrace)) {
+          list_snots.insert_back(tk_rbrace);
+          Lexer_State const end_state = _lexer.get_current_state_noskip();
+          Source_Info const source = src_info(begin_state, end_state);
+          return VUSH_ALLOCATE(SNOT, _allocator,
+                               SNOT_Kind::init_initializer_list, source,
+                               list_snots.unlink());
+        }
+
+        while(true) {
+          if(auto field_initializer = try_field_initializer()) {
+            list_snots.insert_back(field_initializer);
+          } else if(auto index_initializer = try_index_initializer()) {
+            list_snots.insert_back(index_initializer);
+          } else if(auto basic_initializer = try_basic_initializer()) {
+            list_snots.insert_back(basic_initializer);
+          } else {
+            set_error("expected initializer"_sv);
+            _lexer.restore_state(begin_state);
+            return nullptr;
+          }
+
+          if(auto tk_comma = skipmatch(Token_Kind::tk_comma)) {
+            list_snots.insert_back(tk_comma);
+          } else {
+            break;
+          }
+        }
+
+        EXPECT_TOKEN_SKIP(Token_Kind::tk_rbrace, "expected '}'"_sv, list_snots);
+        Lexer_State const end_state = _lexer.get_current_state_noskip();
+        Source_Info const source = src_info(begin_state, end_state);
+        auto const list =
+          VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::init_initializer_list,
+                        source, list_snots.unlink());
+        snots.insert_back(list);
+      }
+
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
       return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::expr_init, source,
@@ -2087,31 +2130,6 @@ namespace vush {
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
       return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::call_arg_list, source,
-                           snots.unlink());
-    }
-
-    SNOT* try_expr_call()
-    {
-      ANNOTATE_FUNCTION()
-      Lexer_State const begin_state = _lexer.get_current_state();
-      anton::IList<SNOT> snots;
-      EXPECT_TOKEN(Token_Kind::identifier, "expected identifier"_sv, snots);
-      EXPECT_NODE(try_call_arg_list, snots);
-      Lexer_State const end_state = _lexer.get_current_state_noskip();
-      Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::expr_call, source,
-                           snots.unlink());
-    }
-
-    SNOT* try_expr_identifier()
-    {
-      ANNOTATE_FUNCTION()
-      Lexer_State const begin_state = _lexer.get_current_state();
-      anton::IList<SNOT> snots;
-      EXPECT_TOKEN(Token_Kind::identifier, "expected identifier"_sv, snots);
-      Lexer_State const end_state = _lexer.get_current_state_noskip();
-      Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::expr_identifier, source,
                            snots.unlink());
     }
 
