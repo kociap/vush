@@ -112,7 +112,7 @@ namespace vush {
   };
 
 #define EXPECT_TOKEN(token, message, snots) \
-  if(SNOT* _expect_token = match(token)) {  \
+  if(auto _expect_token = match(token)) {   \
     snots.insert_back(_expect_token);       \
   } else {                                  \
     set_error(message);                     \
@@ -121,7 +121,7 @@ namespace vush {
   }
 
 #define EXPECT_TOKEN_SKIP(token, message, snots) \
-  if(SNOT* _expect_token = skipmatch(token)) {   \
+  if(auto _expect_token = skipmatch(token)) {    \
     snots.insert_back(_expect_token);            \
   } else {                                       \
     set_error(message);                          \
@@ -130,7 +130,7 @@ namespace vush {
   }
 
 #define EXPECT_TOKEN2(result, token1, token2, message, snots) \
-  if(SNOT* _expect_token = match(result, token1, token2)) {   \
+  if(auto _expect_token = match(result, token1, token2)) {    \
     snots.insert_back(_expect_token);                         \
   } else {                                                    \
     set_error(message);                                       \
@@ -139,7 +139,7 @@ namespace vush {
   }
 
 #define EXPECT_TOKEN2_SKIP(result, token1, token2, message, snots) \
-  if(SNOT* _expect_token = skipmatch(result, token1, token2)) {    \
+  if(auto _expect_token = skipmatch(result, token1, token2)) {     \
     snots.insert_back(_expect_token);                              \
   } else {                                                         \
     set_error(message);                                            \
@@ -148,7 +148,7 @@ namespace vush {
   }
 
 #define EXPECT_NODE(fn, snots)         \
-  if(SNOT* _expect_node = fn()) {      \
+  if(auto _expect_node = fn()) {       \
     snots.insert_back(_expect_node);   \
   } else {                             \
     _lexer.restore_state(begin_state); \
@@ -2162,14 +2162,23 @@ namespace vush {
     SNOT* try_type()
     {
       ANNOTATE_FUNCTION()
-      auto try_type_array = [this]() -> SNOT* {
-        Lexer_State const begin_state = _lexer.get_current_state();
-        anton::IList<SNOT> snots;
-        if(auto kw_mut = match(Token_Kind::kw_mut)) {
-          snots.insert_back(kw_mut);
-        }
 
-        EXPECT_TOKEN_SKIP(Token_Kind::tk_lbracket, "expected '['"_sv, snots);
+      Lexer_State const begin_state = _lexer.get_current_state();
+      anton::IList<SNOT> snots;
+      if(auto kw_mut = match(Token_Kind::kw_mut)) {
+        snots.insert_back(kw_mut);
+      }
+
+      _lexer.ignore_whitespace_and_comments();
+      Optional<Token> lookahead = _lexer.next_token();
+      if(!lookahead) {
+        _lexer.restore_state(begin_state);
+        return nullptr;
+      }
+
+      switch(lookahead->kind) {
+      case Token_Kind::tk_lbrace: {
+        snots.insert_back(token_to_SNOT(*lookahead));
 
         if(auto type = try_type()) {
           Source_Info const source_info = type->source_info;
@@ -2194,29 +2203,21 @@ namespace vush {
         Source_Info const source = src_info(begin_state, end_state);
         return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::type_array, source,
                              snots.unlink());
-      };
-
-      if(auto type_array = try_type_array()) {
-        return type_array;
       }
 
-      // Match builtin or struct.
-      Lexer_State const begin_state = _lexer.get_current_state();
-      anton::IList<SNOT> snots;
-      if(auto kw_mut = match(Token_Kind::kw_mut)) {
-        snots.insert_back(kw_mut);
-      }
-
-      if(auto type = skipmatch(Token_Kind::identifier)) {
-        snots.insert_back(type);
+      case Token_Kind::identifier: {
+        auto const identifier = token_to_SNOT(*lookahead);
+        snots.insert_back(identifier);
         Lexer_State const end_state = _lexer.get_current_state_noskip();
         Source_Info const source = src_info(begin_state, end_state);
         return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::type_named, source,
                              snots.unlink());
-      } else {
-        set_error(u8"expected identifier");
+      }
+
+      default: {
         _lexer.restore_state(begin_state);
         return nullptr;
+      }
       }
     }
   };
