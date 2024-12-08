@@ -1,9 +1,11 @@
 #include <vush_core/context.hpp>
 
+#include <vush_core/memory.hpp>
+#include <vush_core/source_info.hpp>
 #include <vush_diagnostics/diagnostics.hpp>
 
 namespace vush {
-  anton::Expected<anton::String_View, Error>
+  anton::Expected<Source_Data const*, Error>
   import_main_source(Context& ctx, anton::String_View const source_name)
   {
     anton::Expected<anton::String, anton::String> query_result =
@@ -36,12 +38,14 @@ namespace vush {
               err_source_too_large_no_location(ctx, source_name, source_size)};
     }
 
-    Source_Data const* const source = ctx.source_registry->add_source(
-      {ANTON_MOV(source_identifier), ANTON_MOV(import_result.value())});
-    return {anton::expected_value, source->data};
+    auto const source =
+      VUSH_ALLOCATE(Source_Data, ctx.allocator, ANTON_MOV(source_identifier),
+                    ANTON_MOV(import_result.value()));
+    ctx.source_registry->add_source(source);
+    return {anton::expected_value, source};
   }
 
-  anton::Expected<anton::String_View, Error>
+  anton::Expected<Source_Data const*, Error>
   import_source(Context& ctx, anton::String_View const source_name,
                 Source_Info const& source_info)
   {
@@ -76,8 +80,10 @@ namespace vush {
               err_source_too_large(ctx, source_info, source_name, source_size)};
     }
 
-    Source_Data const* const source = ctx.source_registry->add_source(
-      {ANTON_MOV(source_identifier), ANTON_MOV(import_result.value())});
-    return {anton::expected_value, source->data};
+    auto const source =
+      VUSH_ALLOCATE(Source_Data, ctx.allocator, ANTON_MOV(source_identifier),
+                    ANTON_MOV(import_result.value()));
+    ctx.source_registry->add_source(source);
+    return {anton::expected_value, source};
   }
 } // namespace vush

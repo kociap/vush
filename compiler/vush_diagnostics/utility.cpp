@@ -10,7 +10,7 @@ namespace vush {
   {
     return Error{.line = info.line,
                  .column = info.column,
-                 .source = anton::String(info.source_path, allocator),
+                 .source = anton::String(info.source->path, allocator),
                  .diagnostic = anton::String(allocator),
                  .extended_diagnostic = anton::String(allocator)};
   }
@@ -38,7 +38,7 @@ namespace vush {
   anton::String format_diagnostic_location(Allocator* const allocator,
                                            Source_Info const& info)
   {
-    return format_diagnostic_location(allocator, info.source_path, info.line,
+    return format_diagnostic_location(allocator, info.source->path, info.line,
                                       info.column);
   }
 

@@ -23,18 +23,13 @@ namespace vush {
   // Builds the syntax tree from a tokenised source code.
   //
   // Parameters:
-  // source_path - Name of the source. Must be address-stable and persist for at
-  //               least as long as the syntax tree.
-  // source_data - Pointer to the beginning of a source data used to extract
-  //               token information.
-  //      tokens - The tokenised source code to be parsed. Must be
-  //               address-stable and persist for at least as long as the syntax
-  //               tree.
-  //     options - Additional options to use while generating the syntax tree.
+  //  source - Pointer to the source information of the source being parsed.
+  //  tokens - The tokenised source code to be parsed. Must be address-stable
+  //           and persist for at least as long as the syntax tree.
+  // options - Additional options to use while generating the syntax tree.
   //
   anton::Expected<SNOT*, Error> parse_tokens(Context const& ctx,
-                                             anton::String_View source_path,
-                                             char8 const* source_data,
+                                             Source_Data const* source,
                                              anton::Slice<Token const> tokens,
                                              Parse_Syntax_Options options);
 } // namespace vush

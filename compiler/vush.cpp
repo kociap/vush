@@ -98,14 +98,14 @@ namespace vush {
 
     RETURN_ON_FAIL(import_result, import_main_source, ctx, config.source_name);
 
+    Source_Data const* const source = import_result.value();
     RETURN_ON_FAIL(lex_result, lex_source, ctx, config.source_name,
-                   anton::String7_View{import_result->bytes_begin(),
-                                       import_result->bytes_end()});
+                   anton::String7_View{source->data.bytes_begin(),
+                                       source->data.bytes_end()});
 
     Parse_Syntax_Options parse_options{.include_whitespace_and_comments =
                                          false};
-    RETURN_ON_FAIL(parse_result, parse_tokens, ctx, config.source_name,
-                   import_result->bytes_begin(), lex_result.value(),
+    RETURN_ON_FAIL(parse_result, parse_tokens, ctx, source, lex_result.value(),
                    parse_options);
 
     RETURN_ON_FAIL(expand_result, full_expand, ctx,

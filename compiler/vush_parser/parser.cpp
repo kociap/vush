@@ -160,11 +160,10 @@ namespace vush {
 
   class Parser {
   public:
-    Parser(Allocator* allocator, anton::String_View source_name,
-           char8 const* const source_data, Lexer&& lexer)
-      : _allocator(allocator), _source_name(source_name),
-        _source_data(source_data), _lexer(ANTON_MOV(lexer))
+    Parser(Allocator* allocator, Source_Data const* source, Lexer&& lexer)
+      : _allocator(allocator), _source(source), _lexer(ANTON_MOV(lexer))
     {
+      _source_data = _source->data.bytes_begin();
     }
 
     anton::Expected<SNOT*, Error> build_syntax_tree()
@@ -179,7 +178,7 @@ namespace vush {
         if(SNOT* declaration = try_declaration()) {
           snots.insert_back(declaration);
         } else {
-          return {anton::expected_error, _last_error.to_error(_source_name)};
+          return {anton::expected_error, _last_error.to_error(_source->path)};
         }
       }
     }
@@ -202,7 +201,7 @@ namespace vush {
     };
 
     Allocator* _allocator;
-    anton::String_View _source_name;
+    Source_Data const* _source;
     char8 const* _source_data;
     Lexer _lexer;
     Parse_Error _last_error;
@@ -251,7 +250,7 @@ namespace vush {
     {
       Token const& start_token = *start.current;
       Token const& end_token = *(end.current - 1);
-      return Source_Info{.source_path = _source_name,
+      return Source_Info{.source = _source,
                          .line = start_token.line,
                          .column = start_token.column,
                          .offset = start_token.offset,
@@ -266,13 +265,13 @@ namespace vush {
       // convert one to the other via a cast.
       auto const node_kind = static_cast<SNOT_Kind>(token.kind);
       Source_Info source{
-        .source_path = _source_name,
+        .source = _source,
         .line = token.line,
         .column = token.column,
         .offset = token.offset,
         .end_offset = token.end_offset,
       };
-      return VUSH_ALLOCATE(SNOT, _allocator, node_kind, source, _source_data);
+      return VUSH_ALLOCATE(SNOT, _allocator, node_kind, source);
     }
 
     // match
@@ -383,7 +382,7 @@ namespace vush {
     {
       Source_Info source_info;
       // Both tokens have the same souce_path.
-      source_info.source_path = token1->source_info.source_path;
+      source_info.source = token1->source_info.source;
       source_info.line =
         anton::math::min(token1->source_info.line, token2->source_info.line);
       source_info.column = anton::math::min(token1->source_info.column,
@@ -392,8 +391,7 @@ namespace vush {
                                             token2->source_info.offset);
       source_info.end_offset = anton::math::max(token1->source_info.end_offset,
                                                 token2->source_info.end_offset);
-      return VUSH_ALLOCATE(SNOT, _allocator, result_type, source_info,
-                           _source_data);
+      return VUSH_ALLOCATE(SNOT, _allocator, result_type, source_info);
     }
 
     // combine
@@ -413,7 +411,7 @@ namespace vush {
     {
       Source_Info source_info;
       // All tokens have the same souce_path.
-      source_info.source_path = token1->source_info.source_path;
+      source_info.source = token1->source_info.source;
       source_info.line =
         anton::math::min(token1->source_info.line, token2->source_info.line,
                          token3->source_info.line);
@@ -426,8 +424,7 @@ namespace vush {
       source_info.end_offset = anton::math::max(token1->source_info.end_offset,
                                                 token2->source_info.end_offset,
                                                 token3->source_info.end_offset);
-      return VUSH_ALLOCATE(SNOT, _allocator, result_type, source_info,
-                           _source_data);
+      return VUSH_ALLOCATE(SNOT, _allocator, result_type, source_info);
     }
 
     // match
@@ -540,7 +537,7 @@ namespace vush {
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
       return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::tk_setting_string,
-                           source, _source_data);
+                           source);
     }
 
     // TODO: Error inside try_attribute does not bubble upward.
@@ -1762,7 +1759,7 @@ namespace vush {
         Source_Info const& left = left_child->source_info;
         Source_Info const& right = right_child->source_info;
         // Both left and right have the same souce_path;
-        node->source_info.source_path = left.source_path;
+        node->source_info.source = left.source;
         node->source_info.line = left.line;
         node->source_info.column = left.column;
         node->source_info.offset = left.offset;
@@ -2344,13 +2341,12 @@ namespace vush {
   //   }
   // }
 
-  anton::Expected<SNOT*, Error>
-  parse_tokens(Context const& ctx, anton::String_View const source_path,
-               char8 const* const source_data, anton::Slice<Token const> tokens,
-               Parse_Syntax_Options const options)
+  anton::Expected<SNOT*, Error> parse_tokens(Context const& ctx,
+                                             Source_Data const* source,
+                                             anton::Slice<Token const> tokens,
+                                             Parse_Syntax_Options const options)
   {
-    Parser parser(ctx.allocator, source_path, source_data,
-                  Lexer(tokens.cbegin(), tokens.cend()));
+    Parser parser(ctx.allocator, source, Lexer(tokens.cbegin(), tokens.cend()));
     anton::Expected<SNOT*, Error> ast = parser.build_syntax_tree();
     // if(ast && options.include_whitespace_and_comments) {
     //   Insert_Comments_And_Whitespace_Parameters p{

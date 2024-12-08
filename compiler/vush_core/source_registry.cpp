@@ -8,15 +8,15 @@ namespace vush {
   {
     auto result = sources.find(name);
     if(result != sources.end()) {
-      return &result->value;
+      return result->value;
     } else {
       return nullptr;
     }
   }
 
-  Source_Data const* Source_Registry::add_source(Source_Data source)
+  Source_Data const* Source_Registry::add_source(Source_Data* source)
   {
-    auto result = sources.emplace(source.name, ANTON_MOV(source));
-    return &result->value;
+    sources.emplace(source->path, source);
+    return source;
   }
 } // namespace vush

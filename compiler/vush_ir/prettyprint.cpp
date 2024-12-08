@@ -52,7 +52,7 @@ namespace vush::ir {
   static void print_source_location(Allocator* const allocator,
                                     Printer& printer, Source_Info const& source)
   {
-    printer.write(source.source_path);
+    printer.write(source.source->path);
     printer.write(":"_sv);
     printer.write(anton::to_string(allocator, source.line));
     printer.write(":"_sv);

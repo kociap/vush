@@ -19,10 +19,10 @@ namespace vush {
     void* import_source_user_data;
   };
 
-  [[nodiscard]] anton::Expected<anton::String_View, Error>
+  [[nodiscard]] anton::Expected<Source_Data const*, Error>
   import_main_source(Context& ctx, anton::String_View const source_name);
 
-  [[nodiscard]] anton::Expected<anton::String_View, Error>
+  [[nodiscard]] anton::Expected<Source_Data const*, Error>
   import_source(Context& ctx, anton::String_View const source_name,
                 Source_Info const& source_info);
 } // namespace vush

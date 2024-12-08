@@ -193,19 +193,16 @@ namespace vush {
   //
   struct SNOT: public anton::IList_DNode {
     SNOT_Kind kind;
+    SNOT* children;
     Source_Info source_info;
-    union {
-      char8 const* source;
-      SNOT* children;
-    };
 
-    SNOT(SNOT_Kind kind, Source_Info source_info, char8 const* source)
-      : kind(kind), source_info(source_info), source(source)
+    SNOT(SNOT_Kind kind, Source_Info source_info)
+      : kind(kind), children(nullptr), source_info(source_info)
     {
     }
 
     SNOT(SNOT_Kind kind, Source_Info source_info, SNOT* children)
-      : kind(kind), source_info(source_info), children(children)
+      : kind(kind), children(children), source_info(source_info)
     {
     }
 
@@ -222,6 +219,7 @@ namespace vush {
 
     [[nodiscard]] anton::String_View get_value() const
     {
+      char8 const* const source = source_info.source->data.bytes_begin();
       return {source + source_info.offset, source + source_info.end_offset};
     }
   };
