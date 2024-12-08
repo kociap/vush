@@ -2066,16 +2066,24 @@ namespace vush {
         }
 
         while(true) {
-          if(auto field_initializer = try_field_initializer()) {
-            list_snots.insert_back(field_initializer);
-          } else if(auto index_initializer = try_index_initializer()) {
-            list_snots.insert_back(index_initializer);
-          } else if(auto basic_initializer = try_basic_initializer()) {
-            list_snots.insert_back(basic_initializer);
-          } else {
-            set_error("expected initializer"_sv);
-            _lexer.restore_state(begin_state);
+          _lexer.ignore_whitespace_and_comments();
+          Optional<Token> lookahead = _lexer.peek_token();
+          if(!lookahead) {
             return nullptr;
+          }
+
+          if(lookahead->kind == Token_Kind::tk_dot) {
+            EXPECT_NODE(try_field_initializer, list_snots);
+          } else {
+            if(auto index_initializer = try_index_initializer()) {
+              list_snots.insert_back(index_initializer);
+            } else if(auto basic_initializer = try_basic_initializer()) {
+              list_snots.insert_back(basic_initializer);
+            } else {
+              set_error("expected initializer"_sv);
+              _lexer.restore_state(begin_state);
+              return nullptr;
+            }
           }
 
           if(auto tk_comma = skipmatch(Token_Kind::tk_comma)) {
