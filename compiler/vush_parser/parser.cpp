@@ -365,89 +365,35 @@ namespace vush {
       return match(value);
     }
 
-    // combine
-    // Combines two tokens that appear next to each other in the source. Tokens
-    // are combined in the order they are passed to the function. Only value and
-    // source_info members of the tokens are combined.
-    //
-    // Parameters:
-    //    result_type - SNOT_Kind to assign to the result token.
-    // token1, token2 - tokens to combine.
-    //
-    // Returns:
-    // Combined syntax token with type member set to result_type.
-    //
-    [[nodiscard]] SNOT* combine(SNOT_Kind const result_type, SNOT const* token1,
-                                SNOT const* token2)
-    {
-      Source_Info source_info;
-      // Both tokens have the same souce_path.
-      source_info.source = token1->source_info.source;
-      source_info.line =
-        anton::math::min(token1->source_info.line, token2->source_info.line);
-      source_info.column = anton::math::min(token1->source_info.column,
-                                            token2->source_info.column);
-      source_info.offset = anton::math::min(token1->source_info.offset,
-                                            token2->source_info.offset);
-      source_info.end_offset = anton::math::max(token1->source_info.end_offset,
-                                                token2->source_info.end_offset);
-      return VUSH_ALLOCATE(SNOT, _allocator, result_type, source_info);
-    }
-
-    // combine
-    // Combines three tokens that appear next to each other in the source.
-    // Tokens are combined in the order they are passed to the function. Only
-    // value and source_info members of the tokens are combined.
-    //
-    // Parameters:
-    //            result_type - SNOT_Kind to assign to the result token.
-    // token1, token2, token3 - tokens to combine.
-    //
-    // Returns:
-    // Combined syntax token with type member set to result_type.
-    //
-    [[nodiscard]] SNOT* combine(SNOT_Kind const result_type, SNOT const* token1,
-                                SNOT const* token2, SNOT const* token3)
-    {
-      Source_Info source_info;
-      // All tokens have the same souce_path.
-      source_info.source = token1->source_info.source;
-      source_info.line =
-        anton::math::min(token1->source_info.line, token2->source_info.line,
-                         token3->source_info.line);
-      source_info.column =
-        anton::math::min(token1->source_info.column, token2->source_info.column,
-                         token3->source_info.column);
-      source_info.offset =
-        anton::math::min(token1->source_info.offset, token2->source_info.offset,
-                         token3->source_info.offset);
-      source_info.end_offset = anton::math::max(token1->source_info.end_offset,
-                                                token2->source_info.end_offset,
-                                                token3->source_info.end_offset);
-      return VUSH_ALLOCATE(SNOT, _allocator, result_type, source_info);
-    }
-
     // match
     //
     [[nodiscard]] SNOT* match(SNOT_Kind const result_type,
                               Token_Kind const tk_type1,
                               Token_Kind const tk_type2)
     {
-      // TODO: We could rework this to not use allocating match.
       Lexer_State const begin_state = _lexer.get_current_state_noskip();
-      SNOT* const tk1 = match(tk_type1);
-      if(tk1 == nullptr) {
+      auto const token1 = _lexer.peek_token();
+      _lexer.advance_token();
+      auto const token2 = _lexer.peek_token();
+      _lexer.advance_token();
+      if(!token1 || !token2) {
         _lexer.restore_state(begin_state);
         return nullptr;
       }
 
-      SNOT* const tk2 = match(tk_type2);
-      if(tk2 == nullptr) {
+      if(token1->kind != tk_type1 || token2->kind != tk_type2) {
         _lexer.restore_state(begin_state);
         return nullptr;
       }
 
-      return combine(result_type, tk1, tk2);
+      Source_Info source{
+        .source = _source,
+        .line = token1->line,
+        .column = token1->column,
+        .offset = token1->offset,
+        .end_offset = token2->end_offset,
+      };
+      return VUSH_ALLOCATE(SNOT, _allocator, result_type, source);
     }
 
     // match
@@ -458,25 +404,31 @@ namespace vush {
                               Token_Kind const tk_type3)
     {
       Lexer_State const begin_state = _lexer.get_current_state_noskip();
-      SNOT* const tk1 = match(tk_type1);
-      if(tk1 == nullptr) {
+      auto const token1 = _lexer.peek_token();
+      _lexer.advance_token();
+      auto const token2 = _lexer.peek_token();
+      _lexer.advance_token();
+      auto const token3 = _lexer.peek_token();
+      _lexer.advance_token();
+      if(!token1 || !token2 || !token3) {
         _lexer.restore_state(begin_state);
         return nullptr;
       }
 
-      SNOT* const tk2 = match(tk_type2);
-      if(tk2 == nullptr) {
+      if(token1->kind != tk_type1 || token2->kind != tk_type2 ||
+         token2->kind != tk_type3) {
         _lexer.restore_state(begin_state);
         return nullptr;
       }
 
-      SNOT* const tk3 = match(tk_type3);
-      if(tk3 == nullptr) {
-        _lexer.restore_state(begin_state);
-        return nullptr;
-      }
-
-      return combine(result_type, tk1, tk2, tk3);
+      Source_Info source{
+        .source = _source,
+        .line = token1->line,
+        .column = token1->column,
+        .offset = token1->offset,
+        .end_offset = token3->end_offset,
+      };
+      return VUSH_ALLOCATE(SNOT, _allocator, result_type, source);
     }
 
     // skipmatch
