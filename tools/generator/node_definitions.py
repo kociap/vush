@@ -73,7 +73,7 @@ syntax_nodes = [
     },
     {
         "syntax_name": "decl_import",
-        "members": [Syntax_Member(Node_Kind.node, "path", Lookup_Kind.index, 1)]
+        "members": [Syntax_Member(Node_Kind.token, "path", Lookup_Kind.index, 1)]
     },
     {
         "syntax_name": "struct_field",

@@ -19,7 +19,7 @@ namespace vush {
     // Ensure we're not importing the same source multiple times.
     anton::String& source_identifier = query_result.value();
     if(ctx.source_registry->find_source(source_identifier) != nullptr) {
-      return {anton::expected_value};
+      return {anton::expected_value, nullptr};
     }
 
     anton::Expected<anton::String, anton::String> import_result =
@@ -60,7 +60,7 @@ namespace vush {
     // Ensure we're not importing the same source multiple times.
     anton::String& source_identifier = query_result.value();
     if(ctx.source_registry->find_source(source_identifier) != nullptr) {
-      return {anton::expected_value};
+      return {anton::expected_value, nullptr};
     }
 
     anton::Expected<anton::String, anton::String> import_result =

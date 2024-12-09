@@ -17,7 +17,7 @@ namespace vush {
 
     // find_source
     //
-    // Find the source data corresponding to given the name.
+    // Find the source data corresponding to the given name.
     //
     [[nodiscard]] Source_Data const* find_source(anton::String_View name) const;
 

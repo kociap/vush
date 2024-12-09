@@ -672,8 +672,8 @@ namespace vush {
       ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state_noskip();
       anton::IList<SNOT> snots;
-      EXPECT_TOKEN(Token_Kind::kw_import, "expected 'import'"_sv, snots);
-      EXPECT_NODE(try_expr_lt_string, snots);
+      EXPECT_TOKEN_SKIP(Token_Kind::kw_import, "expected 'import'"_sv, snots);
+      EXPECT_TOKEN_SKIP(Token_Kind::lt_string, "expected string"_sv, snots);
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
       return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::decl_import, source,
@@ -2170,18 +2170,6 @@ namespace vush {
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
       return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::expr_lt_integer, source,
-                           snots.unlink());
-    }
-
-    SNOT* try_expr_lt_string()
-    {
-      ANNOTATE_FUNCTION()
-      Lexer_State const begin_state = _lexer.get_current_state();
-      anton::IList<SNOT> snots;
-      EXPECT_TOKEN(Token_Kind::lt_string, "expected string literal"_sv, snots);
-      Lexer_State const end_state = _lexer.get_current_state_noskip();
-      Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::expr_lt_string, source,
                            snots.unlink());
     }
 
