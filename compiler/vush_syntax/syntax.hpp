@@ -1,6 +1,7 @@
 #pragma once
 
 #include <anton/ilist.hpp>
+#include <anton/stream.hpp>
 #include <anton/string.hpp>
 
 #include <vush_core/source_info.hpp>
@@ -223,4 +224,14 @@ namespace vush {
       return {source + source_info.offset, source + source_info.end_offset};
     }
   };
+
+  struct Syntax_Prettyprint_Options {
+    bool print_source = false;
+    bool print_location = false;
+    i32 indent_width = 2;
+  };
+
+  void prettyprint_syntax(Allocator* allocator, anton::Output_Stream& stream,
+                          Syntax_Prettyprint_Options const& options,
+                          SNOT const* snots);
 } // namespace vush

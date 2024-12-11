@@ -155,8 +155,7 @@ namespace vush {
     return nullptr;                    \
   }
 
-#define WRAP_NODE(allocator, kind, source_info, node) \
-  VUSH_ALLOCATE(SNOT, allocator, kind, source_info, node)
+#define ALLOCATE_SNOT(...) VUSH_ALLOCATE(SNOT, _allocator, __VA_ARGS__)
 
   class Parser {
   public:
@@ -206,6 +205,7 @@ namespace vush {
     Lexer _lexer;
     Parse_Error _last_error;
 
+  private:
     void set_error(anton::String_View const message, Lexer_State const& state)
     {
       if(_lexer.is_state_end(state)) {
@@ -271,7 +271,7 @@ namespace vush {
         .offset = token.offset,
         .end_offset = token.end_offset,
       };
-      return VUSH_ALLOCATE(SNOT, _allocator, node_kind, source);
+      return ALLOCATE_SNOT(node_kind, source);
     }
 
     // match
@@ -367,7 +367,7 @@ namespace vush {
 
     // match
     //
-    [[nodiscard]] SNOT* match(SNOT_Kind const result_type,
+    [[nodiscard]] SNOT* match(SNOT_Kind const result_kind,
                               Token_Kind const tk_type1,
                               Token_Kind const tk_type2)
     {
@@ -393,12 +393,12 @@ namespace vush {
         .offset = token1->offset,
         .end_offset = token2->end_offset,
       };
-      return VUSH_ALLOCATE(SNOT, _allocator, result_type, source);
+      return ALLOCATE_SNOT(result_kind, source);
     }
 
     // match
     //
-    [[nodiscard]] SNOT* match(SNOT_Kind const result_type,
+    [[nodiscard]] SNOT* match(SNOT_Kind const result_kind,
                               Token_Kind const tk_type1,
                               Token_Kind const tk_type2,
                               Token_Kind const tk_type3)
@@ -428,7 +428,7 @@ namespace vush {
         .offset = token1->offset,
         .end_offset = token3->end_offset,
       };
-      return VUSH_ALLOCATE(SNOT, _allocator, result_type, source);
+      return ALLOCATE_SNOT(result_kind, source);
     }
 
     // skipmatch
@@ -488,8 +488,60 @@ namespace vush {
 
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::tk_setting_string,
-                           source);
+      return ALLOCATE_SNOT(SNOT_Kind::tk_setting_string, source);
+    }
+
+    SNOT* match_attribute_parameter_key()
+    {
+      Lexer_State const begin_state = _lexer.get_current_state();
+      anton::IList<SNOT> snots;
+      Optional<Token> lookahead1 = _lexer.peek_token();
+      if(!lookahead1) {
+        _lexer.restore_state(begin_state);
+        return nullptr;
+      }
+
+      _lexer.advance_token();
+      _lexer.ignore_whitespace_and_comments();
+      Optional<Token> lookahead2 = _lexer.peek_token();
+      if(!lookahead2) {
+        _lexer.restore_state(begin_state);
+        return nullptr;
+      }
+
+      if(lookahead1->kind == Token_Kind::identifier &&
+         lookahead2->kind == Token_Kind::tk_equals) {
+        snots.insert_back(token_to_SNOT(*lookahead1));
+        snots.insert_back(token_to_SNOT(*lookahead2));
+        return snots.unlink();
+      } else {
+        _lexer.restore_state(begin_state);
+        return nullptr;
+      }
+    }
+
+    SNOT* match_attribute_parameter()
+    {
+      Lexer_State const begin_state = _lexer.get_current_state();
+      anton::IList<SNOT> snots;
+      bool keyed = false;
+      // Look ahead to check whether the parameter is keyed.
+      //   identifier '='
+      if(auto const key = match_attribute_parameter_key()) {
+        snots.splice(key);
+        keyed = true;
+      }
+      EXPECT_NODE(try_expression_without_init, snots);
+
+      Lexer_State const end_state = _lexer.get_current_state_noskip();
+      Source_Info const source = src_info(begin_state, end_state);
+      if(keyed) {
+        return ALLOCATE_SNOT(SNOT_Kind::attribute_parameter_keyed, source,
+                             snots.unlink());
+      } else {
+        return ALLOCATE_SNOT(SNOT_Kind::attribute_parameter_positional, source,
+                             snots.unlink());
+      }
     }
 
     // TODO: Error inside try_attribute does not bubble upward.
@@ -507,60 +559,33 @@ namespace vush {
       if(auto tk_lparen = skipmatch(Token_Kind::tk_lparen)) {
         parameter_list_snots.insert_back(tk_lparen);
 
-        while(true) {
-          if(auto tk_rparen = skipmatch(Token_Kind::tk_rparen)) {
-            parameter_list_snots.insert_back(tk_rparen);
-            break;
-          }
-
-          Lexer_State const parameter_begin_state = _lexer.get_current_state();
-          anton::IList<SNOT> parameter_snots;
-          bool keyed = false;
-          if(auto key = match(Token_Kind::identifier)) {
-            if(auto tk_equals = skipmatch(Token_Kind::tk_equals)) {
-              parameter_snots.insert_back(key);
-              parameter_snots.insert_back(tk_equals);
-              keyed = true;
+        if(auto tk_rparen = skipmatch(Token_Kind::tk_rparen)) {
+          parameter_list_snots.insert_back(tk_rparen);
+        } else {
+          while(true) {
+            EXPECT_NODE(match_attribute_parameter, parameter_list_snots);
+            if(auto const tk_comma = skipmatch(Token_Kind::tk_comma)) {
+              parameter_list_snots.insert_back(tk_comma);
             } else {
-              _lexer.restore_state(parameter_begin_state);
+              break;
             }
-          }
-
-          if(auto value = try_expression_without_init()) {
-            parameter_snots.insert_back(value);
-          } else {
-            _lexer.restore_state(begin_state);
-            return nullptr;
-          }
-
-          Lexer_State const parameter_end_state =
-            _lexer.get_current_state_noskip();
-          Source_Info const source =
-            src_info(parameter_begin_state, parameter_end_state);
-          if(keyed) {
-            parameter_list_snots.insert_back(VUSH_ALLOCATE(
-              SNOT, _allocator, SNOT_Kind::attribute_parameter_keyed, source,
-              parameter_snots.unlink()));
-          } else {
-            parameter_list_snots.insert_back(VUSH_ALLOCATE(
-              SNOT, _allocator, SNOT_Kind::attribute_parameter_positional,
-              source, parameter_snots.unlink()));
           }
         }
 
+        EXPECT_TOKEN(Token_Kind::tk_rparen, "expected ')'",
+                     parameter_list_snots);
         Lexer_State const parameter_list_end_state =
           _lexer.get_current_state_noskip();
         Source_Info const parameter_list_source =
           src_info(parameter_list_begin_state, parameter_list_end_state);
-        snots.insert_back(
-          VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::attribute_parameter_list,
-                        parameter_list_source, parameter_list_snots.unlink()));
+        snots.insert_back(ALLOCATE_SNOT(SNOT_Kind::attribute_parameter_list,
+                                        parameter_list_source,
+                                        parameter_list_snots.unlink()));
       }
 
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::attribute, source,
-                           snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::attribute, source, snots.unlink());
     }
 
     SNOT* try_attribute_list()
@@ -574,8 +599,7 @@ namespace vush {
 
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::attribute_list, source,
-                           snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::attribute_list, source, snots.unlink());
     }
 
     SNOT* try_declaration()
@@ -663,8 +687,7 @@ namespace vush {
 
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::decl_block, source,
-                           snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::decl_block, source, snots.unlink());
     }
 
     SNOT* try_decl_import()
@@ -676,8 +699,7 @@ namespace vush {
       EXPECT_TOKEN_SKIP(Token_Kind::lt_string, "expected string"_sv, snots);
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::decl_import, source,
-                           snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::decl_import, source, snots.unlink());
     }
 
     SNOT* try_decl_if()
@@ -705,8 +727,7 @@ namespace vush {
 
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::decl_if, source,
-                           snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::decl_if, source, snots.unlink());
     }
 
     SNOT* try_variable()
@@ -714,8 +735,8 @@ namespace vush {
       ANNOTATE_FUNCTION()
       Lexer_State const begin_state = _lexer.get_current_state();
       Source_Info const source = src_info(begin_state, begin_state);
-      auto dummy_attribute_list = VUSH_ALLOCATE(
-        SNOT, _allocator, SNOT_Kind::attribute_list, source, (SNOT*)nullptr);
+      auto dummy_attribute_list =
+        ALLOCATE_SNOT(SNOT_Kind::attribute_list, source, (SNOT*)nullptr);
       return try_variable(dummy_attribute_list);
     }
 
@@ -741,8 +762,7 @@ namespace vush {
 
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::variable, source,
-                           snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::variable, source, snots.unlink());
     }
 
     SNOT* try_struct_field()
@@ -770,8 +790,7 @@ namespace vush {
       EXPECT_TOKEN_SKIP(Token_Kind::tk_semicolon, "expected ';'"_sv, snots);
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::struct_field, source,
-                           snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::struct_field, source, snots.unlink());
     }
 
     SNOT* try_struct_field_block()
@@ -791,8 +810,8 @@ namespace vush {
 
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::struct_field_block,
-                           source, snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::struct_field_block, source,
+                           snots.unlink());
     }
 
     SNOT* try_decl_struct(SNOT* attribute_list)
@@ -808,8 +827,7 @@ namespace vush {
       snots.insert_front(attribute_list);
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::decl_struct, source,
-                           snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::decl_struct, source, snots.unlink());
     }
 
     SNOT* try_buffer_field()
@@ -823,21 +841,16 @@ namespace vush {
         snots.insert_back(attribute_list);
       }
 
-      // TODO: change grammar to type ':' identifier ';'
-      EXPECT_NODE(try_type, snots);
+      // identifier ':' type
       EXPECT_TOKEN_SKIP(Token_Kind::identifier, "expected identifier"_sv,
                         snots);
-
-      if(auto tk_equals = skipmatch(Token_Kind::tk_equals)) {
-        snots.insert_back(tk_equals);
-        EXPECT_NODE(try_expression, snots);
-      }
+      EXPECT_TOKEN_SKIP(Token_Kind::tk_colon, "expected ':'"_sv, snots);
+      EXPECT_NODE(try_type, snots);
 
       EXPECT_TOKEN_SKIP(Token_Kind::tk_semicolon, "expected ';'"_sv, snots);
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::buffer_field, source,
-                           snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::buffer_field, source, snots.unlink());
     }
 
     SNOT* try_buffer_field_block()
@@ -857,8 +870,8 @@ namespace vush {
 
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::buffer_field_block,
-                           source, snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::buffer_field_block, source,
+                           snots.unlink());
     }
 
     SNOT* try_decl_buffer(SNOT* attribute_list)
@@ -878,8 +891,7 @@ namespace vush {
       snots.insert_front(attribute_list);
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::decl_buffer, source,
-                           snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::decl_buffer, source, snots.unlink());
     }
 
     SNOT* try_setting()
@@ -904,8 +916,7 @@ namespace vush {
 
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::setting_keyval, source,
-                           snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::setting_keyval, source, snots.unlink());
     }
 
     SNOT* try_setting_block()
@@ -925,8 +936,7 @@ namespace vush {
 
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::setting_block, source,
-                           snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::setting_block, source, snots.unlink());
     }
 
     SNOT* try_decl_settings()
@@ -941,8 +951,7 @@ namespace vush {
       EXPECT_NODE(try_setting_block, snots);
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::decl_settings, source,
-                           snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::decl_settings, source, snots.unlink());
     }
 
     SNOT* try_fn_parameter()
@@ -971,8 +980,7 @@ namespace vush {
 
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::fn_parameter, source,
-                           snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::fn_parameter, source, snots.unlink());
     }
 
     SNOT* try_fn_parameter_list()
@@ -986,8 +994,8 @@ namespace vush {
         snots.insert_back(tk_rparen);
         Lexer_State const end_state = _lexer.get_current_state_noskip();
         Source_Info const source = src_info(begin_state, end_state);
-        return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::fn_parameter_list,
-                             source, snots.unlink());
+        return ALLOCATE_SNOT(SNOT_Kind::fn_parameter_list, source,
+                             snots.unlink());
       }
 
       while(true) {
@@ -1002,8 +1010,8 @@ namespace vush {
       EXPECT_TOKEN_SKIP(Token_Kind::tk_rparen, "expected ')'"_sv, snots);
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::fn_parameter_list,
-                           source, snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::fn_parameter_list, source,
+                           snots.unlink());
     }
 
     SNOT* try_decl_stage_function(SNOT* attribute_list)
@@ -1032,8 +1040,8 @@ namespace vush {
 
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::decl_stage_function,
-                           source, snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::decl_stage_function, source,
+                           snots.unlink());
     }
 
     SNOT* try_decl_function(SNOT* attribute_list)
@@ -1057,8 +1065,7 @@ namespace vush {
 
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::decl_function, source,
-                           snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::decl_function, source, snots.unlink());
     }
 
     SNOT* try_statement()
@@ -1078,8 +1085,7 @@ namespace vush {
         EXPECT_TOKEN(Token_Kind::tk_semicolon, "expected ';'"_sv, snots);
         Lexer_State const end_state = _lexer.get_current_state_noskip();
         Source_Info const source = src_info(begin_state, end_state);
-        return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::stmt_empty, source,
-                             snots.unlink());
+        return ALLOCATE_SNOT(SNOT_Kind::stmt_empty, source, snots.unlink());
       }
 
       case Token_Kind::kw_var:
@@ -1113,8 +1119,7 @@ namespace vush {
         EXPECT_TOKEN_SKIP(Token_Kind::tk_semicolon, "expected ';'"_sv, snots);
         Lexer_State const end_state = _lexer.get_current_state_noskip();
         Source_Info const source = src_info(begin_state, end_state);
-        return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::stmt_break, source,
-                             snots.unlink());
+        return ALLOCATE_SNOT(SNOT_Kind::stmt_break, source, snots.unlink());
       }
 
       case Token_Kind::kw_continue: {
@@ -1124,8 +1129,7 @@ namespace vush {
         EXPECT_TOKEN_SKIP(Token_Kind::tk_semicolon, "expected ';'"_sv, snots);
         Lexer_State const end_state = _lexer.get_current_state_noskip();
         Source_Info const source = src_info(begin_state, end_state);
-        return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::stmt_continue, source,
-                             snots.unlink());
+        return ALLOCATE_SNOT(SNOT_Kind::stmt_continue, source, snots.unlink());
       }
 
       case Token_Kind::kw_discard: {
@@ -1135,11 +1139,11 @@ namespace vush {
         EXPECT_TOKEN_SKIP(Token_Kind::tk_semicolon, "expected ';'"_sv, snots);
         Lexer_State const end_state = _lexer.get_current_state_noskip();
         Source_Info const source = src_info(begin_state, end_state);
-        return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::stmt_discard, source,
-                             snots.unlink());
+        return ALLOCATE_SNOT(SNOT_Kind::stmt_discard, source, snots.unlink());
       }
 
       default: {
+        // TODO: These may be merged because they have common prefix.
         if(auto stmt_assignment = try_stmt_assignment()) {
           return stmt_assignment;
         }
@@ -1173,8 +1177,7 @@ namespace vush {
 
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::stmt_block, source,
-                           snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::stmt_block, source, snots.unlink());
     }
 
     SNOT* try_stmt_if()
@@ -1197,8 +1200,7 @@ namespace vush {
 
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::stmt_if, source,
-                           snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::stmt_if, source, snots.unlink());
     }
 
     SNOT* try_stmt_switch()
@@ -1211,15 +1213,15 @@ namespace vush {
           while(true) {
             if(auto kw_default = skipmatch(Token_Kind::kw_default)) {
               Source_Info const source_info = kw_default->source_info;
-              auto expr_default = WRAP_NODE(_allocator, SNOT_Kind::expr_default,
-                                            source_info, kw_default);
-              auto label = WRAP_NODE(_allocator, SNOT_Kind::switch_arm_label,
-                                     source_info, expr_default);
+              auto expr_default =
+                ALLOCATE_SNOT(SNOT_Kind::expr_default, source_info, kw_default);
+              auto label = ALLOCATE_SNOT(SNOT_Kind::switch_arm_label,
+                                         source_info, expr_default);
               snots.insert_back(label);
             } else if(auto literal = try_expr_lt_integer()) {
               Source_Info const source_info = literal->source_info;
-              auto label = WRAP_NODE(_allocator, SNOT_Kind::switch_arm_label,
-                                     source_info, literal);
+              auto label = ALLOCATE_SNOT(SNOT_Kind::switch_arm_label,
+                                         source_info, literal);
               snots.insert_back(label);
             } else {
               _lexer.restore_state(begin_state);
@@ -1237,8 +1239,7 @@ namespace vush {
           EXPECT_NODE(try_stmt_block, snots);
           Lexer_State const end_state = _lexer.get_current_state_noskip();
           Source_Info const source = src_info(begin_state, end_state);
-          return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::switch_arm, source,
-                               snots.unlink());
+          return ALLOCATE_SNOT(SNOT_Kind::switch_arm, source, snots.unlink());
         };
 
         Lexer_State const begin_state = _lexer.get_current_state();
@@ -1254,8 +1255,8 @@ namespace vush {
 
         Lexer_State const end_state = _lexer.get_current_state_noskip();
         Source_Info const source = src_info(begin_state, end_state);
-        return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::switch_arm_list,
-                             source, snots.unlink());
+        return ALLOCATE_SNOT(SNOT_Kind::switch_arm_list, source,
+                             snots.unlink());
       };
 
       Lexer_State const begin_state = _lexer.get_current_state();
@@ -1265,8 +1266,7 @@ namespace vush {
       EXPECT_NODE(match_switch_arm_list, snots);
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::stmt_switch, source,
-                           snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::stmt_switch, source, snots.unlink());
     }
 
     SNOT* try_stmt_for()
@@ -1286,9 +1286,9 @@ namespace vush {
 
         Lexer_State const end_state = _lexer.get_current_state_noskip();
         Source_Info const source = src_info(begin_state, end_state);
-        return WRAP_NODE(_allocator, SNOT_Kind::for_variable, source,
-                         VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::variable,
-                                       source, snots.unlink()));
+        return ALLOCATE_SNOT(
+          SNOT_Kind::for_variable, source,
+          ALLOCATE_SNOT(SNOT_Kind::variable, source, snots.unlink()));
       };
 
       Lexer_State const begin_state = _lexer.get_current_state();
@@ -1302,24 +1302,23 @@ namespace vush {
 
       if(auto condition = try_expression()) {
         Source_Info const source_info = condition->source_info;
-        snots.insert_back(WRAP_NODE(_allocator, SNOT_Kind::for_condition,
-                                    source_info, condition));
+        snots.insert_back(
+          ALLOCATE_SNOT(SNOT_Kind::for_condition, source_info, condition));
       }
 
       EXPECT_TOKEN_SKIP(Token_Kind::tk_semicolon, "expected ';'"_sv, snots);
       // TODO FIX: does not match assignment.
       if(auto expression = try_expression_without_init()) {
         Source_Info const source_info = expression->source_info;
-        snots.insert_back(WRAP_NODE(_allocator, SNOT_Kind::for_expression,
-                                    source_info, expression));
+        snots.insert_back(
+          ALLOCATE_SNOT(SNOT_Kind::for_expression, source_info, expression));
       }
 
       EXPECT_NODE(try_stmt_block, snots);
 
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::stmt_for, source,
-                           snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::stmt_for, source, snots.unlink());
     }
 
     SNOT* try_stmt_while()
@@ -1332,8 +1331,7 @@ namespace vush {
       EXPECT_NODE(try_stmt_block, snots);
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::stmt_while, source,
-                           snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::stmt_while, source, snots.unlink());
     }
 
     SNOT* try_stmt_do_while()
@@ -1348,8 +1346,7 @@ namespace vush {
       EXPECT_TOKEN_SKIP(Token_Kind::tk_semicolon, "expected ';'"_sv, snots);
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::stmt_do_while, source,
-                           snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::stmt_do_while, source, snots.unlink());
     }
 
     SNOT* try_stmt_return()
@@ -1360,15 +1357,14 @@ namespace vush {
       EXPECT_TOKEN(Token_Kind::kw_return, "expected 'return'"_sv, snots);
       if(auto return_expression = try_expression()) {
         Source_Info const source_info = return_expression->source_info;
-        snots.insert_back(WRAP_NODE(_allocator, SNOT_Kind::return_expression,
-                                    source_info, return_expression));
+        snots.insert_back(ALLOCATE_SNOT(SNOT_Kind::return_expression,
+                                        source_info, return_expression));
       }
 
       EXPECT_TOKEN_SKIP(Token_Kind::tk_semicolon, "expected ';'"_sv, snots);
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::stmt_return, source,
-                           snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::stmt_return, source, snots.unlink());
     }
 
     SNOT* try_stmt_assignment()
@@ -1418,10 +1414,10 @@ namespace vush {
       }
 
       EXPECT_NODE(try_expression, snots);
+      EXPECT_TOKEN_SKIP(Token_Kind::tk_semicolon, "expected ';'"_sv, snots);
       Lexer_State const end_state = _lexer.get_current_state();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::stmt_assignment, source,
-                           snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::stmt_assignment, source, snots.unlink());
     }
 
     SNOT* try_stmt_expression()
@@ -1433,8 +1429,7 @@ namespace vush {
       EXPECT_TOKEN_SKIP(Token_Kind::tk_semicolon, "expected ';'"_sv, snots);
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::stmt_expression, source,
-                           snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::stmt_expression, source, snots.unlink());
     }
 
     SNOT* try_expression()
@@ -1564,9 +1559,8 @@ namespace vush {
 
         // Replace dest_node with a new expr_binary node. Since dest_node is
         // linked into a list, we replace its contents.
-        auto const child =
-          VUSH_ALLOCATE(SNOT, _allocator, dest_node->kind,
-                        dest_node->source_info, dest_node->children);
+        auto const child = ALLOCATE_SNOT(
+          dest_node->kind, dest_node->source_info, dest_node->children);
         anton::IList<SNOT> snots;
         snots.insert_back(child);
         snots.insert_back(op);
@@ -1608,6 +1602,7 @@ namespace vush {
                              Token_Kind::tk_amp)) {
             return op;
           } else {
+            _lexer.advance_token();
             return token_to_SNOT(*lookahead);
           }
 
@@ -1616,6 +1611,7 @@ namespace vush {
                              Token_Kind::tk_pipe)) {
             return op;
           } else {
+            _lexer.advance_token();
             return token_to_SNOT(*lookahead);
           }
 
@@ -1624,6 +1620,7 @@ namespace vush {
                              Token_Kind::tk_hat)) {
             return op;
           } else {
+            _lexer.advance_token();
             return token_to_SNOT(*lookahead);
           }
 
@@ -1643,6 +1640,7 @@ namespace vush {
                                     Token_Kind::tk_langle)) {
             return op;
           } else {
+            _lexer.advance_token();
             return token_to_SNOT(*lookahead);
           }
 
@@ -1654,6 +1652,7 @@ namespace vush {
                                     Token_Kind::tk_rangle)) {
             return op;
           } else {
+            _lexer.advance_token();
             return token_to_SNOT(*lookahead);
           }
 
@@ -1662,6 +1661,7 @@ namespace vush {
         case Token_Kind::tk_asterisk:
         case Token_Kind::tk_slash:
         case Token_Kind::tk_percent:
+          _lexer.advance_token();
           return token_to_SNOT(*lookahead);
 
         default:
@@ -1757,8 +1757,7 @@ namespace vush {
 
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::expr_prefix, source,
-                           snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::expr_prefix, source, snots.unlink());
     }
 
     SNOT* try_expr_postfix(bool const disable_init)
@@ -1786,8 +1785,7 @@ namespace vush {
           snots.insert_back(identifier);
           Lexer_State const end_state = _lexer.get_current_state_noskip();
           Source_Info const source = src_info(begin_state, end_state);
-          expr = VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::expr_field, source,
-                               snots.unlink());
+          expr = ALLOCATE_SNOT(SNOT_Kind::expr_field, source, snots.unlink());
         } else if(auto tk_lbracket = skipmatch(Token_Kind::tk_lbracket)) {
           auto index = try_expression();
           if(!index) {
@@ -1809,8 +1807,7 @@ namespace vush {
           snots.insert_back(tk_rbracket);
           Lexer_State const end_state = _lexer.get_current_state_noskip();
           Source_Info const source = src_info(begin_state, end_state);
-          expr = VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::expr_index, source,
-                               snots.unlink());
+          expr = ALLOCATE_SNOT(SNOT_Kind::expr_index, source, snots.unlink());
         } else {
           break;
         }
@@ -1837,8 +1834,8 @@ namespace vush {
         EXPECT_TOKEN_SKIP(Token_Kind::tk_rparen, "expected ')'"_sv, snots);
         Lexer_State const end_state = _lexer.get_current_state_noskip();
         Source_Info const source = src_info(begin_state, end_state);
-        return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::expr_parentheses,
-                             source, snots.unlink());
+        return ALLOCATE_SNOT(SNOT_Kind::expr_parentheses, source,
+                             snots.unlink());
       }
 
         // TODO: reinterpret
@@ -1859,8 +1856,7 @@ namespace vush {
 
         Lexer_State const end_state = _lexer.get_current_state_noskip();
         Source_Info const source = src_info(begin_state, end_state);
-        return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::expr_lt_float, source,
-                             snots.unlink());
+        return ALLOCATE_SNOT(SNOT_Kind::expr_lt_float, source, snots.unlink());
       }
 
       case Token_Kind::lt_bin_integer:
@@ -1877,8 +1873,8 @@ namespace vush {
 
         Lexer_State const end_state = _lexer.get_current_state_noskip();
         Source_Info const source = src_info(begin_state, end_state);
-        return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::expr_lt_integer,
-                             source, snots.unlink());
+        return ALLOCATE_SNOT(SNOT_Kind::expr_lt_integer, source,
+                             snots.unlink());
       }
 
       case Token_Kind::lt_bool: {
@@ -1886,8 +1882,7 @@ namespace vush {
         EXPECT_TOKEN(Token_Kind::lt_bool, "expected bool literal"_sv, snots);
         Lexer_State const end_state = _lexer.get_current_state_noskip();
         Source_Info const source = src_info(begin_state, end_state);
-        return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::expr_lt_bool, source,
-                             snots.unlink());
+        return ALLOCATE_SNOT(SNOT_Kind::expr_lt_bool, source, snots.unlink());
       }
 
       case Token_Kind::identifier: {
@@ -1906,8 +1901,7 @@ namespace vush {
           EXPECT_NODE(try_call_arg_list, snots);
           Lexer_State const end_state = _lexer.get_current_state_noskip();
           Source_Info const source = src_info(begin_state, end_state);
-          return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::expr_call, source,
-                               snots.unlink());
+          return ALLOCATE_SNOT(SNOT_Kind::expr_call, source, snots.unlink());
         }
 
         case Token_Kind::tk_lbrace: {
@@ -1923,8 +1917,8 @@ namespace vush {
         default: {
           Lexer_State const end_state = _lexer.get_current_state_noskip();
           Source_Info const source = src_info(begin_state, end_state);
-          return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::expr_identifier,
-                               source, token_to_SNOT(*lookahead));
+          return ALLOCATE_SNOT(SNOT_Kind::expr_identifier, source,
+                               token_to_SNOT(*lookahead));
         }
         }
       } break;
@@ -1957,7 +1951,7 @@ namespace vush {
     //   EXPECT_TOKEN_SKIP(Token_Kind::tk_rparen, "expected ')'"_sv, snots);
     //   Lexer_State const end_state = _lexer.get_current_state_noskip();
     //   Source_Info const source = src_info(begin_state, end_state);
-    //   return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::expr_reinterpret,
+    //   return ALLOCATE_SNOT( _allocator, SNOT_Kind::expr_reinterpret,
     //                        source, snots.unlink());
     // }
 
@@ -1971,8 +1965,7 @@ namespace vush {
       EXPECT_TOKEN_SKIP(Token_Kind::tk_rbrace, "expected '}'"_sv, snots);
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::expr_block, source,
-                           snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::expr_block, source, snots.unlink());
     }
 
     SNOT* try_expr_if()
@@ -1996,8 +1989,7 @@ namespace vush {
 
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::expr_if, source,
-                           snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::expr_if, source, snots.unlink());
     }
 
     SNOT* try_field_initializer()
@@ -2012,8 +2004,8 @@ namespace vush {
       EXPECT_NODE(try_expression, snots);
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::field_initializer,
-                           source, snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::field_initializer, source,
+                           snots.unlink());
     }
 
     SNOT* try_index_initializer()
@@ -2028,8 +2020,8 @@ namespace vush {
       EXPECT_NODE(try_expression, snots);
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::index_initializer,
-                           source, snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::index_initializer, source,
+                           snots.unlink());
     }
 
     SNOT* try_basic_initializer()
@@ -2040,8 +2032,8 @@ namespace vush {
       EXPECT_NODE(try_expression, snots);
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::basic_initializer,
-                           source, snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::basic_initializer, source,
+                           snots.unlink());
     }
 
     SNOT* try_expr_init()
@@ -2060,8 +2052,7 @@ namespace vush {
           list_snots.insert_back(tk_rbrace);
           Lexer_State const end_state = _lexer.get_current_state_noskip();
           Source_Info const source = src_info(begin_state, end_state);
-          return VUSH_ALLOCATE(SNOT, _allocator,
-                               SNOT_Kind::init_initializer_list, source,
+          return ALLOCATE_SNOT(SNOT_Kind::init_initializer_list, source,
                                list_snots.unlink());
         }
 
@@ -2096,16 +2087,14 @@ namespace vush {
         EXPECT_TOKEN_SKIP(Token_Kind::tk_rbrace, "expected '}'"_sv, list_snots);
         Lexer_State const end_state = _lexer.get_current_state_noskip();
         Source_Info const source = src_info(begin_state, end_state);
-        auto const list =
-          VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::init_initializer_list,
-                        source, list_snots.unlink());
+        auto const list = ALLOCATE_SNOT(SNOT_Kind::init_initializer_list,
+                                        source, list_snots.unlink());
         snots.insert_back(list);
       }
 
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::expr_init, source,
-                           snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::expr_init, source, snots.unlink());
     }
 
     SNOT* try_call_arg_list()
@@ -2120,8 +2109,7 @@ namespace vush {
         snots.insert_back(tk_rparen);
         Lexer_State const end_state = _lexer.get_current_state_noskip();
         Source_Info const source = src_info(begin_state, end_state);
-        return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::call_arg_list, source,
-                             snots.unlink());
+        return ALLOCATE_SNOT(SNOT_Kind::call_arg_list, source, snots.unlink());
       }
 
       while(true) {
@@ -2137,8 +2125,7 @@ namespace vush {
       EXPECT_TOKEN_SKIP(Token_Kind::tk_rparen, "expected ')'"_sv, snots);
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::call_arg_list, source,
-                           snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::call_arg_list, source, snots.unlink());
     }
 
     SNOT* try_expr_lt_integer()
@@ -2169,8 +2156,7 @@ namespace vush {
 
       Lexer_State const end_state = _lexer.get_current_state_noskip();
       Source_Info const source = src_info(begin_state, end_state);
-      return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::expr_lt_integer, source,
-                           snots.unlink());
+      return ALLOCATE_SNOT(SNOT_Kind::expr_lt_integer, source, snots.unlink());
     }
 
     SNOT* try_type()
@@ -2196,8 +2182,8 @@ namespace vush {
 
         if(auto type = try_type()) {
           Source_Info const source_info = type->source_info;
-          snots.insert_back(WRAP_NODE(_allocator, SNOT_Kind::type_array_base,
-                                      source_info, type));
+          snots.insert_back(
+            ALLOCATE_SNOT(SNOT_Kind::type_array_base, source_info, type));
         } else {
           _lexer.restore_state(begin_state);
           return nullptr;
@@ -2207,16 +2193,15 @@ namespace vush {
 
         if(auto size = try_expr_lt_integer()) {
           Source_Info const source_info = size->source_info;
-          snots.insert_back(WRAP_NODE(_allocator, SNOT_Kind::type_array_size,
-                                      source_info, size));
+          snots.insert_back(
+            ALLOCATE_SNOT(SNOT_Kind::type_array_size, source_info, size));
         }
 
         EXPECT_TOKEN_SKIP(Token_Kind::tk_rbracket, "expected ']'"_sv, snots);
 
         Lexer_State const end_state = _lexer.get_current_state_noskip();
         Source_Info const source = src_info(begin_state, end_state);
-        return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::type_array, source,
-                             snots.unlink());
+        return ALLOCATE_SNOT(SNOT_Kind::type_array, source, snots.unlink());
       }
 
       case Token_Kind::identifier: {
@@ -2224,8 +2209,7 @@ namespace vush {
         snots.insert_back(identifier);
         Lexer_State const end_state = _lexer.get_current_state_noskip();
         Source_Info const source = src_info(begin_state, end_state);
-        return VUSH_ALLOCATE(SNOT, _allocator, SNOT_Kind::type_named, source,
-                             snots.unlink());
+        return ALLOCATE_SNOT(SNOT_Kind::type_named, source, snots.unlink());
       }
 
       default: {

@@ -433,7 +433,7 @@ namespace vush {
     ANTON_UNREACHABLE("member 0 not present in buffer_field");
   }
 
-  SNOT const* get_buffer_field_type(SNOT const* node)
+  SNOT const* get_buffer_field_identifier(SNOT const* node)
   {
     ANTON_ASSERT(node->kind == SNOT_Kind::buffer_field,
                  "node is not buffer_field");
@@ -450,7 +450,7 @@ namespace vush {
     ANTON_UNREACHABLE("member 1 not present in buffer_field");
   }
 
-  SNOT const* get_buffer_field_identifier(SNOT const* node)
+  SNOT const* get_buffer_field_type(SNOT const* node)
   {
     ANTON_ASSERT(node->kind == SNOT_Kind::buffer_field,
                  "node is not buffer_field");
@@ -458,13 +458,13 @@ namespace vush {
     i64 index = 0;
     ANTON_UNUSED(index);
     while(child != nullptr) {
-      if(index == 2) {
+      if(index == 3) {
         return child;
       }
       child = anton::ilist_next(child);
       index += 1;
     }
-    ANTON_UNREACHABLE("member 2 not present in buffer_field");
+    ANTON_UNREACHABLE("member 3 not present in buffer_field");
   }
 
   SNOT const* get_decl_buffer_attribute_list(SNOT const* node)

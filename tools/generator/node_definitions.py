@@ -96,8 +96,8 @@ syntax_nodes = [
         "syntax_name": "buffer_field",
         "members": [
             Syntax_Member(Node_Kind.node, "attribute_list", Lookup_Kind.index, 0),
-            Syntax_Member(Node_Kind.node, "type", Lookup_Kind.index, 1),
-            Syntax_Member(Node_Kind.token, "identifier", Lookup_Kind.index, 2),
+            Syntax_Member(Node_Kind.token, "identifier", Lookup_Kind.index, 1),
+            Syntax_Member(Node_Kind.node, "type", Lookup_Kind.index, 3),
         ]
     },
     {

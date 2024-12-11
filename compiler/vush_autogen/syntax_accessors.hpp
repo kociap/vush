@@ -35,8 +35,8 @@ namespace vush {
   [[nodiscard]] SNOT const* get_decl_struct_identifier(SNOT const* node);
   [[nodiscard]] SNOT const* get_decl_struct_fields(SNOT const* node);
   [[nodiscard]] SNOT const* get_buffer_field_attribute_list(SNOT const* node);
-  [[nodiscard]] SNOT const* get_buffer_field_type(SNOT const* node);
   [[nodiscard]] SNOT const* get_buffer_field_identifier(SNOT const* node);
+  [[nodiscard]] SNOT const* get_buffer_field_type(SNOT const* node);
   [[nodiscard]] SNOT const* get_decl_buffer_attribute_list(SNOT const* node);
   [[nodiscard]] SNOT const* get_decl_buffer_pass(SNOT const* node);
   [[nodiscard]] SNOT const* get_decl_buffer_identifier(SNOT const* node);
