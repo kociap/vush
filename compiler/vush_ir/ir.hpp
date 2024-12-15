@@ -10,7 +10,7 @@
 #include <vush_core/types.hpp>
 
 #include <vush_ir/ext.hpp>
-#include <vush_ir/ir_fwd.hpp>
+#include <vush_ir/fwd.hpp>
 #include <vush_ir/opcodes.hpp>
 #include <vush_ir/types.hpp>
 

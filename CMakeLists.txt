@@ -175,7 +175,7 @@ target_sources(vush
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ir/decoration.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ir/ir.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ir/ir.hpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ir/ir_fwd.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ir/fwd.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ir/opcodes.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ir/prettyprint.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ir/prettyprint.hpp"

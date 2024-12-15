@@ -1,6 +1,8 @@
 #pragma once
 
 namespace vush::ir {
+  struct Type;
+
   struct Module;
   struct Basic_Block;
   struct Function;
