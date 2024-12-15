@@ -11,6 +11,7 @@
 #include <vush_ast/ast.hpp>
 #include <vush_autogen/builtin_symbols.hpp>
 #include <vush_core/memory.hpp>
+#include <vush_core/running_hash.hpp>
 #include <vush_core/scoped_map.hpp>
 #include <vush_core/utility.hpp>
 #include <vush_ir/ir.hpp>
@@ -33,6 +34,7 @@ namespace vush {
       Fn_Table fntable;
       Symbol_Table symtable;
       Buffer_Table buftable;
+      anton::Flat_Hash_Map<u64, ir::Type*> type_table;
 
       ir::Basic_Block* nearest_converge_block = nullptr;
       ir::Basic_Block* nearest_continuation_block = nullptr;
@@ -44,7 +46,7 @@ namespace vush {
     public:
       Lowering_Context(Allocator* allocator)
         : allocator(allocator), fntable(allocator), symtable(allocator),
-          buftable(allocator)
+          buftable(allocator), type_table(allocator)
       {
       }
 
@@ -129,8 +131,12 @@ namespace vush {
     }
   }
 
+  // make_new_type_instance
+  //
+  // This does not really make a new instance.
+  //
   [[nodiscard]] static ir::Type*
-  convert_ast_to_ir_type(Lowering_Context& ctx, ast::Type const* const type)
+  make_new_type_instance(Lowering_Context& ctx, ast::Type const* const type)
   {
     switch(type->type_kind) {
     case ast::Type_Kind::type_builtin: {
@@ -749,7 +755,7 @@ namespace vush {
         VUSH_ALLOCATE(ir::Type_Composite, ctx.allocator, ctx.allocator,
                       struct_definition->identifier.value);
       for(auto const field: struct_definition->fields) {
-        auto const field_type = convert_ast_to_ir_type(ctx, field->type);
+        auto const field_type = make_new_type_instance(ctx, field->type);
         composite->elements.push_back(field_type);
       }
       return composite;
@@ -757,7 +763,7 @@ namespace vush {
 
     case ast::Type_Kind::type_array: {
       auto const ast_type = static_cast<ast::Type_Array const*>(type);
-      auto const base_type = convert_ast_to_ir_type(ctx, ast_type->base);
+      auto const base_type = make_new_type_instance(ctx, ast_type->base);
       i64 size = -1;
       if(ast_type->size != nullptr) {
         size = ast::get_lt_integer_value_as_u32(*ast_type->size);
@@ -767,6 +773,54 @@ namespace vush {
       return array;
     }
     }
+  }
+
+  static void hash_type(Running_Hash& hash, ast::Type const* const type)
+  {
+    switch(type->type_kind) {
+    case ast::Type_Kind::type_builtin: {
+      auto const t = static_cast<ast::Type_Builtin const*>(type);
+      hash.feed("builtin"_sv);
+      hash.feed(static_cast<u8>(t->value));
+    } break;
+
+    case ast::Type_Kind::type_array: {
+      auto const t = static_cast<ast::Type_Array const*>(type);
+      hash.feed("array"_sv);
+      if(t->size) {
+        hash.feed(ast::get_lt_integer_value_as_u32(*t->size));
+      } else {
+        hash.feed((u8)0);
+      }
+      hash_type(hash, t->base);
+    } break;
+
+    case ast::Type_Kind::type_struct: {
+      auto const t = static_cast<ast::Type_Struct const*>(type);
+      hash.feed("struct"_sv);
+      // TODO: Ignores attributes. On the other hand, an identifier is unique,
+      //       so a type must be unique regardless of the attributes.
+      hash.feed(t->definition->identifier.value);
+      for(ast::Struct_Field const* const field: t->definition->fields) {
+        hash_type(hash, field->type);
+      }
+    } break;
+    }
+  }
+
+  [[nodiscard]] static ir::Type* lower_type(Lowering_Context& ctx,
+                                            ast::Type const* const type)
+  {
+    Running_Hash hash;
+    hash.start();
+    hash_type(hash, type);
+    u64 const value = hash.finish();
+    auto iter = ctx.type_table.find(value);
+    if(iter == ctx.type_table.end()) {
+      auto const result = make_new_type_instance(ctx, type);
+      iter = ctx.type_table.emplace(value, result);
+    }
+    return iter->value;
   }
 
   [[nodiscard]] static ir::Value*
@@ -811,7 +865,7 @@ namespace vush {
       bool const source_is_signed_int =
         ast::is_signed_integer_based(*source_type);
       bool const source_is_int = source_is_signed_int || source_is_unsigned_int;
-      auto const target_ir_type = convert_ast_to_ir_type(ctx, target_type);
+      auto const target_ir_type = lower_type(ctx, target_type);
       if(target_is_int && source_is_int) {
         // Both types are (signed/unsigned) integers. They might either be
         // different size (trunc/[sz]ext) or same size (nothing to do).
@@ -1170,7 +1224,7 @@ namespace vush {
     ANTON_ASSERT(base_eval_type->type_kind == ast::Type_Kind::type_struct,
                  "cannot address fields of a non-struct type");
     auto const base_type = static_cast<ast::Type_Struct const*>(base_eval_type);
-    ir::Type* const addressed_type = convert_ast_to_ir_type(ctx, base_type);
+    ir::Type* const addressed_type = lower_type(ctx, base_type);
     ir::Value* const address = get_address(ctx, builder, expr->base);
     i32 const index = get_field_index(base_type->definition, expr->field.value);
     ANTON_ASSERT(index >= 0, "type has no field");
@@ -1187,7 +1241,7 @@ namespace vush {
                      ast::Expr_Index const* const expr)
   {
     ir::Type* const addressed_type =
-      convert_ast_to_ir_type(ctx, expr->base->evaluated_type);
+      lower_type(ctx, expr->base->evaluated_type);
     ir::Value* const address = get_address(ctx, builder, expr->base);
     ir::Value* const index = lower_expression(ctx, builder, expr->index);
     ir::Instr* const getptr =
@@ -1339,7 +1393,7 @@ namespace vush {
   lower_expr_identifier(Lowering_Context& ctx, Builder& builder,
                         ast::Expr_Identifier const* const expr)
   {
-    ir::Type* const type = convert_ast_to_ir_type(ctx, expr->evaluated_type);
+    ir::Type* const type = lower_type(ctx, expr->evaluated_type);
     ir::Value* const address = get_address(ctx, builder, expr);
     ir::Instr* const load = ir::make_instr_load(
       ctx.allocator, ctx.next_id(), type, address, expr->source_info);
@@ -1354,7 +1408,7 @@ namespace vush {
     auto const base_type = expr->base->evaluated_type;
     if(instanceof<ast::Type_Struct>(base_type)) {
       ir::Value* const address = get_address(ctx, builder, expr);
-      ir::Type* const type = convert_ast_to_ir_type(ctx, expr->evaluated_type);
+      ir::Type* const type = lower_type(ctx, expr->evaluated_type);
       ir::Instr* const load = ir::make_instr_load(
         ctx.allocator, ctx.next_id(), type, address, expr->source_info);
       builder.insert(load);
@@ -1364,8 +1418,7 @@ namespace vush {
     if(instanceof<ast::Type_Builtin>(base_type) && ast::is_vector(*base_type)) {
       // Vectors have fields, but we cannot take the address of
       // them, hence we need to construct a new composite or a scalar.
-      ir::Type* const result_type =
-        convert_ast_to_ir_type(ctx, expr->evaluated_type);
+      ir::Type* const result_type = lower_type(ctx, expr->evaluated_type);
       ir::Value* const base = lower_expression(ctx, builder, expr->base);
       bool const result_is_scalar = expr->field.value.size_bytes() == 1;
       if(result_is_scalar) {
@@ -1401,7 +1454,7 @@ namespace vush {
                    ast::Expr_Index const* const expr)
   {
     ir::Value* const address = get_address(ctx, builder, expr);
-    ir::Type* const type = convert_ast_to_ir_type(ctx, expr->evaluated_type);
+    ir::Type* const type = lower_type(ctx, expr->evaluated_type);
     ir::Instr* const load = ir::make_instr_load(
       ctx.allocator, ctx.next_id(), type, address, expr->source_info);
     builder.insert(load);
@@ -1412,7 +1465,7 @@ namespace vush {
   lower_expr_init(Lowering_Context& ctx, Builder& builder,
                   ast::Expr_Init const* const expr)
   {
-    auto const type = convert_ast_to_ir_type(ctx, expr->evaluated_type);
+    auto const type = lower_type(ctx, expr->evaluated_type);
     if(instanceof<ast::Type_Struct>(expr->evaluated_type)) {
       // TODO: This could most likely do with composite insert instead of a
       //       temporary variable.
@@ -1854,7 +1907,7 @@ namespace vush {
 
     // Lower non-short-circuit operators.
     ast::Type const* const result_type = expr->evaluated_type;
-    ir::Type* const ir_result_type = convert_ast_to_ir_type(ctx, result_type);
+    ir::Type* const ir_result_type = lower_type(ctx, result_type);
     bool const result_is_uint = ast::is_unsigned_integer_based(*result_type);
     bool const result_is_sint = ast::is_signed_integer_based(*result_type);
     bool const result_is_fp = ast::is_fp_based(*result_type);
@@ -1885,7 +1938,7 @@ namespace vush {
   lower_builtin_function_call(Lowering_Context& ctx, Builder& builder,
                               ast::Expr_Call const* const expr)
   {
-    ir::Type* const type = convert_ast_to_ir_type(ctx, expr->evaluated_type);
+    ir::Type* const type = lower_type(ctx, expr->evaluated_type);
     ir::Instr_ext_call* const call =
       select_ext(ctx.allocator, ctx.next_id(), type, expr);
     // TODO: Do proper error handling.
@@ -1915,7 +1968,7 @@ namespace vush {
       ir::Function* const* const function =
         ctx.fntable.find_entry(expr->identifier.value);
       ANTON_ASSERT(function != nullptr, "call has no function");
-      ir::Type* const type = convert_ast_to_ir_type(ctx, expr->evaluated_type);
+      ir::Type* const type = lower_type(ctx, expr->evaluated_type);
       auto const call = ir::make_instr_call(ctx.allocator, ctx.next_id(),
                                             *function, type, expr->source_info);
       for(auto [arg, param]:
@@ -2083,7 +2136,7 @@ namespace vush {
   static void lower_variable(Lowering_Context& ctx, Builder& builder,
                              ast::Variable const* const variable)
   {
-    ir::Type* const type = convert_ast_to_ir_type(ctx, variable->type);
+    ir::Type* const type = lower_type(ctx, variable->type);
     ir::Instr* const instr = ir::make_instr_alloc(ctx.allocator, ctx.next_id(),
                                                   type, variable->source_info);
     builder.insert(instr);
@@ -2152,7 +2205,7 @@ namespace vush {
       auto const dst = get_address(ctx, builder, field_expr->base);
       ast::Type const* const ast_base_type = field_expr->base->evaluated_type;
       auto const target_type =
-        safe_cast<ir::Type_Vec*>(convert_ast_to_ir_type(ctx, ast_base_type));
+        safe_cast<ir::Type_Vec*>(lower_type(ctx, ast_base_type));
       ir::Instr* const initial_target =
         ir::make_instr_load(ctx.allocator, ctx.next_id(), target_type, dst,
                             field_expr->base->source_info);
@@ -2216,8 +2269,7 @@ namespace vush {
             stmt->rhs->evaluated_type, stmt->rhs->source_info);
           // TODO: Proper error handling.
           ANTON_ASSERT(converted_rhs.holds_value(), "conversion failed");
-          auto const target_type =
-            convert_ast_to_ir_type(ctx, stmt->lhs->evaluated_type);
+          auto const target_type = lower_type(ctx, stmt->lhs->evaluated_type);
           auto const initial_target =
             ir::make_instr_load(ctx.allocator, ctx.next_id(), target_type, dst,
                                 field_expr->base->source_info);
@@ -2647,7 +2699,7 @@ namespace vush {
     // Generate arguments and their respective allocs.
     // TODO: Unsized array parametrs.
     for(ast::Fn_Parameter const* const parameter: ast_fn->parameters) {
-      ir::Type* const type = convert_ast_to_ir_type(ctx, parameter->type);
+      ir::Type* const type = lower_type(ctx, parameter->type);
       auto const argument = VUSH_ALLOCATE(
         ir::Argument, ctx.allocator, ctx.next_id(), type, fn, ctx.allocator);
       fn->arguments.insert_back(*argument);
@@ -2710,7 +2762,7 @@ namespace vush {
                       buffer->identifier.value);
       composite->elements.ensure_capacity(buffer->fields.size());
       for(ast::Buffer_Field const* const field: buffer->fields) {
-        ir::Type* const type = convert_ast_to_ir_type(ctx, field->type);
+        ir::Type* const type = lower_type(ctx, field->type);
         composite->elements.push_back(type);
       }
 
@@ -2750,7 +2802,7 @@ namespace vush {
         VUSH_ALLOCATE(ir::Argument, ctx.allocator, ctx.next_id(),
                       ir::get_type_ptr(), fn, ctx.allocator);
       argument->storage_class = select_storage_class(parameter);
-      argument->pointee_type = convert_ast_to_ir_type(ctx, parameter->type);
+      argument->pointee_type = lower_type(ctx, parameter->type);
       if(parameter->buffer != nullptr) {
         argument->buffer = lower_buffer(ctx, parameter->buffer);
         // TODO: Consider moving this to SEMA.
@@ -2788,8 +2840,7 @@ namespace vush {
     for(ast::Node const* const node: ast) {
       if(node->node_kind == ast::Node_Kind::decl_function) {
         auto const ast_fn = static_cast<ast::Decl_Function const*>(node);
-        auto const return_type =
-          convert_ast_to_ir_type(ctx, ast_fn->return_type);
+        auto const return_type = lower_type(ctx, ast_fn->return_type);
         auto const entry_block =
           VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
         anton::String identifier{ast_fn->identifier.value, ctx.allocator};

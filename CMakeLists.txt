@@ -158,6 +158,7 @@ target_sources(vush
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_core/context.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_core/memory.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_core/scoped_map.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_core/running_hash.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_core/source_info.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_core/source_registry.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_core/source_registry.hpp"
