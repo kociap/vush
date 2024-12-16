@@ -60,6 +60,10 @@ namespace vush::spirv {
       return "RowMajor"_sv;
     case Decoration::e_col_major:
       return "ColMajor"_sv;
+    case Decoration::e_array_stride:
+      return "ArrayStride"_sv;
+    case Decoration::e_matrix_stride:
+      return "MatrixStride"_sv;
     case Decoration::e_builtin:
       return "BuiltIn"_sv;
     case Decoration::e_no_perspective:

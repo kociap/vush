@@ -1,8 +1,12 @@
+#include <vush_spirv/lower_ir.hpp>
+
 #include <anton/flat_hash_map.hpp>
+#include <anton/memory/core.hpp>
 
 #include <vush_core/running_hash.hpp>
 #include <vush_core/utility.hpp>
 #include <vush_ir/ir.hpp>
+#include <vush_spirv/layout.hpp>
 #include <vush_spirv/spirv.hpp>
 
 namespace vush {
@@ -485,56 +489,109 @@ namespace vush {
     return iter->value;
   }
 
-  [[nodiscard]] static u32 calculate_type_stride(ir::Type const* const type)
+  // make_annotated_buffer_type
+  //
+  // Decorate the members with layout annotations.
+  //
+  [[nodiscard]] static spirv::Instr*
+  make_annotated_buffer_type(Lowering_Context& ctx, ir::Type const* const type)
   {
+    Running_Hash hash;
+    hash.start();
+    hash_type(hash, type);
+    u64 const value = hash.finish();
+    {
+      auto iter = ctx.type_map.find(value);
+      if(iter != ctx.type_map.end()) {
+        return iter->value;
+      }
+    }
+
     switch(type->kind) {
-    case ir::Type_Kind::e_void:
-    case ir::Type_Kind::e_ptr:
-    case ir::Type_Kind::e_sampler:
-    case ir::Type_Kind::e_image:
-    case ir::Type_Kind::e_texture:
-      return 0;
-    case ir::Type_Kind::e_bool:
-      return 1;
-    case ir::Type_Kind::e_int8:
-      return 1;
-    case ir::Type_Kind::e_int16:
-      return 2;
-    case ir::Type_Kind::e_int32:
-      return 4;
-    case ir::Type_Kind::e_uint8:
-      return 1;
-    case ir::Type_Kind::e_uint16:
-      return 2;
-    case ir::Type_Kind::e_uint32:
-      return 4;
-    case ir::Type_Kind::e_fp16:
-      return 2;
-    case ir::Type_Kind::e_fp32:
-      return 4;
-    case ir::Type_Kind::e_fp64:
-      return 8;
-
-    case ir::Type_Kind::e_composite: {
-      ANTON_UNREACHABLE("unimplemented");
-      return 0;
-    }
-
     case ir::Type_Kind::e_array: {
-      ANTON_UNREACHABLE("unimplemented");
-      return 0;
+      auto const array = static_cast<ir::Type_Array const*>(type);
+      auto const element_type =
+        make_annotated_buffer_type(ctx, array->element_type);
+      spirv::Instr* instr;
+      if(array->size > 0) {
+        auto const u32_type = lower_type(ctx, ir::get_type_uint32());
+        auto const length = make_instr_constant_u32(
+          ctx.allocator, ctx.next_id(), u32_type, array->size);
+        instr = spirv::make_instr_type_array(ctx.allocator, ctx.next_id(),
+                                             element_type, length);
+      } else {
+        instr = spirv::make_instr_type_runtime_array(
+          ctx.allocator, ctx.next_id(), element_type);
+      }
+      ctx.globals.insert_back(instr);
+      ctx.type_map.emplace(value, instr);
+
+      // SPIR-V 2.16.2: Arrays require the ArrayStride decoration.
+      {
+        auto const layout = calculate_base_layout(array->element_type);
+        auto const decoration = spirv::make_instr_decorate(
+          ctx.allocator, instr, spirv::Decoration::e_array_stride,
+          spirv::Decoration_Argument(layout.size));
+        ctx.annotations.insert_back(*decoration);
+      }
+
+      return instr;
+    }
+    case ir::Type_Kind::e_composite: {
+      auto const composite = static_cast<ir::Type_Composite const*>(type);
+      auto const instr =
+        spirv::make_instr_type_struct(ctx.allocator, ctx.next_id());
+
+      u32 offset = 0;
+      u32 index = 0;
+      for(auto const element: composite->elements) {
+        auto const element_instr = make_annotated_buffer_type(ctx, element);
+        instr->field_types.push_back(element_instr);
+        auto const layout = calculate_base_layout(element);
+        // SPIR-V 2.16.2: Members must be decorated with offset.
+        {
+          offset = anton::align_address(offset, layout.alignment);
+          auto const decoration = spirv::make_instr_member_decorate(
+            ctx.allocator, instr, index, spirv::Decoration::e_offset,
+            spirv::Decoration_Argument(offset));
+          ctx.annotations.insert_back(*decoration);
+        }
+        // SPIR-V 2.16.2: Matrices or arrays of matrices must be decorated
+        // with MatrixStride and ColMajor.
+        {
+          auto type = element;
+          if(instanceof<ir::Type_Array>(type)) {
+            auto const array = static_cast<ir::Type_Array const*>(type);
+            type = array->element_type;
+          }
+
+          if(instanceof<ir::Type_Mat>(type)) {
+            auto const matrix = static_cast<ir::Type_Mat const*>(type);
+            auto const layout = calculate_base_layout(matrix->column_type);
+
+            auto const decoration_matrix_stride =
+              spirv::make_instr_member_decorate(
+                ctx.allocator, instr, index, spirv::Decoration::e_matrix_stride,
+                spirv::Decoration_Argument(layout.size));
+            ctx.annotations.insert_back(*decoration_matrix_stride);
+            auto const decoration_col_major = spirv::make_instr_member_decorate(
+              ctx.allocator, instr, index, spirv::Decoration::e_col_major,
+              spirv::Decoration_Argument{});
+            ctx.annotations.insert_back(*decoration_col_major);
+          }
+        }
+
+        offset += layout.size;
+        index += 1;
+      }
+      // We must insert after all constituent types have been created.
+      ctx.globals.insert_back(instr);
+      ctx.type_map.emplace(value, instr);
+      return instr;
     }
 
-    case ir::Type_Kind::e_vec: {
-      auto const vec = static_cast<ir::Type_Vec const*>(type);
-      u32 const element_stride = calculate_type_stride(vec->element_type);
-      return element_stride * vec->rows;
-    }
-
-    case ir::Type_Kind::e_mat: {
-      ANTON_UNREACHABLE("unimplemented");
-      return 0;
-    }
+    default:
+      return lower_type(ctx, type);
     }
   }
 
@@ -549,27 +606,11 @@ namespace vush {
     }
 
     // TODO: Always lowers as storage buffer.
-    // TODO: Requires a new type instance due to decorations.
-    auto const buffer_type = lower_type(ctx, buffer->type);
+    auto const buffer_type = make_annotated_buffer_type(ctx, buffer->type);
     // Mandatory Block decoration for the buffer type.
     auto const decoration_block = spirv::make_instr_decorate(
       ctx.allocator, buffer_type, spirv::Decoration::e_block);
     ctx.annotations.insert_back(*decoration_block);
-    // Decorate the members with offsets.
-    {
-      u32 offset = 0;
-      u32 index = 0;
-      auto const composite = safe_cast<ir::Type_Composite const*>(buffer->type);
-      for(auto const type: composite->elements) {
-        auto const decoration = spirv::make_instr_member_decorate(
-          ctx.allocator, buffer_type, index, spirv::Decoration::e_offset,
-          spirv::Decoration_Argument(offset));
-        ctx.annotations.insert_back(*decoration);
-
-        index += 1;
-        offset += calculate_type_stride(type);
-      }
-    }
     // Make the variable.
     auto const pointer_type =
       spirv::make_instr_type_pointer(ctx.allocator, ctx.next_id(), buffer_type,
@@ -950,6 +991,7 @@ namespace vush {
   static void hoist_variables(spirv::Instr* instruction)
   {
     spirv::Instr* label = nullptr;
+    // Find the first label instruction.
     while(!instanceof<spirv::Instr_function_end>(instruction)) {
       if(instanceof<spirv::Instr_label>(instruction)) {
         label = instruction;
@@ -1115,6 +1157,7 @@ namespace vush {
       } else {
         auto const buffer = lower_buffer(ctx, argument.buffer);
         interface.push_back(buffer);
+        // TODO: We might be decorating an interface multiple times.
         decorate_interface(ctx, argument.decorations, buffer);
         // Make pointer type to the buffer field.
         auto const pointer_type = lower_type_as_pointer(
@@ -1168,11 +1211,13 @@ namespace vush {
                                 ir::Module const* const module)
   {
     Lowering_Context ctx(allocator);
-    // Always add Shader, DrawParameters, PSBA, VMM capabilities. We will dynamically
-    // select which capabilities to add later on.
+    // Always add Shader, Matrix, DrawParameters, PSBA capabilities. We will
+    // dynamically select which capabilities to add later on.
     {
       auto const capability_shader =
         spirv::make_instr_capability(allocator, spirv::Capability::e_shader);
+      auto const capability_matrix =
+        spirv::make_instr_capability(allocator, spirv::Capability::e_matrix);
       auto const capability_draw_parameters = spirv::make_instr_capability(
         allocator, spirv::Capability::e_draw_parameters);
       auto const capability_PSBA = spirv::make_instr_capability(
@@ -1180,6 +1225,7 @@ namespace vush {
       // auto const capability_VMM = spirv::make_instr_capability(
       //   allocator, spirv::Capability::e_vulkan_memory_model);
       ctx.capabilities.insert_back(*capability_shader);
+      ctx.capabilities.insert_back(*capability_matrix);
       ctx.capabilities.insert_back(*capability_draw_parameters);
       ctx.capabilities.insert_back(*capability_PSBA);
       // ctx.capabilities.insert_back(*capability_VMM);

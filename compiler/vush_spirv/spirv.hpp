@@ -462,6 +462,8 @@ namespace vush::spirv {
     e_block = 2,
     e_row_major = 4,
     e_col_major = 5,
+    e_array_stride = 6,
+    e_matrix_stride = 7,
     e_builtin = 11,
     e_no_perspective = 13,
     e_flat = 14,

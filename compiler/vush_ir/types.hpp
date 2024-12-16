@@ -148,10 +148,10 @@ namespace vush::ir {
 
   struct Type_Array: public Type {
     Type* element_type;
-    // -1 if unsized.
-    i64 size;
+    // 0 if unsized.
+    i32 size;
 
-    Type_Array(Type* element_type, i64 size)
+    Type_Array(Type* element_type, i32 size)
       : Type{Type_Kind::e_array}, element_type(element_type), size(size)
     {
     }
@@ -159,9 +159,9 @@ namespace vush::ir {
 
   struct Type_Vec: public Type {
     Type* element_type;
-    i64 rows;
+    i32 rows;
 
-    Type_Vec(Type* element_type, i64 rows)
+    Type_Vec(Type* element_type, i32 rows)
       : Type{Type_Kind::e_vec}, element_type(element_type), rows(rows)
     {
     }
@@ -169,9 +169,9 @@ namespace vush::ir {
 
   struct Type_Mat: public Type {
     Type_Vec* column_type;
-    i64 columns;
+    i32 columns;
 
-    Type_Mat(Type_Vec* column_type, i64 columns)
+    Type_Mat(Type_Vec* column_type, i32 columns)
       : Type{Type_Kind::e_mat}, column_type(column_type), columns(columns)
     {
     }

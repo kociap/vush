@@ -201,6 +201,8 @@ target_sources(vush
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_spirv/prettyprint.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_spirv/lower_ir.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_spirv/lower_ir.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_spirv/layout.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_spirv/layout.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_syntax/syntax.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_syntax/prettyprint.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_syntax_lowering/lower_syntax.cpp"

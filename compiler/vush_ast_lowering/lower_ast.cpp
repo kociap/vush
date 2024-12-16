@@ -764,7 +764,7 @@ namespace vush {
     case ast::Type_Kind::type_array: {
       auto const ast_type = static_cast<ast::Type_Array const*>(type);
       auto const base_type = make_new_type_instance(ctx, ast_type->base);
-      i64 size = -1;
+      i32 size = 0;
       if(ast_type->size != nullptr) {
         size = ast::get_lt_integer_value_as_u32(*ast_type->size);
       }
@@ -1584,8 +1584,8 @@ namespace vush {
     } else if(is_matrix(*expr->evaluated_type)) {
       auto const construct = ir::make_instr_composite_construct(
         ctx.allocator, ctx.next_id(), type, expr->source_info);
-      i64 const matrix_rows = ast::get_matrix_rows(*expr->evaluated_type);
-      i64 const matrix_cols = ast::get_matrix_columns(*expr->evaluated_type);
+      i32 const matrix_rows = ast::get_matrix_rows(*expr->evaluated_type);
+      i32 const matrix_cols = ast::get_matrix_columns(*expr->evaluated_type);
       auto const constructed_type = static_cast<ir::Type_Mat*>(type);
       if(expr->initializers.size() == 1) {
         ANTON_ASSERT(instanceof<ast::Basic_Initializer>(expr->initializers[0]),
@@ -1600,7 +1600,7 @@ namespace vush {
             instanceof<ir::Type_Mat>(value->type),
             "initializer value claimed to be matrix, but is not matrix");
           auto const source_type = static_cast<ir::Type_Mat*>(value->type);
-          i64 const min_cols =
+          i32 const min_cols =
             anton::math::min(matrix_cols, source_type->columns);
           for(i64 i = 0; i < min_cols; i += 1) {
             auto const extract = ir::make_instr_composite_extract(

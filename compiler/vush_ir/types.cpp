@@ -129,12 +129,6 @@ namespace vush::ir {
   }
 
   template<>
-  bool instanceof<Type_Composite>(Type const& type)
-  {
-    return type.kind == Type_Kind::e_composite;
-  }
-
-  template<>
   bool instanceof<Type_Vec>(Type const& type)
   {
     return type.kind == Type_Kind::e_vec;
@@ -144,6 +138,18 @@ namespace vush::ir {
   bool instanceof<Type_Mat>(Type const& type)
   {
     return type.kind == Type_Kind::e_mat;
+  }
+
+  template<>
+  bool instanceof<Type_Array>(Type const& type)
+  {
+    return type.kind == Type_Kind::e_array;
+  }
+
+  template<>
+  bool instanceof<Type_Composite>(Type const& type)
+  {
+    return type.kind == Type_Kind::e_composite;
   }
 
   bool is_int_type(Type const& type)
