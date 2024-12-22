@@ -94,6 +94,26 @@ namespace vush::ir {
     }
   }
 
+  [[nodiscard]] static anton::String_View stringify(Image_Dim const dim)
+  {
+    switch(dim) {
+    case Image_Dim::e_1D:
+      return "1D"_sv;
+    case Image_Dim::e_2D:
+      return "2D"_sv;
+    case Image_Dim::e_3D:
+      return "3D"_sv;
+    case Image_Dim::e_rect:
+      return "rect"_sv;
+    case Image_Dim::e_cube:
+      return "cube"_sv;
+    case Image_Dim::e_buffer:
+      return "buffer"_sv;
+    case Image_Dim::e_subpass:
+      return "subpass"_sv;
+    }
+  }
+
   static void print_type_inline(Allocator* const allocator, Printer& printer,
                                 Prettyprint_Options const& options,
                                 Type const* const type)
@@ -134,12 +154,32 @@ namespace vush::ir {
         scalar_type_to_string(mat->column_type->element_type->kind)));
     } break;
 
-    case Type_Kind::e_sampler:
-    case Type_Kind::e_image:
-    case Type_Kind::e_texture:
-      // TODO: Print sampler types.
-      printer.write("<type>"_sv);
-      break;
+    case Type_Kind::e_sampler: {
+      auto const sampler = static_cast<ir::Type_Sampler const*>(type);
+      if(sampler->shadow) {
+        printer.write("sampler_shadow"_sv);
+      } else {
+        printer.write("sampler"_sv);
+      }
+    } break;
+
+    case Type_Kind::e_image: {
+      auto const image = static_cast<ir::Type_Image const*>(type);
+      printer.write(anton::format(
+        allocator, "<image {} {}{}{}{}>"_sv,
+        scalar_type_to_string(image->sampled_type),
+        stringify(image->dimensions), (image->multisampled ? " MS" : ""),
+        (image->array ? " array" : ""), (image->shadow ? " shadow" : "")));
+    } break;
+
+    case Type_Kind::e_sampled_image: {
+      auto const image = static_cast<ir::Type_Sampled_Image const*>(type);
+      printer.write(anton::format(
+        allocator, "<sampled_image {} {}{}{}{}>"_sv,
+        scalar_type_to_string(image->sampled_type),
+        stringify(image->dimensions), (image->multisampled ? " MS" : ""),
+        (image->array ? " array" : ""), (image->shadow ? " shadow" : "")));
+    } break;
 
     case Type_Kind::e_composite: {
       auto const composite = static_cast<ir::Type_Composite const*>(type);

@@ -9,10 +9,11 @@ namespace vush {
                  "void not allowed within base layout");
     ANTON_ASSERT(type->kind != ir::Type_Kind::e_ptr,
                  "pointer not allowed within base layout");
-    ANTON_ASSERT(type->kind != ir::Type_Kind::e_sampler &&
-                   type->kind != ir::Type_Kind::e_texture &&
-                   type->kind != ir::Type_Kind::e_image,
-                 "sampler, texture or image not allowed within base layout");
+    ANTON_ASSERT(
+      type->kind != ir::Type_Kind::e_sampler &&
+        type->kind != ir::Type_Kind::e_image &&
+        type->kind != ir::Type_Kind::e_sampled_image,
+      "sampler, image or sampled_image not allowed within base layout");
     switch(type->kind) {
     case ir::Type_Kind::e_int8:
     case ir::Type_Kind::e_uint8:
@@ -99,7 +100,7 @@ namespace vush {
     case ir::Type_Kind::e_ptr:
     case ir::Type_Kind::e_sampler:
     case ir::Type_Kind::e_image:
-    case ir::Type_Kind::e_texture:
+    case ir::Type_Kind::e_sampled_image:
       ANTON_UNREACHABLE("illegal type within base layout");
     }
   }

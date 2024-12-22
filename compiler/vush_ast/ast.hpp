@@ -273,6 +273,7 @@ namespace vush::ast {
     e_uimageCubeArray,
     // Sampler types.
     e_sampler,
+    e_samplerShadow,
     e_sampler1D,
     e_sampler1DArray,
     e_sampler1DArrayShadow,
@@ -291,7 +292,6 @@ namespace vush::ast {
     e_samplerCubeArray,
     e_samplerCubeArrayShadow,
     e_samplerCubeShadow,
-    e_samplerShadow,
     e_isampler1D,
     e_isampler1DArray,
     e_isampler2D,

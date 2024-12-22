@@ -129,6 +129,24 @@ namespace vush::ir {
   }
 
   template<>
+  bool instanceof<Type_Sampler>(Type const& type)
+  {
+    return type.kind == Type_Kind::e_sampler;
+  }
+
+  template<>
+  bool instanceof<Type_Image>(Type const& type)
+  {
+    return type.kind == Type_Kind::e_image;
+  }
+
+  template<>
+  bool instanceof<Type_Sampled_Image>(Type const& type)
+  {
+    return type.kind == Type_Kind::e_sampled_image;
+  }
+
+  template<>
   bool instanceof<Type_Vec>(Type const& type)
   {
     return type.kind == Type_Kind::e_vec;
@@ -268,7 +286,8 @@ namespace vush::ir {
            type.kind == Type_Kind::e_fp32 || type.kind == Type_Kind::e_fp64 ||
            type.kind == Type_Kind::e_vec || type.kind == Type_Kind::e_mat ||
            type.kind == Type_Kind::e_ptr || type.kind == Type_Kind::e_sampler ||
-           type.kind == Type_Kind::e_image || type.kind == Type_Kind::e_texture;
+           type.kind == Type_Kind::e_image ||
+           type.kind == Type_Kind::e_sampled_image;
   }
 
   bool is_aggregate_type(Type const& type)
@@ -281,7 +300,7 @@ namespace vush::ir {
   {
     return type.kind == Type_Kind::e_void || type.kind == Type_Kind::e_image ||
            type.kind == Type_Kind::e_sampler ||
-           type.kind == Type_Kind::e_texture;
+           type.kind == Type_Kind::e_sampled_image;
   }
 
   bool is_pointer(Type const& type)

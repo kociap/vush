@@ -148,9 +148,6 @@ namespace vush {
     case ir::Type_Kind::e_sampler: {
       auto const t = static_cast<ir::Type_Sampler const*>(type);
       hash.feed("sampler");
-      hash.feed(static_cast<u8>(t->sampled_type));
-      hash.feed(static_cast<u8>(t->dimensions));
-      hash.feed(static_cast<u8>(t->array));
       hash.feed(static_cast<u8>(t->shadow));
     } break;
 
@@ -159,15 +156,18 @@ namespace vush {
       hash.feed("image");
       hash.feed(static_cast<u8>(t->sampled_type));
       hash.feed(static_cast<u8>(t->dimensions));
+      hash.feed(static_cast<u8>(t->multisampled));
       hash.feed(static_cast<u8>(t->array));
       hash.feed(static_cast<u8>(t->shadow));
+      hash.feed(static_cast<u8>(t->sampled));
     } break;
 
-    case ir::Type_Kind::e_texture: {
-      auto const t = static_cast<ir::Type_Texture const*>(type);
-      hash.feed("texture");
+    case ir::Type_Kind::e_sampled_image: {
+      auto const t = static_cast<ir::Type_Sampled_Image const*>(type);
+      hash.feed("sampled_image");
       hash.feed(static_cast<u8>(t->sampled_type));
       hash.feed(static_cast<u8>(t->dimensions));
+      hash.feed(static_cast<u8>(t->multisampled));
       hash.feed(static_cast<u8>(t->array));
       hash.feed(static_cast<u8>(t->shadow));
     } break;
@@ -261,7 +261,7 @@ namespace vush {
       ANTON_UNREACHABLE("unimplemented");
     }
 
-    case ir::Type_Kind::e_texture: {
+    case ir::Type_Kind::e_sampled_image: {
       // TODO: lower sampler types.
       ANTON_UNREACHABLE("unimplemented");
     }

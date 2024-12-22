@@ -21,7 +21,7 @@ namespace vush::ir {
     e_ptr,
     e_sampler,
     e_image,
-    e_texture,
+    e_sampled_image,
     e_composite,
     e_array,
     e_vec,
@@ -75,62 +75,57 @@ namespace vush::ir {
   [[nodiscard]] bool is_opaque_type(Type const& type);
   [[nodiscard]] bool is_pointer(Type const& type);
 
-  enum struct Sampler_Dim {
+  struct Type_Sampler: public Type {
+    bool shadow;
+
+    Type_Sampler(bool shadow): Type(Type_Kind::e_sampler), shadow(shadow) {}
+  };
+
+  enum struct Image_Dim {
     e_1D,
     e_2D,
     e_3D,
     e_rect,
     e_cube,
-    e_MS,
     e_buffer,
     e_subpass,
-    e_subpass_MS,
-  };
-
-  struct Type_Sampler: public Type {
-    // Type of the data returned by this sampler.
-    // Only fp and int.
-    Type_Kind sampled_type;
-    Sampler_Dim dimensions;
-    bool array;
-    bool shadow;
-
-    Type_Sampler(Type_Kind sampled_type, Sampler_Dim dimensions, bool array,
-                 bool shadow)
-      : Type(Type_Kind::e_sampler), sampled_type(sampled_type),
-        dimensions(dimensions), array(array), shadow(shadow)
-    {
-    }
   };
 
   struct Type_Image: public Type {
     // Type of the data returned by this sampler.
     // Only fp and int.
     Type_Kind sampled_type;
-    Sampler_Dim dimensions;
+    Image_Dim dimensions;
+    // TODO: Consider making a bitfield.
+    bool multisampled;
     bool array;
     bool shadow;
+    bool sampled;
 
-    Type_Image(Type_Kind sampled_type, Sampler_Dim dimensions, bool array,
-               bool shadow)
+    Type_Image(Type_Kind sampled_type, Image_Dim dimensions, bool multisampled,
+               bool array, bool shadow, bool sampled)
       : Type(Type_Kind::e_image), sampled_type(sampled_type),
-        dimensions(dimensions), array(array), shadow(shadow)
+        dimensions(dimensions), multisampled(multisampled), array(array),
+        shadow(shadow), sampled(sampled)
     {
     }
   };
 
-  struct Type_Texture: public Type {
+  struct Type_Sampled_Image: public Type {
     // Type of the data returned by this sampler.
     // Only fp and int.
     Type_Kind sampled_type;
-    Sampler_Dim dimensions;
+    Image_Dim dimensions;
+    // TODO: Consider making a bitfield.
+    bool multisampled;
     bool array;
     bool shadow;
 
-    Type_Texture(Type_Kind sampled_type, Sampler_Dim dimensions, bool array,
-                 bool shadow)
-      : Type(Type_Kind::e_texture), sampled_type(sampled_type),
-        dimensions(dimensions), array(array), shadow(shadow)
+    Type_Sampled_Image(Type_Kind sampled_type, Image_Dim dimensions,
+                       bool multisampled, bool array, bool shadow)
+      : Type(Type_Kind::e_sampled_image), sampled_type(sampled_type),
+        dimensions(dimensions), multisampled(multisampled), array(array),
+        shadow(shadow)
     {
     }
   };
