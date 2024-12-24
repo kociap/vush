@@ -273,7 +273,6 @@ namespace vush::ast {
     e_uimageCubeArray,
     // Sampler types.
     e_sampler,
-    e_samplerShadow,
     e_sampler1D,
     e_sampler1DArray,
     e_sampler1DArrayShadow,
@@ -515,6 +514,7 @@ namespace vush::ast {
     // Empty when the parameter has no source.
     // "in" when the parameter is an input parameter.
     // "out" when the parameter is an output parameter.
+    // "images" when the parameter is an image parameter.
     Identifier source;
     Decl_Buffer* buffer = nullptr;
 
@@ -530,6 +530,7 @@ namespace vush::ast {
   [[nodiscard]] bool is_sourced_parameter(Fn_Parameter const& parameter);
   [[nodiscard]] bool is_input_parameter(Fn_Parameter const& parameter);
   [[nodiscard]] bool is_output_parameter(Fn_Parameter const& parameter);
+  [[nodiscard]] bool is_image_parameter(Fn_Parameter const& parameter);
 
   struct Decl_Function: public Node {
     Attr_List attributes;

@@ -146,15 +146,14 @@ namespace vush {
       break;
 
     case ir::Type_Kind::e_sampler: {
-      auto const t = static_cast<ir::Type_Sampler const*>(type);
       hash.feed("sampler");
-      hash.feed(static_cast<u8>(t->shadow));
     } break;
 
     case ir::Type_Kind::e_image: {
       auto const t = static_cast<ir::Type_Image const*>(type);
       hash.feed("image");
-      hash.feed(static_cast<u8>(t->sampled_type));
+      hash_type(hash, t->sampled_type);
+      hash.feed(static_cast<u8>(t->format));
       hash.feed(static_cast<u8>(t->dimensions));
       hash.feed(static_cast<u8>(t->multisampled));
       hash.feed(static_cast<u8>(t->array));
@@ -165,7 +164,7 @@ namespace vush {
     case ir::Type_Kind::e_sampled_image: {
       auto const t = static_cast<ir::Type_Sampled_Image const*>(type);
       hash.feed("sampled_image");
-      hash.feed(static_cast<u8>(t->sampled_type));
+      hash_type(hash, t->sampled_type);
       hash.feed(static_cast<u8>(t->dimensions));
       hash.feed(static_cast<u8>(t->multisampled));
       hash.feed(static_cast<u8>(t->array));
@@ -251,19 +250,70 @@ namespace vush {
       ANTON_UNREACHABLE("unimplemented");
     }
 
-    case ir::Type_Kind::e_sampler: {
-      // TODO: lower sampler types.
-      ANTON_UNREACHABLE("unimplemented");
+    case ir::Type_Kind::e_vec: {
+      auto const t = static_cast<ir::Type_Vec const*>(type);
+      spirv::Instr* component_type = lower_type(ctx, t->element_type);
+      auto const instr = spirv::make_instr_type_vector(
+        ctx.allocator, ctx.next_id(), component_type, t->rows);
+      return instr;
     }
 
+    case ir::Type_Kind::e_mat: {
+      auto const t = static_cast<ir::Type_Mat const*>(type);
+      auto const column_type = lower_type(ctx, t->column_type);
+      auto const instr = spirv::make_instr_type_matrix(
+        ctx.allocator, ctx.next_id(), column_type, t->columns);
+      return instr;
+    }
+
+    case ir::Type_Kind::e_sampler:
+      return spirv::make_instr_type_sampler(ctx.allocator, ctx.next_id());
+
     case ir::Type_Kind::e_image: {
-      // TODO: lower sampler types.
-      ANTON_UNREACHABLE("unimplemented");
+      auto const t = static_cast<ir::Type_Image const*>(type);
+      auto const sampled_type = lower_type(ctx, t->sampled_type);
+      // Depth, array and multisampled map straightforwardly. Sampled == 1 for
+      // sampled and sampled == 2 for non-sampled.
+      u8 const sampled = t->sampled ? 1 : 2;
+      return spirv::make_instr_type_image(
+        ctx.allocator, ctx.next_id(), sampled_type,
+        static_cast<spirv::Dimensionality>(t->dimensions), t->shadow, t->array,
+        t->multisampled, sampled, static_cast<spirv::Image_Format>(t->format));
     }
 
     case ir::Type_Kind::e_sampled_image: {
-      // TODO: lower sampler types.
-      ANTON_UNREACHABLE("unimplemented");
+      auto const t = static_cast<ir::Type_Sampled_Image const*>(type);
+      // We manually hash the type as if it were an image type.
+      Running_Hash hash;
+      hash.start();
+      hash.feed("image");
+      hash_type(hash, t->sampled_type);
+      hash.feed(static_cast<u8>(ir::Image_Format::e_unknown));
+      hash.feed(static_cast<u8>(t->dimensions));
+      hash.feed(static_cast<u8>(t->multisampled));
+      hash.feed(static_cast<u8>(t->array));
+      hash.feed(static_cast<u8>(t->shadow));
+      hash.feed(static_cast<u8>(true));
+      u64 const result = hash.finish();
+      spirv::Instr_type_image* image = nullptr;
+      {
+        auto const iterator = ctx.type_map.find(result);
+        if(iterator != ctx.type_map.end()) {
+          image = safe_cast<spirv::Instr_type_image*>(iterator->value);
+        } else {
+          auto const sampled_type = lower_type(ctx, t->sampled_type);
+          // Sampled == 1 for sampled.
+          u8 const sampled = 1;
+          image = spirv::make_instr_type_image(
+            ctx.allocator, ctx.next_id(), sampled_type,
+            static_cast<spirv::Dimensionality>(t->dimensions), t->shadow,
+            t->array, t->multisampled, sampled, spirv::Image_Format::e_unknown);
+          ctx.type_map.emplace(result, image);
+          ctx.globals.insert_back(image);
+        }
+      }
+      return spirv::make_instr_type_sampled_image(ctx.allocator, ctx.next_id(),
+                                                  image);
     }
 
     case ir::Type_Kind::e_composite: {
@@ -290,22 +340,6 @@ namespace vush {
         return spirv::make_instr_type_runtime_array(
           ctx.allocator, ctx.next_id(), element_type);
       }
-    }
-
-    case ir::Type_Kind::e_vec: {
-      auto const t = static_cast<ir::Type_Vec const*>(type);
-      spirv::Instr* component_type = lower_type(ctx, t->element_type);
-      auto const instr = spirv::make_instr_type_vector(
-        ctx.allocator, ctx.next_id(), component_type, t->rows);
-      return instr;
-    }
-
-    case ir::Type_Kind::e_mat: {
-      auto const t = static_cast<ir::Type_Mat const*>(type);
-      auto const column_type = lower_type(ctx, t->column_type);
-      auto const instr = spirv::make_instr_type_matrix(
-        ctx.allocator, ctx.next_id(), column_type, t->columns);
-      return instr;
     }
     }
   }
@@ -1129,13 +1163,20 @@ namespace vush {
     for(auto const& argument: function->arguments) {
       if(argument.buffer == nullptr) {
         ANTON_ASSERT(argument.storage_class == ir::Storage_Class::e_output ||
-                       argument.storage_class == ir::Storage_Class::e_input,
-                     "argument without buffer is not input/output");
-        // We always lower the input/output parameters as variables.
+                       argument.storage_class == ir::Storage_Class::e_input ||
+                       argument.storage_class == ir::Storage_Class::e_uniform,
+                     "argument without buffer is not input/output/uniform");
+        ANTON_ASSERT(argument.storage_class != ir::Storage_Class::e_uniform ||
+                       ir::is_image(*argument.pointee_type),
+                     "uniform argument must be an image");
+        // We always lower the input/output/uniform parameters as variables.
+        // Images lower as UniformConstant.
         auto const storage_class =
-          argument.storage_class == ir::Storage_Class::e_output
-            ? spirv::Storage_Class::e_output
-            : spirv::Storage_Class::e_input;
+          argument.storage_class == ir::Storage_Class::e_uniform
+            ? spirv::Storage_Class::e_uniform_constant
+            : (argument.storage_class == ir::Storage_Class::e_output
+                 ? spirv::Storage_Class::e_output
+                 : spirv::Storage_Class::e_input);
         // TODO: Requires new type instance due to decorations.
         auto const value_type = lower_type(ctx, argument.pointee_type);
         if(instanceof<spirv::Instr_type_struct>(value_type)) {
@@ -1145,9 +1186,8 @@ namespace vush {
           ctx.annotations.insert_back(*decoration_block);
         }
         // Make the variable.
-        auto const pointer_type = spirv::make_instr_type_pointer(
-          ctx.allocator, ctx.next_id(), value_type, storage_class);
-        ctx.globals.insert_back(*pointer_type);
+        auto const pointer_type =
+          lower_type_as_pointer(ctx, argument.pointee_type, storage_class);
         auto const variable = spirv::make_instr_variable(
           ctx.allocator, ctx.next_id(), pointer_type, storage_class);
         decorate_interface(ctx, argument.decorations, variable);

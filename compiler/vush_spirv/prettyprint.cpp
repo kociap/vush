@@ -247,6 +247,114 @@ namespace vush::spirv {
     }
   }
 
+  [[nodiscard]] static anton::String_View
+  stringify(Dimensionality const dimensionality)
+  {
+    switch(dimensionality) {
+    case Dimensionality::e_1D:
+      return "1D"_sv;
+    case Dimensionality::e_2D:
+      return "2D"_sv;
+    case Dimensionality::e_3D:
+      return "3D"_sv;
+    case Dimensionality::e_cube:
+      return "Cube"_sv;
+    case Dimensionality::e_rect:
+      return "Rect"_sv;
+    case Dimensionality::e_buffer:
+      return "Buffer"_sv;
+    case Dimensionality::e_subpass_data:
+      return "SubpassData"_sv;
+    }
+  }
+
+  [[nodiscard]] static anton::String_View
+  stringify(Image_Format const image_format)
+  {
+    switch(image_format) {
+    case Image_Format::e_unknown:
+      return "Unknown"_sv;
+    case Image_Format::e_rgba32f:
+      return "Rgba32f"_sv;
+    case Image_Format::e_rgba16f:
+      return "Rgba16f"_sv;
+    case Image_Format::e_r32f:
+      return "R32f"_sv;
+    case Image_Format::e_rgba8:
+      return "Rgba8"_sv;
+    case Image_Format::e_rgba8_snorm:
+      return "Rgba8_snorm"_sv;
+    case Image_Format::e_rg32f:
+      return "Rg32f"_sv;
+    case Image_Format::e_rg16f:
+      return "Rg16f"_sv;
+    case Image_Format::e_r11fg11fb10f:
+      return "R11fg11fb10f"_sv;
+    case Image_Format::e_r16f:
+      return "R16f"_sv;
+    case Image_Format::e_rgba16:
+      return "Rgba16"_sv;
+    case Image_Format::e_rgb10a2:
+      return "Rgb10a2"_sv;
+    case Image_Format::e_rg16:
+      return "Rg16"_sv;
+    case Image_Format::e_rg8:
+      return "Rg8"_sv;
+    case Image_Format::e_r16:
+      return "R16"_sv;
+    case Image_Format::e_r8:
+      return "R8"_sv;
+    case Image_Format::e_rgba16_snorm:
+      return "Rgba16_snorm"_sv;
+    case Image_Format::e_rg16_snorm:
+      return "Rg16_snorm"_sv;
+    case Image_Format::e_rg8_snorm:
+      return "Rg8_snorm"_sv;
+    case Image_Format::e_r16_snorm:
+      return "R16_snorm"_sv;
+    case Image_Format::e_r8_snorm:
+      return "R8_snorm"_sv;
+    case Image_Format::e_rgba32i:
+      return "Rgba32i"_sv;
+    case Image_Format::e_rgba16i:
+      return "Rgba16i"_sv;
+    case Image_Format::e_rgba8i:
+      return "Rgba8i"_sv;
+    case Image_Format::e_r32i:
+      return "R32i"_sv;
+    case Image_Format::e_rg32i:
+      return "Rg32i"_sv;
+    case Image_Format::e_rg16i:
+      return "Rg16i"_sv;
+    case Image_Format::e_rg8i:
+      return "Rg8i"_sv;
+    case Image_Format::e_r16i:
+      return "R16i"_sv;
+    case Image_Format::e_r81:
+      return "R81"_sv;
+    case Image_Format::e_rgba32u:
+      return "Rgba32u"_sv;
+    case Image_Format::e_rgba16u:
+      return "Rgba16u"_sv;
+    case Image_Format::e_rgba8u:
+      return "Rgba8u"_sv;
+    case Image_Format::e_r32u:
+      return "R32u"_sv;
+    case Image_Format::e_rgb10a2u:
+      return "Rgb10a2u"_sv;
+    case Image_Format::e_rg32u:
+      return "Rg32u"_sv;
+    case Image_Format::e_rg16u:
+      return "Rg16u"_sv;
+    case Image_Format::e_rg8u:
+      return "Rg8u"_sv;
+    case Image_Format::e_r16u:
+      return "R16u"_sv;
+    case Image_Format::e_r8u:
+      return "R8u"_sv;
+    }
+  }
+
   void print_instruction(Allocator* allocator, anton::Output_Stream& stream,
                          Prettyprint_Options const& options,
                          Instr const* const ginstruction)
@@ -397,8 +505,12 @@ namespace vush::spirv {
                          "%{} = OpTypeMatrix %{} {}", instruction->id,
                          instruction->column_type->id,
                          instruction->column_count)
-      CASE_GENERIC_INSTR(e_type_image, Instr_type_image,
-                         "%{} = OpTypeImage TODO", instruction->id)
+      CASE_GENERIC_INSTR(
+        e_type_image, Instr_type_image,
+        "%{} = OpTypeImage %{} {} {} {} {} {} {}", instruction->id,
+        instruction->sampled_type->id, stringify(instruction->dimensionality),
+        instruction->depth, instruction->arrayed, instruction->multisampled,
+        instruction->sampled, stringify(instruction->image_format))
       CASE_ID_INSTR(e_type_sampler, Instr_type_sampler, "OpTypeSamler")
       CASE_GENERIC_INSTR(e_type_sampled_image, Instr_type_sampled_image,
                          "%{} = OpTypeSampledImage %{}", instruction->id,

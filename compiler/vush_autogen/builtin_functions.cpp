@@ -177,7 +177,6 @@ namespace vush {
   BUILTIN_TYPE(builtin_usubpassInput, e_usubpassInput);
   BUILTIN_TYPE(builtin_usubpassInputMS, e_usubpassInputMS);
   BUILTIN_TYPE(builtin_sampler, e_sampler);
-  BUILTIN_TYPE(builtin_samplerShadow, e_samplerShadow);
   anton::Flat_Hash_Map<anton::String_View, ast::Overload_Group*>
   get_builtin_functions_declarations(Allocator* const allocator)
   {

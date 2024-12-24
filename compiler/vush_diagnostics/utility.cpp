@@ -479,8 +479,6 @@ namespace vush {
         return anton::String("usubpassInputMS"_sv, ctx.allocator);
       case ast::Type_Builtin_Kind::e_sampler:
         return anton::String("sampler"_sv, ctx.allocator);
-      case ast::Type_Builtin_Kind::e_samplerShadow:
-        return anton::String("samplerShadow"_sv, ctx.allocator);
       }
     } break;
 

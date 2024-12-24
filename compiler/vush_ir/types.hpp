@@ -19,13 +19,13 @@ namespace vush::ir {
     e_fp32,
     e_fp64,
     e_ptr,
+    e_vec,
+    e_mat,
     e_sampler,
     e_image,
     e_sampled_image,
     e_composite,
     e_array,
-    e_vec,
-    e_mat,
   };
 
   struct Type: public Decorable {
@@ -57,6 +57,7 @@ namespace vush::ir {
   [[nodiscard]] Type* get_type_fp32();
   [[nodiscard]] Type* get_type_fp64();
   [[nodiscard]] Type* get_type_ptr();
+  [[nodiscard]] Type* get_type_sampler();
 
   [[nodiscard]] bool is_int_type(Type const& type);
   [[nodiscard]] bool is_int_based(Type const& type);
@@ -74,27 +75,53 @@ namespace vush::ir {
   [[nodiscard]] bool is_aggregate_type(Type const& type);
   [[nodiscard]] bool is_opaque_type(Type const& type);
   [[nodiscard]] bool is_pointer(Type const& type);
+  [[nodiscard]] bool is_sampler(Type const& type);
+  [[nodiscard]] bool is_image(Type const& type);
 
-  struct Type_Sampler: public Type {
-    bool shadow;
+  struct Type_Vec: public Type {
+    Type* element_type;
+    i32 rows;
 
-    Type_Sampler(bool shadow): Type(Type_Kind::e_sampler), shadow(shadow) {}
+    Type_Vec(Type* element_type, i32 rows)
+      : Type{Type_Kind::e_vec}, element_type(element_type), rows(rows)
+    {
+    }
   };
 
-  enum struct Image_Dim {
-    e_1D,
-    e_2D,
-    e_3D,
-    e_rect,
-    e_cube,
-    e_buffer,
-    e_subpass,
+  struct Type_Mat: public Type {
+    Type_Vec* column_type;
+    i32 columns;
+
+    Type_Mat(Type_Vec* column_type, i32 columns)
+      : Type{Type_Kind::e_mat}, column_type(column_type), columns(columns)
+    {
+    }
+  };
+
+  // Image_Dim
+  //
+  // Overlaps SPIR-V's Dimensionality.
+  //
+  enum struct Image_Dim : u8 {
+    e_1D = 0,
+    e_2D = 1,
+    e_3D = 2,
+    e_cube = 3,
+    e_rect = 4,
+    e_buffer = 5,
+    e_subpass = 6,
+  };
+
+  enum struct Image_Format : u8 {
+    e_unknown = 0,
+    // TODO: Missing formats.
   };
 
   struct Type_Image: public Type {
     // Type of the data returned by this sampler.
     // Only fp and int.
-    Type_Kind sampled_type;
+    Type* sampled_type;
+    Image_Format format = Image_Format::e_unknown;
     Image_Dim dimensions;
     // TODO: Consider making a bitfield.
     bool multisampled;
@@ -102,7 +129,7 @@ namespace vush::ir {
     bool shadow;
     bool sampled;
 
-    Type_Image(Type_Kind sampled_type, Image_Dim dimensions, bool multisampled,
+    Type_Image(Type* sampled_type, Image_Dim dimensions, bool multisampled,
                bool array, bool shadow, bool sampled)
       : Type(Type_Kind::e_image), sampled_type(sampled_type),
         dimensions(dimensions), multisampled(multisampled), array(array),
@@ -111,17 +138,21 @@ namespace vush::ir {
     }
   };
 
+  // Type_Sampled_Image
+  //
+  // Format is always unknown.
+  //
   struct Type_Sampled_Image: public Type {
     // Type of the data returned by this sampler.
     // Only fp and int.
-    Type_Kind sampled_type;
+    Type* sampled_type;
     Image_Dim dimensions;
     // TODO: Consider making a bitfield.
     bool multisampled;
     bool array;
     bool shadow;
 
-    Type_Sampled_Image(Type_Kind sampled_type, Image_Dim dimensions,
+    Type_Sampled_Image(Type* sampled_type, Image_Dim dimensions,
                        bool multisampled, bool array, bool shadow)
       : Type(Type_Kind::e_sampled_image), sampled_type(sampled_type),
         dimensions(dimensions), multisampled(multisampled), array(array),
@@ -148,26 +179,6 @@ namespace vush::ir {
 
     Type_Array(Type* element_type, i32 size)
       : Type{Type_Kind::e_array}, element_type(element_type), size(size)
-    {
-    }
-  };
-
-  struct Type_Vec: public Type {
-    Type* element_type;
-    i32 rows;
-
-    Type_Vec(Type* element_type, i32 rows)
-      : Type{Type_Kind::e_vec}, element_type(element_type), rows(rows)
-    {
-    }
-  };
-
-  struct Type_Mat: public Type {
-    Type_Vec* column_type;
-    i32 columns;
-
-    Type_Mat(Type_Vec* column_type, i32 columns)
-      : Type{Type_Kind::e_mat}, column_type(column_type), columns(columns)
     {
     }
   };

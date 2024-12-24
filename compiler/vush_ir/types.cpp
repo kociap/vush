@@ -67,6 +67,7 @@ namespace vush::ir {
   static Type static_type_fp32{Type_Kind::e_fp32};
   static Type static_type_fp64{Type_Kind::e_fp64};
   static Type static_type_ptr{Type_Kind::e_ptr};
+  static Type static_type_sampler{Type_Kind::e_sampler};
 
   Type* get_type_void()
   {
@@ -128,10 +129,9 @@ namespace vush::ir {
     return &static_type_ptr;
   }
 
-  template<>
-  bool instanceof<Type_Sampler>(Type const& type)
+  Type* get_type_sampler()
   {
-    return type.kind == Type_Kind::e_sampler;
+    return &static_type_sampler;
   }
 
   template<>
@@ -306,5 +306,17 @@ namespace vush::ir {
   bool is_pointer(Type const& type)
   {
     return type.kind == Type_Kind::e_ptr;
+  }
+
+  bool is_sampler(Type const& type)
+  {
+    return type.kind == Type_Kind::e_sampler;
+  }
+
+  bool is_image(Type const& type)
+  {
+    return type.kind == Type_Kind::e_sampler ||
+           type.kind == Type_Kind::e_sampled_image ||
+           type.kind == Type_Kind::e_image;
   }
 } // namespace vush::ir

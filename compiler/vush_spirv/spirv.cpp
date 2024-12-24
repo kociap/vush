@@ -989,6 +989,13 @@ namespace vush::spirv {
     return instr;                                                           \
   }
 
+#define ID_INSTR_MAKE_FN(IDENTIFIER)                                        \
+  Instr_##IDENTIFIER* make_instr_##IDENTIFIER(Allocator* allocator, u32 id) \
+  {                                                                         \
+    auto const instr = VUSH_ALLOCATE(Instr_##IDENTIFIER, allocator, id);    \
+    return instr;                                                           \
+  }
+
   Instr_memory_model* make_instr_memory_model(Allocator* allocator,
                                               Addressing_Model am,
                                               Memory_Model mm)
@@ -1151,6 +1158,29 @@ namespace vush::spirv {
                                           u32 width)
   {
     auto const instr = VUSH_ALLOCATE(Instr_type_float, allocator, id, width);
+    return instr;
+  }
+
+  ID_INSTR_MAKE_FN(type_sampler)
+
+  Instr_type_image* make_instr_type_image(Allocator* allocator, u32 id,
+                                          Instr* sampled_type,
+                                          Dimensionality dimensionality,
+                                          u8 depth, u8 arrayed, u8 multisampled,
+                                          u8 sampled, Image_Format image_format)
+  {
+    auto const instr = VUSH_ALLOCATE(
+      Instr_type_image, allocator, id, sampled_type, dimensionality, depth,
+      arrayed, multisampled, sampled, image_format);
+    return instr;
+  }
+
+  Instr_type_sampled_image*
+  make_instr_type_sampled_image(Allocator* allocator, u32 id,
+                                Instr_type_image* image_type)
+  {
+    auto const instr =
+      VUSH_ALLOCATE(Instr_type_sampled_image, allocator, id, image_type);
     return instr;
   }
 

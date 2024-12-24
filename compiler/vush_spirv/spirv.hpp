@@ -235,10 +235,13 @@ namespace vush::spirv {
   [[nodiscard]] Instr_##IDENTIFIER* make_instr_##IDENTIFIER(  \
     Allocator* allocator, u32 id, Instr* result_type);
 
-#define ID_INSTR(IDENTIFIER, KIND)                     \
-  struct IDENTIFIER: public Instr {                    \
-    IDENTIFIER(u32 id): Instr(Instr_Kind::KIND, id) {} \
-  };
+#define ID_INSTR(IDENTIFIER, KIND)                             \
+  struct Instr_##IDENTIFIER: public Instr {                    \
+    Instr_##IDENTIFIER(u32 id): Instr(Instr_Kind::KIND, id) {} \
+  };                                                           \
+                                                               \
+  [[nodiscard]] Instr_##IDENTIFIER* make_instr_##IDENTIFIER(   \
+    Allocator* allocator, u32 id);
 
 #define NOTHING_INSTR(IDENTIFIER, KIND)                      \
   struct Instr_##IDENTIFIER: public Instr {                  \
@@ -565,15 +568,8 @@ namespace vush::spirv {
                              u32 member, Decoration decoration,
                              Decoration_Argument&& argument);
 
-  ID_INSTR(Instr_type_void, e_type_void);
-
-  [[nodiscard]] Instr_type_void* make_instr_type_void(Allocator* allocator,
-                                                      u32 id);
-
-  ID_INSTR(Instr_type_bool, e_type_bool);
-
-  [[nodiscard]] Instr_type_bool* make_instr_type_bool(Allocator* allocator,
-                                                      u32 id);
+  ID_INSTR(type_void, e_type_void);
+  ID_INSTR(type_bool, e_type_bool);
 
   struct Instr_type_int: public Instr {
     u32 width;
@@ -702,12 +698,28 @@ namespace vush::spirv {
     Dimensionality dimensionality;
     u8 depth;
     u8 arrayed;
+    u8 multisampled;
     u8 sampled;
     Image_Format image_format;
-    Access_Qualifier access_qualifier;
+    // This is a kernel-only feature, hence we leave it out for now.
+    // Access_Qualifier access_qualifier;
+
+    Instr_type_image(u32 id, Instr* sampled_type, Dimensionality dimensionality,
+                     u8 depth, u8 arrayed, u8 multisampled, u8 sampled,
+                     Image_Format image_format)
+      : Instr(Instr_Kind::e_type_image, id), sampled_type(sampled_type),
+        dimensionality(dimensionality), depth(depth), arrayed(arrayed),
+        multisampled(multisampled), sampled(sampled), image_format(image_format)
+    {
+    }
   };
 
-  ID_INSTR(Instr_type_sampler, e_type_sampler);
+  [[nodiscard]] Instr_type_image*
+  make_instr_type_image(Allocator* allocator, u32 id, Instr* sampled_type,
+                        Dimensionality dimensionality, u8 depth, u8 arrayed,
+                        u8 multisampled, u8 sampled, Image_Format image_format);
+
+  ID_INSTR(type_sampler, e_type_sampler);
 
   struct Instr_type_sampled_image: public Instr {
     // The type must not have a dimensionality of subpass_data or buffer.
@@ -718,6 +730,10 @@ namespace vush::spirv {
     {
     }
   };
+
+  [[nodiscard]] Instr_type_sampled_image*
+  make_instr_type_sampled_image(Allocator* allocator, u32 id,
+                                Instr_type_image* image_type);
 
   struct Instr_type_array: public Instr {
     Instr* element_type;
@@ -1233,9 +1249,7 @@ namespace vush::spirv {
   [[nodiscard]] Instr_selection_merge*
   make_instr_selection_merge(Allocator* allocator, Instr_label* merge_block);
 
-  ID_INSTR(Instr_label, e_label);
-
-  [[nodiscard]] Instr_label* make_instr_label(Allocator* allocator, u32 id);
+  ID_INSTR(label, e_label);
 
   struct Instr_branch: public Instr {
     Instr_label* target;

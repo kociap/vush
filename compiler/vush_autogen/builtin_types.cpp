@@ -161,7 +161,6 @@ namespace vush {
   BUILTIN_TYPE(builtin_usubpassInput, e_usubpassInput);
   BUILTIN_TYPE(builtin_usubpassInputMS, e_usubpassInputMS);
   BUILTIN_TYPE(builtin_sampler, e_sampler);
-  BUILTIN_TYPE(builtin_samplerShadow, e_samplerShadow);
 
   ast::Type_Builtin const* get_builtin_type(ast::Type_Builtin_Kind const type)
   {
@@ -470,8 +469,6 @@ namespace vush {
       return &builtin_usubpassInputMS;
     case ast::Type_Builtin_Kind::e_sampler:
       return &builtin_sampler;
-    case ast::Type_Builtin_Kind::e_samplerShadow:
-      return &builtin_samplerShadow;
     }
   }
 } // namespace vush

@@ -155,19 +155,14 @@ namespace vush::ir {
     } break;
 
     case Type_Kind::e_sampler: {
-      auto const sampler = static_cast<ir::Type_Sampler const*>(type);
-      if(sampler->shadow) {
-        printer.write("sampler_shadow"_sv);
-      } else {
-        printer.write("sampler"_sv);
-      }
+      printer.write("sampler"_sv);
     } break;
 
     case Type_Kind::e_image: {
       auto const image = static_cast<ir::Type_Image const*>(type);
       printer.write(anton::format(
         allocator, "<image {} {}{}{}{}>"_sv,
-        scalar_type_to_string(image->sampled_type),
+        scalar_type_to_string(image->sampled_type->kind),
         stringify(image->dimensions), (image->multisampled ? " MS" : ""),
         (image->array ? " array" : ""), (image->shadow ? " shadow" : "")));
     } break;
@@ -176,7 +171,7 @@ namespace vush::ir {
       auto const image = static_cast<ir::Type_Sampled_Image const*>(type);
       printer.write(anton::format(
         allocator, "<sampled_image {} {}{}{}{}>"_sv,
-        scalar_type_to_string(image->sampled_type),
+        scalar_type_to_string(image->sampled_type->kind),
         stringify(image->dimensions), (image->multisampled ? " MS" : ""),
         (image->array ? " array" : ""), (image->shadow ? " shadow" : "")));
     } break;

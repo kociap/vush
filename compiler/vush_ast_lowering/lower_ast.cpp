@@ -289,457 +289,437 @@ namespace vush {
           ir::Type_Mat, ctx.allocator,
           VUSH_ALLOCATE(ir::Type_Vec, ctx.allocator, ir::get_type_fp64(), 4),
           3);
+
+      case ast::Type_Builtin_Kind::e_sampler:
+        return ir::get_type_sampler();
+
       case ast::Type_Builtin_Kind::e_image1D:
-        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_1D, false,
-                             false, false, false);
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator, ir::get_type_fp32(),
+                             ir::Image_Dim::e_1D, false, false, false, false);
       case ast::Type_Builtin_Kind::e_image1DArray:
-        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_1D, true,
-                             false, false, false);
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator, ir::get_type_fp32(),
+                             ir::Image_Dim::e_1D, true, false, false, false);
       case ast::Type_Builtin_Kind::e_image2D:
-        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_2D, false,
-                             false, false, false);
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator, ir::get_type_fp32(),
+                             ir::Image_Dim::e_2D, false, false, false, false);
       case ast::Type_Builtin_Kind::e_image2DArray:
-        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_2D, true,
-                             false, false, false);
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator, ir::get_type_fp32(),
+                             ir::Image_Dim::e_2D, true, false, false, false);
       case ast::Type_Builtin_Kind::e_image2DMS:
-        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_2D, true,
-                             false, false, false);
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator, ir::get_type_fp32(),
+                             ir::Image_Dim::e_2D, true, false, false, false);
       case ast::Type_Builtin_Kind::e_image2DMSArray:
-        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_2D, true,
-                             true, false, false);
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator, ir::get_type_fp32(),
+                             ir::Image_Dim::e_2D, true, true, false, false);
       case ast::Type_Builtin_Kind::e_image2DRect:
-        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_rect,
-                             false, false, false, false);
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator, ir::get_type_fp32(),
+                             ir::Image_Dim::e_rect, false, false, false, false);
       case ast::Type_Builtin_Kind::e_image3D:
-        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_3D, false,
-                             false, false, false);
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator, ir::get_type_fp32(),
+                             ir::Image_Dim::e_3D, false, false, false, false);
       case ast::Type_Builtin_Kind::e_imageBuffer:
-        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_buffer,
-                             false, false, false, false);
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator, ir::get_type_fp32(),
+                             ir::Image_Dim::e_buffer, false, false, false,
+                             false);
       case ast::Type_Builtin_Kind::e_imageCube:
-        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_cube,
-                             false, false, false, false);
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator, ir::get_type_fp32(),
+                             ir::Image_Dim::e_cube, false, false, false, false);
       case ast::Type_Builtin_Kind::e_imageCubeArray:
-        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_cube, true,
-                             false, false, false);
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator, ir::get_type_fp32(),
+                             ir::Image_Dim::e_cube, true, false, false, false);
       case ast::Type_Builtin_Kind::e_iimage1D:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_1D, false,
+                             ir::get_type_int32(), ir::Image_Dim::e_1D, false,
                              false, false, false);
       case ast::Type_Builtin_Kind::e_iimage1DArray:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_1D, true,
+                             ir::get_type_int32(), ir::Image_Dim::e_1D, true,
                              false, false, false);
       case ast::Type_Builtin_Kind::e_iimage2D:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_2D, false,
+                             ir::get_type_int32(), ir::Image_Dim::e_2D, false,
                              false, false, false);
       case ast::Type_Builtin_Kind::e_iimage2DArray:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_2D, true,
+                             ir::get_type_int32(), ir::Image_Dim::e_2D, true,
                              false, false, false);
       case ast::Type_Builtin_Kind::e_iimage2DMS:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_2D, true,
+                             ir::get_type_int32(), ir::Image_Dim::e_2D, true,
                              false, false, false);
       case ast::Type_Builtin_Kind::e_iimage2DMSArray:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_2D, true,
+                             ir::get_type_int32(), ir::Image_Dim::e_2D, true,
                              true, false, false);
       case ast::Type_Builtin_Kind::e_iimage2DRect:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_rect,
-                             false, false, false, false);
+                             ir::get_type_int32(), ir::Image_Dim::e_rect, false,
+                             false, false, false);
       case ast::Type_Builtin_Kind::e_iimage3D:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_3D, false,
+                             ir::get_type_int32(), ir::Image_Dim::e_3D, false,
                              false, false, false);
       case ast::Type_Builtin_Kind::e_iimageBuffer:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_buffer,
+                             ir::get_type_int32(), ir::Image_Dim::e_buffer,
                              false, false, false, false);
       case ast::Type_Builtin_Kind::e_iimageCube:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_cube,
-                             false, false, false, false);
+                             ir::get_type_int32(), ir::Image_Dim::e_cube, false,
+                             false, false, false);
       case ast::Type_Builtin_Kind::e_iimageCubeArray:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_cube,
-                             true, false, false, false);
+                             ir::get_type_int32(), ir::Image_Dim::e_cube, true,
+                             false, false, false);
       case ast::Type_Builtin_Kind::e_uimage1D:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_1D,
-                             false, false, false, false);
+                             ir::get_type_uint32(), ir::Image_Dim::e_1D, false,
+                             false, false, false);
       case ast::Type_Builtin_Kind::e_uimage1DArray:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_1D, true,
+                             ir::get_type_uint32(), ir::Image_Dim::e_1D, true,
                              false, false, false);
       case ast::Type_Builtin_Kind::e_uimage2D:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_2D,
-                             false, false, false, false);
+                             ir::get_type_uint32(), ir::Image_Dim::e_2D, false,
+                             false, false, false);
       case ast::Type_Builtin_Kind::e_uimage2DArray:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_2D, true,
+                             ir::get_type_uint32(), ir::Image_Dim::e_2D, true,
                              false, false, false);
       case ast::Type_Builtin_Kind::e_uimage2DMS:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_2D, true,
+                             ir::get_type_uint32(), ir::Image_Dim::e_2D, true,
                              false, false, false);
       case ast::Type_Builtin_Kind::e_uimage2DMSArray:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_2D, true,
+                             ir::get_type_uint32(), ir::Image_Dim::e_2D, true,
                              true, false, false);
       case ast::Type_Builtin_Kind::e_uimage2DRect:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_rect,
+                             ir::get_type_uint32(), ir::Image_Dim::e_rect,
                              false, false, false, false);
       case ast::Type_Builtin_Kind::e_uimage3D:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_3D,
-                             false, false, false, false);
+                             ir::get_type_uint32(), ir::Image_Dim::e_3D, false,
+                             false, false, false);
       case ast::Type_Builtin_Kind::e_uimageBuffer:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_buffer,
+                             ir::get_type_uint32(), ir::Image_Dim::e_buffer,
                              false, false, false, false);
       case ast::Type_Builtin_Kind::e_uimageCube:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_cube,
+                             ir::get_type_uint32(), ir::Image_Dim::e_cube,
                              false, false, false, false);
       case ast::Type_Builtin_Kind::e_uimageCubeArray:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_cube,
-                             true, false, false, false);
-      case ast::Type_Builtin_Kind::e_sampler:
-        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator, false);
-      case ast::Type_Builtin_Kind::e_samplerShadow:
-        return VUSH_ALLOCATE(ir::Type_Sampler, ctx.allocator, true);
+                             ir::get_type_uint32(), ir::Image_Dim::e_cube, true,
+                             false, false, false);
       case ast::Type_Builtin_Kind::e_samplerBuffer:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_buffer,
+                             ir::get_type_fp32(), ir::Image_Dim::e_buffer,
                              false, false, false);
       case ast::Type_Builtin_Kind::e_samplerCube:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_cube,
-                             false, false, false);
+                             ir::get_type_fp32(), ir::Image_Dim::e_cube, false,
+                             false, false);
       case ast::Type_Builtin_Kind::e_samplerCubeArray:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_cube, true,
+                             ir::get_type_fp32(), ir::Image_Dim::e_cube, true,
                              false, false);
       case ast::Type_Builtin_Kind::e_samplerCubeArrayShadow:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_cube,
-                             false, true, true);
+                             ir::get_type_fp32(), ir::Image_Dim::e_cube, false,
+                             true, true);
       case ast::Type_Builtin_Kind::e_samplerCubeShadow:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_cube,
-                             false, false, true);
+                             ir::get_type_fp32(), ir::Image_Dim::e_cube, false,
+                             false, true);
       case ast::Type_Builtin_Kind::e_sampler1D:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_1D, false,
+                             ir::get_type_fp32(), ir::Image_Dim::e_1D, false,
                              false, false);
       case ast::Type_Builtin_Kind::e_sampler1DArray:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_1D, true,
+                             ir::get_type_fp32(), ir::Image_Dim::e_1D, true,
                              false, false);
       case ast::Type_Builtin_Kind::e_sampler1DArrayShadow:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_1D, false,
+                             ir::get_type_fp32(), ir::Image_Dim::e_1D, false,
                              true, true);
       case ast::Type_Builtin_Kind::e_sampler1DShadow:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_1D, false,
+                             ir::get_type_fp32(), ir::Image_Dim::e_1D, false,
                              false, true);
       case ast::Type_Builtin_Kind::e_sampler2D:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_2D, false,
+                             ir::get_type_fp32(), ir::Image_Dim::e_2D, false,
                              false, false);
       case ast::Type_Builtin_Kind::e_sampler2DArray:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_2D, true,
+                             ir::get_type_fp32(), ir::Image_Dim::e_2D, true,
                              false, false);
       case ast::Type_Builtin_Kind::e_sampler2DArrayShadow:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_2D, false,
+                             ir::get_type_fp32(), ir::Image_Dim::e_2D, false,
                              true, true);
       case ast::Type_Builtin_Kind::e_sampler2DMS:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_2D, true,
+                             ir::get_type_fp32(), ir::Image_Dim::e_2D, true,
                              false, false);
       case ast::Type_Builtin_Kind::e_sampler2DMSArray:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_2D, true,
+                             ir::get_type_fp32(), ir::Image_Dim::e_2D, true,
                              true, false);
       case ast::Type_Builtin_Kind::e_sampler2DRect:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_rect,
-                             false, false, false);
+                             ir::get_type_fp32(), ir::Image_Dim::e_rect, false,
+                             false, false);
       case ast::Type_Builtin_Kind::e_sampler2DRectShadow:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_rect,
-                             false, false, true);
+                             ir::get_type_fp32(), ir::Image_Dim::e_rect, false,
+                             false, true);
       case ast::Type_Builtin_Kind::e_sampler2DShadow:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_2D, false,
+                             ir::get_type_fp32(), ir::Image_Dim::e_2D, false,
                              false, true);
       case ast::Type_Builtin_Kind::e_sampler3D:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_3D, false,
+                             ir::get_type_fp32(), ir::Image_Dim::e_3D, false,
                              false, false);
       case ast::Type_Builtin_Kind::e_isampler1D:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_1D, false,
+                             ir::get_type_int32(), ir::Image_Dim::e_1D, false,
                              false, false);
       case ast::Type_Builtin_Kind::e_isampler1DArray:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_1D, true,
+                             ir::get_type_int32(), ir::Image_Dim::e_1D, true,
                              false, false);
       case ast::Type_Builtin_Kind::e_isampler2D:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_2D, false,
+                             ir::get_type_int32(), ir::Image_Dim::e_2D, false,
                              false, false);
       case ast::Type_Builtin_Kind::e_isampler2DArray:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_2D, true,
+                             ir::get_type_int32(), ir::Image_Dim::e_2D, true,
                              false, false);
       case ast::Type_Builtin_Kind::e_isampler2DMS:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_2D, true,
+                             ir::get_type_int32(), ir::Image_Dim::e_2D, true,
                              false, false);
       case ast::Type_Builtin_Kind::e_isampler2DMSArray:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_2D, true,
+                             ir::get_type_int32(), ir::Image_Dim::e_2D, true,
                              true, false);
       case ast::Type_Builtin_Kind::e_isampler2DRect:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_rect,
-                             false, false, false);
+                             ir::get_type_int32(), ir::Image_Dim::e_rect, false,
+                             false, false);
       case ast::Type_Builtin_Kind::e_isampler3D:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_3D, false,
+                             ir::get_type_int32(), ir::Image_Dim::e_3D, false,
                              false, false);
       case ast::Type_Builtin_Kind::e_isamplerBuffer:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_buffer,
+                             ir::get_type_int32(), ir::Image_Dim::e_buffer,
                              false, false, false);
       case ast::Type_Builtin_Kind::e_isamplerCube:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_cube,
-                             false, false, false);
+                             ir::get_type_int32(), ir::Image_Dim::e_cube, false,
+                             false, false);
       case ast::Type_Builtin_Kind::e_isamplerCubeArray:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_cube,
-                             true, false, false);
+                             ir::get_type_int32(), ir::Image_Dim::e_cube, true,
+                             false, false);
       case ast::Type_Builtin_Kind::e_usampler1D:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_1D,
-                             false, false, false);
+                             ir::get_type_uint32(), ir::Image_Dim::e_1D, false,
+                             false, false);
       case ast::Type_Builtin_Kind::e_usampler1DArray:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_1D, true,
+                             ir::get_type_uint32(), ir::Image_Dim::e_1D, true,
                              false, false);
       case ast::Type_Builtin_Kind::e_usampler2D:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_2D,
-                             false, false, false);
+                             ir::get_type_uint32(), ir::Image_Dim::e_2D, false,
+                             false, false);
       case ast::Type_Builtin_Kind::e_usampler2DArray:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_2D, true,
+                             ir::get_type_uint32(), ir::Image_Dim::e_2D, true,
                              false, false);
       case ast::Type_Builtin_Kind::e_usampler2DMS:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_2D, true,
+                             ir::get_type_uint32(), ir::Image_Dim::e_2D, true,
                              false, false);
       case ast::Type_Builtin_Kind::e_usampler2DMSArray:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_2D, true,
+                             ir::get_type_uint32(), ir::Image_Dim::e_2D, true,
                              true, false);
       case ast::Type_Builtin_Kind::e_usampler2DRect:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_rect,
+                             ir::get_type_uint32(), ir::Image_Dim::e_rect,
                              false, false, false);
       case ast::Type_Builtin_Kind::e_usampler3D:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_3D,
-                             false, false, false);
+                             ir::get_type_uint32(), ir::Image_Dim::e_3D, false,
+                             false, false);
       case ast::Type_Builtin_Kind::e_usamplerBuffer:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_buffer,
+                             ir::get_type_uint32(), ir::Image_Dim::e_buffer,
                              false, false, false);
       case ast::Type_Builtin_Kind::e_usamplerCube:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_cube,
+                             ir::get_type_uint32(), ir::Image_Dim::e_cube,
                              false, false, false);
       case ast::Type_Builtin_Kind::e_usamplerCubeArray:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_cube,
-                             true, false, false);
+                             ir::get_type_uint32(), ir::Image_Dim::e_cube, true,
+                             false, false);
       case ast::Type_Builtin_Kind::e_texture1D:
-        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_1D, false,
-                             false, false, true);
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator, ir::get_type_fp32(),
+                             ir::Image_Dim::e_1D, false, false, false, true);
       case ast::Type_Builtin_Kind::e_texture1DArray:
-        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_1D, true,
-                             false, false, true);
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator, ir::get_type_fp32(),
+                             ir::Image_Dim::e_1D, true, false, false, true);
       case ast::Type_Builtin_Kind::e_texture2D:
-        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_2D, false,
-                             false, false, true);
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator, ir::get_type_fp32(),
+                             ir::Image_Dim::e_2D, false, false, false, true);
       case ast::Type_Builtin_Kind::e_texture2DArray:
-        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_2D, true,
-                             false, false, true);
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator, ir::get_type_fp32(),
+                             ir::Image_Dim::e_2D, true, false, false, true);
       case ast::Type_Builtin_Kind::e_texture2DMS:
-        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_2D, true,
-                             false, false, true);
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator, ir::get_type_fp32(),
+                             ir::Image_Dim::e_2D, true, false, false, true);
       case ast::Type_Builtin_Kind::e_texture2DMSArray:
-        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_2D, true,
-                             true, false, true);
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator, ir::get_type_fp32(),
+                             ir::Image_Dim::e_2D, true, true, false, true);
       case ast::Type_Builtin_Kind::e_texture2DRect:
-        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_rect,
-                             false, false, false, true);
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator, ir::get_type_fp32(),
+                             ir::Image_Dim::e_rect, false, false, false, true);
       case ast::Type_Builtin_Kind::e_texture3D:
-        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_3D, false,
-                             false, false, true);
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator, ir::get_type_fp32(),
+                             ir::Image_Dim::e_3D, false, false, false, true);
       case ast::Type_Builtin_Kind::e_textureBuffer:
-        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_buffer,
-                             false, false, false, true);
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator, ir::get_type_fp32(),
+                             ir::Image_Dim::e_buffer, false, false, false,
+                             true);
       case ast::Type_Builtin_Kind::e_textureCube:
-        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_cube,
-                             false, false, false, true);
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator, ir::get_type_fp32(),
+                             ir::Image_Dim::e_cube, false, false, false, true);
       case ast::Type_Builtin_Kind::e_textureCubeArray:
-        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_cube, true,
-                             false, false, true);
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator, ir::get_type_fp32(),
+                             ir::Image_Dim::e_cube, true, false, false, true);
       case ast::Type_Builtin_Kind::e_itexture1D:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_1D, false,
+                             ir::get_type_int32(), ir::Image_Dim::e_1D, false,
                              false, false, true);
       case ast::Type_Builtin_Kind::e_itexture1DArray:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_1D, true,
+                             ir::get_type_int32(), ir::Image_Dim::e_1D, true,
                              false, false, true);
       case ast::Type_Builtin_Kind::e_itexture2D:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_2D, false,
+                             ir::get_type_int32(), ir::Image_Dim::e_2D, false,
                              false, false, true);
       case ast::Type_Builtin_Kind::e_itexture2DArray:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_2D, true,
+                             ir::get_type_int32(), ir::Image_Dim::e_2D, true,
                              false, false, true);
       case ast::Type_Builtin_Kind::e_itexture2DMS:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_2D, true,
+                             ir::get_type_int32(), ir::Image_Dim::e_2D, true,
                              false, false, true);
       case ast::Type_Builtin_Kind::e_itexture2DMSArray:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_2D, true,
+                             ir::get_type_int32(), ir::Image_Dim::e_2D, true,
                              true, false, true);
       case ast::Type_Builtin_Kind::e_itexture2DRect:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_rect,
-                             false, false, false, true);
+                             ir::get_type_int32(), ir::Image_Dim::e_rect, false,
+                             false, false, true);
       case ast::Type_Builtin_Kind::e_itexture3D:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_3D, false,
+                             ir::get_type_int32(), ir::Image_Dim::e_3D, false,
                              false, false, true);
       case ast::Type_Builtin_Kind::e_itextureBuffer:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_buffer,
+                             ir::get_type_int32(), ir::Image_Dim::e_buffer,
                              false, false, false, true);
       case ast::Type_Builtin_Kind::e_itextureCube:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_cube,
-                             false, false, false, true);
+                             ir::get_type_int32(), ir::Image_Dim::e_cube, false,
+                             false, false, true);
       case ast::Type_Builtin_Kind::e_itextureCubeArray:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_cube,
-                             true, false, false, false);
+                             ir::get_type_int32(), ir::Image_Dim::e_cube, true,
+                             false, false, false);
       case ast::Type_Builtin_Kind::e_utexture1D:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_1D,
-                             false, false, false, false);
+                             ir::get_type_uint32(), ir::Image_Dim::e_1D, false,
+                             false, false, false);
       case ast::Type_Builtin_Kind::e_utexture1DArray:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_1D, true,
+                             ir::get_type_uint32(), ir::Image_Dim::e_1D, true,
                              false, false, false);
       case ast::Type_Builtin_Kind::e_utexture2D:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_2D,
-                             false, false, false, false);
+                             ir::get_type_uint32(), ir::Image_Dim::e_2D, false,
+                             false, false, false);
       case ast::Type_Builtin_Kind::e_utexture2DArray:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_2D, true,
+                             ir::get_type_uint32(), ir::Image_Dim::e_2D, true,
                              false, false, false);
       case ast::Type_Builtin_Kind::e_utexture2DMS:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_2D, true,
+                             ir::get_type_uint32(), ir::Image_Dim::e_2D, true,
                              false, false, false);
       case ast::Type_Builtin_Kind::e_utexture2DMSArray:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_2D, true,
+                             ir::get_type_uint32(), ir::Image_Dim::e_2D, true,
                              true, false, false);
       case ast::Type_Builtin_Kind::e_utexture2DRect:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_rect,
+                             ir::get_type_uint32(), ir::Image_Dim::e_rect,
                              false, false, false, false);
       case ast::Type_Builtin_Kind::e_utexture3D:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_3D,
-                             false, false, false, false);
+                             ir::get_type_uint32(), ir::Image_Dim::e_3D, false,
+                             false, false, false);
       case ast::Type_Builtin_Kind::e_utextureBuffer:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_buffer,
+                             ir::get_type_uint32(), ir::Image_Dim::e_buffer,
                              false, false, false, false);
       case ast::Type_Builtin_Kind::e_utextureCube:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_cube,
+                             ir::get_type_uint32(), ir::Image_Dim::e_cube,
                              false, false, false, false);
       case ast::Type_Builtin_Kind::e_utextureCubeArray:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_cube,
-                             true, false, false, true);
+                             ir::get_type_uint32(), ir::Image_Dim::e_cube, true,
+                             false, false, true);
       case ast::Type_Builtin_Kind::e_subpassInput:
-        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_subpass,
-                             false, false, false, false);
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator, ir::get_type_fp32(),
+                             ir::Image_Dim::e_subpass, false, false, false,
+                             false);
       case ast::Type_Builtin_Kind::e_subpassInputMS:
-        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_fp32, ir::Image_Dim::e_subpass,
-                             true, false, false, false);
+        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator, ir::get_type_fp32(),
+                             ir::Image_Dim::e_subpass, true, false, false,
+                             false);
       case ast::Type_Builtin_Kind::e_isubpassInput:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_subpass,
+                             ir::get_type_int32(), ir::Image_Dim::e_subpass,
                              false, false, false, false);
       case ast::Type_Builtin_Kind::e_isubpassInputMS:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_int32, ir::Image_Dim::e_subpass,
+                             ir::get_type_int32(), ir::Image_Dim::e_subpass,
                              true, false, false, false);
       case ast::Type_Builtin_Kind::e_usubpassInput:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_subpass,
+                             ir::get_type_uint32(), ir::Image_Dim::e_subpass,
                              false, false, false, false);
       case ast::Type_Builtin_Kind::e_usubpassInputMS:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::Type_Kind::e_uint32, ir::Image_Dim::e_subpass,
+                             ir::get_type_uint32(), ir::Image_Dim::e_subpass,
                              true, false, false, false);
       }
     }
@@ -2728,14 +2708,20 @@ namespace vush {
       return ir::Storage_Class::e_output;
     }
 
+    if(ast::is_image_parameter(*parameter)) {
+      return ir::Storage_Class::e_uniform;
+    }
+
     if(parameter->buffer != nullptr) {
       auto const buffer = parameter->buffer;
       if(ast::is_uniform(buffer)) {
         return ir::Storage_Class::e_uniform;
       } else if(ast::is_push_constant(buffer)) {
         return ir::Storage_Class::e_push_constant;
-      } else {
+      } else if(ast::is_buffer(buffer)) {
         return ir::Storage_Class::e_buffer;
+      } else {
+        ANTON_UNREACHABLE("unknown storage class");
       }
     }
 

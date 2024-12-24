@@ -1446,6 +1446,10 @@ namespace vush {
       return anton::expected_value;
     }
 
+    if(ast::is_image_parameter(*p)) {
+      return anton::expected_value;
+    }
+
     anton::String_View const source = p->source.value;
     Symbol const* const symbol = symtable.find_entry(source);
     if(!symbol) {
@@ -1605,6 +1609,11 @@ namespace vush {
         if(parameter->type->type_kind == ast::Type_Kind::type_array) {
           return {anton::expected_error, err_output_must_not_be_array(
                                            ctx, parameter->type->source_info)};
+        }
+      } else if(is_image_parameter(*parameter)) {
+        if(!is_image_type(*parameter->type)) {
+          return {anton::expected_error,
+                  err_image_parameter_not_image(ctx, *parameter)};
         }
       }
 

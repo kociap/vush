@@ -451,39 +451,8 @@ namespace vush::ast {
     switch(type.type_kind) {
     case Type_Kind::type_builtin: {
       Type_Builtin_Kind const v = static_cast<Type_Builtin const&>(type).value;
-      return v == Type_Builtin_Kind::e_image1D ||
-             v == Type_Builtin_Kind::e_image1DArray ||
-             v == Type_Builtin_Kind::e_image2D ||
-             v == Type_Builtin_Kind::e_image2DArray ||
-             v == Type_Builtin_Kind::e_image2DMS ||
-             v == Type_Builtin_Kind::e_image2DMSArray ||
-             v == Type_Builtin_Kind::e_image2DRect ||
-             v == Type_Builtin_Kind::e_image3D ||
-             v == Type_Builtin_Kind::e_imageCube ||
-             v == Type_Builtin_Kind::e_imageCubeArray ||
-             v == Type_Builtin_Kind::e_imageBuffer ||
-             v == Type_Builtin_Kind::e_iimage1D ||
-             v == Type_Builtin_Kind::e_iimage1DArray ||
-             v == Type_Builtin_Kind::e_iimage2D ||
-             v == Type_Builtin_Kind::e_iimage2DArray ||
-             v == Type_Builtin_Kind::e_iimage2DMS ||
-             v == Type_Builtin_Kind::e_iimage2DMSArray ||
-             v == Type_Builtin_Kind::e_iimage2DRect ||
-             v == Type_Builtin_Kind::e_iimage3D ||
-             v == Type_Builtin_Kind::e_iimageCube ||
-             v == Type_Builtin_Kind::e_iimageCubeArray ||
-             v == Type_Builtin_Kind::e_iimageBuffer ||
-             v == Type_Builtin_Kind::e_uimage1D ||
-             v == Type_Builtin_Kind::e_uimage1DArray ||
-             v == Type_Builtin_Kind::e_uimage2D ||
-             v == Type_Builtin_Kind::e_uimage2DArray ||
-             v == Type_Builtin_Kind::e_uimage2DMS ||
-             v == Type_Builtin_Kind::e_uimage2DMSArray ||
-             v == Type_Builtin_Kind::e_uimage2DRect ||
-             v == Type_Builtin_Kind::e_uimage3D ||
-             v == Type_Builtin_Kind::e_uimageCube ||
-             v == Type_Builtin_Kind::e_uimageCubeArray ||
-             v == Type_Builtin_Kind::e_uimageBuffer;
+      return static_cast<i32>(v) >
+             static_cast<i32>(Type_Builtin_Kind::e_dmat4x3);
     }
 
     case Type_Kind::type_struct: {
@@ -510,6 +479,11 @@ namespace vush::ast {
   bool is_output_parameter(Fn_Parameter const& parameter)
   {
     return parameter.source.value == "out"_sv;
+  }
+
+  bool is_image_parameter(Fn_Parameter const& parameter)
+  {
+    return parameter.source.value == "images"_sv;
   }
 
   anton::Optional<Type_Builtin_Kind>
@@ -674,7 +648,6 @@ namespace vush::ast {
       "usubpassInput",
       "usubpassInputMS",
       "sampler",
-      "samplerShadow",
     };
 
     static constexpr Type_Builtin_Kind builtin_types[] = {
@@ -836,7 +809,6 @@ namespace vush::ast {
       Type_Builtin_Kind::e_usubpassInput,
       Type_Builtin_Kind::e_usubpassInputMS,
       Type_Builtin_Kind::e_sampler,
-      Type_Builtin_Kind::e_samplerShadow,
     };
 
     constexpr i64 array_size =

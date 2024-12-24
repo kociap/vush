@@ -136,4 +136,12 @@ namespace vush {
   [[nodiscard]] Error
   err_type_has_no_field_named(Context const& ctx, ast::Type const* type,
                               ast::Identifier const& field_identifier);
+
+  [[nodiscard]] inline Error
+  err_image_parameter_not_image(Context const& ctx,
+                                ast::Fn_Parameter const& parameter)
+  {
+    return Error{.diagnostic = anton::String("err_image_parameter_not_image")};
+  }
+
 } // namespace vush
