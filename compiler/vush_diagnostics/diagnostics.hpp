@@ -3,7 +3,7 @@
 #include <anton/string.hpp>
 #include <anton/string_view.hpp>
 
-#include <vush_ast/ast_fwd.hpp>
+#include <vush_ast/fwd.hpp>
 #include <vush_core/types.hpp>
 #include <vush_diagnostics/error.hpp>
 

@@ -8,9 +8,27 @@ namespace vush::ast {
 #define CONT_PARENT_TO_CONT(status)                                        \
   status == Visitor_Status::e_continue_parent ? Visitor_Status::e_continue \
                                               : status
+
+#define RETURN_ON_NONCONTINUE(status)        \
+  if(status != Visitor_Status::e_continue) { \
+    return CONT_PARENT_TO_CONT(status);      \
+  }
+
+#define TRAVERSE_STMT(stmt)                            \
+  {                                                    \
+    Visitor_Status const status = traverse_stmt(stmt); \
+    RETURN_ON_NONCONTINUE(status)                      \
+  }
+
+#define TRAVERSE_EXPR(stmt)                            \
+  {                                                    \
+    Visitor_Status const status = traverse_expr(stmt); \
+    RETURN_ON_NONCONTINUE(status)                      \
+  }
+
 #define TRAVERSE_STMT_LIST(list)                      \
-  for(auto const node: list) {                        \
-    Visitor_Status status = traverse_stmt(node);      \
+  for(auto& node: list) {                             \
+    Visitor_Status status = traverse_stmt(&node);     \
     if(status == Visitor_Status::e_stop) {            \
       return status;                                  \
     }                                                 \
@@ -21,8 +39,8 @@ namespace vush::ast {
   }
 
 #define TRAVERSE_EXPR_LIST(list)                      \
-  for(auto const node: list) {                        \
-    Visitor_Status status = traverse_expr(node);      \
+  for(auto& node: list) {                             \
+    Visitor_Status status = traverse_expr(&node);     \
     if(status == Visitor_Status::e_stop) {            \
       return status;                                  \
     }                                                 \
@@ -33,8 +51,8 @@ namespace vush::ast {
   }
 
 #define VISIT_LIST(list)                              \
-  for(auto const node: list) {                        \
-    Visitor_Status status = visit(node);              \
+  for(auto& node: list) {                             \
+    Visitor_Status status = visit(&node);             \
     if(status == Visitor_Status::e_stop) {            \
       return status;                                  \
     }                                                 \
@@ -44,10 +62,10 @@ namespace vush::ast {
     }                                                 \
   }
 
-  void Visitor::run(Node_List const& list)
+  void Visitor::run(ast::Node_List& list)
   {
-    for(Node* const generic_node: list) {
-      Visitor_Status const status = traverse_decl(generic_node);
+    for(ast::Node& node: list) {
+      Visitor_Status const status = traverse_decl(&node);
       if(status == Visitor_Status::e_stop) {
         return;
       }
@@ -61,17 +79,13 @@ namespace vush::ast {
       auto const node = static_cast<Decl_Function*>(generic_decl);
 
       Visitor_Status const node_status = visit(node);
-      if(node_status != Visitor_Status::e_continue) {
-        return CONT_PARENT_TO_CONT(node_status);
-      }
+      RETURN_ON_NONCONTINUE(node_status)
 
       Visitor_Status const return_status = visit(node->return_type);
-      if(return_status != Visitor_Status::e_continue) {
-        return CONT_PARENT_TO_CONT(return_status);
-      }
+      RETURN_ON_NONCONTINUE(return_status);
 
-      for(Fn_Parameter* const parameter: node->parameters) {
-        Visitor_Status const status = visit(parameter->type);
+      for(Fn_Parameter& parameter: node->parameters) {
+        Visitor_Status const status = visit(parameter.type);
         if(status == Visitor_Status::e_stop) {
           return status;
         }
@@ -81,17 +95,7 @@ namespace vush::ast {
         }
       }
 
-      for(Node* const generic_stmt: node->body) {
-        Visitor_Status const status = traverse_stmt(generic_stmt);
-        if(status == Visitor_Status::e_stop) {
-          return status;
-        }
-
-        if(status == Visitor_Status::e_continue_parent) {
-          break;
-        }
-      }
-
+      TRAVERSE_STMT_LIST(node->body)
       return Visitor_Status::e_continue;
     }
 
@@ -99,12 +103,10 @@ namespace vush::ast {
       auto const node = static_cast<Decl_Stage_Function*>(generic_decl);
 
       Visitor_Status const node_status = visit(node);
-      if(node_status != Visitor_Status::e_continue) {
-        return CONT_PARENT_TO_CONT(node_status);
-      }
+      RETURN_ON_NONCONTINUE(node_status)
 
-      for(Fn_Parameter* const parameter: node->parameters) {
-        Visitor_Status const status = visit(parameter->type);
+      for(Fn_Parameter& parameter: node->parameters) {
+        Visitor_Status const status = visit(parameter.type);
         if(status == Visitor_Status::e_stop) {
           return status;
         }
@@ -114,20 +116,17 @@ namespace vush::ast {
         }
       }
 
-      TRAVERSE_STMT_LIST(node->body);
-
+      TRAVERSE_STMT_LIST(node->body)
       return Visitor_Status::e_continue;
     }
 
     case Node_Kind::decl_struct: {
       auto const node = static_cast<Decl_Struct*>(generic_decl);
       Visitor_Status const node_status = visit(node);
-      if(node_status != Visitor_Status::e_continue) {
-        return CONT_PARENT_TO_CONT(node_status);
-      }
+      RETURN_ON_NONCONTINUE(node_status)
 
-      for(Struct_Field* const field: node->fields) {
-        Visitor_Status const status = visit(field->type);
+      for(Struct_Field& field: node->fields) {
+        Visitor_Status const status = visit(field.type);
         if(status == Visitor_Status::e_stop) {
           return status;
         }
@@ -151,14 +150,10 @@ namespace vush::ast {
     case Node_Kind::variable: {
       auto const stmt = static_cast<Variable*>(generic_stmt);
       Visitor_Status const stmt_status = visit(stmt);
-      if(stmt_status != Visitor_Status::e_continue) {
-        return CONT_PARENT_TO_CONT(stmt_status);
-      }
+      RETURN_ON_NONCONTINUE(stmt_status)
 
       Visitor_Status const type_status = visit(stmt->type);
-      if(type_status != Visitor_Status::e_continue) {
-        return CONT_PARENT_TO_CONT(type_status);
-      }
+      RETURN_ON_NONCONTINUE(type_status)
 
       if(stmt->initializer) {
         Visitor_Status const initializer_status =
@@ -178,14 +173,10 @@ namespace vush::ast {
     case Node_Kind::stmt_assignment: {
       auto const stmt = static_cast<Stmt_Assignment*>(generic_stmt);
       Visitor_Status const lhs_status = traverse_expr(stmt->lhs);
-      if(lhs_status != Visitor_Status::e_continue) {
-        return CONT_PARENT_TO_CONT(lhs_status);
-      }
+      RETURN_ON_NONCONTINUE(lhs_status)
 
       Visitor_Status const rhs_status = traverse_expr(stmt->rhs);
-      if(rhs_status != Visitor_Status::e_continue) {
-        return CONT_PARENT_TO_CONT(rhs_status);
-      }
+      RETURN_ON_NONCONTINUE(rhs_status)
 
       return Visitor_Status::e_continue;
     }
@@ -193,9 +184,7 @@ namespace vush::ast {
     case Node_Kind::stmt_if: {
       auto const stmt = static_cast<Stmt_If*>(generic_stmt);
       Visitor_Status const cond_status = traverse_expr(stmt->condition);
-      if(cond_status != Visitor_Status::e_continue) {
-        return CONT_PARENT_TO_CONT(cond_status);
-      }
+      RETURN_ON_NONCONTINUE(cond_status)
 
       TRAVERSE_STMT_LIST(stmt->then_branch);
       TRAVERSE_STMT_LIST(stmt->else_branch);
@@ -205,13 +194,11 @@ namespace vush::ast {
     case Node_Kind::stmt_switch: {
       auto const stmt = static_cast<Stmt_Switch*>(generic_stmt);
       Visitor_Status const expression_status = traverse_expr(stmt->expression);
-      if(expression_status != Visitor_Status::e_continue) {
-        return CONT_PARENT_TO_CONT(expression_status);
-      }
+      RETURN_ON_NONCONTINUE(expression_status)
 
-      for(Switch_Arm* const arm: stmt->arms) {
-        TRAVERSE_EXPR_LIST(arm->labels);
-        TRAVERSE_STMT_LIST(arm->statements);
+      for(Switch_Arm& arm: stmt->arms) {
+        TRAVERSE_EXPR_LIST(arm.labels);
+        TRAVERSE_STMT_LIST(arm.statements);
       }
 
       return Visitor_Status::e_continue;
@@ -222,9 +209,7 @@ namespace vush::ast {
       VISIT_LIST(stmt->declarations);
 
       Visitor_Status const expression_status = traverse_expr(stmt->condition);
-      if(expression_status != Visitor_Status::e_continue) {
-        return CONT_PARENT_TO_CONT(expression_status);
-      }
+      RETURN_ON_NONCONTINUE(expression_status)
 
       TRAVERSE_EXPR_LIST(stmt->actions);
       TRAVERSE_STMT_LIST(stmt->statements);
@@ -235,9 +220,7 @@ namespace vush::ast {
     case Node_Kind::stmt_while: {
       auto const stmt = static_cast<Stmt_While*>(generic_stmt);
       Visitor_Status const expression_status = traverse_expr(stmt->condition);
-      if(expression_status != Visitor_Status::e_continue) {
-        return CONT_PARENT_TO_CONT(expression_status);
-      }
+      RETURN_ON_NONCONTINUE(expression_status)
 
       TRAVERSE_STMT_LIST(stmt->statements);
       return Visitor_Status::e_continue;
@@ -247,9 +230,7 @@ namespace vush::ast {
       auto const stmt = static_cast<Stmt_Do_While*>(generic_stmt);
       TRAVERSE_STMT_LIST(stmt->statements);
       Visitor_Status const expression_status = traverse_expr(stmt->condition);
-      if(expression_status != Visitor_Status::e_continue) {
-        return CONT_PARENT_TO_CONT(expression_status);
-      }
+      RETURN_ON_NONCONTINUE(expression_status)
       return Visitor_Status::e_continue;
     }
 
@@ -298,24 +279,11 @@ namespace vush::ast {
     case Node_Kind::expr_if: {
       auto const expr = static_cast<Expr_If*>(generic_expr);
       Visitor_Status const expr_status = visit(expr);
-      if(expr_status != Visitor_Status::e_continue) {
-        return CONT_PARENT_TO_CONT(expr_status);
-      }
+      RETURN_ON_NONCONTINUE(expr_status)
 
-      Visitor_Status const cond_status = traverse_expr(expr->condition);
-      if(cond_status != Visitor_Status::e_continue) {
-        return CONT_PARENT_TO_CONT(cond_status);
-      }
-
-      Visitor_Status const then_status = traverse_expr(expr->then_branch);
-      if(then_status != Visitor_Status::e_continue) {
-        return CONT_PARENT_TO_CONT(then_status);
-      }
-
-      Visitor_Status const else_status = traverse_expr(expr->else_branch);
-      if(else_status != Visitor_Status::e_continue) {
-        return CONT_PARENT_TO_CONT(else_status);
-      }
+      TRAVERSE_EXPR(expr->condition)
+      TRAVERSE_EXPR(expr->then_branch)
+      TRAVERSE_EXPR(expr->else_branch)
 
       return Visitor_Status::e_continue;
     }
@@ -329,13 +297,11 @@ namespace vush::ast {
     case Node_Kind::expr_init: {
       auto const expr = static_cast<Expr_Init*>(generic_expr);
       Visitor_Status const type_status = visit(expr->type);
-      if(type_status != Visitor_Status::e_continue) {
-        return CONT_PARENT_TO_CONT(type_status);
-      }
+      RETURN_ON_NONCONTINUE(type_status)
 
-      for(Initializer* const node: expr->initializers) {
-        if(node->node_kind == Node_Kind::basic_initializer) {
-          auto const initializer = static_cast<Basic_Initializer*>(node);
+      for(Initializer& node: expr->initializers) {
+        if(node.node_kind == Node_Kind::basic_initializer) {
+          auto const initializer = static_cast<Basic_Initializer*>(&node);
           Visitor_Status const status = traverse_expr(initializer->expression);
           if(status == Visitor_Status::e_stop) {
             return status;
@@ -344,8 +310,8 @@ namespace vush::ast {
           if(status == Visitor_Status::e_continue_parent) {
             break;
           }
-        } else if(node->node_kind == Node_Kind::field_initializer) {
-          auto const initializer = static_cast<Field_Initializer*>(node);
+        } else if(node.node_kind == Node_Kind::field_initializer) {
+          auto const initializer = static_cast<Field_Initializer*>(&node);
           Visitor_Status const status = traverse_expr(initializer->expression);
           if(status == Visitor_Status::e_stop) {
             return status;
@@ -355,7 +321,7 @@ namespace vush::ast {
             break;
           }
         } else { // Node_Kind::index_initializer
-          auto const initializer = static_cast<Index_Initializer*>(node);
+          auto const initializer = static_cast<Index_Initializer*>(&node);
           Visitor_Status const status = traverse_expr(initializer->expression);
           if(status == Visitor_Status::e_stop) {
             return status;
@@ -382,9 +348,7 @@ namespace vush::ast {
     case Node_Kind::expr_call: {
       auto const expr = static_cast<Expr_Call*>(generic_expr);
       Visitor_Status const expr_status = visit(expr);
-      if(expr_status != Visitor_Status::e_continue) {
-        return CONT_PARENT_TO_CONT(expr_status);
-      }
+      RETURN_ON_NONCONTINUE(expr_status)
 
       TRAVERSE_EXPR_LIST(expr->arguments);
       return Visitor_Status::e_continue;
@@ -393,14 +357,9 @@ namespace vush::ast {
     case Node_Kind::expr_field: {
       auto const expr = static_cast<Expr_Field*>(generic_expr);
       Visitor_Status const expr_status = visit(expr);
-      if(expr_status != Visitor_Status::e_continue) {
-        return CONT_PARENT_TO_CONT(expr_status);
-      }
+      RETURN_ON_NONCONTINUE(expr_status)
 
-      Visitor_Status const base_status = traverse_expr(expr->base);
-      if(base_status != Visitor_Status::e_continue) {
-        return CONT_PARENT_TO_CONT(base_status);
-      }
+      TRAVERSE_EXPR(expr->base)
 
       return Visitor_Status::e_continue;
     }
@@ -408,45 +367,41 @@ namespace vush::ast {
     case Node_Kind::expr_index: {
       auto const expr = static_cast<Expr_Index*>(generic_expr);
       Visitor_Status const expr_status = visit(expr);
-      if(expr_status != Visitor_Status::e_continue) {
-        return CONT_PARENT_TO_CONT(expr_status);
-      }
+      RETURN_ON_NONCONTINUE(expr_status)
 
-      Visitor_Status const base_status = traverse_expr(expr->base);
-      if(base_status != Visitor_Status::e_continue) {
-        return CONT_PARENT_TO_CONT(base_status);
-      }
-
-      Visitor_Status const index_status = traverse_expr(expr->index);
-      if(index_status != Visitor_Status::e_continue) {
-        return CONT_PARENT_TO_CONT(index_status);
-      }
+      TRAVERSE_EXPR(expr->base)
+      TRAVERSE_EXPR(expr->index)
 
       return Visitor_Status::e_continue;
     }
 
     case Node_Kind::expr_reinterpret: {
       auto const expr = static_cast<Expr_Reinterpret*>(generic_expr);
+      ANTON_UNUSED(expr);
       return Visitor_Status::e_continue;
     }
 
     case Node_Kind::expr_default: {
       auto const expr = static_cast<Expr_Default*>(generic_expr);
+      ANTON_UNUSED(expr);
       return Visitor_Status::e_continue;
     }
 
     case Node_Kind::lt_bool: {
       auto const expr = static_cast<Lt_Bool*>(generic_expr);
+      ANTON_UNUSED(expr);
       return Visitor_Status::e_continue;
     }
 
     case Node_Kind::lt_integer: {
       auto const expr = static_cast<Lt_Integer*>(generic_expr);
+      ANTON_UNUSED(expr);
       return Visitor_Status::e_continue;
     }
 
     case Node_Kind::lt_float: {
       auto const expr = static_cast<Lt_Float*>(generic_expr);
+      ANTON_UNUSED(expr);
       return Visitor_Status::e_continue;
     }
 

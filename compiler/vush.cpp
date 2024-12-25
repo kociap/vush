@@ -114,7 +114,7 @@ namespace vush {
     RETURN_ON_FAIL(syntax_lower_result, lower_syntax, ctx,
                    expand_result.value());
 
-    ast::Node_List const ast_nodes = syntax_lower_result.value();
+    ast::Node_List& ast_nodes = syntax_lower_result.value();
     {
       anton::Expected<void, Error> result = run_sema(ctx, ast_nodes);
       if(!result) {

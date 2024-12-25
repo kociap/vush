@@ -513,14 +513,13 @@ namespace vush {
     anton::String return_type = stringify_type(ctx, fn->return_type);
     anton::String result = anton::concat(ctx.allocator, return_type, " "_sv,
                                          fn->identifier.value, "("_sv);
-    for(bool first = true;
-        ast::Fn_Parameter const* const parameter: fn->parameters) {
+    for(bool first = true; ast::Fn_Parameter const& parameter: fn->parameters) {
       if(!first) {
         result += ", "_sv;
       }
-      result += stringify_type(ctx, parameter->type);
+      result += stringify_type(ctx, parameter.type);
       result += " "_sv;
-      result += parameter->identifier.value;
+      result += parameter.identifier.value;
 
       first = false;
     }

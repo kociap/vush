@@ -70,7 +70,7 @@ namespace vush {
     }
   };
 
-  bool run_opt_ast_fold_swizzles(Allocator* allocator, ast::Node_List nodes)
+  bool run_opt_ast_fold_swizzles(Allocator* allocator, ast::Node_List& nodes)
   {
     Fold_Swizzles_Visitor visitor(allocator);
     visitor.run(nodes);

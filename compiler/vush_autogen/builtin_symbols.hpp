@@ -2,7 +2,7 @@
 
 #include <anton/flat_hash_map.hpp>
 
-#include <vush_ast/ast_fwd.hpp>
+#include <vush_ast/fwd.hpp>
 #include <vush_ir/ir.hpp>
 
 namespace vush {

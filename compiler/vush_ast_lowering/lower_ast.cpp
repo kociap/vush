@@ -730,8 +730,8 @@ namespace vush {
       auto const composite =
         VUSH_ALLOCATE(ir::Type_Composite, ctx.allocator, ctx.allocator,
                       struct_definition->identifier.value);
-      for(auto const field: struct_definition->fields) {
-        auto const field_type = make_new_type_instance(ctx, field->type);
+      for(auto const& field: struct_definition->fields) {
+        auto const field_type = make_new_type_instance(ctx, field.type);
         composite->elements.push_back(field_type);
       }
       return composite;
@@ -777,8 +777,8 @@ namespace vush {
       // TODO: Ignores attributes. On the other hand, an identifier is unique,
       //       so a type must be unique regardless of the attributes.
       hash.feed(t->definition->identifier.value);
-      for(ast::Struct_Field const* const field: t->definition->fields) {
-        hash_type(hash, field->type);
+      for(ast::Struct_Field const& field: t->definition->fields) {
+        hash_type(hash, field.type);
       }
     } break;
     }
@@ -1105,9 +1105,9 @@ namespace vush {
   get_field(ast::Decl_Struct const* const decl,
             anton::String_View const identifier)
   {
-    for(ast::Struct_Field* const field: decl->fields) {
-      if(field->identifier.value == identifier) {
-        return field;
+    for(ast::Struct_Field const& field: decl->fields) {
+      if(field.identifier.value == identifier) {
+        return &field;
       }
     }
 
@@ -1118,8 +1118,8 @@ namespace vush {
                                            anton::String_View const identifier)
   {
     i32 index = 0;
-    for(ast::Struct_Field* const field: decl->fields) {
-      if(field->identifier.value == identifier) {
+    for(ast::Struct_Field const& field: decl->fields) {
+      if(field.identifier.value == identifier) {
         return index;
       }
       index += 1;
@@ -1132,8 +1132,8 @@ namespace vush {
                                            anton::String_View const identifier)
   {
     i32 index = 0;
-    for(ast::Buffer_Field* const field: decl->fields) {
-      if(field->identifier.value == identifier) {
+    for(ast::Buffer_Field const& field: decl->fields) {
+      if(field.identifier.value == identifier) {
         return index;
       }
       index += 1;
@@ -1148,8 +1148,8 @@ namespace vush {
     auto identifier = anton::String{attribute->identifier.value, ctx.allocator};
     ir::Decoration_Argument argument;
     // TODO: We only lower the first argument.
-    if(attribute->parameters.size() > 0) {
-      auto const& parameter = attribute->parameters[0];
+    if(!attribute->parameters.empty()) {
+      auto const& parameter = *attribute->parameters.front();
       // TODO: We ignore the key.
       // TODO: Other kinds of expressions are ignored.
       switch(parameter.value->node_kind) {
@@ -1450,25 +1450,25 @@ namespace vush {
       builder.insert(temporary);
       auto const constructed_type =
         static_cast<ast::Type_Struct const*>(expr->evaluated_type);
-      for(auto const ginitializer: expr->initializers) {
+      for(auto const& ginitializer: expr->initializers) {
         ANTON_ASSERT(instanceof<ast::Field_Initializer>(ginitializer),
                      "invalid struct initializer");
         auto const initializer =
-          static_cast<ast::Field_Initializer const*>(ginitializer);
-        ast::Struct_Field const* field = get_field(
-          constructed_type->definition, initializer->identifier.value);
+          static_cast<ast::Field_Initializer const&>(ginitializer);
+        ast::Struct_Field const* field =
+          get_field(constructed_type->definition, initializer.identifier.value);
         auto const rhs = lower_expression_and_cvt(ctx, builder, field->type,
-                                                  initializer->expression);
+                                                  initializer.expression);
         i64 const index = get_field_index(constructed_type->definition,
-                                          initializer->identifier.value);
+                                          initializer.identifier.value);
         auto const value = ir::make_constant_i32(ctx.allocator, index);
         auto const field_address =
           ir::make_instr_getptr(ctx.allocator, ctx.next_id(), type, temporary,
-                                value, initializer->source_info);
+                                value, initializer.source_info);
         builder.insert(field_address);
         auto const store =
           ir::make_instr_store(ctx.allocator, ctx.next_id(), field_address, rhs,
-                               initializer->source_info);
+                               initializer.source_info);
         builder.insert(store);
       }
       // We load the struct and pass it farther down.
@@ -1484,18 +1484,19 @@ namespace vush {
       // We handle constructor #2 separately.
       bool single_scalar_constructor = false;
       if(expr->initializers.size() == 1) {
-        ANTON_ASSERT(instanceof<ast::Basic_Initializer>(expr->initializers[0]),
-                     "vector initializer is not basic initializer");
-        auto const initializer =
-          static_cast<ast::Basic_Initializer const*>(expr->initializers[0]);
+        ANTON_ASSERT(
+          instanceof<ast::Basic_Initializer>(expr->initializers.front()),
+          "vector initializer is not basic initializer");
+        auto const initializer = static_cast<ast::Basic_Initializer const*>(
+          expr->initializers.front());
         single_scalar_constructor =
           ast::is_scalar(*initializer->expression->evaluated_type);
       }
 
       if(single_scalar_constructor) {
         // Overload #2.
-        auto const initializer =
-          static_cast<ast::Basic_Initializer const*>(expr->initializers[0]);
+        auto const initializer = static_cast<ast::Basic_Initializer const*>(
+          expr->initializers.front());
         auto const element_type = constructed_type->element_type;
         auto const value = lower_expression_and_cvt(ctx, builder, element_type,
                                                     initializer->expression);
@@ -1505,7 +1506,7 @@ namespace vush {
       } else {
         // Handle overloads #1, #3, #4, #5.
         // Push extracted elements into the construct instruction.
-        for(auto const ginitializer: expr->initializers) {
+        for(auto const& ginitializer: expr->initializers) {
           if(construct->elements.size() >= vector_size) {
             break;
           }
@@ -1513,21 +1514,21 @@ namespace vush {
           ANTON_ASSERT(instanceof<ast::Basic_Initializer>(ginitializer),
                        "vector initializer is not basic initializer");
           auto const initializer =
-            static_cast<ast::Basic_Initializer const*>(ginitializer);
+            static_cast<ast::Basic_Initializer const&>(ginitializer);
           auto const value =
-            lower_expression(ctx, builder, initializer->expression);
-          if(ast::is_scalar(*initializer->expression->evaluated_type)) {
+            lower_expression(ctx, builder, initializer.expression);
+          if(ast::is_scalar(*initializer.expression->evaluated_type)) {
             auto const element_type = constructed_type->element_type;
             auto const result = generate_conversion(
-              ctx, builder, element_type, value, initializer->source_info);
+              ctx, builder, element_type, value, initializer.source_info);
             ANTON_ASSERT(result.holds_value(), "conversion failed");
             construct->add_element(result.value());
           } else {
             ANTON_ASSERT(
-              ast::is_vector(*initializer->expression->evaluated_type),
+              ast::is_vector(*initializer.expression->evaluated_type),
               "invalid expression kind");
             i64 const src_size =
-              ast::get_vector_size(*initializer->expression->evaluated_type);
+              ast::get_vector_size(*initializer.expression->evaluated_type);
             for(i64 i = 0; i < src_size; i += 1) {
               if(construct->elements.size() >= vector_size) {
                 break;
@@ -1538,11 +1539,11 @@ namespace vush {
               auto const source_element_type = source_type->element_type;
               auto const extract = ir::make_instr_vector_extract(
                 ctx.allocator, ctx.next_id(), source_element_type, value, i,
-                initializer->expression->source_info);
+                initializer.expression->source_info);
               builder.insert(extract);
               auto const element_type = constructed_type->element_type;
               auto const result = generate_conversion(
-                ctx, builder, element_type, extract, initializer->source_info);
+                ctx, builder, element_type, extract, initializer.source_info);
               ANTON_ASSERT(result.holds_value(), "conversion failed");
               construct->add_element(result.value());
             }
@@ -1564,10 +1565,11 @@ namespace vush {
       i32 const matrix_cols = ast::get_matrix_columns(*expr->evaluated_type);
       auto const constructed_type = static_cast<ir::Type_Mat*>(type);
       if(expr->initializers.size() == 1) {
-        ANTON_ASSERT(instanceof<ast::Basic_Initializer>(expr->initializers[0]),
-                     "not basic initializer");
-        auto const initializer =
-          static_cast<ast::Basic_Initializer const*>(expr->initializers[0]);
+        ANTON_ASSERT(
+          instanceof<ast::Basic_Initializer>(expr->initializers.front()),
+          "not basic initializer");
+        auto const initializer = static_cast<ast::Basic_Initializer const*>(
+          expr->initializers.front());
         auto const value =
           lower_expression(ctx, builder, initializer->expression);
         if(ast::is_matrix(*initializer->expression->evaluated_type)) {
@@ -1620,8 +1622,13 @@ namespace vush {
             builder.insert(column);
           }
         }
-      } else if(expr->initializers.size() == matrix_rows * matrix_cols) {
+      }
+      // TODO: initializers.size could be precalculated to save iterating the
+      //       list multiple times.
+      else if(expr->initializers.size() == matrix_rows * matrix_cols) {
         // Overload #4.
+        auto initializer =
+          safe_cast<ast::Basic_Initializer const*>(expr->initializers.front());
         for(i64 col_idx = 0; col_idx < matrix_cols; col_idx += 1) {
           auto const column_type = VUSH_ALLOCATE(
             ir::Type_Vec, ctx.allocator,
@@ -1629,27 +1636,27 @@ namespace vush {
           auto const column = ir::make_instr_composite_construct(
             ctx.allocator, ctx.next_id(), column_type, expr->source_info);
           for(i64 row_idx = 0; row_idx < matrix_rows; row_idx += 1) {
-            auto const initializer = static_cast<ast::Basic_Initializer const*>(
-              expr->initializers[col_idx * matrix_rows + row_idx]);
             auto const source =
               lower_expression(ctx, builder, initializer->expression);
+            // TODO: Does that not require a conversion?
             column->add_element(source);
+            initializer = anton::ilist_next(initializer);
           }
           construct->add_element(column);
           builder.insert(column);
         }
       } else if(expr->initializers.size() == matrix_cols) {
         // Overload #5.
-        for(auto const ginitializer: expr->initializers) {
+        for(auto const& ginitializer: expr->initializers) {
           auto const initializer =
-            static_cast<ast::Basic_Initializer const*>(ginitializer);
+            static_cast<ast::Basic_Initializer const&>(ginitializer);
           auto const source =
-            lower_expression(ctx, builder, initializer->expression);
+            lower_expression(ctx, builder, initializer.expression);
           auto const column_type = VUSH_ALLOCATE(
             ir::Type_Vec, ctx.allocator,
             constructed_type->column_type->element_type, matrix_rows);
           auto const column = construct_vec_from_vec(
-            ctx, builder, column_type, source, initializer->source_info);
+            ctx, builder, column_type, source, initializer.source_info);
           construct->add_element(column);
         }
       }
@@ -1847,8 +1854,9 @@ namespace vush {
       // Lower the LHS and jump based on its value.
       // AND on false jumps to converge.
       // OR on true jumps to converge.
-      ir::Value* const lhs = lower_expression_and_cvt(
-        ctx, builder, builtin_bool, expr->arguments[0]);
+      ast::Expr const* const arg1 = expr->arguments.front();
+      ir::Value* const lhs =
+        lower_expression_and_cvt(ctx, builder, builtin_bool, arg1);
       auto const rhs_block =
         VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
       auto const converge_block =
@@ -1864,9 +1872,10 @@ namespace vush {
       builder.insert(brcond);
 
       // Lower the RHS.
+      ast::Expr const* const arg2 = anton::ilist_next(arg1);
       builder.set_insert_block(rhs_block);
-      ir::Value* const rhs = lower_expression_and_cvt(
-        ctx, builder, builtin_bool, expr->arguments[1]);
+      ir::Value* const rhs =
+        lower_expression_and_cvt(ctx, builder, builtin_bool, arg2);
       auto const branch = ir::make_instr_branch(
         ctx.allocator, ctx.next_id(), converge_block, expr->source_info);
       builder.insert(branch);
@@ -1888,18 +1897,21 @@ namespace vush {
     bool const result_is_sint = ast::is_signed_integer_based(*result_type);
     bool const result_is_fp = ast::is_fp_based(*result_type);
     // Lower and convert arguments to parameter types.
-    ast::Fn_Parameter_List const parameters = expr->function->parameters;
-    ir::Value* const lhs = lower_expression_and_cvt(
-      ctx, builder, parameters[0]->type, expr->arguments[0]);
+    ast::Fn_Parameter const* const parameter0 =
+      expr->function->parameters.front();
+    ast::Expr const* const arg0 = expr->arguments.front();
+    ir::Value* const lhs =
+      lower_expression_and_cvt(ctx, builder, parameter0->type, arg0);
+    auto const parameter1 = anton::ilist_next(parameter0);
+    auto const arg1 = anton::ilist_next(arg0);
     ir::Value* const rhs =
       expr->is_binary()
-        ? lower_expression_and_cvt(ctx, builder, parameters[1]->type,
-                                   expr->arguments[1])
+        ? lower_expression_and_cvt(ctx, builder, parameter1->type, arg1)
         : nullptr;
 
-    bool const parameters_are_fp = ast::is_fp_based(*parameters[0]->type);
+    bool const parameters_are_fp = ast::is_fp_based(*parameter0->type);
     bool const parameters_are_sint =
-      ast::is_signed_integer_based(*parameters[0]->type);
+      ast::is_signed_integer_based(*parameter0->type);
     ir::ALU_Opcode const opcode =
       select_opcode(identifier, expr->is_binary(), result_is_fp, result_is_sint,
                     result_is_uint, parameters_are_fp, parameters_are_sint);
@@ -1922,7 +1934,7 @@ namespace vush {
     for(auto const [p, a]:
         anton::zip(expr->function->parameters, expr->arguments)) {
       ir::Value* const result =
-        lower_expression_and_cvt(ctx, builder, p->type, a);
+        lower_expression_and_cvt(ctx, builder, p.type, &a);
       call->add_argument(result);
     }
     builder.insert(call);
@@ -1950,7 +1962,7 @@ namespace vush {
       for(auto [arg, param]:
           anton::zip(expr->arguments, expr->function->parameters)) {
         auto const value =
-          lower_expression_and_cvt(ctx, builder, param->type, arg);
+          lower_expression_and_cvt(ctx, builder, param.type, &arg);
         call->add_argument(value);
       }
       builder.insert(call);
@@ -2107,7 +2119,7 @@ namespace vush {
   //
   [[nodiscard]] static bool lower_statement_block(Lowering_Context& ctx,
                                                   Builder& builder,
-                                                  ast::Node_List const stmts);
+                                                  ast::Stmt_List const& block);
 
   static void lower_variable(Lowering_Context& ctx, Builder& builder,
                              ast::Variable const* const variable)
@@ -2369,8 +2381,8 @@ namespace vush {
     ctx.nearest_converge_block = converge_block;
 
     // Lower variables in the previous block.
-    for(ast::Variable const* const variable: stmt->declarations) {
-      lower_variable(ctx, builder, variable);
+    for(ast::Variable const& variable: stmt->declarations) {
+      lower_variable(ctx, builder, &variable);
     }
 
     // Branch to the condition block from wherever we are.
@@ -2396,8 +2408,8 @@ namespace vush {
 
     // Lower the actions in the continuation block.
     builder.set_insert_block(continuation_block);
-    for(ast::Expr const* const expr: stmt->actions) {
-      ir::Value* const instr = lower_expression(ctx, builder, expr);
+    for(ast::Expr const& expr: stmt->actions) {
+      ir::Value* const instr = lower_expression(ctx, builder, &expr);
       // Result is discarded.
       ANTON_UNUSED(instr);
     }
@@ -2490,24 +2502,24 @@ namespace vush {
       ctx.allocator, ctx.next_id(), selector, default_block, stmt->source_info);
     builder.insert(instr_switch);
 
-    for(ast::Switch_Arm const* const arm: stmt->arms) {
+    for(ast::Switch_Arm const& arm: stmt->arms) {
       ir::Basic_Block* current_block = default_block;
-      if(!arm->has_default) {
+      if(!arm.has_default) {
         current_block =
           VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
       }
 
       builder.set_insert_block(current_block);
-      lower_statement_block(ctx, builder, arm->statements);
-      for(ast::Expr const* const label: arm->labels) {
+      lower_statement_block(ctx, builder, arm.statements);
+      for(ast::Expr const& label: arm.labels) {
         ANTON_ASSERT(label->node_kind == ast::Node_Kind::lt_integer ||
                        label->node_kind == ast::Node_Kind::expr_default,
                      "label is not an integer");
-        if(label->node_kind == ast::Node_Kind::lt_integer) {
-          auto const node = static_cast<ast::Lt_Integer const*>(label);
+        if(label.node_kind == ast::Node_Kind::lt_integer) {
+          auto const node = static_cast<ast::Lt_Integer const&>(label);
           i64 const value =
-            (node->kind == ast::Lt_Integer_Kind::i32 ? node->i32_value
-                                                     : node->u32_value);
+            (node.kind == ast::Lt_Integer_Kind::i32 ? node.i32_value
+                                                    : node.u32_value);
           instr_switch->add_label(ir::Switch_Label{value, current_block});
         }
       }
@@ -2515,28 +2527,28 @@ namespace vush {
   }
 
   static bool lower_statement_block(Lowering_Context& ctx, Builder& builder,
-                                    ast::Node_List const stmts)
+                                    ast::Stmt_List const& block)
   {
     ctx.symtable.push_scope();
-    for(ast::Node* const generic_stmt: stmts) {
-      switch(generic_stmt->node_kind) {
+    for(ast::Node const& generic_stmt: block) {
+      switch(generic_stmt.node_kind) {
       case ast::Node_Kind::stmt_discard: {
         auto const instr = ir::make_instr_die(ctx.allocator, ctx.next_id(),
-                                              generic_stmt->source_info);
+                                              generic_stmt.source_info);
         builder.insert(instr);
         return true;
       } break;
 
       case ast::Node_Kind::stmt_return: {
-        auto const stmt = static_cast<ast::Stmt_Return const*>(generic_stmt);
-        lower_stmt_return(ctx, builder, stmt);
+        auto const stmt = static_cast<ast::Stmt_Return const&>(generic_stmt);
+        lower_stmt_return(ctx, builder, &stmt);
         return true;
       } break;
 
       case ast::Node_Kind::stmt_block: {
-        auto const stmt = static_cast<ast::Stmt_Block const*>(generic_stmt);
+        auto const& stmt = static_cast<ast::Stmt_Block const&>(generic_stmt);
         bool const stopped =
-          lower_statement_block(ctx, builder, stmt->statements);
+          lower_statement_block(ctx, builder, stmt.statements);
         if(stopped) {
           return true;
         }
@@ -2544,9 +2556,9 @@ namespace vush {
 
       case ast::Node_Kind::stmt_expression: {
         auto const stmt =
-          static_cast<ast::Stmt_Expression const*>(generic_stmt);
+          static_cast<ast::Stmt_Expression const&>(generic_stmt);
         ir::Value* const value =
-          lower_expression(ctx, builder, stmt->expression);
+          lower_expression(ctx, builder, stmt.expression);
         // The result is discarded.
         ANTON_UNUSED(value);
       } break;
@@ -2556,7 +2568,7 @@ namespace vush {
                      "missing loop converge block");
         auto const instr = ir::make_instr_branch(ctx.allocator, ctx.next_id(),
                                                  ctx.nearest_converge_block,
-                                                 generic_stmt->source_info);
+                                                 generic_stmt.source_info);
         builder.insert(instr);
       } break;
 
@@ -2565,23 +2577,23 @@ namespace vush {
                      "missing loop continuation block");
         auto const instr = ir::make_instr_branch(ctx.allocator, ctx.next_id(),
                                                  ctx.nearest_continuation_block,
-                                                 generic_stmt->source_info);
+                                                 generic_stmt.source_info);
         builder.insert(instr);
       } break;
 
       case ast::Node_Kind::variable: {
-        auto const stmt = static_cast<ast::Variable const*>(generic_stmt);
+        auto const stmt = &static_cast<ast::Variable const&>(generic_stmt);
         lower_variable(ctx, builder, stmt);
       } break;
 
       case ast::Node_Kind::stmt_assignment: {
         auto const stmt =
-          static_cast<ast::Stmt_Assignment const*>(generic_stmt);
+          &static_cast<ast::Stmt_Assignment const&>(generic_stmt);
         lower_stmt_assignment(ctx, builder, stmt);
       } break;
 
       case ast::Node_Kind::stmt_if: {
-        auto const stmt = static_cast<ast::Stmt_If const*>(generic_stmt);
+        auto const stmt = &static_cast<ast::Stmt_If const&>(generic_stmt);
         bool const stopped = lower_stmt_if(ctx, builder, stmt);
         if(stopped) {
           return true;
@@ -2589,22 +2601,22 @@ namespace vush {
       } break;
 
       case ast::Node_Kind::stmt_for: {
-        auto const stmt = static_cast<ast::Stmt_For const*>(generic_stmt);
+        auto const stmt = &static_cast<ast::Stmt_For const&>(generic_stmt);
         lower_stmt_for(ctx, builder, stmt);
       } break;
 
       case ast::Node_Kind::stmt_while: {
-        auto const stmt = static_cast<ast::Stmt_While const*>(generic_stmt);
+        auto const stmt = &static_cast<ast::Stmt_While const&>(generic_stmt);
         lower_stmt_while(ctx, builder, stmt);
       } break;
 
       case ast::Node_Kind::stmt_do_while: {
-        auto const stmt = static_cast<ast::Stmt_Do_While const*>(generic_stmt);
+        auto const stmt = &static_cast<ast::Stmt_Do_While const&>(generic_stmt);
         lower_stmt_do_while(ctx, builder, stmt);
       } break;
 
       case ast::Node_Kind::stmt_switch: {
-        auto const stmt = static_cast<ast::Stmt_Switch const*>(generic_stmt);
+        auto const stmt = &static_cast<ast::Stmt_Switch const&>(generic_stmt);
         lower_stmt_switch(ctx, builder, stmt);
       } break;
 
@@ -2674,19 +2686,19 @@ namespace vush {
     builder.set_insert_block(fn->entry_block);
     // Generate arguments and their respective allocs.
     // TODO: Unsized array parametrs.
-    for(ast::Fn_Parameter const* const parameter: ast_fn->parameters) {
-      ir::Type* const type = lower_type(ctx, parameter->type);
+    for(ast::Fn_Parameter const& parameter: ast_fn->parameters) {
+      ir::Type* const type = lower_type(ctx, parameter.type);
       auto const argument = VUSH_ALLOCATE(
         ir::Argument, ctx.allocator, ctx.next_id(), type, fn, ctx.allocator);
       fn->arguments.insert_back(*argument);
       auto const alloc = ir::make_instr_alloc(ctx.allocator, ctx.next_id(),
-                                              type, parameter->source_info);
+                                              type, parameter.source_info);
       builder.insert(alloc);
       auto const store =
         ir::make_instr_store(ctx.allocator, ctx.next_id(), alloc, argument,
-                             parameter->identifier.source_info);
+                             parameter.identifier.source_info);
       builder.insert(store);
-      ctx.symtable.add_entry(parameter->identifier.value, alloc);
+      ctx.symtable.add_entry(parameter.identifier.value, alloc);
     }
 
     auto const stopped = lower_statement_block(ctx, builder, ast_fn->body);
@@ -2743,8 +2755,8 @@ namespace vush {
         VUSH_ALLOCATE(ir::Type_Composite, ctx.allocator, ctx.allocator,
                       buffer->identifier.value);
       composite->elements.ensure_capacity(buffer->fields.size());
-      for(ast::Buffer_Field const* const field: buffer->fields) {
-        ir::Type* const type = lower_type(ctx, field->type);
+      for(ast::Buffer_Field const& field: buffer->fields) {
+        ir::Type* const type = lower_type(ctx, field.type);
         composite->elements.push_back(type);
       }
 
@@ -2779,26 +2791,26 @@ namespace vush {
     Builder builder;
     builder.set_insert_block(fn->entry_block);
     // Generate arguments as pointers.
-    for(ast::Fn_Parameter const* const parameter: stage->parameters) {
+    for(ast::Fn_Parameter const& parameter: stage->parameters) {
       auto const argument =
         VUSH_ALLOCATE(ir::Argument, ctx.allocator, ctx.next_id(),
                       ir::get_type_ptr(), fn, ctx.allocator);
-      argument->storage_class = select_storage_class(parameter);
-      argument->pointee_type = lower_type(ctx, parameter->type);
-      if(parameter->buffer != nullptr) {
-        argument->buffer = lower_buffer(ctx, parameter->buffer);
+      argument->storage_class = select_storage_class(&parameter);
+      argument->pointee_type = lower_type(ctx, parameter.type);
+      if(parameter.buffer != nullptr) {
+        argument->buffer = lower_buffer(ctx, parameter.buffer);
         // TODO: Consider moving this to SEMA.
         argument->buffer_index =
-          get_field_index(parameter->buffer, parameter->identifier.value);
+          get_field_index(parameter.buffer, parameter.identifier.value);
       }
       // Lower attributes.
-      for(auto const attribute: parameter->attributes) {
-        auto const decoration = lower_attribute(ctx, attribute);
+      for(ast::Attribute const& attribute: parameter.attributes) {
+        auto const decoration = lower_attribute(ctx, &attribute);
         argument->decorate(decoration);
       }
 
       fn->arguments.insert_back(*argument);
-      ctx.symtable.add_entry(parameter->identifier.value, argument);
+      ctx.symtable.add_entry(parameter.identifier.value, argument);
     }
 
     bool const stopped = lower_statement_block(ctx, builder, stage->body);
@@ -2815,13 +2827,13 @@ namespace vush {
   }
 
   Array<ir::Module> lower_ast_to_ir(Allocator* const allocator,
-                                    ast::Node_List const ast)
+                                    ast::Node_List const& ast)
   {
     Array<ir::Module> modules{allocator};
     Lowering_Context ctx{allocator};
-    for(ast::Node const* const node: ast) {
-      if(node->node_kind == ast::Node_Kind::decl_function) {
-        auto const ast_fn = static_cast<ast::Decl_Function const*>(node);
+    for(ast::Node const& node: ast) {
+      if(node.node_kind == ast::Node_Kind::decl_function) {
+        auto const ast_fn = static_cast<ast::Decl_Function const*>(&node);
         auto const return_type = lower_type(ctx, ast_fn->return_type);
         auto const entry_block =
           VUSH_ALLOCATE(ir::Basic_Block, ctx.allocator, ctx.next_id());
@@ -2833,15 +2845,15 @@ namespace vush {
       }
     }
 
-    for(ast::Node const* const node: ast) {
-      if(node->node_kind == ast::Node_Kind::decl_stage_function) {
-        auto const stage = static_cast<ast::Decl_Stage_Function const*>(node);
+    for(ast::Node const& node: ast) {
+      if(node.node_kind == ast::Node_Kind::decl_stage_function) {
+        auto const stage = static_cast<ast::Decl_Stage_Function const*>(&node);
         ir::Module module = lower_module(ctx, stage);
         modules.push_back(ANTON_MOV(module));
       }
 
-      if(node->node_kind == ast::Node_Kind::decl_function) {
-        auto const ast_fn = static_cast<ast::Decl_Function const*>(node);
+      if(node.node_kind == ast::Node_Kind::decl_function) {
+        auto const ast_fn = static_cast<ast::Decl_Function const*>(&node);
         auto const fn = *ctx.fntable.find_entry(ast_fn->identifier.value);
         lower_function(ctx, ast_fn, fn);
       }

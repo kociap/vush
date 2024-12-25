@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vush_ast/ast_fwd.hpp>
+#include <vush_ast/fwd.hpp>
 
 namespace vush::ast {
   enum struct Visitor_Status {
@@ -16,7 +16,7 @@ namespace vush::ast {
   public:
     virtual ~Visitor() = default;
 
-    void run(Node_List const& list);
+    void run(ast::Node_List& list);
 
     [[nodiscard]] virtual Visitor_Status visit(Type*);
 

@@ -224,7 +224,7 @@ namespace vush {
         ANTON_ASSERT(argument->evaluated_type != nullptr,
                      "argument has unevaluated type");
         anton::Optional<i64> rank_result =
-          rank_conversion(parameter->type, argument->evaluated_type);
+          rank_conversion(parameter.type, argument.evaluated_type);
         if(!rank_result) {
           viable = false;
           break;
@@ -503,8 +503,8 @@ namespace vush {
     // types are cached, so there is no risk of reevaluation or a major
     // performance penalty, but this way we ensure that all expressions have
     // their types evaluated.
-    for(ast::Expr* const argument: expr->arguments) {
-      RETURN_ON_FAIL(analyse_expression, ctx, symtable, argument);
+    for(ast::Expr& argument: expr->arguments) {
+      RETURN_ON_FAIL(analyse_expression, ctx, symtable, &argument);
     }
 
     ast::Overload_Group const* const group = expr->overload_group;
@@ -604,13 +604,13 @@ namespace vush {
       ast::Type_Struct const* const type =
         static_cast<ast::Type_Struct const*>(generic_type);
       ast::Decl_Struct const* const decl = type->definition;
-      for(ast::Struct_Field const* const field: decl->fields) {
-        if(field->identifier.value != expr->field.value) {
+      for(ast::Struct_Field const& field: decl->fields) {
+        if(field.identifier.value != expr->field.value) {
           continue;
         }
 
         // We must propagate the qualifiers.
-        auto const evaluated_type = copy(ctx.allocator, field->type);
+        auto const evaluated_type = copy(ctx.allocator, field.type);
         evaluated_type->qualifiers = type->qualifiers;
         expr->evaluated_type = evaluated_type;
         return anton::expected_value;
@@ -641,14 +641,15 @@ namespace vush {
 
     // Find the field within the struct and report that first.
     ast::Decl_Struct const* const decl = type->definition;
-    ast::Struct_Field_List::iterator const fields_begin = decl->fields.begin();
-    ast::Struct_Field_List::iterator const fields_end = decl->fields.end();
+    ast::Struct_Field_List::const_iterator const fields_begin =
+      decl->fields.begin();
+    ast::Struct_Field_List::const_iterator const fields_end =
+      decl->fields.end();
     anton::String_View const identifier = initializer->identifier.value;
-    ast::Struct_Field_List::iterator const field =
-      anton::find_if(fields_begin, fields_end,
-                     [identifier](ast::Struct_Field const* const field) {
-                       return field->identifier.value == identifier;
-                     });
+    ast::Struct_Field_List::const_iterator const field = anton::find_if(
+      fields_begin, fields_end, [identifier](ast::Struct_Field const& field) {
+        return field.identifier.value == identifier;
+      });
     if(field == fields_end) {
       return {anton::expected_error,
               err_field_initializer_no_field_named(ctx, decl, initializer)};
@@ -658,7 +659,7 @@ namespace vush {
     RETURN_ON_FAIL(analyse_expression, ctx, symtable, initializer->expression);
 
     // Ensure type compatibility as the last step.
-    ast::Type const* const field_type = (*field)->type;
+    ast::Type const* const field_type = (*field).type;
     ast::Type const* const initializer_type =
       initializer->expression->evaluated_type;
     if(!is_convertible(field_type, initializer_type)) {
@@ -706,27 +707,27 @@ namespace vush {
     switch(type_kind) {
     case ast::Type_Kind::type_struct: {
       auto const type = static_cast<ast::Type_Struct*>(expr->type);
-      for(ast::Initializer* const ginitializer: expr->initializers) {
+      for(ast::Initializer& ginitializer: expr->initializers) {
         RETURN_ON_FAIL(analyse_expr_init_type_struct, ctx, symtable, type,
-                       ginitializer);
+                       &ginitializer);
       }
       // TODO: Deduplicate initializers.
     } break;
 
     case ast::Type_Kind::type_builtin: {
       auto const type = static_cast<ast::Type_Builtin*>(expr->type);
-      for(ast::Initializer* const ginitializer: expr->initializers) {
+      for(ast::Initializer& ginitializer: expr->initializers) {
         if(is_vector(*type)) {
-          if(ginitializer->node_kind != ast::Node_Kind::basic_initializer) {
+          if(ginitializer.node_kind != ast::Node_Kind::basic_initializer) {
             return {
               anton::expected_error,
-              err_init_invalid_vector_initializer_kind(ctx, ginitializer)};
+              err_init_invalid_vector_initializer_kind(ctx, &ginitializer)};
           }
         } else if(is_matrix(*type)) {
-          if(ginitializer->node_kind != ast::Node_Kind::basic_initializer) {
+          if(ginitializer.node_kind != ast::Node_Kind::basic_initializer) {
             return {
               anton::expected_error,
-              err_init_invalid_matrix_initializer_kind(ctx, ginitializer)};
+              err_init_invalid_matrix_initializer_kind(ctx, &ginitializer)};
           }
         } else {
           // TODO: This must be lifted to allow conversions.
@@ -734,7 +735,7 @@ namespace vush {
         }
 
         auto const initializer =
-          static_cast<ast::Basic_Initializer const*>(ginitializer);
+          static_cast<ast::Basic_Initializer const*>(&ginitializer);
         RETURN_ON_FAIL(analyse_expression, ctx, symtable,
                        initializer->expression);
       }
@@ -877,7 +878,7 @@ namespace vush {
 
   [[nodiscard]] static anton::Expected<void, Error>
   analyse_statements(Context& ctx, Symbol_Table& symtable,
-                     ast::Node_List const statements, Sema_Context semactx);
+                     ast::Stmt_List& statements, Sema_Context semactx);
 
   [[nodiscard]] static anton::Expected<void, Error>
   analyse_variable(Context& ctx, Symbol_Table& symtable,
@@ -1066,8 +1067,8 @@ namespace vush {
   analyse_stmt_for(Context& ctx, Symbol_Table& symtable,
                    ast::Stmt_For* const node, Sema_Context semactx)
   {
-    for(ast::Node* const declaration: node->declarations) {
-      auto const variable = static_cast<ast::Variable*>(declaration);
+    for(ast::Node& declaration: node->declarations) {
+      auto const variable = static_cast<ast::Variable*>(&declaration);
       RETURN_ON_FAIL(analyse_variable, ctx, symtable, variable);
     }
 
@@ -1079,8 +1080,8 @@ namespace vush {
                                        ctx, node->condition, condition_type)};
     }
 
-    for(ast::Expr* const action: node->actions) {
-      RETURN_ON_FAIL(analyse_expression, ctx, symtable, action);
+    for(ast::Expr& action: node->actions) {
+      RETURN_ON_FAIL(analyse_expression, ctx, symtable, &action);
     }
 
     semactx.stmt = Stmt_Ctx::e_loop;
@@ -1143,21 +1144,21 @@ namespace vush {
     semactx.stmt = Stmt_Ctx::e_switch;
     ast::Expr const* default_label = nullptr;
     anton::Flat_Hash_Map<u32, ast::Lt_Integer*> labels{ctx.allocator};
-    for(ast::Switch_Arm* const arm: node->arms) {
-      for(ast::Expr* const label: arm->labels) {
-        RETURN_ON_FAIL(analyse_expression, ctx, symtable, label);
-        if(label->node_kind == ast::Node_Kind::expr_default) {
-          arm->has_default = true;
+    for(ast::Switch_Arm& arm: node->arms) {
+      for(ast::Expr& label: arm.labels) {
+        RETURN_ON_FAIL(analyse_expression, ctx, symtable, &label);
+        if(label.node_kind == ast::Node_Kind::expr_default) {
+          arm.has_default = true;
           // Ensure the default label is unique.
           if(default_label == nullptr) {
-            default_label = label;
+            default_label = &label;
           } else {
             return {anton::expected_error,
                     err_duplicate_default_label(ctx, default_label->source_info,
-                                                label->source_info)};
+                                                label.source_info)};
           }
-        } else if(label->node_kind == ast::Node_Kind::lt_integer) {
-          auto const lt = static_cast<ast::Lt_Integer*>(label);
+        } else if(label.node_kind == ast::Node_Kind::lt_integer) {
+          auto const lt = static_cast<ast::Lt_Integer*>(&label);
           u32 const value = ast::get_lt_integer_value_as_u32(*lt);
           auto const it = labels.find(value);
           if(it == labels.end()) {
@@ -1169,13 +1170,13 @@ namespace vush {
                     err_duplicate_label(ctx, src1, src2)};
           }
         } else {
-          Source_Info const& src = label->source_info;
+          Source_Info const& src = label.source_info;
           return {anton::expected_error,
                   err_invalid_switch_arm_expression(ctx, src)};
         }
       }
 
-      RETURN_ON_FAIL(analyse_statements, ctx, symtable, arm->statements,
+      RETURN_ON_FAIL(analyse_statements, ctx, symtable, arm.statements,
                      semactx);
     }
     return anton::expected_value;
@@ -1199,78 +1200,79 @@ namespace vush {
     return anton::expected_value;
   }
 
-  anton::Expected<void, Error>
-  analyse_statements(Context& ctx, Symbol_Table& symtable,
-                     ast::Node_List const statements, Sema_Context semactx)
+  anton::Expected<void, Error> analyse_statements(Context& ctx,
+                                                  Symbol_Table& symtable,
+                                                  ast::Stmt_List& statements,
+                                                  Sema_Context semactx)
   {
     // We push a new scope and pop it only at the end of the function. We do not
     // pop the scope when we fail because an error always leads to termination.
     symtable.push_scope();
 
-    for(ast::Node* const stmt: statements) {
-      switch(stmt->node_kind) {
+    for(ast::Node& stmt: statements) {
+      switch(stmt.node_kind) {
       case ast::Node_Kind::variable: {
-        auto const node = static_cast<ast::Variable*>(stmt);
+        auto const node = static_cast<ast::Variable*>(&stmt);
         RETURN_ON_FAIL(analyse_variable, ctx, symtable, node);
       } break;
 
       case ast::Node_Kind::stmt_block: {
-        auto const node = static_cast<ast::Stmt_Block*>(stmt);
+        auto const node = static_cast<ast::Stmt_Block*>(&stmt);
         RETURN_ON_FAIL(analyse_statements, ctx, symtable, node->statements,
                        semactx);
       } break;
 
       case ast::Node_Kind::stmt_assignment: {
-        auto const node = static_cast<ast::Stmt_Assignment*>(stmt);
+        auto const node = static_cast<ast::Stmt_Assignment*>(&stmt);
         RETURN_ON_FAIL(analyse_stmt_assignment, ctx, symtable, node);
       } break;
 
       case ast::Node_Kind::stmt_if: {
-        auto const node = static_cast<ast::Stmt_If*>(stmt);
+        auto const node = static_cast<ast::Stmt_If*>(&stmt);
         RETURN_ON_FAIL(analyse_stmt_if, ctx, symtable, node, semactx);
       } break;
 
       case ast::Node_Kind::stmt_for: {
-        auto const node = static_cast<ast::Stmt_For*>(stmt);
+        auto const node = static_cast<ast::Stmt_For*>(&stmt);
         RETURN_ON_FAIL(analyse_stmt_for, ctx, symtable, node, semactx);
       } break;
 
       case ast::Node_Kind::stmt_while: {
-        auto const node = static_cast<ast::Stmt_While*>(stmt);
+        auto const node = static_cast<ast::Stmt_While*>(&stmt);
         RETURN_ON_FAIL(analyse_stmt_while, ctx, symtable, node, semactx);
       } break;
 
       case ast::Node_Kind::stmt_do_while: {
-        auto const node = static_cast<ast::Stmt_Do_While*>(stmt);
+        auto const node = static_cast<ast::Stmt_Do_While*>(&stmt);
         RETURN_ON_FAIL(analyse_stmt_do_while, ctx, symtable, node, semactx);
       } break;
 
       case ast::Node_Kind::stmt_switch: {
-        auto const node = static_cast<ast::Stmt_Switch*>(stmt);
+        auto const node = static_cast<ast::Stmt_Switch*>(&stmt);
         RETURN_ON_FAIL(analyse_stmt_switch, ctx, symtable, node, semactx);
       } break;
 
       case ast::Node_Kind::stmt_return: {
-        auto const node = static_cast<ast::Stmt_Return*>(stmt);
+        auto const node = static_cast<ast::Stmt_Return*>(&stmt);
         RETURN_ON_FAIL(analyse_stmt_return, ctx, symtable, node);
       } break;
 
       case ast::Node_Kind::stmt_expression: {
-        auto const node = static_cast<ast::Stmt_Expression*>(stmt);
+        auto const node = static_cast<ast::Stmt_Expression*>(&stmt);
         RETURN_ON_FAIL(analyse_stmt_expression, ctx, symtable, node);
       } break;
 
       case ast::Node_Kind::stmt_break: {
         if(semactx.stmt != Stmt_Ctx::e_loop) {
           return {anton::expected_error,
-                  err_break_used_outside_loop(ctx, stmt->source_info)};
+                  err_break_used_outside_loop(ctx, stmt.source_info)};
         }
       } break;
 
       case ast::Node_Kind::stmt_continue: {
         if(semactx.stmt != Stmt_Ctx::e_loop) {
           return {anton::expected_error,
-                  err_continue_used_outside_loop(ctx, stmt->source_info)};
+                  err_continue_used_outside_loop(ctx, stmt.source_info)};
         }
       } break;
 
@@ -1340,18 +1342,18 @@ namespace vush {
 
     anton::Flat_Hash_Map<anton::String_View, ast::Identifier>
       member_identifiers;
-    for(ast::Struct_Field* const field: dstruct->fields) {
-      RETURN_ON_FAIL(namebind_type, ctx, symtable, field->type);
-      RETURN_ON_FAIL(analyse_struct_field_type, ctx, *field->type,
+    for(ast::Struct_Field& field: dstruct->fields) {
+      RETURN_ON_FAIL(namebind_type, ctx, symtable, field.type);
+      RETURN_ON_FAIL(analyse_struct_field_type, ctx, *field.type,
                      dstruct->identifier);
       // Validate out duplicate names.
-      auto iter = member_identifiers.find(field->identifier.value);
+      auto iter = member_identifiers.find(field.identifier.value);
       if(iter != member_identifiers.end()) {
         return {anton::expected_error,
                 err_duplicate_struct_field(ctx, iter->value.source_info,
-                                           field->identifier.source_info)};
+                                           field.identifier.source_info)};
       } else {
-        member_identifiers.emplace(field->identifier.value, field->identifier);
+        member_identifiers.emplace(field.identifier.value, field.identifier);
       }
     }
 
@@ -1375,16 +1377,16 @@ namespace vush {
     }
 
     anton::Flat_Hash_Map<anton::String_View, ast::Identifier> field_identifiers;
-    for(ast::Buffer_Field* const field: buffer->fields) {
-      RETURN_ON_FAIL(namebind_type, ctx, symtable, field->type);
+    for(ast::Buffer_Field& field: buffer->fields) {
+      RETURN_ON_FAIL(namebind_type, ctx, symtable, field.type);
       // Validate out duplicate names.
-      auto iter = field_identifiers.find(field->identifier.value);
+      auto iter = field_identifiers.find(field.identifier.value);
       if(iter != field_identifiers.end()) {
         return {
           anton::expected_error,
           err_unimplemented(ctx, iter->value.source_info, __FILE__, __LINE__)};
       } else {
-        field_identifiers.emplace(field->identifier.value, field->identifier);
+        field_identifiers.emplace(field.identifier.value, field.identifier);
       }
     }
 
@@ -1396,9 +1398,9 @@ namespace vush {
                    ast::Decl_Function* const fn)
   {
     // Validate attributes. Currently there are no attributes that are not allowed on ordinary functions.
-    for(ast::Attribute const* const attribute: fn->attributes) {
+    for(ast::Attribute& attribute: fn->attributes) {
       return {anton::expected_error,
-              err_illegal_attribute(ctx, attribute->identifier.source_info)};
+              err_illegal_attribute(ctx, attribute.identifier.source_info)};
     }
 
     // We do not defcheck the identifier of the function because it has already
@@ -1408,13 +1410,13 @@ namespace vush {
     symtable.push_scope();
     // Validate parameters:
     // - only ordinary parameters are allowed.
-    for(ast::Fn_Parameter* const parameter: fn->parameters) {
-      RETURN_ON_FAIL(namebind_type, ctx, symtable, parameter->type);
+    for(ast::Fn_Parameter& parameter: fn->parameters) {
+      RETURN_ON_FAIL(namebind_type, ctx, symtable, parameter.type);
       RETURN_ON_FAIL(add_symbol, ctx, symtable,
-                     Symbol(parameter->identifier.value, parameter));
-      if(ast::is_sourced_parameter(*parameter)) {
+                     Symbol(parameter.identifier.value, &parameter));
+      if(ast::is_sourced_parameter(parameter)) {
         return {anton::expected_error, err_fn_sourced_parameter_not_allowed(
-                                         ctx, parameter->source_info)};
+                                         ctx, parameter.source_info)};
       }
     }
 
@@ -1482,8 +1484,8 @@ namespace vush {
     // Verify that a field with the given name and type exists.
     auto const field_iter = anton::find_if(
       p->buffer->fields.begin(), p->buffer->fields.end(),
-      [identifier = p->identifier.value](ast::Buffer_Field const* const field) {
-        return field->identifier.value == identifier;
+      [identifier = p->identifier.value](ast::Buffer_Field const& field) {
+        return field.identifier.value == identifier;
       });
     if(field_iter == p->buffer->fields.end()) {
       // TODO: Error.
@@ -1492,8 +1494,8 @@ namespace vush {
         err_unimplemented(ctx, p->identifier.source_info, __FILE__, __LINE__)};
     }
 
-    ast::Buffer_Field const* const field = *field_iter;
-    if(!ast::compare_types_equal(*field->type, *p->type)) {
+    ast::Buffer_Field& field = *field_iter;
+    if(!ast::compare_types_equal(*field.type, *p->type)) {
       // TODO: Error.
       return {anton::expected_error,
               err_unimplemented(ctx, p->type->source_info, __FILE__, __LINE__)};
@@ -1512,28 +1514,27 @@ namespace vush {
     switch(fn->stage.value) {
     case Stage_Kind::compute: {
       ast::Attribute const* workgroup = nullptr;
-      for(ast::Attribute const* const attribute: fn->attributes) {
-        if(attribute->identifier.value == "workgroup"_sv) {
+      for(ast::Attribute& attribute: fn->attributes) {
+        if(attribute.identifier.value == "workgroup"_sv) {
           if(!workgroup) {
-            workgroup = attribute;
+            workgroup = &attribute;
           } else {
             return {anton::expected_error,
                     err_duplicate_attribute(ctx,
                                             workgroup->identifier.source_info,
-                                            attribute->identifier.source_info)};
+                                            attribute.identifier.source_info)};
           }
         } else {
-          return {
-            anton::expected_error,
-            err_illegal_attribute(ctx, attribute->identifier.source_info)};
+          return {anton::expected_error,
+                  err_illegal_attribute(ctx, attribute.identifier.source_info)};
         }
       }
     } break;
 
     default: {
-      for(ast::Attribute const* const attribute: fn->attributes) {
+      for(ast::Attribute& attribute: fn->attributes) {
         return {anton::expected_error,
-                err_illegal_attribute(ctx, attribute->source_info)};
+                err_illegal_attribute(ctx, attribute.source_info)};
       }
     } break;
     }
@@ -1551,73 +1552,73 @@ namespace vush {
     // - vertex: input, output and sourced parameters.
     // - fragment: input, output and sourced parameters.
     // - compute: only sourced parameters are allowed.
-    for(ast::Fn_Parameter* const parameter: fn->parameters) {
-      RETURN_ON_FAIL(namebind_type, ctx, symtable, parameter->type);
+    for(ast::Fn_Parameter& parameter: fn->parameters) {
+      RETURN_ON_FAIL(namebind_type, ctx, symtable, parameter.type);
       RETURN_ON_FAIL(add_symbol, ctx, symtable,
-                     Symbol(parameter->identifier.value, parameter));
+                     Symbol(parameter.identifier.value, &parameter));
       switch(fn->stage.value) {
       case Stage_Kind::vertex: {
-        if(!ast::is_sourced_parameter(*parameter)) {
+        if(!ast::is_sourced_parameter(parameter)) {
           return {anton::expected_error,
                   err_vertex_ordinary_parameter_not_allowed(
-                    ctx, parameter->source_info)};
+                    ctx, parameter.source_info)};
         }
 
       } break;
 
       case Stage_Kind::fragment: {
-        if(!ast::is_sourced_parameter(*parameter)) {
+        if(!ast::is_sourced_parameter(parameter)) {
           return {anton::expected_error,
                   err_fragment_ordinary_parameter_not_allowed(
-                    ctx, parameter->source_info)};
+                    ctx, parameter.source_info)};
         }
       } break;
 
       case Stage_Kind::compute: {
-        if(!ast::is_sourced_parameter(*parameter)) {
+        if(!ast::is_sourced_parameter(parameter)) {
           return {anton::expected_error,
                   err_compute_ordinary_parameter_not_allowed(
-                    ctx, parameter->source_info)};
+                    ctx, parameter.source_info)};
         }
 
-        if(ast::is_input_parameter(*parameter)) {
+        if(ast::is_input_parameter(parameter)) {
           return {anton::expected_error,
-                  err_compute_input_not_allowed(ctx, parameter->source_info)};
-        } else if(ast::is_output_parameter(*parameter)) {
+                  err_compute_input_not_allowed(ctx, parameter.source_info)};
+        } else if(ast::is_output_parameter(parameter)) {
           return {anton::expected_error,
-                  err_compute_output_not_allowed(ctx, parameter->source_info)};
+                  err_compute_output_not_allowed(ctx, parameter.source_info)};
         }
       } break;
       }
 
-      if(is_input_parameter(*parameter)) {
-        if(is_opaque_type(*parameter->type)) {
+      if(is_input_parameter(parameter)) {
+        if(is_opaque_type(*parameter.type)) {
           return {anton::expected_error, err_input_must_not_be_opaque(
-                                           ctx, parameter->type->source_info)};
+                                           ctx, parameter.type->source_info)};
         }
 
-        if(parameter->type->type_kind == ast::Type_Kind::type_array) {
+        if(parameter.type->type_kind == ast::Type_Kind::type_array) {
           return {anton::expected_error, err_input_must_not_be_array(
-                                           ctx, parameter->type->source_info)};
+                                           ctx, parameter.type->source_info)};
         }
-      } else if(is_output_parameter(*parameter)) {
-        if(is_opaque_type(*parameter->type)) {
+      } else if(is_output_parameter(parameter)) {
+        if(is_opaque_type(*parameter.type)) {
           return {anton::expected_error, err_output_must_not_be_opaque(
-                                           ctx, parameter->type->source_info)};
+                                           ctx, parameter.type->source_info)};
         }
 
-        if(parameter->type->type_kind == ast::Type_Kind::type_array) {
+        if(parameter.type->type_kind == ast::Type_Kind::type_array) {
           return {anton::expected_error, err_output_must_not_be_array(
-                                           ctx, parameter->type->source_info)};
+                                           ctx, parameter.type->source_info)};
         }
-      } else if(is_image_parameter(*parameter)) {
-        if(!is_image_type(*parameter->type)) {
+      } else if(is_image_parameter(parameter)) {
+        if(!is_image_type(*parameter.type)) {
           return {anton::expected_error,
-                  err_image_parameter_not_image(ctx, *parameter)};
+                  err_image_parameter_not_image(ctx, parameter)};
         }
       }
 
-      RETURN_ON_FAIL(analyse_parameter_source, ctx, ns_symtable, parameter);
+      RETURN_ON_FAIL(analyse_parameter_source, ctx, ns_symtable, &parameter);
     }
 
     Sema_Context semactx{Stmt_Ctx::e_none};
@@ -1643,7 +1644,7 @@ namespace vush {
       bool identical = true;
       for(auto const [p1, p2]:
           anton::zip(overload->parameters, fn->parameters)) {
-        if(!ast::compare_types_equal(*p1->type, *p2->type)) {
+        if(!ast::compare_types_equal(*p1.type, *p2.type)) {
           identical = false;
           break;
         }
@@ -1667,7 +1668,7 @@ namespace vush {
     return anton::expected_value;
   }
 
-  anton::Expected<void, Error> run_sema(Context& ctx, ast::Node_List const ast)
+  anton::Expected<void, Error> run_sema(Context& ctx, ast::Node_List& ast)
   {
     // There is yet no support for struct member initializers, however, for
     // future considerations, validating structs and constants separately
@@ -1693,22 +1694,22 @@ namespace vush {
     }
 
     // Populate the symbol table with global symbols.
-    for(ast::Node* const decl: ast) {
-      switch(decl->node_kind) {
+    for(ast::Node& decl: ast) {
+      switch(decl.node_kind) {
       case ast::Node_Kind::variable: {
-        ast::Variable* const node = static_cast<ast::Variable*>(decl);
+        ast::Variable* const node = static_cast<ast::Variable*>(&decl);
         RETURN_ON_FAIL(add_symbol, ctx, symtable,
                        Symbol(node->identifier.value, node));
       } break;
 
       case ast::Node_Kind::decl_struct: {
-        ast::Decl_Struct* const node = static_cast<ast::Decl_Struct*>(decl);
+        ast::Decl_Struct* const node = static_cast<ast::Decl_Struct*>(&decl);
         RETURN_ON_FAIL(add_symbol, ctx, symtable,
                        Symbol(node->identifier.value, node));
       } break;
 
       case ast::Node_Kind::decl_buffer: {
-        auto const node = static_cast<ast::Decl_Buffer*>(decl);
+        auto const node = static_cast<ast::Decl_Buffer*>(&decl);
         ast::Identifier const pass = node->pass;
         Symbol const* ns = symtable.find_entry(pass.value);
         if(!ns) {
@@ -1728,7 +1729,7 @@ namespace vush {
       } break;
 
       case ast::Node_Kind::decl_function: {
-        auto const node = static_cast<ast::Decl_Function*>(decl);
+        auto const node = static_cast<ast::Decl_Function*>(&decl);
         auto const i = groups.find(node->identifier.value);
         if(i != groups.end()) {
           // Group exists, add our function to it.
@@ -1748,7 +1749,7 @@ namespace vush {
       } break;
 
       case ast::Node_Kind::decl_stage_function: {
-        auto const node = static_cast<ast::Decl_Stage_Function*>(decl);
+        auto const node = static_cast<ast::Decl_Stage_Function*>(&decl);
         ast::Identifier const pass = node->pass;
         // Create namespace if does not exist. We want to ensure that each stage
         // has its namespace's symbol table.
@@ -1767,30 +1768,30 @@ namespace vush {
     }
 
     // Run the analysis.
-    for(ast::Node* const node: ast) {
-      switch(node->node_kind) {
+    for(ast::Node& node: ast) {
+      switch(node.node_kind) {
       case ast::Node_Kind::variable:
         return {anton::expected_error,
-                err_unimplemented(ctx, node->source_info, __FILE__, __LINE__)};
+                err_unimplemented(ctx, node.source_info, __FILE__, __LINE__)};
         break;
 
       case ast::Node_Kind::decl_struct: {
-        auto const decl = static_cast<ast::Decl_Struct*>(node);
+        auto const decl = static_cast<ast::Decl_Struct*>(&node);
         RETURN_ON_FAIL(analyse_struct, ctx, symtable, decl);
       } break;
 
       case ast::Node_Kind::decl_buffer: {
-        auto const decl = static_cast<ast::Decl_Buffer*>(node);
+        auto const decl = static_cast<ast::Decl_Buffer*>(&node);
         RETURN_ON_FAIL(analyse_buffer, ctx, symtable, decl);
       } break;
 
       case ast::Node_Kind::decl_function: {
-        auto const decl = static_cast<ast::Decl_Function*>(node);
+        auto const decl = static_cast<ast::Decl_Function*>(&node);
         RETURN_ON_FAIL(analyse_function, ctx, symtable, decl);
       } break;
 
       case ast::Node_Kind::decl_stage_function: {
-        auto const decl = static_cast<ast::Decl_Stage_Function*>(node);
+        auto const decl = static_cast<ast::Decl_Stage_Function*>(&node);
         RETURN_ON_FAIL(analyse_stage_function, ctx, symtable, decl);
       } break;
 

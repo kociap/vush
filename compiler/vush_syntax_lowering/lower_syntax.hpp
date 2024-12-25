@@ -3,7 +3,7 @@
 #include <anton/expected.hpp>
 #include <anton/optional.hpp>
 
-#include <vush_ast/ast_fwd.hpp>
+#include <vush_ast/fwd.hpp>
 #include <vush_diagnostics/error.hpp>
 #include <vush_syntax/syntax.hpp>
 
@@ -12,6 +12,6 @@ namespace vush {
 
   // lower_syntax
   //
-  [[nodiscard]] anton::Expected<ast::Node_List, Error>
+  [[nodiscard]] anton::Expected<anton::IList<ast::Node>, Error>
   lower_syntax(Context& ctx, SNOT* syntax);
 } // namespace vush

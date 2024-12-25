@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vush_ast/ast.hpp>
-#include <vush_ast/ast_fwd.hpp>
+#include <vush_ast/fwd.hpp>
 #include <vush_core/source_info.hpp>
 #include <vush_diagnostics/error.hpp>
 

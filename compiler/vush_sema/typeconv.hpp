@@ -2,7 +2,7 @@
 
 #include <anton/optional.hpp>
 
-#include <vush_ast/ast_fwd.hpp>
+#include <vush_ast/fwd.hpp>
 
 namespace vush {
   [[nodiscard]] bool is_convertible(ast::Type const* to, ast::Type const* from);

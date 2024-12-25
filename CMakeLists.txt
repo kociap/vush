@@ -117,7 +117,7 @@ endif()
 FetchContent_Declare(
   anton_core
   GIT_REPOSITORY https://github.com/kociap/anton_core.git
-  GIT_TAG a37001d066b8ff3704e3d6ad3c19b03edbfdb8bb
+  GIT_TAG 0f6e3df3c598044d3ba769c928a33ef1fb6e7bb3
 )
 FetchContent_MakeAvailable(anton_core)
 
@@ -141,7 +141,9 @@ target_sources(vush
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast/ast.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast/ast.hpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast/ast_fwd.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast/fwd.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast/types.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast/types.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast/visitor.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast/visitor.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/compiler/vush_ast_lowering/lower_ast.cpp"

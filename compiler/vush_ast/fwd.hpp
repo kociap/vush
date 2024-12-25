@@ -1,7 +1,6 @@
 #pragma once
 
-#include <anton/array.hpp>
-#include <anton/slice.hpp>
+#include <anton/ilist.hpp>
 
 #include <vush_core/source_info.hpp>
 #include <vush_core/types.hpp>
@@ -58,6 +57,7 @@ namespace vush::ast {
 
   struct Switch_Arm;
 
+  struct Stmt;
   struct Stmt_Block;
   struct Stmt_Assignment;
   struct Stmt_If;
@@ -71,12 +71,13 @@ namespace vush::ast {
   struct Stmt_Discard;
   struct Stmt_Expression;
 
-  using Node_List = anton::Slice<Node* const>;
-  using Attr_List = anton::Slice<Attribute* const>;
-  using Expr_List = anton::Slice<Expr* const>;
-  using Fn_Parameter_List = anton::Slice<Fn_Parameter* const>;
-  using Initializer_List = anton::Slice<Initializer* const>;
-  using Struct_Field_List = anton::Slice<Struct_Field* const>;
-  using Buffer_Field_List = anton::Slice<Buffer_Field* const>;
-  using Variable_List = anton::Slice<Variable* const>;
+  using Node_List = anton::IList<Node>;
+  using Stmt_List = anton::IList<Stmt>;
+  using Attr_List = anton::IList<Attribute>;
+  using Expr_List = anton::IList<Expr>;
+  using Fn_Parameter_List = anton::IList<Fn_Parameter>;
+  using Initializer_List = anton::IList<Initializer>;
+  using Struct_Field_List = anton::IList<Struct_Field>;
+  using Buffer_Field_List = anton::IList<Buffer_Field>;
+  using Variable_List = anton::IList<Variable>;
 } // namespace vush::ast

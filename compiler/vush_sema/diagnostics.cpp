@@ -158,12 +158,12 @@ namespace vush {
 
   [[nodiscard]] static anton::String
   stringify_call_argument_types(Context const& ctx,
-                                ast::Expr_List const arguments)
+                                ast::Expr_List const& arguments)
   {
     anton::String result(ctx.allocator);
     result += "("_sv;
-    for(bool first = true; ast::Expr const* const argument: arguments) {
-      ast::Type const* const type = argument->evaluated_type;
+    for(bool first = true; ast::Expr const& argument: arguments) {
+      ast::Type const* const type = argument.evaluated_type;
       ANTON_ASSERT(type != nullptr, "argument does not have type");
       if(!first) {
         result += ", "_sv;

@@ -2,7 +2,7 @@
 
 #include <anton/optional.hpp>
 
-#include <vush_ast/ast_fwd.hpp>
+#include <vush_ast/fwd.hpp>
 #include <vush_core/types.hpp>
 #include <vush_diagnostics/error.hpp>
 

@@ -4,14 +4,18 @@ from builtin_functions import Param_Type, Array_Type, Return_Placeholder, return
 from builtin_type import Builtin_Type, stringify_builtin_type
 from builtin_operator import Builtin_Operator, builtin_operator_definitions
 
+
 def get_static_type_builtin_id(name):
     return f"builtin_{name}"
+
 
 def generate_alloc_identifier(value):
     return f"ast::Identifier{{\"{value}\"_sv, {{}}}}"
 
+
 def generate_alloc_lt_integer(size):
     return f"VUSH_ALLOCATE(ast::Lt_Integer, allocator, ast::lt_integer_i32, {size}, Source_Info{{}})"
+
 
 def generate_alloc_type(t):
     if isinstance(t, Array_Type):
@@ -21,29 +25,34 @@ def generate_alloc_type(t):
     else:
         raise TypeError("invalid type")
 
+
 def generate_alloc_parameter(parameter):
     return f"ALLOC_PARAM(\"{parameter[0]}\"_sv, {generate_alloc_type(parameter[1])})"
 
-def generate_alloc_parameter_array(parameters):
+
+def generate_parameter_list(parameters):
     parameter_list = [generate_alloc_parameter(p) for p in parameters]
-    return f"ALLOC_ARRAY_PARAM({','.join(parameter_list)})"
+    return f"construct_parameter_list({','.join(parameter_list)})"
+
 
 def generate_alloc_function(identifier, return_type, parameters):
     fn_return_type = generate_alloc_type(return_type)
-    fn_parameter_array = generate_alloc_parameter_array(parameters)
-    return f"ALLOC_FUNCTION(\"{identifier}\"_sv, {fn_return_type}, *{fn_parameter_array})"
+    fn_parameter_array = generate_parameter_list(parameters)
+    return f"ALLOC_FUNCTION(\"{identifier}\"_sv, {fn_return_type}, {fn_parameter_array})"
+
 
 def generate_functions(fn):
     def create_overload_generator(signature):
-        # The enumerations within Param_Type are tuples containing one element, therefore we have to
-        # unwrap them everywhere by accessing the first element.
+        # The enumerations within Param_Type are tuples containing one element,
+        # therefore we have to unwrap them everywhere by accessing the first
+        # element.
 
         # calculate_min_length
         # Calculate the minimum length of all Param_Type.
         #
         # Returns:
-        # The least length of all Param_Type, If no Param_Type is present in the signature, the
-        # length is 1.
+        # The least length of all Param_Type, If no Param_Type is present in
+        # the signature, the length is 1.
         #
         def calculate_min_length(signature):
             min_length = 99
@@ -76,6 +85,7 @@ def generate_functions(fn):
             return_parameter = next(g)
             yield generate_alloc_function(fn.identifier, return_parameter[1], g)
 
+
 def generate_operator(operator):
     if len(operator.signature) == 3:
         # Binary operator.
@@ -89,11 +99,23 @@ def generate_operator(operator):
     return_parameter = next(signature)
     return generate_alloc_function(operator.identifier, return_parameter[1], signature)
 
+
 def write_get_builtin_functions_declarations(file, functions):
     file.write(f"""\
-  anton::Flat_Hash_Map<anton::String_View, ast::Overload_Group*> get_builtin_functions_declarations(Allocator* const allocator) {{
-    // Overallocate to lower pressure.
-    anton::Flat_Hash_Map<anton::String_View, ast::Overload_Group*> groups(anton::reserve, {2 * len(functions)}, allocator);
+template<typename... T>
+[[nodiscard]] static anton::IList<ast::Fn_Parameter>
+construct_parameter_list(T... parameters)
+{{
+  anton::IList<ast::Fn_Parameter> list;
+  (..., list.insert_back(parameters));
+  return list;
+}}
+
+anton::Flat_Hash_Map<anton::String_View, ast::Overload_Group*>
+get_builtin_functions_declarations(Allocator* const allocator)
+{{
+  // Overallocate to lower pressure.
+  anton::Flat_Hash_Map<anton::String_View, ast::Overload_Group*> groups(anton::reserve, {2 * len(functions)}, allocator);
 """)
 
     for (name, group) in functions.items():
@@ -106,9 +128,10 @@ def write_get_builtin_functions_declarations(file, functions):
         file.write("}\n")
 
     file.write(f"""\
-    return groups;
-  }}
+  return groups;
+}}
 """)
+
 
 def write_get_builtin_types(file):
     file.write(f"""\
@@ -123,6 +146,7 @@ def write_get_builtin_types(file):
     file.write("""    }
   }
 """)
+
 
 def write_preamble_builtin_functions(file):
     file.write("""\
@@ -141,12 +165,13 @@ def write_preamble_builtin_functions(file):
 #define ALLOC_ARRAY_PARAM(...) VUSH_ALLOCATE(Array<ast::Fn_Parameter*>, allocator, allocator, anton::variadic_construct __VA_OPT__(,) __VA_ARGS__)
 #define ALLOC_FUNCTION(identifier, return_type, parameter_array) \\
     VUSH_ALLOCATE(ast::Decl_Function, allocator, ast::Attr_List{}, ast::Identifier{identifier, {}}, \\
-        parameter_array, return_type, ast::Node_List{}, true, Source_Info{})
+        parameter_array, return_type, {}, true, Source_Info{})
 
 namespace vush {
   using namespace anton::literals;
 
 """)
+
 
 def write_preamble_builtin_types(file):
     file.write("""\
@@ -162,10 +187,12 @@ def write_preamble_builtin_types(file):
 namespace vush {
 """)
 
+
 def write_epilogue(file):
     file.write("""\
 }
 """)
+
 
 def write_builtin_extensions(file):
     file.write("""\
@@ -241,6 +268,7 @@ return ir::make_instr_ext_call(allocator, id,
 }
 """)
 
+
 def main():
     # TODO: --directory,-d option with default ./compiler/vush_autogen/
     # TODO: --filename,-f option with default builtin_symbols_autogen.cpp
@@ -295,5 +323,6 @@ def main():
 
     process = subprocess.run(["clang-format", "-i"] + created_files)
     process.check_returncode()
+
 
 main()
