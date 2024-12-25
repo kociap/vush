@@ -249,7 +249,8 @@ namespace vush {
                                        Lexer_State const& end)
     {
       Token const& start_token = *start.current;
-      Token const& end_token = *(end.current - 1);
+      Token const& end_token =
+        *(start.current == end.current ? end.current : end.current - 1);
       return Source_Info{.source = _source,
                          .line = start_token.line,
                          .column = start_token.column,
