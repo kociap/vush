@@ -21,7 +21,6 @@ namespace vush::ir {
     e_fadd,
     e_fmul,
     e_fdiv,
-    e_fma,
     // Integer comparisons
     e_icmp_eq,
     e_icmp_neq,

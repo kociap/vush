@@ -869,9 +869,6 @@ namespace vush {
           ALU_BINARY_CASE(e_fcmp_lt, folt)
           ALU_BINARY_CASE(e_fcmp_ge, foge)
           ALU_BINARY_CASE(e_fcmp_le, fole)
-          // No FMA instruction in SPIR-V. There's FMA in the extended
-          // instructions for GLSL.
-          ALU_CASE_UNREACHABLE(e_fma)
         }
         builder.insert(instr);
         instr->block = label;

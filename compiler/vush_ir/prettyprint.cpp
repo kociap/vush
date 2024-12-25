@@ -305,8 +305,6 @@ namespace vush::ir {
       return "fmul"_sv;
     case ALU_Opcode::e_fdiv:
       return "fdiv"_sv;
-    case ALU_Opcode::e_fma:
-      return "fma"_sv;
     case ALU_Opcode::e_icmp_eq:
       return "icmp_eq"_sv;
     case ALU_Opcode::e_icmp_neq:
