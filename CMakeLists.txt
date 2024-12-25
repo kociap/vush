@@ -133,7 +133,7 @@ endif()
 FetchContent_Declare(
   anton_core
   GIT_REPOSITORY https://github.com/kociap/anton_core.git
-  GIT_TAG ac305fe8aa3814163c3b18d93e8b7582d6159bd4
+  GIT_TAG 043402b895783b7981bbdc58b78c4fca07f96451
 )
 FetchContent_MakeAvailable(anton_core)
 

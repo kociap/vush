@@ -109,6 +109,9 @@ namespace vush {
     RETURN_ON_FAIL(parse_result, parse_tokens, ctx, source, lex_result.value(),
                    parse_options);
 
+    // Clean up the lexing result which is not needed anymore.
+    lex_result.value().set_capacity(0);
+
     RETURN_ON_FAIL(expand_result, full_expand, ctx,
                    ANTON_MOV(parse_result.value()));
 
