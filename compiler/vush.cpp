@@ -64,12 +64,13 @@ namespace vush {
 
   anton::Expected<Build_Result, Error>
   compile_to_spirv(Configuration const& config, Allocator& allocator,
-                   Source_Callbacks callbacks)
+                   Allocator& bump_allocator, Source_Callbacks callbacks)
   {
     Source_Registry registry(&allocator);
 
     Context ctx{
-      .allocator = &allocator,
+      .raii_allocator = &allocator,
+      .bump_allocator = &bump_allocator,
       .source_registry = &registry,
       .diagnostics = config.diagnostics,
       .buffer_definition_cb = config.buffer_definition_cb,
@@ -126,14 +127,16 @@ namespace vush {
       bool changed = false;
       do {
         changed = false;
-        changed |= run_opt_ast_fold_swizzles(ctx.allocator, ast_nodes);
+        changed |= run_opt_ast_fold_swizzles(ctx.bump_allocator, ast_nodes);
       } while(changed);
     }
 
-    Array<ir::Module> ir_modules = lower_ast_to_ir(ctx.allocator, ast_nodes);
+    Array<ir::Module> ir_modules =
+      lower_ast_to_ir(ctx.bump_allocator, ast_nodes);
     Array<Shader> shaders{&allocator};
     for(ir::Module const& ir_module: ir_modules) {
-      spirv::Module spirv_module = lower_ir_module(ctx.allocator, &ir_module);
+      spirv::Module spirv_module =
+        lower_ir_module(ctx.bump_allocator, &ir_module);
       shaders.push_back(
         Shader{anton::String{ir_module.pass_identifier, &allocator},
                ir_module.stage, ANTON_MOV(spirv_module)});
@@ -202,6 +205,7 @@ namespace vush {
 
   anton::Expected<Build_Result, Error>
   compile_to_spirv(Configuration const& config, Allocator& allocator,
+                   Allocator& bump_allocator,
                    anton::String_View const current_working_directory,
                    anton::Slice<anton::String const> import_directories)
   {
@@ -215,6 +219,6 @@ namespace vush {
       .import_main_source_user_data = nullptr,
       .import_source_user_data = nullptr,
     };
-    return compile_to_spirv(config, allocator, callbacks);
+    return compile_to_spirv(config, allocator, bump_allocator, callbacks);
   }
 } // namespace vush

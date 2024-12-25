@@ -2297,11 +2297,12 @@ namespace vush {
                                              anton::Slice<Token const> tokens,
                                              Parse_Syntax_Options const options)
   {
-    Parser parser(ctx.allocator, source, Lexer(tokens.cbegin(), tokens.cend()));
+    Parser parser(ctx.bump_allocator, source,
+                  Lexer(tokens.cbegin(), tokens.cend()));
     anton::Expected<SNOT*, Error> ast = parser.build_syntax_tree();
     // if(ast && options.include_whitespace_and_comments) {
     //   Insert_Comments_And_Whitespace_Parameters p{
-    //     .allocator = ctx.allocator,
+    //     .allocator = ctx.bump_allocator,
     //     .source_path = source_path,
     //     .tl_node = ast.value(),
     //     .begin = tokens.cbegin(),

@@ -240,10 +240,14 @@ namespace vush {
 
   {
     anton::set_stdout_binary();
-    vush::Arena_Allocator allocator(262144);
 
     anton::String7_View const executable{argv[0]};
 
+    anton::Allocator allocator;
+    // 16KB is the optimal size. Larger blocks do not provide farther
+    // performance gains.
+    // TODO: Rework arena to wrap an allocator.
+    anton::Arena_Allocator arena_allocator(16384);
     vush::Array<anton::String> import_directories{&allocator};
 
     vush::Configuration config;
@@ -288,9 +292,10 @@ namespace vush {
 
     config.source_name = string7_to_string(arguments[0], &allocator);
 
-    anton::String_View const cwd = get_cwd(&allocator);
+    anton::String const cwd = get_cwd(&allocator);
     anton::Expected<vush::Build_Result, vush::Error> compilation_result =
-      vush::compile_to_spirv(config, allocator, cwd, import_directories);
+      vush::compile_to_spirv(config, allocator, arena_allocator, cwd,
+                             import_directories);
     if(!compilation_result) {
       anton::print(compilation_result.error().format(&allocator, true));
       return EXIT_FAILURE;

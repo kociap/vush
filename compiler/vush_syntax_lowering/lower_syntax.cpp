@@ -25,8 +25,9 @@ namespace vush {
   [[nodiscard]] static ast::Identifier transform_identifier(Context const& ctx,
                                                             SNOT const* token)
   {
-    anton::String const* const value = VUSH_ALLOCATE(
-      anton::String, ctx.allocator, token->get_value(), ctx.allocator);
+    anton::String const* const value =
+      VUSH_ALLOCATE(anton::String, ctx.bump_allocator, token->get_value(),
+                    ctx.bump_allocator);
     return ast::Identifier{*value, token->source_info};
   }
 
@@ -73,15 +74,15 @@ namespace vush {
     case ast::Lt_Integer_Kind::i32: {
       i32 const value = anton::str_to_i64(value_token->get_value(), base);
       return {anton::expected_value,
-              VUSH_ALLOCATE(ast::Lt_Integer, ctx.allocator, ast::lt_integer_i32,
-                            value, node->source_info)};
+              VUSH_ALLOCATE(ast::Lt_Integer, ctx.bump_allocator,
+                            ast::lt_integer_i32, value, node->source_info)};
     }
 
     case ast::Lt_Integer_Kind::u32: {
       u32 const value = anton::str_to_u64(value_token->get_value(), base);
       return {anton::expected_value,
-              VUSH_ALLOCATE(ast::Lt_Integer, ctx.allocator, ast::lt_integer_u32,
-                            value, node->source_info)};
+              VUSH_ALLOCATE(ast::Lt_Integer, ctx.bump_allocator,
+                            ast::lt_integer_u32, value, node->source_info)};
     }
     }
   }
@@ -102,14 +103,14 @@ namespace vush {
       if(enumified) {
         ast::Type_Builtin_Kind const kind = enumified.value();
         return {anton::expected_value,
-                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator,
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.bump_allocator,
                               node->source_info, qualifiers, kind)};
       } else {
         return {anton::expected_value,
                 VUSH_ALLOCATE(
-                  ast::Type_Struct, ctx.allocator, node->source_info,
+                  ast::Type_Struct, ctx.bump_allocator, node->source_info,
                   qualifiers,
-                  anton::String(value_token->get_value(), ctx.allocator))};
+                  anton::String(value_token->get_value(), ctx.bump_allocator))};
       }
     } break;
 
@@ -128,8 +129,8 @@ namespace vush {
       }
 
       return {anton::expected_value,
-              VUSH_ALLOCATE(ast::Type_Array, ctx.allocator, node->source_info,
-                            qualifiers, base.value(), size)};
+              VUSH_ALLOCATE(ast::Type_Array, ctx.bump_allocator,
+                            node->source_info, qualifiers, base.value(), size)};
     } break;
 
     default:
@@ -207,17 +208,18 @@ namespace vush {
       }
 
       return {anton::expected_value,
-              VUSH_ALLOCATE(ast::Expr_If, ctx.allocator, condition.value(),
+              VUSH_ALLOCATE(ast::Expr_If, ctx.bump_allocator, condition.value(),
                             then_branch.value(), else_branch.value(),
                             node->source_info)};
     } break;
 
     case SNOT_Kind::expr_identifier: {
       SNOT const* const value_token = get_expr_identifier_value(node);
-      anton::String const* const value = VUSH_ALLOCATE(
-        anton::String, ctx.allocator, value_token->get_value(), ctx.allocator);
+      anton::String const* const value =
+        VUSH_ALLOCATE(anton::String, ctx.bump_allocator,
+                      value_token->get_value(), ctx.bump_allocator);
       return {anton::expected_value,
-              VUSH_ALLOCATE(ast::Expr_Identifier, ctx.allocator, *value,
+              VUSH_ALLOCATE(ast::Expr_Identifier, ctx.bump_allocator, *value,
                             node->source_info)};
     } break;
 
@@ -236,7 +238,7 @@ namespace vush {
       arguments.insert_back(lhs.value());
       arguments.insert_back(rhs.value());
       return {anton::expected_value,
-              VUSH_ALLOCATE(ast::Expr_Call, ctx.allocator, identifier,
+              VUSH_ALLOCATE(ast::Expr_Call, ctx.bump_allocator, identifier,
                             ANTON_MOV(arguments), node->source_info)};
     } break;
 
@@ -251,7 +253,7 @@ namespace vush {
       ast::Expr_List arguments;
       arguments.insert_back(expression.value());
       return {anton::expected_value,
-              VUSH_ALLOCATE(ast::Expr_Call, ctx.allocator, identifier,
+              VUSH_ALLOCATE(ast::Expr_Call, ctx.bump_allocator, identifier,
                             ANTON_MOV(arguments), node->source_info)};
     } break;
 
@@ -262,8 +264,8 @@ namespace vush {
       ast::Identifier const identifier =
         transform_identifier(ctx, identifier_token);
       return {anton::expected_value,
-              VUSH_ALLOCATE(ast::Expr_Field, ctx.allocator, expression.value(),
-                            identifier, node->source_info)};
+              VUSH_ALLOCATE(ast::Expr_Field, ctx.bump_allocator,
+                            expression.value(), identifier, node->source_info)};
     } break;
 
     case SNOT_Kind::expr_index: {
@@ -272,8 +274,9 @@ namespace vush {
       SNOT const* const index_node = get_expr_index_index(node);
       RETURN_ON_FAIL(index, transform_expr, ctx, index_node);
       return {anton::expected_value,
-              VUSH_ALLOCATE(ast::Expr_Index, ctx.allocator, expression.value(),
-                            index.value(), node->source_info)};
+              VUSH_ALLOCATE(ast::Expr_Index, ctx.bump_allocator,
+                            expression.value(), index.value(),
+                            node->source_info)};
     } break;
 
     case SNOT_Kind::expr_parentheses: {
@@ -302,7 +305,7 @@ namespace vush {
             get_field_initializer_expression(node);
           RETURN_ON_FAIL(expression, transform_expr, ctx, expression_node);
           return {anton::expected_value,
-                  VUSH_ALLOCATE(ast::Field_Initializer, ctx.allocator,
+                  VUSH_ALLOCATE(ast::Field_Initializer, ctx.bump_allocator,
                                 identifier, expression.value(),
                                 node->source_info)};
         } break;
@@ -314,7 +317,7 @@ namespace vush {
             get_index_initializer_expression(node);
           RETURN_ON_FAIL(expression, transform_expr, ctx, expression_node);
           return {anton::expected_value,
-                  VUSH_ALLOCATE(ast::Index_Initializer, ctx.allocator,
+                  VUSH_ALLOCATE(ast::Index_Initializer, ctx.bump_allocator,
                                 index.value(), expression.value(),
                                 node->source_info)};
         } break;
@@ -324,7 +327,7 @@ namespace vush {
             get_basic_initializer_expression(node);
           RETURN_ON_FAIL(expression, transform_expr, ctx, expression_node);
           return {anton::expected_value,
-                  VUSH_ALLOCATE(ast::Basic_Initializer, ctx.allocator,
+                  VUSH_ALLOCATE(ast::Basic_Initializer, ctx.bump_allocator,
                                 expression.value(), node->source_info)};
         } break;
 
@@ -352,7 +355,7 @@ namespace vush {
       }
 
       return {anton::expected_value,
-              VUSH_ALLOCATE(ast::Expr_Init, ctx.allocator, type.value(),
+              VUSH_ALLOCATE(ast::Expr_Init, ctx.bump_allocator, type.value(),
                             ANTON_MOV(initializers), node->source_info)};
     } break;
 
@@ -374,15 +377,16 @@ namespace vush {
       }
 
       return {anton::expected_value,
-              VUSH_ALLOCATE(ast::Expr_Call, ctx.allocator, identifier,
+              VUSH_ALLOCATE(ast::Expr_Call, ctx.bump_allocator, identifier,
                             ANTON_MOV(arguments), node->source_info)};
     } break;
 
     case SNOT_Kind::expr_lt_bool: {
       SNOT const* const value_token = get_expr_lt_bool_value(node);
       bool const value = value_token->get_value() == "true"_sv;
-      return {anton::expected_value, VUSH_ALLOCATE(ast::Lt_Bool, ctx.allocator,
-                                                   value, node->source_info)};
+      return {anton::expected_value,
+              VUSH_ALLOCATE(ast::Lt_Bool, ctx.bump_allocator, value,
+                            node->source_info)};
     } break;
 
     case SNOT_Kind::expr_lt_string: {
@@ -404,16 +408,16 @@ namespace vush {
         }
 
         f64 const value = anton::str_to_f64(
-          anton::String(value_token->get_value(), ctx.allocator));
+          anton::String(value_token->get_value(), ctx.bump_allocator));
         return {anton::expected_value,
-                VUSH_ALLOCATE(ast::Lt_Float, ctx.allocator, ast::lt_float_f64,
-                              value, node->source_info)};
+                VUSH_ALLOCATE(ast::Lt_Float, ctx.bump_allocator,
+                              ast::lt_float_f64, value, node->source_info)};
       } else {
         f32 const value = anton::str_to_f32(
-          anton::String(value_token->get_value(), ctx.allocator));
+          anton::String(value_token->get_value(), ctx.bump_allocator));
         return {anton::expected_value,
-                VUSH_ALLOCATE(ast::Lt_Float, ctx.allocator, ast::lt_float_f32,
-                              value, node->source_info)};
+                VUSH_ALLOCATE(ast::Lt_Float, ctx.bump_allocator,
+                              ast::lt_float_f32, value, node->source_info)};
       }
     } break;
 
@@ -423,9 +427,9 @@ namespace vush {
     } break;
 
     case SNOT_Kind::expr_default: {
-      return {
-        anton::expected_value,
-        VUSH_ALLOCATE(ast::Expr_Default, ctx.allocator, node->source_info)};
+      return {anton::expected_value,
+              VUSH_ALLOCATE(ast::Expr_Default, ctx.bump_allocator,
+                            node->source_info)};
     } break;
 
     default:
@@ -504,14 +508,14 @@ namespace vush {
             RETURN_ON_FAIL(value_result, transform_expr, ctx, value_node);
             value = value_result.value();
           }
-          parameters.insert_back(
-            VUSH_ALLOCATE(ast::Attribute_Parameter, ctx.allocator, key, value));
+          parameters.insert_back(VUSH_ALLOCATE(ast::Attribute_Parameter,
+                                               ctx.bump_allocator, key, value));
         }
       }
 
       ast::Identifier const identifier =
         transform_identifier(ctx, get_attribute_identifier(attribute_node));
-      attributes.insert_back(VUSH_ALLOCATE(ast::Attribute, ctx.allocator,
+      attributes.insert_back(VUSH_ALLOCATE(ast::Attribute, ctx.bump_allocator,
                                            identifier, ANTON_MOV(parameters),
                                            attribute_node->source_info));
     }
@@ -564,7 +568,7 @@ namespace vush {
       initializer = result.value();
     }
     return {anton::expected_value,
-            VUSH_ALLOCATE(ast::Variable, ctx.allocator,
+            VUSH_ALLOCATE(ast::Variable, ctx.bump_allocator,
                           ANTON_MOV(attribute_list.value()), type.value(),
                           identifier, initializer, node->source_info)};
   }
@@ -581,7 +585,7 @@ namespace vush {
     case SNOT_Kind::stmt_block: {
       RETURN_ON_FAIL(result, transform_stmt_block_child_stmts, ctx, node);
       return {anton::expected_value,
-              VUSH_ALLOCATE(ast::Stmt_Block, ctx.allocator,
+              VUSH_ALLOCATE(ast::Stmt_Block, ctx.bump_allocator,
                             ANTON_MOV(result.value()), node->source_info)};
     } break;
 
@@ -592,7 +596,7 @@ namespace vush {
       ast::Assignment_Kind const kind =
         map_token_to_assignment_kind(operator_token->kind);
       return {anton::expected_value,
-              VUSH_ALLOCATE(ast::Stmt_Assignment, ctx.allocator, kind,
+              VUSH_ALLOCATE(ast::Stmt_Assignment, ctx.bump_allocator, kind,
                             lhs.value(), rhs.value(), node->source_info)};
     } break;
 
@@ -614,7 +618,7 @@ namespace vush {
       }
 
       return {anton::expected_value,
-              VUSH_ALLOCATE(ast::Stmt_If, ctx.allocator, condition.value(),
+              VUSH_ALLOCATE(ast::Stmt_If, ctx.bump_allocator, condition.value(),
                             ANTON_MOV(then_branch.value()),
                             ANTON_MOV(else_branch), node->source_info)};
     } break;
@@ -644,15 +648,16 @@ namespace vush {
           RETURN_ON_FAIL(statements, transform_stmt_block_child_stmts, ctx,
                          get_switch_arm_body(arm_node));
           ast::Switch_Arm* const arm =
-            VUSH_ALLOCATE(ast::Switch_Arm, ctx.allocator, ANTON_MOV(labels),
-                          ANTON_MOV(statements.value()));
+            VUSH_ALLOCATE(ast::Switch_Arm, ctx.bump_allocator,
+                          ANTON_MOV(labels), ANTON_MOV(statements.value()));
           arm_list.insert_back(arm);
         }
       }
 
       return {anton::expected_value,
-              VUSH_ALLOCATE(ast::Stmt_Switch, ctx.allocator, expression.value(),
-                            ANTON_MOV(arm_list), node->source_info)};
+              VUSH_ALLOCATE(ast::Stmt_Switch, ctx.bump_allocator,
+                            expression.value(), ANTON_MOV(arm_list),
+                            node->source_info)};
     } break;
 
     case SNOT_Kind::stmt_for: {
@@ -678,7 +683,7 @@ namespace vush {
                      get_stmt_for_body(node));
 
       return {anton::expected_value,
-              VUSH_ALLOCATE(ast::Stmt_For, ctx.allocator, condition,
+              VUSH_ALLOCATE(ast::Stmt_For, ctx.bump_allocator, condition,
                             ANTON_MOV(declarations), ANTON_MOV(actions),
                             ANTON_MOV(statements.value()), node->source_info)};
     } break;
@@ -689,8 +694,9 @@ namespace vush {
       RETURN_ON_FAIL(statements, transform_stmt_block_child_stmts, ctx,
                      get_stmt_while_statements(node));
       return {anton::expected_value,
-              VUSH_ALLOCATE(ast::Stmt_While, ctx.allocator, condition.value(),
-                            ANTON_MOV(statements.value()), node->source_info)};
+              VUSH_ALLOCATE(ast::Stmt_While, ctx.bump_allocator,
+                            condition.value(), ANTON_MOV(statements.value()),
+                            node->source_info)};
     } break;
 
     case SNOT_Kind::stmt_do_while: {
@@ -699,7 +705,7 @@ namespace vush {
       RETURN_ON_FAIL(condition, transform_expr, ctx,
                      get_stmt_do_while_condition(node));
       return {anton::expected_value,
-              VUSH_ALLOCATE(ast::Stmt_Do_While, ctx.allocator,
+              VUSH_ALLOCATE(ast::Stmt_Do_While, ctx.bump_allocator,
                             condition.value(), ANTON_MOV(statements.value()),
                             node->source_info)};
     } break;
@@ -711,32 +717,33 @@ namespace vush {
         expression = result.value();
       }
       return {anton::expected_value,
-              VUSH_ALLOCATE(ast::Stmt_Return, ctx.allocator, expression,
+              VUSH_ALLOCATE(ast::Stmt_Return, ctx.bump_allocator, expression,
                             node->source_info)};
     } break;
 
     case SNOT_Kind::stmt_break: {
-      return {anton::expected_value,
-              VUSH_ALLOCATE(ast::Stmt_Break, ctx.allocator, node->source_info)};
+      return {
+        anton::expected_value,
+        VUSH_ALLOCATE(ast::Stmt_Break, ctx.bump_allocator, node->source_info)};
     } break;
 
     case SNOT_Kind::stmt_continue: {
-      return {
-        anton::expected_value,
-        VUSH_ALLOCATE(ast::Stmt_Continue, ctx.allocator, node->source_info)};
+      return {anton::expected_value,
+              VUSH_ALLOCATE(ast::Stmt_Continue, ctx.bump_allocator,
+                            node->source_info)};
     } break;
 
     case SNOT_Kind::stmt_discard: {
-      return {
-        anton::expected_value,
-        VUSH_ALLOCATE(ast::Stmt_Discard, ctx.allocator, node->source_info)};
+      return {anton::expected_value,
+              VUSH_ALLOCATE(ast::Stmt_Discard, ctx.bump_allocator,
+                            node->source_info)};
     } break;
 
     case SNOT_Kind::stmt_expression: {
       RETURN_ON_FAIL(expression, transform_expr, ctx,
                      get_stmt_expression_expression(node));
       return {anton::expected_value,
-              VUSH_ALLOCATE(ast::Stmt_Expression, ctx.allocator,
+              VUSH_ALLOCATE(ast::Stmt_Expression, ctx.bump_allocator,
                             expression.value(), node->source_info)};
     } break;
 
@@ -776,7 +783,7 @@ namespace vush {
         initializer = result.value();
       }
 
-      members.insert_back(VUSH_ALLOCATE(ast::Struct_Field, ctx.allocator,
+      members.insert_back(VUSH_ALLOCATE(ast::Struct_Field, ctx.bump_allocator,
                                         ANTON_MOV(attribute_list.value()),
                                         identifier, type.value(), initializer));
     }
@@ -784,7 +791,7 @@ namespace vush {
     ast::Identifier const identifier =
       transform_identifier(ctx, get_decl_struct_identifier(node));
     return {anton::expected_value,
-            VUSH_ALLOCATE(ast::Decl_Struct, ctx.allocator,
+            VUSH_ALLOCATE(ast::Decl_Struct, ctx.bump_allocator,
                           ANTON_MOV(attribute_list.value()), identifier,
                           ANTON_MOV(members), node->source_info)};
   }
@@ -810,7 +817,7 @@ namespace vush {
         transform_identifier(ctx, get_buffer_field_identifier(field_node));
       RETURN_ON_FAIL(type, transform_type, ctx,
                      get_buffer_field_type(field_node));
-      fields.insert_back(VUSH_ALLOCATE(ast::Buffer_Field, ctx.allocator,
+      fields.insert_back(VUSH_ALLOCATE(ast::Buffer_Field, ctx.bump_allocator,
                                        ANTON_MOV(attribute_list.value()),
                                        identifier, type.value()));
     }
@@ -820,7 +827,7 @@ namespace vush {
     ast::Identifier const pass =
       transform_identifier(ctx, get_decl_buffer_pass(node));
     return {anton::expected_value,
-            VUSH_ALLOCATE(ast::Decl_Buffer, ctx.allocator,
+            VUSH_ALLOCATE(ast::Decl_Buffer, ctx.bump_allocator,
                           ANTON_MOV(attribute_list.value()), pass, identifier,
                           ANTON_MOV(fields), node->source_info)};
   }
@@ -839,7 +846,7 @@ namespace vush {
     }
 
     return {anton::expected_value,
-            VUSH_ALLOCATE(ast::Fn_Parameter, ctx.allocator,
+            VUSH_ALLOCATE(ast::Fn_Parameter, ctx.bump_allocator,
                           ANTON_MOV(attribute_list.value()), identifier,
                           type.value(), source, node->source_info)};
   }
@@ -874,7 +881,7 @@ namespace vush {
     RETURN_ON_FAIL(body, transform_stmt_block_child_stmts, ctx,
                    get_decl_function_body(node));
     return {anton::expected_value,
-            VUSH_ALLOCATE(ast::Decl_Function, ctx.allocator,
+            VUSH_ALLOCATE(ast::Decl_Function, ctx.bump_allocator,
                           ANTON_MOV(attribute_list.value()), identifier,
                           ANTON_MOV(parameters.value()), return_type.value(),
                           ANTON_MOV(body.value()), false, node->source_info)};
@@ -908,7 +915,7 @@ namespace vush {
     RETURN_ON_FAIL(body, transform_stmt_block_child_stmts, ctx,
                    get_decl_stage_function_body(node));
     return {anton::expected_value,
-            VUSH_ALLOCATE(ast::Decl_Stage_Function, ctx.allocator,
+            VUSH_ALLOCATE(ast::Decl_Stage_Function, ctx.bump_allocator,
                           ANTON_MOV(attribute_list.value()), pass, stage,
                           ANTON_MOV(parameters.value()),
                           ANTON_MOV(body.value()), node->source_info)};

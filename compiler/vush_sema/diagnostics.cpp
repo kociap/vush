@@ -11,15 +11,15 @@ namespace vush {
 
   Error err_undefined_symbol(Context const& ctx, Source_Info const& symbol)
   {
-    Error error = error_from_source(ctx.allocator, symbol);
+    Error error = error_from_source(ctx.bump_allocator, symbol);
     anton::String_View const source =
       ctx.source_registry->find_source(symbol.source->path)->data;
     anton::String_View const name = get_source_bit(source, symbol);
-    error.diagnostic =
-      anton::format(ctx.allocator, u8"error: undefined symbol '{}'"_sv, name);
+    error.diagnostic = anton::format(ctx.bump_allocator,
+                                     u8"error: undefined symbol '{}'"_sv, name);
     print_source_snippet(ctx, error.extended_diagnostic, source, symbol);
-    error.extended_diagnostic +=
-      anton::format(ctx.allocator, u8" '{}' used, but not defined"_sv, name);
+    error.extended_diagnostic += anton::format(
+      ctx.bump_allocator, u8" '{}' used, but not defined"_sv, name);
     return error;
   }
 
@@ -27,23 +27,24 @@ namespace vush {
                                 Source_Info const& old_symbol,
                                 Source_Info const& new_symbol)
   {
-    Error error = error_from_source(ctx.allocator, new_symbol);
+    Error error = error_from_source(ctx.bump_allocator, new_symbol);
     anton::String_View const new_source =
       ctx.source_registry->find_source(new_symbol.source->path)->data;
     anton::String_View const old_source =
       ctx.source_registry->find_source(old_symbol.source->path)->data;
     anton::String_View const name = get_source_bit(new_source, new_symbol);
-    error.diagnostic = anton::format(
-      ctx.allocator, u8"error: symbol '{}' is defined multiple times"_sv, name);
+    error.diagnostic =
+      anton::format(ctx.bump_allocator,
+                    u8"error: symbol '{}' is defined multiple times"_sv, name);
     error.extended_diagnostic =
-      format_diagnostic_location(ctx.allocator, old_symbol);
+      format_diagnostic_location(ctx.bump_allocator, old_symbol);
     error.extended_diagnostic += '\n';
     print_source_snippet(ctx, error.extended_diagnostic, old_source,
                          old_symbol);
+    error.extended_diagnostic += anton::format(
+      ctx.bump_allocator, u8" definition of '{}' here\n"_sv, name);
     error.extended_diagnostic +=
-      anton::format(ctx.allocator, u8" definition of '{}' here\n"_sv, name);
-    error.extended_diagnostic +=
-      format_diagnostic_location(ctx.allocator, new_symbol);
+      format_diagnostic_location(ctx.bump_allocator, new_symbol);
     error.extended_diagnostic += '\n';
     print_source_snippet(ctx, error.extended_diagnostic, new_source,
                          new_symbol);
@@ -55,7 +56,7 @@ namespace vush {
     Context const& ctx, ast::Initializer const* const initializer)
   {
     Source_Info const source_info = initializer->source_info;
-    Error error = error_from_source(ctx.allocator, source_info);
+    Error error = error_from_source(ctx.bump_allocator, source_info);
     anton::String_View const source =
       ctx.source_registry->find_source(source_info.source->path)->data;
     error.diagnostic =
@@ -70,7 +71,7 @@ namespace vush {
     Context const& ctx, ast::Initializer const* const initializer)
   {
     Source_Info const source_info = initializer->source_info;
-    Error error = error_from_source(ctx.allocator, source_info);
+    Error error = error_from_source(ctx.bump_allocator, source_info);
     anton::String_View const source =
       ctx.source_registry->find_source(source_info.source->path)->data;
     error.diagnostic =
@@ -85,7 +86,7 @@ namespace vush {
     Context const& ctx, ast::Initializer const* const initializer)
   {
     Source_Info const source_info = initializer->source_info;
-    Error error = error_from_source(ctx.allocator, source_info);
+    Error error = error_from_source(ctx.bump_allocator, source_info);
     anton::String_View const source =
       ctx.source_registry->find_source(source_info.source->path)->data;
     error.diagnostic = "error: initializer is not field initializer"_sv;
@@ -99,7 +100,7 @@ namespace vush {
                                         ast::Variable const* variable)
   {
     Source_Info const source_info = variable->source_info;
-    Error error = error_from_source(ctx.allocator, source_info);
+    Error error = error_from_source(ctx.bump_allocator, source_info);
     anton::String_View const source =
       ctx.source_registry->find_source(source_info.source->path)->data;
     error.diagnostic = "error: variable type must not be unsized array"_sv;
@@ -111,7 +112,7 @@ namespace vush {
                                  ast::Variable const* variable)
   {
     Source_Info const source_info = variable->source_info;
-    Error error = error_from_source(ctx.allocator, source_info);
+    Error error = error_from_source(ctx.bump_allocator, source_info);
     anton::String_View const source =
       ctx.source_registry->find_source(source_info.source->path)->data;
     error.diagnostic = "error: variable type must not be opaque"_sv;
@@ -123,7 +124,7 @@ namespace vush {
                                        ast::Stmt_Assignment const* assignment)
   {
     Source_Info const source_info = assignment->source_info;
-    Error error = error_from_source(ctx.allocator, source_info);
+    Error error = error_from_source(ctx.bump_allocator, source_info);
     error.diagnostic =
       "error: the left hand side of the assignment has an opaque type";
     // TODO: Explain why the type is opaque.
@@ -135,7 +136,7 @@ namespace vush {
   {
     Source_Info const source_info = assignment->source_info;
     Source_Info const lhs_source_info = assignment->lhs->source_info;
-    Error error = error_from_source(ctx.allocator, source_info);
+    Error error = error_from_source(ctx.bump_allocator, source_info);
     error.diagnostic = "error: cannot assign to an immutable location"_sv;
     anton::String_View const source =
       ctx.source_registry->find_source(source_info.source->path)->data;
@@ -149,7 +150,7 @@ namespace vush {
     Context const& ctx, ast::Stmt_Assignment const* assignment)
   {
     Source_Info const source_info = assignment->source_info;
-    Error error = error_from_source(ctx.allocator, source_info);
+    Error error = error_from_source(ctx.bump_allocator, source_info);
     error.diagnostic =
       "error: arithmetic assignment to non-arithmetic type is not allowed";
     // TODO: Include the token of the assignment in the short diagnostic.
@@ -160,7 +161,7 @@ namespace vush {
   stringify_call_argument_types(Context const& ctx,
                                 ast::Expr_List const& arguments)
   {
-    anton::String result(ctx.allocator);
+    anton::String result(ctx.bump_allocator);
     result += "("_sv;
     for(bool first = true; ast::Expr const& argument: arguments) {
       ast::Type const* const type = argument.evaluated_type;
@@ -179,7 +180,7 @@ namespace vush {
     Context const& ctx, ast::Expr_Call const* const call,
     anton::Slice<ast::Decl_Function const* const> const overloads)
   {
-    Error error = error_from_source(ctx.allocator, call->source_info);
+    Error error = error_from_source(ctx.bump_allocator, call->source_info);
     anton::String arguments =
       stringify_call_argument_types(ctx, call->arguments);
     bool const is_operator =
@@ -205,8 +206,9 @@ namespace vush {
         error.extended_diagnostic += '\n';
         anton::String_View const source = result->data;
         Source_Info const& fn_info = fn->identifier.source_info;
-        error.extended_diagnostic += format_diagnostic_location(
-          ctx.allocator, fn_info.source->path, fn_info.line, fn_info.column);
+        error.extended_diagnostic +=
+          format_diagnostic_location(ctx.bump_allocator, fn_info.source->path,
+                                     fn_info.line, fn_info.column);
         error.extended_diagnostic +=
           "note: function is not a viable candidate\n"_sv;
         print_source_snippet(ctx, error.extended_diagnostic, source,
@@ -221,15 +223,15 @@ namespace vush {
         ANTON_ASSERT(fn->builtin, "non-builtin function has no source");
         error.extended_diagnostic += '\n';
         error.extended_diagnostic +=
-          format_diagnostic_location(ctx.allocator, "<vush>", 1, 1);
+          format_diagnostic_location(ctx.bump_allocator, "<vush>", 1, 1);
         error.extended_diagnostic +=
           "note: builtin function is not a viable candidate\n"_sv;
-        print_left_margin(ctx.allocator, error.extended_diagnostic, 0);
+        print_left_margin(ctx.bump_allocator, error.extended_diagnostic, 0);
         error.extended_diagnostic += '\n';
-        print_left_margin(ctx.allocator, error.extended_diagnostic, 0);
+        print_left_margin(ctx.bump_allocator, error.extended_diagnostic, 0);
         error.extended_diagnostic += stringify_builtin_function(ctx, fn);
         error.extended_diagnostic += '\n';
-        print_left_margin(ctx.allocator, error.extended_diagnostic, 0);
+        print_left_margin(ctx.bump_allocator, error.extended_diagnostic, 0);
       }
     }
     return error;
@@ -239,7 +241,7 @@ namespace vush {
     Context const& ctx, ast::Expr_Call const* const call,
     anton::Slice<ast::Decl_Function const* const> const candidates)
   {
-    Error error = error_from_source(ctx.allocator, call->source_info);
+    Error error = error_from_source(ctx.bump_allocator, call->source_info);
     anton::String arguments =
       stringify_call_argument_types(ctx, call->arguments);
     error.diagnostic =
@@ -257,23 +259,24 @@ namespace vush {
         ANTON_ASSERT(!fn->builtin, "builtin function has source");
         anton::String_View const source = result->data;
         Source_Info const& fn_info = fn->identifier.source_info;
-        error.extended_diagnostic += format_diagnostic_location(
-          ctx.allocator, fn_info.source->path, fn_info.line, fn_info.column);
+        error.extended_diagnostic +=
+          format_diagnostic_location(ctx.bump_allocator, fn_info.source->path,
+                                     fn_info.line, fn_info.column);
         error.extended_diagnostic += "note: viable candidate function\n"_sv;
         print_source_snippet(ctx, error.extended_diagnostic, source,
                              fn->identifier.source_info);
       } else {
         ANTON_ASSERT(fn->builtin, "non-builtin function has no source");
         error.extended_diagnostic +=
-          format_diagnostic_location(ctx.allocator, "<vush>", 1, 1);
+          format_diagnostic_location(ctx.bump_allocator, "<vush>", 1, 1);
         error.extended_diagnostic +=
           "note: viable candidate builtin function\n"_sv;
-        print_left_margin(ctx.allocator, error.extended_diagnostic, 0);
+        print_left_margin(ctx.bump_allocator, error.extended_diagnostic, 0);
         error.extended_diagnostic += '\n';
-        print_left_margin(ctx.allocator, error.extended_diagnostic, 0);
+        print_left_margin(ctx.bump_allocator, error.extended_diagnostic, 0);
         error.extended_diagnostic += stringify_builtin_function(ctx, fn);
         error.extended_diagnostic += '\n';
-        print_left_margin(ctx.allocator, error.extended_diagnostic, 0);
+        print_left_margin(ctx.bump_allocator, error.extended_diagnostic, 0);
       }
     }
     return error;
@@ -282,7 +285,7 @@ namespace vush {
   Error err_cannot_convert_type(Context const& ctx, Source_Info const& where,
                                 ast::Type const* to, ast::Type const* from)
   {
-    Error error = error_from_source(ctx.allocator, where);
+    Error error = error_from_source(ctx.bump_allocator, where);
     anton::String_View const source =
       ctx.source_registry->find_source(where.source->path)->data;
     anton::String from_string = stringify_type(ctx, from);
@@ -300,7 +303,8 @@ namespace vush {
                                    ast::Type const* const to_type,
                                    ast::Stmt_Assignment const* const assignment)
   {
-    Error error = error_from_source(ctx.allocator, assignment->source_info);
+    Error error =
+      error_from_source(ctx.bump_allocator, assignment->source_info);
     anton::String from_string = stringify_type(ctx, from_type);
     anton::String to_string = stringify_type(ctx, to_type);
     error.diagnostic =
@@ -320,7 +324,7 @@ namespace vush {
                                    ast::Identifier const& field)
   {
     Source_Info const source_info = field.source_info;
-    Error error = error_from_source(ctx.allocator, source_info);
+    Error error = error_from_source(ctx.bump_allocator, source_info);
     anton::String_View const source =
       ctx.source_registry->find_source(source_info.source->path)->data;
     anton::String_View const field_code = get_source_bit(source, source_info);
@@ -337,7 +341,7 @@ namespace vush {
                                     ast::Identifier const& field)
   {
     Source_Info const source_info = field.source_info;
-    Error error = error_from_source(ctx.allocator, source_info);
+    Error error = error_from_source(ctx.bump_allocator, source_info);
     anton::String_View const source =
       ctx.source_registry->find_source(source_info.source->path)->data;
     anton::String_View const field_code = get_source_bit(source, source_info);
@@ -352,7 +356,7 @@ namespace vush {
                                            ast::Expr_Field const* const expr)
   {
     Source_Info const field_source_info = expr->field.source_info;
-    Error error = error_from_source(ctx.allocator, field_source_info);
+    Error error = error_from_source(ctx.bump_allocator, field_source_info);
     error.diagnostic =
       "error: lvalue vector swizzle longer than the vector type"_sv;
     return error;
@@ -362,7 +366,7 @@ namespace vush {
     Context const& ctx, ast::Expr_Field const* const expr)
   {
     Source_Info const field_source_info = expr->field.source_info;
-    Error error = error_from_source(ctx.allocator, field_source_info);
+    Error error = error_from_source(ctx.bump_allocator, field_source_info);
     error.diagnostic =
       "error: lvalue vector swizzle contains duplicate components"_sv;
     return error;
@@ -421,7 +425,7 @@ namespace vush {
   {
     Source_Info const field_source_info = field_identifier.source_info;
     Source_Info const type_source_info = type->source_info;
-    Error error = error_from_source(ctx.allocator, field_source_info);
+    Error error = error_from_source(ctx.bump_allocator, field_source_info);
     anton::String_View const type_source =
       ctx.source_registry->find_source(type_source_info.source->path)->data;
     anton::String_View const type_value =

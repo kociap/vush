@@ -126,7 +126,7 @@ namespace vush {
   //
   anton::Expected<Build_Result, Error>
   compile_to_spirv(Configuration const& config, Allocator& allocator,
-                   Source_Callbacks callbacks);
+                   Allocator& bump_allocator, Source_Callbacks callbacks);
 
   // compile_to_spirv
   //
@@ -139,6 +139,7 @@ namespace vush {
   //
   anton::Expected<Build_Result, Error>
   compile_to_spirv(Configuration const& config, Allocator& allocator,
+                   Allocator& bump_allocator,
                    anton::String_View current_working_directory,
                    anton::Slice<anton::String const> import_directories);
 } // namespace vush

@@ -210,7 +210,7 @@ namespace vush {
   select_overload(Context& ctx, ast::Expr_Call* const call,
                   ast::Overload_Group const* const group)
   {
-    Array<ast::Decl_Function*> candidates(ctx.allocator);
+    Array<ast::Decl_Function*> candidates(ctx.bump_allocator);
     i64 best_score = anton::limits::maximum_i64;
     for(ast::Decl_Function* const fn: group->overloads) {
       if(fn->parameters.size() != call->arguments.size()) {
@@ -221,7 +221,7 @@ namespace vush {
       i64 overload_rank = 0;
       for(auto const [argument, parameter]:
           anton::zip(call->arguments, fn->parameters)) {
-        ANTON_ASSERT(argument->evaluated_type != nullptr,
+        ANTON_ASSERT(argument.evaluated_type != nullptr,
                      "argument has unevaluated type");
         anton::Optional<i64> rank_result =
           rank_conversion(parameter.type, argument.evaluated_type);
@@ -326,20 +326,20 @@ namespace vush {
       switch(size) {
       case 1:
         return {anton::expected_value,
-                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
-                              ast::Type_Builtin_Kind::e_bool)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.bump_allocator,
+                              Source_Info{}, ast::Type_Builtin_Kind::e_bool)};
       case 2:
         return {anton::expected_value,
-                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
-                              ast::Type_Builtin_Kind::e_bvec2)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.bump_allocator,
+                              Source_Info{}, ast::Type_Builtin_Kind::e_bvec2)};
       case 3:
         return {anton::expected_value,
-                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
-                              ast::Type_Builtin_Kind::e_bvec3)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.bump_allocator,
+                              Source_Info{}, ast::Type_Builtin_Kind::e_bvec3)};
       case 4:
         return {anton::expected_value,
-                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
-                              ast::Type_Builtin_Kind::e_bvec4)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.bump_allocator,
+                              Source_Info{}, ast::Type_Builtin_Kind::e_bvec4)};
       }
     }
 
@@ -347,20 +347,20 @@ namespace vush {
       switch(size) {
       case 1:
         return {anton::expected_value,
-                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
-                              ast::Type_Builtin_Kind::e_int)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.bump_allocator,
+                              Source_Info{}, ast::Type_Builtin_Kind::e_int)};
       case 2:
         return {anton::expected_value,
-                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
-                              ast::Type_Builtin_Kind::e_ivec2)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.bump_allocator,
+                              Source_Info{}, ast::Type_Builtin_Kind::e_ivec2)};
       case 3:
         return {anton::expected_value,
-                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
-                              ast::Type_Builtin_Kind::e_ivec3)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.bump_allocator,
+                              Source_Info{}, ast::Type_Builtin_Kind::e_ivec3)};
       case 4:
         return {anton::expected_value,
-                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
-                              ast::Type_Builtin_Kind::e_ivec4)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.bump_allocator,
+                              Source_Info{}, ast::Type_Builtin_Kind::e_ivec4)};
       }
     }
 
@@ -368,20 +368,20 @@ namespace vush {
       switch(size) {
       case 1:
         return {anton::expected_value,
-                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
-                              ast::Type_Builtin_Kind::e_uint)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.bump_allocator,
+                              Source_Info{}, ast::Type_Builtin_Kind::e_uint)};
       case 2:
         return {anton::expected_value,
-                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
-                              ast::Type_Builtin_Kind::e_uvec2)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.bump_allocator,
+                              Source_Info{}, ast::Type_Builtin_Kind::e_uvec2)};
       case 3:
         return {anton::expected_value,
-                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
-                              ast::Type_Builtin_Kind::e_uvec3)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.bump_allocator,
+                              Source_Info{}, ast::Type_Builtin_Kind::e_uvec3)};
       case 4:
         return {anton::expected_value,
-                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
-                              ast::Type_Builtin_Kind::e_uvec4)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.bump_allocator,
+                              Source_Info{}, ast::Type_Builtin_Kind::e_uvec4)};
       }
     }
 
@@ -389,20 +389,20 @@ namespace vush {
       switch(size) {
       case 1:
         return {anton::expected_value,
-                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
-                              ast::Type_Builtin_Kind::e_float)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.bump_allocator,
+                              Source_Info{}, ast::Type_Builtin_Kind::e_float)};
       case 2:
         return {anton::expected_value,
-                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
-                              ast::Type_Builtin_Kind::e_vec2)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.bump_allocator,
+                              Source_Info{}, ast::Type_Builtin_Kind::e_vec2)};
       case 3:
         return {anton::expected_value,
-                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
-                              ast::Type_Builtin_Kind::e_vec3)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.bump_allocator,
+                              Source_Info{}, ast::Type_Builtin_Kind::e_vec3)};
       case 4:
         return {anton::expected_value,
-                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
-                              ast::Type_Builtin_Kind::e_vec4)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.bump_allocator,
+                              Source_Info{}, ast::Type_Builtin_Kind::e_vec4)};
       }
     }
 
@@ -410,20 +410,20 @@ namespace vush {
       switch(size) {
       case 1:
         return {anton::expected_value,
-                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
-                              ast::Type_Builtin_Kind::e_double)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.bump_allocator,
+                              Source_Info{}, ast::Type_Builtin_Kind::e_double)};
       case 2:
         return {anton::expected_value,
-                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
-                              ast::Type_Builtin_Kind::e_dvec2)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.bump_allocator,
+                              Source_Info{}, ast::Type_Builtin_Kind::e_dvec2)};
       case 3:
         return {anton::expected_value,
-                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
-                              ast::Type_Builtin_Kind::e_dvec3)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.bump_allocator,
+                              Source_Info{}, ast::Type_Builtin_Kind::e_dvec3)};
       case 4:
         return {anton::expected_value,
-                VUSH_ALLOCATE(ast::Type_Builtin, ctx.allocator, Source_Info{},
-                              ast::Type_Builtin_Kind::e_dvec4)};
+                VUSH_ALLOCATE(ast::Type_Builtin, ctx.bump_allocator,
+                              Source_Info{}, ast::Type_Builtin_Kind::e_dvec4)};
       }
     }
 
@@ -610,7 +610,7 @@ namespace vush {
         }
 
         // We must propagate the qualifiers.
-        auto const evaluated_type = copy(ctx.allocator, field.type);
+        auto const evaluated_type = copy(ctx.bump_allocator, field.type);
         evaluated_type->qualifiers = type->qualifiers;
         expr->evaluated_type = evaluated_type;
         return anton::expected_value;
@@ -1143,7 +1143,7 @@ namespace vush {
 
     semactx.stmt = Stmt_Ctx::e_switch;
     ast::Expr const* default_label = nullptr;
-    anton::Flat_Hash_Map<u32, ast::Lt_Integer*> labels{ctx.allocator};
+    anton::Flat_Hash_Map<u32, ast::Lt_Integer*> labels{ctx.bump_allocator};
     for(ast::Switch_Arm& arm: node->arms) {
       for(ast::Expr& label: arm.labels) {
         RETURN_ON_FAIL(analyse_expression, ctx, symtable, &label);
@@ -1682,9 +1682,9 @@ namespace vush {
     // check the symbol.
 
     anton::Flat_Hash_Map<anton::String_View, ast::Overload_Group*> groups =
-      get_builtin_functions_declarations(ctx.allocator);
+      get_builtin_functions_declarations(ctx.bump_allocator);
 
-    Symbol_Table symtable(ctx.allocator);
+    Symbol_Table symtable(ctx.bump_allocator);
     symtable.push_scope();
     // There are no symbols in the symbol table at this point and the builtin
     // function groups are unique, hence we do not have to check for symbol
@@ -1713,8 +1713,8 @@ namespace vush {
         ast::Identifier const pass = node->pass;
         Symbol const* ns = symtable.find_entry(pass.value);
         if(!ns) {
-          auto const pns =
-            VUSH_ALLOCATE(Namespace, ctx.allocator, ctx.allocator, pass);
+          auto const pns = VUSH_ALLOCATE(Namespace, ctx.bump_allocator,
+                                         ctx.bump_allocator, pass);
           ns = symtable.add_entry(pass.value, Symbol(pass.value, pns));
         } else {
           if(ns->kind != Symbol_Kind::e_namespace) {
@@ -1739,8 +1739,8 @@ namespace vush {
           // A group does not exist, hence we have to create it and check its
           // symbol for redefinition.
           auto const group =
-            VUSH_ALLOCATE(ast::Overload_Group, ctx.allocator, ctx.allocator,
-                          node->identifier.value);
+            VUSH_ALLOCATE(ast::Overload_Group, ctx.bump_allocator,
+                          ctx.bump_allocator, node->identifier.value);
           group->overloads.push_back(node);
           groups.emplace(node->identifier.value, group);
           RETURN_ON_FAIL(add_symbol, ctx, symtable,
@@ -1755,8 +1755,8 @@ namespace vush {
         // has its namespace's symbol table.
         Symbol const* ns = symtable.find_entry(pass.value);
         if(!ns) {
-          auto const pns =
-            VUSH_ALLOCATE(Namespace, ctx.allocator, ctx.allocator, pass);
+          auto const pns = VUSH_ALLOCATE(Namespace, ctx.bump_allocator,
+                                         ctx.bump_allocator, pass);
           ns = symtable.add_entry(pass.value, Symbol(pass.value, pns));
         }
       } break;

@@ -6,7 +6,8 @@
 
 namespace vush {
   struct Context {
-    Allocator* allocator = nullptr;
+    Allocator* raii_allocator = nullptr;
+    Allocator* bump_allocator = nullptr;
     Source_Registry* source_registry = nullptr;
     Diagnostics_Options diagnostics = {};
     buffer_definition_callback buffer_definition_cb = nullptr;

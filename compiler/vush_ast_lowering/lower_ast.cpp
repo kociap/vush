@@ -2512,8 +2512,8 @@ namespace vush {
       builder.set_insert_block(current_block);
       lower_statement_block(ctx, builder, arm.statements);
       for(ast::Expr const& label: arm.labels) {
-        ANTON_ASSERT(label->node_kind == ast::Node_Kind::lt_integer ||
-                       label->node_kind == ast::Node_Kind::expr_default,
+        ANTON_ASSERT(label.node_kind == ast::Node_Kind::lt_integer ||
+                       label.node_kind == ast::Node_Kind::expr_default,
                      "label is not an integer");
         if(label.node_kind == ast::Node_Kind::lt_integer) {
           auto const node = static_cast<ast::Lt_Integer const&>(label);

@@ -123,7 +123,7 @@ namespace vush {
     // We estimate the token density to be 1 token per 3 bytes of the source
     // code. If not, well rip.
     i64 const estimated_tokens = (source.size() + 2) / 3;
-    Array<Token> tokens(ctx.allocator, anton::reserve, estimated_tokens);
+    Array<Token> tokens(ctx.raii_allocator, anton::reserve, estimated_tokens);
     char8 const* const source_begin = source.begin();
     char8 const* current = source.begin();
     char8 const* const end = source.end();

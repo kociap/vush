@@ -6,6 +6,8 @@ project(vush CXX)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_COLOR_DIAGNOSTICS ON)
 
+option(VUSH_ENABLE_ASAN "Build Vush with Address Sanitizer (Clang only)" OFF)
+
 # Detect compiler.
 set(VUSH_COMPILER_CLANGPP OFF)
 set(VUSH_COMPILER_CLANGCL OFF)
@@ -59,6 +61,15 @@ if(VUSH_COMPILER_CLANG)
     -Wno-missing-field-initializers # TODO: Temporarily because of spam from vush_diagnostics/diagnostics.hpp
   )
 
+  set(VUSH_ASAN_COMPILE_FLAGS
+    -fsanitize=address
+    -fno-omit-frame-pointer
+  )
+
+  set(VUSH_ASAN_LINK_FLAGS
+    -fsanitize=address
+  )
+
   set(VUSH_BUILTINS_NO_OPTIMISATIONS
     -O0
   )
@@ -102,6 +113,11 @@ elseif(VUSH_COMPILER_MSVC)
   )
 endif()
 
+if(NOT VUSH_ENABLE_ASAN)
+  set(VUSH_ASAN_COMPILE_FLAGS)
+  set(VUSH_ASAN_LINK_FLAGS)
+endif()
+
 set(ANTON_UNREACHABLE_ASSERTS ON)
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   set(ANTON_BUILD_DEBUG ON)
@@ -117,7 +133,7 @@ endif()
 FetchContent_Declare(
   anton_core
   GIT_REPOSITORY https://github.com/kociap/anton_core.git
-  GIT_TAG 0f6e3df3c598044d3ba769c928a33ef1fb6e7bb3
+  GIT_TAG ac305fe8aa3814163c3b18d93e8b7582d6159bd4
 )
 FetchContent_MakeAvailable(anton_core)
 
@@ -125,7 +141,8 @@ FetchContent_MakeAvailable(anton_core)
 
 add_library(vush)
 set_target_properties(vush PROPERTIES CXX_STANDARD 20 CXX_EXTENSIONS OFF)
-target_compile_options(vush PRIVATE ${VUSH_COMPILE_FLAGS})
+target_compile_options(vush PRIVATE ${VUSH_COMPILE_FLAGS} ${VUSH_ASAN_COMPILE_FLAGS})
+target_link_options(vush PRIVATE ${VUSH_ASAN_LINK_FLAGS})
 target_link_libraries(vush PUBLIC anton_core)
 target_include_directories(vush PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/compiler")
 # Disable optimisations in the builtins source file.
@@ -217,5 +234,6 @@ add_executable(vushc
   "${CMAKE_CURRENT_SOURCE_DIR}/vushc/main.cpp"
 )
 set_target_properties(vushc PROPERTIES CXX_STANDARD 20 CXX_EXTENSIONS OFF)
-target_compile_options(vushc PRIVATE ${VUSH_COMPILE_FLAGS})
+target_compile_options(vushc PRIVATE ${VUSH_COMPILE_FLAGS} ${VUSH_ASAN_COMPILE_FLAGS})
+target_link_options(vushc PRIVATE ${VUSH_ASAN_LINK_FLAGS})
 target_link_libraries(vushc PRIVATE vush anton_core)
