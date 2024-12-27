@@ -511,7 +511,7 @@ namespace vush::spirv {
         instruction->sampled_type->id, stringify(instruction->dimensionality),
         instruction->depth, instruction->arrayed, instruction->multisampled,
         instruction->sampled, stringify(instruction->image_format))
-      CASE_ID_INSTR(e_type_sampler, Instr_type_sampler, "OpTypeSamler")
+      CASE_ID_INSTR(e_type_sampler, Instr_type_sampler, "OpTypeSampler")
       CASE_GENERIC_INSTR(e_type_sampled_image, Instr_type_sampled_image,
                          "%{} = OpTypeSampledImage %{}", instruction->id,
                          instruction->image_type->id)
@@ -800,6 +800,11 @@ namespace vush::spirv {
                          "OpReturnValue %{}", instruction->value->id)
       CASE_NOTHING_INSTR(e_terminate, Instr_terminate, "OpTerminateInvocation")
       CASE_NOTHING_INSTR(e_unreachable, Instr_unreachable, "OpUnreachable")
+      CASE_GENERIC_INSTR(
+        e_image_sample_implicit_lod, Instr_image_sample_implicit_lod,
+        "%{} = OpImageSampleImplicitLod %{} %{} %{}", instruction->id,
+        instruction->result_type->id, instruction->sampled_image->id,
+        instruction->coordinate->id)
     }
     stream.write("\n");
   }

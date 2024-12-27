@@ -946,9 +946,28 @@ namespace vush {
       case ir::Instr_Kind::e_cvt_ui2fp:
       case ir::Instr_Kind::e_cvt_fp2ui:
       case ir::Instr_Kind::e_call:
-      case ir::Instr_Kind::e_ext_call:
       case ir::Instr_Kind::e_phi:
         break;
+
+      case ir::Instr_Kind::e_ext_call: {
+        auto const instr_ext_call =
+          static_cast<ir::Instr_ext_call const*>(&instruction);
+        switch(instr_ext_call->ext) {
+        case ir::Ext_Kind::e_tex: {
+          ANTON_ASSERT(instr_ext_call->args.size() == 2,
+                       "tex extension must have 2 arguments");
+          spirv::Instr* result_type = lower_type(ctx, instr_ext_call->type);
+          spirv::Instr* sampled_image = ctx.get_instr(instr_ext_call->args[0]);
+          spirv::Instr* coordinate = ctx.get_instr(instr_ext_call->args[1]);
+          auto const instr = spirv::make_instr_image_sample_implicit_lod(
+            ctx.allocator, ctx.next_id(), result_type, sampled_image,
+            coordinate);
+          builder.insert(instr);
+          instr->block = label;
+          ctx.instr_map.emplace(&instruction, instr);
+        } break;
+        }
+      } break;
 
       case ir::Instr_Kind::e_return: {
         auto const instr_return =

@@ -1468,4 +1468,15 @@ namespace vush::spirv {
     auto const instr = VUSH_ALLOCATE(Instr_terminate, allocator);
     return instr;
   }
+
+  Instr_image_sample_implicit_lod*
+  make_instr_image_sample_implicit_lod(Allocator* allocator, u32 id,
+                                       Instr* result_type, Instr* sampled_image,
+                                       Instr* coordinate)
+  {
+    auto const instr =
+      VUSH_ALLOCATE(Instr_image_sample_implicit_lod, allocator, id, result_type,
+                    sampled_image, coordinate);
+    return instr;
+  }
 } // namespace vush::spirv
