@@ -1143,7 +1143,7 @@ namespace vush {
 
     semactx.stmt = Stmt_Ctx::e_switch;
     ast::Expr const* default_label = nullptr;
-    anton::Flat_Hash_Map<u32, ast::Lt_Integer*> labels{ctx.bump_allocator};
+    anton::Flat_Hash_Map<u32, ast::Lt_Integer*> labels{ctx.raii_allocator};
     for(ast::Switch_Arm& arm: node->arms) {
       for(ast::Expr& label: arm.labels) {
         RETURN_ON_FAIL(analyse_expression, ctx, symtable, &label);
@@ -1684,7 +1684,7 @@ namespace vush {
     anton::Flat_Hash_Map<anton::String_View, ast::Overload_Group*> groups =
       get_builtin_functions_declarations(ctx.bump_allocator);
 
-    Symbol_Table symtable(ctx.bump_allocator);
+    Symbol_Table symtable(ctx.raii_allocator);
     symtable.push_scope();
     // There are no symbols in the symbol table at this point and the builtin
     // function groups are unique, hence we do not have to check for symbol

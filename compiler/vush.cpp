@@ -119,12 +119,7 @@ namespace vush {
                    expand_result.value());
 
     ast::Node_List& ast_nodes = syntax_lower_result.value();
-    {
-      anton::Expected<void, Error> result = run_sema(ctx, ast_nodes);
-      if(!result) {
-        return {anton::expected_error, ANTON_MOV(result.error())};
-      }
-    }
+    RETURN_ON_FAIL(sema_result, run_sema, ctx, ast_nodes);
 
     {
       bool changed = false;
