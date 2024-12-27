@@ -70,10 +70,6 @@ namespace vush {
   BUILTIN_TYPE(builtin_sampler2DMSArray, e_sampler2DMSArray);
   BUILTIN_TYPE(builtin_texture2DMSArray, e_texture2DMSArray);
   BUILTIN_TYPE(builtin_image2DMSArray, e_image2DMSArray);
-  BUILTIN_TYPE(builtin_sampler2DRect, e_sampler2DRect);
-  BUILTIN_TYPE(builtin_texture2DRect, e_texture2DRect);
-  BUILTIN_TYPE(builtin_image2DRect, e_image2DRect);
-  BUILTIN_TYPE(builtin_sampler2DRectShadow, e_sampler2DRectShadow);
   BUILTIN_TYPE(builtin_sampler3D, e_sampler3D);
   BUILTIN_TYPE(builtin_texture3D, e_texture3D);
   BUILTIN_TYPE(builtin_image3D, e_image3D);
@@ -108,9 +104,6 @@ namespace vush {
   BUILTIN_TYPE(builtin_isampler2DMSArray, e_isampler2DMSArray);
   BUILTIN_TYPE(builtin_itexture2DMSArray, e_itexture2DMSArray);
   BUILTIN_TYPE(builtin_iimage2DMSArray, e_iimage2DMSArray);
-  BUILTIN_TYPE(builtin_isampler2DRect, e_isampler2DRect);
-  BUILTIN_TYPE(builtin_itexture2DRect, e_itexture2DRect);
-  BUILTIN_TYPE(builtin_iimage2DRect, e_iimage2DRect);
   BUILTIN_TYPE(builtin_isampler3D, e_isampler3D);
   BUILTIN_TYPE(builtin_itexture3D, e_itexture3D);
   BUILTIN_TYPE(builtin_iimage3D, e_iimage3D);
@@ -143,9 +136,6 @@ namespace vush {
   BUILTIN_TYPE(builtin_usampler2DMSArray, e_usampler2DMSArray);
   BUILTIN_TYPE(builtin_utexture2DMSArray, e_utexture2DMSArray);
   BUILTIN_TYPE(builtin_uimage2DMSArray, e_uimage2DMSArray);
-  BUILTIN_TYPE(builtin_usampler2DRect, e_usampler2DRect);
-  BUILTIN_TYPE(builtin_utexture2DRect, e_utexture2DRect);
-  BUILTIN_TYPE(builtin_uimage2DRect, e_uimage2DRect);
   BUILTIN_TYPE(builtin_usampler3D, e_usampler3D);
   BUILTIN_TYPE(builtin_utexture3D, e_utexture3D);
   BUILTIN_TYPE(builtin_uimage3D, e_uimage3D);
@@ -287,14 +277,6 @@ namespace vush {
       return &builtin_texture2DMSArray;
     case ast::Type_Builtin_Kind::e_image2DMSArray:
       return &builtin_image2DMSArray;
-    case ast::Type_Builtin_Kind::e_sampler2DRect:
-      return &builtin_sampler2DRect;
-    case ast::Type_Builtin_Kind::e_texture2DRect:
-      return &builtin_texture2DRect;
-    case ast::Type_Builtin_Kind::e_image2DRect:
-      return &builtin_image2DRect;
-    case ast::Type_Builtin_Kind::e_sampler2DRectShadow:
-      return &builtin_sampler2DRectShadow;
     case ast::Type_Builtin_Kind::e_sampler3D:
       return &builtin_sampler3D;
     case ast::Type_Builtin_Kind::e_texture3D:
@@ -363,12 +345,6 @@ namespace vush {
       return &builtin_itexture2DMSArray;
     case ast::Type_Builtin_Kind::e_iimage2DMSArray:
       return &builtin_iimage2DMSArray;
-    case ast::Type_Builtin_Kind::e_isampler2DRect:
-      return &builtin_isampler2DRect;
-    case ast::Type_Builtin_Kind::e_itexture2DRect:
-      return &builtin_itexture2DRect;
-    case ast::Type_Builtin_Kind::e_iimage2DRect:
-      return &builtin_iimage2DRect;
     case ast::Type_Builtin_Kind::e_isampler3D:
       return &builtin_isampler3D;
     case ast::Type_Builtin_Kind::e_itexture3D:
@@ -433,12 +409,6 @@ namespace vush {
       return &builtin_utexture2DMSArray;
     case ast::Type_Builtin_Kind::e_uimage2DMSArray:
       return &builtin_uimage2DMSArray;
-    case ast::Type_Builtin_Kind::e_usampler2DRect:
-      return &builtin_usampler2DRect;
-    case ast::Type_Builtin_Kind::e_utexture2DRect:
-      return &builtin_utexture2DRect;
-    case ast::Type_Builtin_Kind::e_uimage2DRect:
-      return &builtin_uimage2DRect;
     case ast::Type_Builtin_Kind::e_usampler3D:
       return &builtin_usampler3D;
     case ast::Type_Builtin_Kind::e_utexture3D:

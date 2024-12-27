@@ -298,14 +298,6 @@ namespace vush {
         return anton::String("texture2DMSArray"_sv, ctx.bump_allocator);
       case ast::Type_Builtin_Kind::e_image2DMSArray:
         return anton::String("image2DMSArray"_sv, ctx.bump_allocator);
-      case ast::Type_Builtin_Kind::e_sampler2DRect:
-        return anton::String("sampler2DRect"_sv, ctx.bump_allocator);
-      case ast::Type_Builtin_Kind::e_texture2DRect:
-        return anton::String("texture2DRect"_sv, ctx.bump_allocator);
-      case ast::Type_Builtin_Kind::e_image2DRect:
-        return anton::String("image2DRect"_sv, ctx.bump_allocator);
-      case ast::Type_Builtin_Kind::e_sampler2DRectShadow:
-        return anton::String("sampler2DRectShadow"_sv, ctx.bump_allocator);
       case ast::Type_Builtin_Kind::e_sampler3D:
         return anton::String("sampler3D"_sv, ctx.bump_allocator);
       case ast::Type_Builtin_Kind::e_texture3D:
@@ -374,12 +366,6 @@ namespace vush {
         return anton::String("itexture2DMSArray"_sv, ctx.bump_allocator);
       case ast::Type_Builtin_Kind::e_iimage2DMSArray:
         return anton::String("iimage2DMSArray"_sv, ctx.bump_allocator);
-      case ast::Type_Builtin_Kind::e_isampler2DRect:
-        return anton::String("isampler2DRect"_sv, ctx.bump_allocator);
-      case ast::Type_Builtin_Kind::e_itexture2DRect:
-        return anton::String("itexture2DRect"_sv, ctx.bump_allocator);
-      case ast::Type_Builtin_Kind::e_iimage2DRect:
-        return anton::String("iimage2DRect"_sv, ctx.bump_allocator);
       case ast::Type_Builtin_Kind::e_isampler3D:
         return anton::String("isampler3D"_sv, ctx.bump_allocator);
       case ast::Type_Builtin_Kind::e_itexture3D:
@@ -444,12 +430,6 @@ namespace vush {
         return anton::String("utexture2DMSArray"_sv, ctx.bump_allocator);
       case ast::Type_Builtin_Kind::e_uimage2DMSArray:
         return anton::String("uimage2DMSArray"_sv, ctx.bump_allocator);
-      case ast::Type_Builtin_Kind::e_usampler2DRect:
-        return anton::String("usampler2DRect"_sv, ctx.bump_allocator);
-      case ast::Type_Builtin_Kind::e_utexture2DRect:
-        return anton::String("utexture2DRect"_sv, ctx.bump_allocator);
-      case ast::Type_Builtin_Kind::e_uimage2DRect:
-        return anton::String("uimage2DRect"_sv, ctx.bump_allocator);
       case ast::Type_Builtin_Kind::e_usampler3D:
         return anton::String("usampler3D"_sv, ctx.bump_allocator);
       case ast::Type_Builtin_Kind::e_utexture3D:

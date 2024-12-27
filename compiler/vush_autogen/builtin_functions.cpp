@@ -86,10 +86,6 @@ namespace vush {
   BUILTIN_TYPE(builtin_sampler2DMSArray, e_sampler2DMSArray);
   BUILTIN_TYPE(builtin_texture2DMSArray, e_texture2DMSArray);
   BUILTIN_TYPE(builtin_image2DMSArray, e_image2DMSArray);
-  BUILTIN_TYPE(builtin_sampler2DRect, e_sampler2DRect);
-  BUILTIN_TYPE(builtin_texture2DRect, e_texture2DRect);
-  BUILTIN_TYPE(builtin_image2DRect, e_image2DRect);
-  BUILTIN_TYPE(builtin_sampler2DRectShadow, e_sampler2DRectShadow);
   BUILTIN_TYPE(builtin_sampler3D, e_sampler3D);
   BUILTIN_TYPE(builtin_texture3D, e_texture3D);
   BUILTIN_TYPE(builtin_image3D, e_image3D);
@@ -124,9 +120,6 @@ namespace vush {
   BUILTIN_TYPE(builtin_isampler2DMSArray, e_isampler2DMSArray);
   BUILTIN_TYPE(builtin_itexture2DMSArray, e_itexture2DMSArray);
   BUILTIN_TYPE(builtin_iimage2DMSArray, e_iimage2DMSArray);
-  BUILTIN_TYPE(builtin_isampler2DRect, e_isampler2DRect);
-  BUILTIN_TYPE(builtin_itexture2DRect, e_itexture2DRect);
-  BUILTIN_TYPE(builtin_iimage2DRect, e_iimage2DRect);
   BUILTIN_TYPE(builtin_isampler3D, e_isampler3D);
   BUILTIN_TYPE(builtin_itexture3D, e_itexture3D);
   BUILTIN_TYPE(builtin_iimage3D, e_iimage3D);
@@ -159,9 +152,6 @@ namespace vush {
   BUILTIN_TYPE(builtin_usampler2DMSArray, e_usampler2DMSArray);
   BUILTIN_TYPE(builtin_utexture2DMSArray, e_utexture2DMSArray);
   BUILTIN_TYPE(builtin_uimage2DMSArray, e_uimage2DMSArray);
-  BUILTIN_TYPE(builtin_usampler2DRect, e_usampler2DRect);
-  BUILTIN_TYPE(builtin_utexture2DRect, e_utexture2DRect);
-  BUILTIN_TYPE(builtin_uimage2DRect, e_uimage2DRect);
   BUILTIN_TYPE(builtin_usampler3D, e_usampler3D);
   BUILTIN_TYPE(builtin_utexture3D, e_utexture3D);
   BUILTIN_TYPE(builtin_uimage3D, e_uimage3D);
@@ -2450,22 +2440,6 @@ namespace vush {
           ALLOC_PARAM("sampler"_sv, &builtin_sampler2DArrayShadow),
           ALLOC_PARAM("lod"_sv, &builtin_int))));
       g->overloads.push_back(
-        ALLOC_FUNCTION("texture_size"_sv, &builtin_ivec3,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_sampler2DRect))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_size"_sv, &builtin_ivec3,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_isampler2DRect))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_size"_sv, &builtin_ivec3,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_usampler2DRect))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_size"_sv, &builtin_ivec2,
-                       construct_parameter_list(ALLOC_PARAM(
-                         "sampler"_sv, &builtin_sampler2DRectShadow))));
-      g->overloads.push_back(
         ALLOC_FUNCTION("texture_size"_sv, &builtin_int,
                        construct_parameter_list(
                          ALLOC_PARAM("sampler"_sv, &builtin_samplerBuffer))));
@@ -3041,26 +3015,6 @@ namespace vush {
         construct_parameter_list(
           ALLOC_PARAM("sampler"_sv, &builtin_sampler2DArrayShadow),
           ALLOC_PARAM("P"_sv, &builtin_vec4))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture"_sv, &builtin_vec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_sampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture"_sv, &builtin_ivec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_isampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture"_sv, &builtin_uvec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_usampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec2))));
-      g->overloads.push_back(ALLOC_FUNCTION(
-        "texture"_sv, &builtin_float,
-        construct_parameter_list(
-          ALLOC_PARAM("sampler"_sv, &builtin_sampler2DRectShadow),
-          ALLOC_PARAM("P"_sv, &builtin_vec3))));
       g->overloads.push_back(ALLOC_FUNCTION(
         "texture"_sv, &builtin_float,
         construct_parameter_list(
@@ -3229,41 +3183,6 @@ namespace vush {
                          ALLOC_PARAM("sampler"_sv, &builtin_sampler2DShadow),
                          ALLOC_PARAM("P"_sv, &builtin_vec4),
                          ALLOC_PARAM("bias"_sv, &builtin_float))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_proj"_sv, &builtin_vec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_sampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec3))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_proj"_sv, &builtin_ivec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_isampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec3))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_proj"_sv, &builtin_uvec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_usampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec3))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_proj"_sv, &builtin_vec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_sampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec4))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_proj"_sv, &builtin_ivec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_isampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec4))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_proj"_sv, &builtin_uvec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_usampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec4))));
-      g->overloads.push_back(ALLOC_FUNCTION(
-        "texture_proj"_sv, &builtin_float,
-        construct_parameter_list(
-          ALLOC_PARAM("sampler"_sv, &builtin_sampler2DRectShadow),
-          ALLOC_PARAM("P"_sv, &builtin_vec4))));
       groups.emplace("texture_proj"_sv, g);
     }
     {
@@ -3625,30 +3544,6 @@ namespace vush {
           ALLOC_PARAM("P"_sv, &builtin_vec3),
           ALLOC_PARAM("offset"_sv, &builtin_int),
           ALLOC_PARAM("bias"_sv, &builtin_float))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_offset"_sv, &builtin_vec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_sampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec2),
-                         ALLOC_PARAM("offset"_sv, &builtin_ivec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_offset"_sv, &builtin_ivec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_isampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec2),
-                         ALLOC_PARAM("offset"_sv, &builtin_ivec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_offset"_sv, &builtin_uvec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_usampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec2),
-                         ALLOC_PARAM("offset"_sv, &builtin_ivec2))));
-      g->overloads.push_back(ALLOC_FUNCTION(
-        "texture_offset"_sv, &builtin_float,
-        construct_parameter_list(
-          ALLOC_PARAM("sampler"_sv, &builtin_sampler2DRectShadow),
-          ALLOC_PARAM("P"_sv, &builtin_vec3),
-          ALLOC_PARAM("offset"_sv, &builtin_ivec2))));
       g->overloads.push_back(ALLOC_FUNCTION(
         "texture_offset"_sv, &builtin_float,
         construct_parameter_list(
@@ -3726,24 +3621,6 @@ namespace vush {
                        construct_parameter_list(
                          ALLOC_PARAM("sampler"_sv, &builtin_usampler2DArray),
                          ALLOC_PARAM("P"_sv, &builtin_ivec3))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texel_fetch"_sv, &builtin_vec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_sampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_ivec2),
-                         ALLOC_PARAM("lod"_sv, &builtin_int))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texel_fetch"_sv, &builtin_ivec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_isampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_ivec2),
-                         ALLOC_PARAM("lod"_sv, &builtin_int))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texel_fetch"_sv, &builtin_uvec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_usampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_ivec2),
-                         ALLOC_PARAM("lod"_sv, &builtin_int))));
       g->overloads.push_back(
         ALLOC_FUNCTION("texel_fetch"_sv, &builtin_vec4,
                        construct_parameter_list(
@@ -3898,24 +3775,6 @@ namespace vush {
                          ALLOC_PARAM("sampler"_sv, &builtin_usampler2DArray),
                          ALLOC_PARAM("P"_sv, &builtin_ivec3),
                          ALLOC_PARAM("lod"_sv, &builtin_int),
-                         ALLOC_PARAM("offset"_sv, &builtin_ivec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texel_fetch_offset"_sv, &builtin_vec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_sampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_ivec2),
-                         ALLOC_PARAM("offset"_sv, &builtin_ivec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texel_fetch_offset"_sv, &builtin_ivec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_isampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_ivec2),
-                         ALLOC_PARAM("offset"_sv, &builtin_ivec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texel_fetch_offset"_sv, &builtin_uvec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_usampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_ivec2),
                          ALLOC_PARAM("offset"_sv, &builtin_ivec2))));
       groups.emplace("texel_fetch_offset"_sv, g);
     }
@@ -4113,48 +3972,6 @@ namespace vush {
                          ALLOC_PARAM("P"_sv, &builtin_vec4),
                          ALLOC_PARAM("offset"_sv, &builtin_ivec2),
                          ALLOC_PARAM("bias"_sv, &builtin_float))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_proj_offset"_sv, &builtin_vec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_sampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec3),
-                         ALLOC_PARAM("offset"_sv, &builtin_ivec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_proj_offset"_sv, &builtin_ivec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_isampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec3),
-                         ALLOC_PARAM("offset"_sv, &builtin_ivec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_proj_offset"_sv, &builtin_uvec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_usampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec3),
-                         ALLOC_PARAM("offset"_sv, &builtin_ivec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_proj_offset"_sv, &builtin_vec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_sampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec4),
-                         ALLOC_PARAM("offset"_sv, &builtin_ivec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_proj_offset"_sv, &builtin_ivec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_isampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec4),
-                         ALLOC_PARAM("offset"_sv, &builtin_ivec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_proj_offset"_sv, &builtin_uvec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_usampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec4),
-                         ALLOC_PARAM("offset"_sv, &builtin_ivec2))));
-      g->overloads.push_back(ALLOC_FUNCTION(
-        "texture_proj_offset"_sv, &builtin_float,
-        construct_parameter_list(
-          ALLOC_PARAM("sampler"_sv, &builtin_sampler2DRectShadow),
-          ALLOC_PARAM("P"_sv, &builtin_vec4),
-          ALLOC_PARAM("offset"_sv, &builtin_ivec2))));
       groups.emplace("texture_proj_offset"_sv, g);
     }
     {
@@ -4561,27 +4378,6 @@ namespace vush {
       g->overloads.push_back(
         ALLOC_FUNCTION("texture_grad"_sv, &builtin_vec4,
                        construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_sampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec2),
-                         ALLOC_PARAM("dPdx"_sv, &builtin_vec2),
-                         ALLOC_PARAM("dPdy"_sv, &builtin_vec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_grad"_sv, &builtin_ivec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_isampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec2),
-                         ALLOC_PARAM("dPdx"_sv, &builtin_vec2),
-                         ALLOC_PARAM("dPdy"_sv, &builtin_vec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_grad"_sv, &builtin_uvec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_usampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec2),
-                         ALLOC_PARAM("dPdx"_sv, &builtin_vec2),
-                         ALLOC_PARAM("dPdy"_sv, &builtin_vec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_grad"_sv, &builtin_vec4,
-                       construct_parameter_list(
                          ALLOC_PARAM("sampler"_sv, &builtin_sampler1DArray),
                          ALLOC_PARAM("P"_sv, &builtin_vec2),
                          ALLOC_PARAM("dPdx"_sv, &builtin_float),
@@ -4642,13 +4438,6 @@ namespace vush {
                          ALLOC_PARAM("P"_sv, &builtin_vec4),
                          ALLOC_PARAM("dPdx"_sv, &builtin_vec3),
                          ALLOC_PARAM("dPdy"_sv, &builtin_vec3))));
-      g->overloads.push_back(ALLOC_FUNCTION(
-        "texture_grad"_sv, &builtin_float,
-        construct_parameter_list(
-          ALLOC_PARAM("sampler"_sv, &builtin_sampler2DRectShadow),
-          ALLOC_PARAM("P"_sv, &builtin_vec3),
-          ALLOC_PARAM("dPdx"_sv, &builtin_vec2),
-          ALLOC_PARAM("dPdy"_sv, &builtin_vec2))));
       g->overloads.push_back(
         ALLOC_FUNCTION("texture_grad"_sv, &builtin_float,
                        construct_parameter_list(
@@ -4755,30 +4544,6 @@ namespace vush {
       g->overloads.push_back(
         ALLOC_FUNCTION("texture_grad_offset"_sv, &builtin_vec4,
                        construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_sampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec2),
-                         ALLOC_PARAM("dPdx"_sv, &builtin_vec2),
-                         ALLOC_PARAM("dPdy"_sv, &builtin_vec2),
-                         ALLOC_PARAM("offset"_sv, &builtin_ivec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_grad_offset"_sv, &builtin_ivec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_isampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec2),
-                         ALLOC_PARAM("dPdx"_sv, &builtin_vec2),
-                         ALLOC_PARAM("dPdy"_sv, &builtin_vec2),
-                         ALLOC_PARAM("offset"_sv, &builtin_ivec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_grad_offset"_sv, &builtin_uvec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_usampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec2),
-                         ALLOC_PARAM("dPdx"_sv, &builtin_vec2),
-                         ALLOC_PARAM("dPdy"_sv, &builtin_vec2),
-                         ALLOC_PARAM("offset"_sv, &builtin_ivec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_grad_offset"_sv, &builtin_vec4,
-                       construct_parameter_list(
                          ALLOC_PARAM("sampler"_sv, &builtin_sampler2DArray),
                          ALLOC_PARAM("P"_sv, &builtin_vec3),
                          ALLOC_PARAM("dPdx"_sv, &builtin_vec2),
@@ -4824,14 +4589,6 @@ namespace vush {
                          ALLOC_PARAM("dPdx"_sv, &builtin_float),
                          ALLOC_PARAM("dPdy"_sv, &builtin_float),
                          ALLOC_PARAM("offset"_sv, &builtin_int))));
-      g->overloads.push_back(ALLOC_FUNCTION(
-        "texture_grad_offset"_sv, &builtin_float,
-        construct_parameter_list(
-          ALLOC_PARAM("sampler"_sv, &builtin_sampler2DRectShadow),
-          ALLOC_PARAM("P"_sv, &builtin_vec3),
-          ALLOC_PARAM("dPdx"_sv, &builtin_vec2),
-          ALLOC_PARAM("dPdy"_sv, &builtin_vec2),
-          ALLOC_PARAM("offset"_sv, &builtin_ivec2))));
       g->overloads.push_back(
         ALLOC_FUNCTION("texture_grad_offset"_sv, &builtin_float,
                        construct_parameter_list(
@@ -4960,55 +4717,6 @@ namespace vush {
                                  ALLOC_PARAM("dPdx"_sv, &builtin_vec3),
                                  ALLOC_PARAM("dPdy"_sv, &builtin_vec3))));
       g->overloads.push_back(
-        ALLOC_FUNCTION("texture_proj_grad"_sv, &builtin_vec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_sampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec3),
-                         ALLOC_PARAM("dPdx"_sv, &builtin_vec2),
-                         ALLOC_PARAM("dPdy"_sv, &builtin_vec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_proj_grad"_sv, &builtin_ivec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_isampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec3),
-                         ALLOC_PARAM("dPdx"_sv, &builtin_vec2),
-                         ALLOC_PARAM("dPdy"_sv, &builtin_vec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_proj_grad"_sv, &builtin_uvec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_usampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec3),
-                         ALLOC_PARAM("dPdx"_sv, &builtin_vec2),
-                         ALLOC_PARAM("dPdy"_sv, &builtin_vec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_proj_grad"_sv, &builtin_vec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_sampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec4),
-                         ALLOC_PARAM("dPdx"_sv, &builtin_vec2),
-                         ALLOC_PARAM("dPdy"_sv, &builtin_vec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_proj_grad"_sv, &builtin_ivec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_isampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec4),
-                         ALLOC_PARAM("dPdx"_sv, &builtin_vec2),
-                         ALLOC_PARAM("dPdy"_sv, &builtin_vec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_proj_grad"_sv, &builtin_uvec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_usampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec4),
-                         ALLOC_PARAM("dPdx"_sv, &builtin_vec2),
-                         ALLOC_PARAM("dPdy"_sv, &builtin_vec2))));
-      g->overloads.push_back(ALLOC_FUNCTION(
-        "texture_proj_grad"_sv, &builtin_float,
-        construct_parameter_list(
-          ALLOC_PARAM("sampler"_sv, &builtin_sampler2DRectShadow),
-          ALLOC_PARAM("P"_sv, &builtin_vec4),
-          ALLOC_PARAM("dPdx"_sv, &builtin_vec2),
-          ALLOC_PARAM("dPdy"_sv, &builtin_vec2))));
-      g->overloads.push_back(
         ALLOC_FUNCTION("texture_proj_grad"_sv, &builtin_float,
                        construct_parameter_list(
                          ALLOC_PARAM("sampler"_sv, &builtin_sampler1DShadow),
@@ -5132,62 +4840,6 @@ namespace vush {
                                  ALLOC_PARAM("dPdx"_sv, &builtin_vec3),
                                  ALLOC_PARAM("dPdy"_sv, &builtin_vec3),
                                  ALLOC_PARAM("offset"_sv, &builtin_ivec3))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_proj_grad_offset"_sv, &builtin_vec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_sampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec3),
-                         ALLOC_PARAM("dPdx"_sv, &builtin_vec2),
-                         ALLOC_PARAM("dPdy"_sv, &builtin_vec2),
-                         ALLOC_PARAM("offset"_sv, &builtin_ivec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_proj_grad_offset"_sv, &builtin_ivec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_isampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec3),
-                         ALLOC_PARAM("dPdx"_sv, &builtin_vec2),
-                         ALLOC_PARAM("dPdy"_sv, &builtin_vec2),
-                         ALLOC_PARAM("offset"_sv, &builtin_ivec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_proj_grad_offset"_sv, &builtin_uvec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_usampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec3),
-                         ALLOC_PARAM("dPdx"_sv, &builtin_vec2),
-                         ALLOC_PARAM("dPdy"_sv, &builtin_vec2),
-                         ALLOC_PARAM("offset"_sv, &builtin_ivec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_proj_grad_offset"_sv, &builtin_vec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_sampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec4),
-                         ALLOC_PARAM("dPdx"_sv, &builtin_vec2),
-                         ALLOC_PARAM("dPdy"_sv, &builtin_vec2),
-                         ALLOC_PARAM("offset"_sv, &builtin_ivec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_proj_grad_offset"_sv, &builtin_ivec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_isampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec4),
-                         ALLOC_PARAM("dPdx"_sv, &builtin_vec2),
-                         ALLOC_PARAM("dPdy"_sv, &builtin_vec2),
-                         ALLOC_PARAM("offset"_sv, &builtin_ivec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_proj_grad_offset"_sv, &builtin_uvec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_usampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec4),
-                         ALLOC_PARAM("dPdx"_sv, &builtin_vec2),
-                         ALLOC_PARAM("dPdy"_sv, &builtin_vec2),
-                         ALLOC_PARAM("offset"_sv, &builtin_ivec2))));
-      g->overloads.push_back(ALLOC_FUNCTION(
-        "texture_proj_grad_offset"_sv, &builtin_float,
-        construct_parameter_list(
-          ALLOC_PARAM("sampler"_sv, &builtin_sampler2DRectShadow),
-          ALLOC_PARAM("P"_sv, &builtin_vec4),
-          ALLOC_PARAM("dPdx"_sv, &builtin_vec2),
-          ALLOC_PARAM("dPdy"_sv, &builtin_vec2),
-          ALLOC_PARAM("offset"_sv, &builtin_ivec2))));
       g->overloads.push_back(
         ALLOC_FUNCTION("texture_proj_grad_offset"_sv, &builtin_float,
                        construct_parameter_list(
@@ -5338,39 +4990,6 @@ namespace vush {
       g->overloads.push_back(
         ALLOC_FUNCTION("texture_gather"_sv, &builtin_vec4,
                        construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_sampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_gather"_sv, &builtin_ivec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_isampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_gather"_sv, &builtin_uvec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_usampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_gather"_sv, &builtin_vec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_sampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec2),
-                         ALLOC_PARAM("comp"_sv, &builtin_int))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_gather"_sv, &builtin_ivec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_isampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec2),
-                         ALLOC_PARAM("comp"_sv, &builtin_int))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_gather"_sv, &builtin_uvec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_usampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec2),
-                         ALLOC_PARAM("comp"_sv, &builtin_int))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_gather"_sv, &builtin_vec4,
-                       construct_parameter_list(
                          ALLOC_PARAM("sampler"_sv, &builtin_sampler2DShadow),
                          ALLOC_PARAM("P"_sv, &builtin_vec2),
                          ALLOC_PARAM("refZ"_sv, &builtin_float))));
@@ -5391,12 +5010,6 @@ namespace vush {
         construct_parameter_list(
           ALLOC_PARAM("sampler"_sv, &builtin_samplerCubeArrayShadow),
           ALLOC_PARAM("P"_sv, &builtin_vec4),
-          ALLOC_PARAM("refZ"_sv, &builtin_float))));
-      g->overloads.push_back(ALLOC_FUNCTION(
-        "texture_gather"_sv, &builtin_vec4,
-        construct_parameter_list(
-          ALLOC_PARAM("sampler"_sv, &builtin_sampler2DRectShadow),
-          ALLOC_PARAM("P"_sv, &builtin_vec2),
           ALLOC_PARAM("refZ"_sv, &builtin_float))));
       groups.emplace("texture_gather"_sv, g);
     }
@@ -5478,45 +5091,6 @@ namespace vush {
       g->overloads.push_back(
         ALLOC_FUNCTION("texture_gather_offset"_sv, &builtin_vec4,
                        construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_sampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec2),
-                         ALLOC_PARAM("offset"_sv, &builtin_ivec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_gather_offset"_sv, &builtin_ivec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_isampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec2),
-                         ALLOC_PARAM("offset"_sv, &builtin_ivec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_gather_offset"_sv, &builtin_uvec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_usampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec2),
-                         ALLOC_PARAM("offset"_sv, &builtin_ivec2))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_gather_offset"_sv, &builtin_vec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_sampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec2),
-                         ALLOC_PARAM("offset"_sv, &builtin_ivec2),
-                         ALLOC_PARAM("comp"_sv, &builtin_int))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_gather_offset"_sv, &builtin_ivec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_isampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec2),
-                         ALLOC_PARAM("offset"_sv, &builtin_ivec2),
-                         ALLOC_PARAM("comp"_sv, &builtin_int))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_gather_offset"_sv, &builtin_uvec4,
-                       construct_parameter_list(
-                         ALLOC_PARAM("sampler"_sv, &builtin_usampler2DRect),
-                         ALLOC_PARAM("P"_sv, &builtin_vec2),
-                         ALLOC_PARAM("offset"_sv, &builtin_ivec2),
-                         ALLOC_PARAM("comp"_sv, &builtin_int))));
-      g->overloads.push_back(
-        ALLOC_FUNCTION("texture_gather_offset"_sv, &builtin_vec4,
-                       construct_parameter_list(
                          ALLOC_PARAM("sampler"_sv, &builtin_sampler2DShadow),
                          ALLOC_PARAM("P"_sv, &builtin_vec2),
                          ALLOC_PARAM("refZ"_sv, &builtin_float),
@@ -5526,13 +5100,6 @@ namespace vush {
         construct_parameter_list(
           ALLOC_PARAM("sampler"_sv, &builtin_sampler2DArrayShadow),
           ALLOC_PARAM("P"_sv, &builtin_vec3),
-          ALLOC_PARAM("refZ"_sv, &builtin_float),
-          ALLOC_PARAM("offset"_sv, &builtin_ivec2))));
-      g->overloads.push_back(ALLOC_FUNCTION(
-        "texture_gather_offset"_sv, &builtin_vec4,
-        construct_parameter_list(
-          ALLOC_PARAM("sampler"_sv, &builtin_sampler2DRectShadow),
-          ALLOC_PARAM("P"_sv, &builtin_vec2),
           ALLOC_PARAM("refZ"_sv, &builtin_float),
           ALLOC_PARAM("offset"_sv, &builtin_ivec2))));
       groups.emplace("texture_gather_offset"_sv, g);
@@ -5681,75 +5248,6 @@ namespace vush {
       g->overloads.push_back(ALLOC_FUNCTION(
         "texture_gather_offsets"_sv, &builtin_vec4,
         construct_parameter_list(
-          ALLOC_PARAM("sampler"_sv, &builtin_sampler2DRect),
-          ALLOC_PARAM("P"_sv, &builtin_vec2),
-          ALLOC_PARAM("offsets"_sv,
-                      VUSH_ALLOCATE(ast::Type_Array, allocator, Source_Info{},
-                                    &builtin_ivec2,
-                                    VUSH_ALLOCATE(ast::Lt_Integer, allocator,
-                                                  ast::lt_integer_i32, 4,
-                                                  Source_Info{}))))));
-      g->overloads.push_back(ALLOC_FUNCTION(
-        "texture_gather_offsets"_sv, &builtin_ivec4,
-        construct_parameter_list(
-          ALLOC_PARAM("sampler"_sv, &builtin_isampler2DRect),
-          ALLOC_PARAM("P"_sv, &builtin_vec2),
-          ALLOC_PARAM("offsets"_sv,
-                      VUSH_ALLOCATE(ast::Type_Array, allocator, Source_Info{},
-                                    &builtin_ivec2,
-                                    VUSH_ALLOCATE(ast::Lt_Integer, allocator,
-                                                  ast::lt_integer_i32, 4,
-                                                  Source_Info{}))))));
-      g->overloads.push_back(ALLOC_FUNCTION(
-        "texture_gather_offsets"_sv, &builtin_uvec4,
-        construct_parameter_list(
-          ALLOC_PARAM("sampler"_sv, &builtin_usampler2DRect),
-          ALLOC_PARAM("P"_sv, &builtin_vec2),
-          ALLOC_PARAM("offsets"_sv,
-                      VUSH_ALLOCATE(ast::Type_Array, allocator, Source_Info{},
-                                    &builtin_ivec2,
-                                    VUSH_ALLOCATE(ast::Lt_Integer, allocator,
-                                                  ast::lt_integer_i32, 4,
-                                                  Source_Info{}))))));
-      g->overloads.push_back(ALLOC_FUNCTION(
-        "texture_gather_offsets"_sv, &builtin_vec4,
-        construct_parameter_list(
-          ALLOC_PARAM("sampler"_sv, &builtin_sampler2DRect),
-          ALLOC_PARAM("P"_sv, &builtin_vec2),
-          ALLOC_PARAM("offsets"_sv,
-                      VUSH_ALLOCATE(ast::Type_Array, allocator, Source_Info{},
-                                    &builtin_ivec2,
-                                    VUSH_ALLOCATE(ast::Lt_Integer, allocator,
-                                                  ast::lt_integer_i32, 4,
-                                                  Source_Info{}))),
-          ALLOC_PARAM("comp"_sv, &builtin_int))));
-      g->overloads.push_back(ALLOC_FUNCTION(
-        "texture_gather_offsets"_sv, &builtin_ivec4,
-        construct_parameter_list(
-          ALLOC_PARAM("sampler"_sv, &builtin_isampler2DRect),
-          ALLOC_PARAM("P"_sv, &builtin_vec2),
-          ALLOC_PARAM("offsets"_sv,
-                      VUSH_ALLOCATE(ast::Type_Array, allocator, Source_Info{},
-                                    &builtin_ivec2,
-                                    VUSH_ALLOCATE(ast::Lt_Integer, allocator,
-                                                  ast::lt_integer_i32, 4,
-                                                  Source_Info{}))),
-          ALLOC_PARAM("comp"_sv, &builtin_int))));
-      g->overloads.push_back(ALLOC_FUNCTION(
-        "texture_gather_offsets"_sv, &builtin_uvec4,
-        construct_parameter_list(
-          ALLOC_PARAM("sampler"_sv, &builtin_usampler2DRect),
-          ALLOC_PARAM("P"_sv, &builtin_vec2),
-          ALLOC_PARAM("offsets"_sv,
-                      VUSH_ALLOCATE(ast::Type_Array, allocator, Source_Info{},
-                                    &builtin_ivec2,
-                                    VUSH_ALLOCATE(ast::Lt_Integer, allocator,
-                                                  ast::lt_integer_i32, 4,
-                                                  Source_Info{}))),
-          ALLOC_PARAM("comp"_sv, &builtin_int))));
-      g->overloads.push_back(ALLOC_FUNCTION(
-        "texture_gather_offsets"_sv, &builtin_vec4,
-        construct_parameter_list(
           ALLOC_PARAM("sampler"_sv, &builtin_sampler2DShadow),
           ALLOC_PARAM("P"_sv, &builtin_vec2),
           ALLOC_PARAM("refZ"_sv, &builtin_float),
@@ -5764,18 +5262,6 @@ namespace vush {
         construct_parameter_list(
           ALLOC_PARAM("sampler"_sv, &builtin_sampler2DArrayShadow),
           ALLOC_PARAM("P"_sv, &builtin_vec3),
-          ALLOC_PARAM("refZ"_sv, &builtin_float),
-          ALLOC_PARAM("offsets"_sv,
-                      VUSH_ALLOCATE(ast::Type_Array, allocator, Source_Info{},
-                                    &builtin_ivec2,
-                                    VUSH_ALLOCATE(ast::Lt_Integer, allocator,
-                                                  ast::lt_integer_i32, 4,
-                                                  Source_Info{}))))));
-      g->overloads.push_back(ALLOC_FUNCTION(
-        "texture_gather_offsets"_sv, &builtin_vec4,
-        construct_parameter_list(
-          ALLOC_PARAM("sampler"_sv, &builtin_sampler2DRectShadow),
-          ALLOC_PARAM("P"_sv, &builtin_vec2),
           ALLOC_PARAM("refZ"_sv, &builtin_float),
           ALLOC_PARAM("offsets"_sv,
                       VUSH_ALLOCATE(ast::Type_Array, allocator, Source_Info{},

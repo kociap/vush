@@ -311,9 +311,6 @@ namespace vush {
       case ast::Type_Builtin_Kind::e_image2DMSArray:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator, ir::get_type_fp32(),
                              ir::Image_Dim::e_2D, true, true, false, false);
-      case ast::Type_Builtin_Kind::e_image2DRect:
-        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator, ir::get_type_fp32(),
-                             ir::Image_Dim::e_rect, false, false, false, false);
       case ast::Type_Builtin_Kind::e_image3D:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator, ir::get_type_fp32(),
                              ir::Image_Dim::e_3D, false, false, false, false);
@@ -351,10 +348,6 @@ namespace vush {
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
                              ir::get_type_int32(), ir::Image_Dim::e_2D, true,
                              true, false, false);
-      case ast::Type_Builtin_Kind::e_iimage2DRect:
-        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::get_type_int32(), ir::Image_Dim::e_rect, false,
-                             false, false, false);
       case ast::Type_Builtin_Kind::e_iimage3D:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
                              ir::get_type_int32(), ir::Image_Dim::e_3D, false,
@@ -395,10 +388,6 @@ namespace vush {
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
                              ir::get_type_uint32(), ir::Image_Dim::e_2D, true,
                              true, false, false);
-      case ast::Type_Builtin_Kind::e_uimage2DRect:
-        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::get_type_uint32(), ir::Image_Dim::e_rect,
-                             false, false, false, false);
       case ast::Type_Builtin_Kind::e_uimage3D:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
                              ir::get_type_uint32(), ir::Image_Dim::e_3D, false,
@@ -471,14 +460,6 @@ namespace vush {
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
                              ir::get_type_fp32(), ir::Image_Dim::e_2D, true,
                              true, false);
-      case ast::Type_Builtin_Kind::e_sampler2DRect:
-        return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::get_type_fp32(), ir::Image_Dim::e_rect, false,
-                             false, false);
-      case ast::Type_Builtin_Kind::e_sampler2DRectShadow:
-        return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::get_type_fp32(), ir::Image_Dim::e_rect, false,
-                             false, true);
       case ast::Type_Builtin_Kind::e_sampler2DShadow:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
                              ir::get_type_fp32(), ir::Image_Dim::e_2D, false,
@@ -511,10 +492,6 @@ namespace vush {
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
                              ir::get_type_int32(), ir::Image_Dim::e_2D, true,
                              true, false);
-      case ast::Type_Builtin_Kind::e_isampler2DRect:
-        return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::get_type_int32(), ir::Image_Dim::e_rect, false,
-                             false, false);
       case ast::Type_Builtin_Kind::e_isampler3D:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
                              ir::get_type_int32(), ir::Image_Dim::e_3D, false,
@@ -555,10 +532,6 @@ namespace vush {
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
                              ir::get_type_uint32(), ir::Image_Dim::e_2D, true,
                              true, false);
-      case ast::Type_Builtin_Kind::e_usampler2DRect:
-        return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
-                             ir::get_type_uint32(), ir::Image_Dim::e_rect,
-                             false, false, false);
       case ast::Type_Builtin_Kind::e_usampler3D:
         return VUSH_ALLOCATE(ir::Type_Sampled_Image, ctx.allocator,
                              ir::get_type_uint32(), ir::Image_Dim::e_3D, false,
@@ -593,9 +566,6 @@ namespace vush {
       case ast::Type_Builtin_Kind::e_texture2DMSArray:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator, ir::get_type_fp32(),
                              ir::Image_Dim::e_2D, true, true, false, true);
-      case ast::Type_Builtin_Kind::e_texture2DRect:
-        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator, ir::get_type_fp32(),
-                             ir::Image_Dim::e_rect, false, false, false, true);
       case ast::Type_Builtin_Kind::e_texture3D:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator, ir::get_type_fp32(),
                              ir::Image_Dim::e_3D, false, false, false, true);
@@ -633,10 +603,6 @@ namespace vush {
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
                              ir::get_type_int32(), ir::Image_Dim::e_2D, true,
                              true, false, true);
-      case ast::Type_Builtin_Kind::e_itexture2DRect:
-        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::get_type_int32(), ir::Image_Dim::e_rect, false,
-                             false, false, true);
       case ast::Type_Builtin_Kind::e_itexture3D:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
                              ir::get_type_int32(), ir::Image_Dim::e_3D, false,
@@ -677,10 +643,6 @@ namespace vush {
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
                              ir::get_type_uint32(), ir::Image_Dim::e_2D, true,
                              true, false, false);
-      case ast::Type_Builtin_Kind::e_utexture2DRect:
-        return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
-                             ir::get_type_uint32(), ir::Image_Dim::e_rect,
-                             false, false, false, false);
       case ast::Type_Builtin_Kind::e_utexture3D:
         return VUSH_ALLOCATE(ir::Type_Image, ctx.allocator,
                              ir::get_type_uint32(), ir::Image_Dim::e_3D, false,
